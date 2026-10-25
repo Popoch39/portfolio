@@ -22,7 +22,8 @@ Validé par Louis le 2026-10-25. Les renvois visent la page de revue : ressembla
 - **Format (R13).** Portrait plus étroit, environ 0,60 : viewBox de 400 × 660, pour s'écarter de 02 (0,80).
 - **Plaque signalétique retirée (R15).** Plaque muette à trois filets et quatre rivets : elle part. Le dessin n'a plus d'inscription gravée.
 - **Ce qui reste à 06 seul.** Le mât à deux colonnes rondes et vis d'avance (R9 : 02 n'a plus de chariot sur tige, 01 garde son tube carré à crémaillères), l'écorché (R2), le trait gravé (R10).
-- **Décisions n° 34 à 39.** L'option de la fiche est retenue partout : profondeur dans l'ordre de lecture, avec le témoin « en cours » allumé dès la croûte percée et la légende qui le dit ; épaisseurs = requêtes (1, 8, 11, 5, 3, 4, soit 32) ; strate perdue un tour sur deux ; relance depuis le cache quatre fois plus rapide, « 0 req. » ; au toucher, toucher une strate, sans glisser vertical ; îlot de la section KJ stylisé, textures dans les encres de la palette.
+- **Décisions n° 34 à 39.** L'option de la fiche est retenue partout : profondeur dans l'ordre de lecture, avec le témoin « en cours » allumé dès la croûte percée et la légende qui le dit ; épaisseurs = requêtes (1, 8, 11, 5, 3, 4, soit 32) ; strate perdue un tour sur deux ; relance depuis le cache quatre fois plus rapide, « 0 req. » ; ne pas voler le défilement de la page au toucher (n° 38, dont la forme change avec l'arbitrage ci-dessous) ; îlot de la section KJ stylisé, textures dans les encres de la palette.
+- **Tirer la manivelle vers le bas (arbitrage complémentaire de Louis, 2026-10-25).** Le carottier qui suit la hauteur du pointeur, et la strate touchée qui l'attire, faisaient le même geste que la visée de 04 (la machine suit la position du pointeur ; toucher une cible, la machine y va). Le geste devient une traction : on saisit la poignée de la manivelle d'avance et on la tire vers le bas, ce qui fait tourner la manivelle et descendre le carottier ; la repousser vers le haut le remonte. Au toucher, glisser vertical sur la manivelle seulement : ailleurs, la page défile librement. La manivelle passe sur un arbre horizontal, au flanc de la traverse de tête, avec un renvoi d'angle vers la vis, pour qu'une main qui tire vers le bas la fasse vraiment tourner. Consignes, libellé, clavier et tour suivent.
 - **Comptes.** 65 → 63 pièces dessinées ; nomenclature inchangée, 7 pièces, une seule pièce maîtresse.
 
 ## 1. Ce que fait le projet (la vérité de départ)
@@ -59,7 +60,7 @@ Pourquoi cette machine raconte bien le code :
 | Silhouette | Colonne verticale | Une colonne : un fût cylindrique d'environ 110 unités de diamètre sur 330 de haut, prolongé par un mât de 230. Elle est presque trois fois plus haute que large, et le format de la carte est un **portrait** étroit, environ 0,60 (viewBox de 400 × 660, R13). |
 | Vue | Coupe (écorché) | Le quart de la colonne tourné vers le lecteur est enlevé jusqu'à l'axe. On voit les deux plans de coupe, avec les strates et les brides tranchées, le forage ouvert dans l'angle et le carottier entier dedans. Caméra : azimut 45°, pour que les deux plans de coupe s'ouvrent de façon symétrique, et élévation d'environ 40° (R1) : on regarde dans l'écorché, et le plateau gravé se lit bien sans écraser la hauteur. |
 | Mode et mouvement | Le carottier traverse les strates | Écorché. Une descente verticale lourde, comme une perceuse à colonne : les tiges tournent, la vis d'avance pousse le carottier à vitesse constante, avec une rampe courte au départ et un arrêt net dans chaque strate (R12). Les curseurs du log se calent avec un petit ressort. Au fond, le treuil remonte le tube intérieur et sa carotte. |
-| Geste | Descendre dans les couches | Le pointeur règle la profondeur : plus il est bas sur la colonne, plus le carottier descend. Au toucher, une strate touchée y fait descendre le carottier. |
+| Geste | Descendre dans les couches | **Tirer la manivelle vers le bas** : on saisit la poignée de la manivelle d'avance et on la tire vers le bas, comme le levier d'une perceuse à colonne ; le carottier descend d'autant. La repousser vers le haut le remonte. Au toucher, même glisser vertical, sur la manivelle seulement (arbitrage complémentaire). |
 
 **Rien à contester.** Le code raconte bien une descente : la fiche se lit de haut en bas, une première couche conditionne les suivantes et chaque couche vient d'une source distincte. La grille tient.
 
@@ -70,11 +71,11 @@ Pourquoi cette machine raconte bien le code :
 | 01 typomaniac | large et basse | 3/4 classique (az 35°, él 30°) | porte ouverte | taper une lettre |
 | 02 claude-tmux-notify | haute et plate, murale | presque de face (az 18°, él 16°) | capot déposé ; volets, sonnette | acquitter : brancher la fiche |
 | 03 claude-status-line | longue et fine | rasante (az 70°, él 12°) | fenêtre vitrée ; aiguille | faire avancer le temps |
-| 04 pointcloud-viewer | grêle sur terrain | plongée (az 40°, él 50°) | extérieur pur ; balayage continu | viser avec la tête |
-| 05 trekker | cube massif | presque de face, depuis le bas (az 22°, él 20°) | éclaté partiel | tirer un tiroir |
-| **06 ma_parcelle** | **colonne pleine, portrait étroit** | **plongée dans l'écorché (az 45°, él 40°)** | **écorché en quart ; traversée verticale** | **descendre** |
+| 04 pointcloud-viewer | grêle sur terrain | vraie plongée (az 40°, él 58–60°) | extérieur pur ; balayage continu | viser avec la tête |
+| 05 trekker | cube massif | 3/4 bas, flanc en grande face (az 55–60°, él 20°) | éclaté partiel | tirer un tiroir vers soi |
+| **06 ma_parcelle** | **colonne pleine, portrait étroit** | **3/4 haut, dans l'écorché (az 45°, él 40°)** | **écorché en quart ; traversée verticale** | **tirer la manivelle vers le bas** |
 
-C'est la seule figure en écorché et la seule dont le mouvement principal est vertical vers le bas. Le 02 est lui aussi au format portrait (0,80 contre 0,60 ici), mais c'est une planche plate vue de face. Ici, c'est un volume rond ouvert sur un quart, dont on voit l'intérieur. Le 01 a aussi un mât, mais c'est un tube carré à crémaillères. Celui-ci est fait de deux colonnes rondes avec une vis d'avance, comme une perceuse à colonne. Le plateau gravé est du trait, quand le terrain de 04 est une trame (R10). **Pas de base sur pieds ni de règle graduée.** La colonne repose sur sa bride de fond pleine, comme une vraie colonne de laboratoire. La profondeur se lit aux brides et au log, pas sur une règle ni sur un compteur. Le seul trépied de la série reste celui du 04 : celle-ci n'a pas de pieds.
+C'est la seule figure en écorché et la seule dont le mouvement principal est vertical vers le bas. 05 tire aussi, mais un tiroir vers soi, le long d'un axe horizontal ; ici, la main tire une manivelle vers le bas et la fait tourner. Le 02 est lui aussi au format portrait (0,80 contre 0,60 ici), mais c'est une planche plate vue de face. Ici, c'est un volume rond ouvert sur un quart, dont on voit l'intérieur. Le 01 a aussi un mât, mais c'est un tube carré à crémaillères. Celui-ci est fait de deux colonnes rondes avec une vis d'avance, comme une perceuse à colonne. Le plateau gravé est du trait, quand le terrain de 04 est une trame (R10). **Pas de base sur pieds ni de règle graduée.** La colonne repose sur sa bride de fond pleine, comme une vraie colonne de laboratoire. La profondeur se lit aux brides et au log, pas sur une règle ni sur un compteur. Le seul trépied de la série reste celui du 04 : celle-ci n'a pas de pieds.
 
 **Tons.** La colonne et le mât sont en `mid`. La bride de fond et les brides de jonction sont en `lo`. Le plateau, le log et les strates sont en `hi`. Les textures de strate restent dans les encres de la palette, sans couleur de terre. Le seul bleu au repos est le carottier, la pièce maîtresse.
 
@@ -134,8 +135,8 @@ Le sujet est ce que le lecteur regarde : le plateau, les strates, la carotte et 
 
 **Commandes (5)**
 
-46. Manivelle d'avance, en bout de vis sur la traverse de tête.
-47. Poignée moletée de la manivelle.
+46. Manivelle d'avance, sur un arbre horizontal au flanc de la traverse de tête, avec son renvoi d'angle vers la vis : c'est elle qu'on tire.
+47. Poignée moletée de la manivelle, la prise du geste.
 48. Levier d'embrayage de rotation, à boule.
 49. Vis de blocage moletée du chariot.
 50. Levier de frein du treuil.
@@ -234,24 +235,26 @@ Le flux rejoué : une parcelle choisie sur la carte, la croûte cadastrale perc�
 
 1. **Choix.** Le liseré de KJ 33 s'allume d'un coup, sans attendre le cadastre (le surlignage vient de la tuile, comme `SelectionLayer`). Le témoin s'allume.
 2. **Croûte.** Les tiges se mettent à tourner et le carottier perce la croûte (1 requête). Relevé : « 1/6 Cadastre · 1 req. · 131 m² ». Le curseur 1 se cale sur info.
-3. **Strates.** Le carottier descend à vitesse constante et s'arrête net dans chaque virole, le temps de la lire, puis repart après une rampe courte. À chaque strate, le relevé passe à la suivante et son curseur se cale (ou la ligne reste vierge) :
+3. **Strates.** La manivelle s'abaisse seule, cran par cran, comme tirée par une main invisible : le carottier descend à vitesse constante et s'arrête net dans chaque virole, le temps de la lire, puis repart après une rampe courte. À chaque strate, le relevé passe à la suivante et son curseur se cale (ou la ligne reste vierge) :
    - « 2/6 Urbanisme · 8 req. · aucune zone publiée », vigilance ;
    - « 3/6 Risques · 11 req. · vigilance au plus », ligne vierge ;
    - « 4/6 Ventes · 5 req. · 4 125 €/m² (7) », info ;
    - « 5/6 Bâtiment · 3 req. · 1850 · alt. 7,47 m », info ;
    - « 6/6 DPE · 4 req. · 377 annoncés », ligne vierge.
-4. **Remontée.** Au fond, le témoin s'éteint. Le treuil remonte le tube intérieur, et la carotte apparaît entière, six bandes superposées. Relevé : « 6/6 · 32 req. · 0 serveur ». Le carottier remonte lentement à sa pose de repos.
+4. **Remontée.** Au fond, le témoin s'éteint. Le treuil remonte le tube intérieur, et la carotte apparaît entière, six bandes superposées. Relevé : « 6/6 · 32 req. · 0 serveur ». Le carottier remonte lentement à sa pose de repos, et la manivelle revient en haut de sa course.
 5. **Un tour sur deux, la strate perdue.** Le tour suivant rejoue le test où la BDNB répond 500. La couronne traverse la virole Bâtiment, mais la carotte présente un vide à sa hauteur et la ligne 5 du log reste vierge. Relevé : « 5/6 Bâtiment · BDNB 500 · strate perdue ». Les strates du dessous remontent normalement.
 
 **Pointeur** (aperçu et fiche) :
 
-- La hauteur du pointeur sur la colonne fixe la profondeur visée, entre le plateau et la bride de fond. Le carottier y va comme sur une perceuse à colonne : rampe courte, avance à vitesse constante de la vis, arrêt net à la profondeur visée, sans dépassement ni approche amortie. La manivelle tourne avec lui, et le relevé affiche la strate atteinte. On descend dans les couches comme on lit la fiche.
+- Saisir la poignée de la manivelle et la tirer vers le bas : la manivelle tourne sous la main, et la distance tirée fixe la profondeur visée, entre le plateau et la bride de fond. Le carottier y va comme sur une perceuse à colonne : rampe courte, avance à vitesse constante de la vis, arrêt net à la profondeur visée, sans dépassement ni approche amortie. Repousser la poignée vers le haut le fait remonter. Le relevé affiche la strate atteinte. On descend dans les couches comme on lit la fiche.
+- Au lâcher, la manivelle reste où elle est, et le carottier finit sa course jusqu'à la profondeur tirée. Le survol ne déplace rien : seule la poignée prend le curseur de saisie.
 - Un clic sur le plateau choisit de nouveau la parcelle. Comme les réponses sont en cache (12 h), le carottier redescend quatre fois plus vite, le témoin ne s'allume pas et le log se remplit d'un coup. Relevé : « 33063 KJ 33 · en cache · 0 req. ».
 - Quand le pointeur quitte la figure, le carottier reste où il est. Le tour reprend après 4 s d'inactivité.
+- Dans l'aperçu de l'accueil, le même geste vaut : la poignée se tire, rien ne suit le simple survol.
 
-**Toucher** : une strate touchée y fait descendre le carottier, et le plateau touché relance le sondage, depuis le cache. Il n'y a pas de glisser vertical, pour ne pas voler le défilement de la page.
+**Toucher** : glisser le doigt vers le bas sur la manivelle fait descendre le carottier, vers le haut le remonte. Seule la zone de la manivelle et de sa poignée capte le glisser (`touch-action: none` sur elle seule, élargie autour de la poignée pour rester utilisable à 390 px) ; partout ailleurs, la page défile normalement. Le plateau touché relance le sondage, depuis le cache.
 
-**Clavier** (focus sur la scène, aucun écouteur global) : ↓ et ↑ passent d'une strate à l'autre, Début ramène au plateau, Fin envoie au fond, Entrée ou Espace relance le sondage. Tab sort de la scène normalement.
+**Clavier** (focus sur la scène, aucun écouteur global) : ↓ tire la manivelle d'une strate, ↑ la repousse d'une strate, Début ramène au plateau, Fin tire jusqu'au fond, Entrée ou Espace relance le sondage. Tab sort de la scène normalement.
 
 **Mouvement réduit** : la figure reste immobile dans sa pose au repos. Les interactions placent le carottier à la strate visée sans transition, et le relevé change aussitôt.
 
@@ -262,12 +265,12 @@ Le flux rejoué : une parcelle choisie sur la carte, la croûte cadastrale perc�
 - **Accroche** : « Cliquez une parcelle : la carte la *carotte* à travers six couches de données publiques, sans compte ni serveur. » (le mot en emphase : *carotte*)
 - **Nom de la machine** : Colonne de sondage
 - **Titre de la figure** : « Carotte d'une parcelle »
-- **Consigne pointeur** : « Descendez le long de la colonne pour traverser les strates · cliquez le plateau pour relancer le sondage »
-- **Consigne toucher** : « Touchez une strate pour y descendre · touchez le plateau pour relancer le sondage »
+- **Consigne pointeur** : « Tirez la manivelle vers le bas pour traverser les strates · cliquez le plateau pour relancer le sondage »
+- **Consigne toucher** : « Glissez la manivelle vers le bas pour traverser les strates · touchez le plateau pour relancer le sondage »
 - **Relevé au repos** : « 33063 KJ 33 · prêt · 0/6 »
 - **Format du relevé** : « {n}/6 {strate} · {requêtes} req. · {valeur} », par exemple « 4/6 Ventes · 5 req. · 4 125 €/m² (7) ». Variantes : « 6/6 · 32 req. · 0 serveur » au fond, « 5/6 Bâtiment · BDNB 500 · strate perdue » pour la strate perdue, « 33063 KJ 33 · en cache · 0 req. » quand le sondage est relancé.
 - **Légende** : « Le carottier part de la parcelle choisie sur le plan cadastral et traverse six strates, une par bloc de la fiche, dans leur ordre d'affichage. Chaque strate est aussi épaisse que le nombre de requêtes que son bloc envoie pour la parcelle 33063 KJ 33 : 32 en tout, du navigateur aux API publiques, sans serveur. Seule la croûte du cadastre conditionne les autres, qui sont interrogées ensemble ; une strate perdue manque au log sans arrêter le sondage. »
-- **Libellé accessible** : « Colonne de sondage en écorché, vue en plongée. Un carottier bleu descend d'un plateau gravé du plan cadastral à travers six strates de sol, de haut en bas : cadastre, urbanisme, risques, ventes, bâtiment et DPE. Un log fixé au mât note ce que chaque strate a livré. »
+- **Libellé accessible** : « Colonne de sondage en écorché. Un carottier bleu descend d'un plateau gravé du plan cadastral à travers six strates de sol, de haut en bas : cadastre, urbanisme, risques, ventes, bâtiment et DPE. Tirer la manivelle vers le bas le fait descendre, la repousser le remonte. Un log fixé au mât note ce que chaque strate a livré. Flèche bas ou haut pour passer d'une strate à l'autre, Entrée pour relancer le sondage. »
 - **Titre SEO** : « ma_parcelle — anatomie d'une carte des données publiques · Louis Pocheron »
 - **Description SEO** : « Comment ma_parcelle réunit ce que les données publiques disent d'une parcelle : une colonne de sondage interactive traverse cadastre, urbanisme, risques, ventes, bâtiment et DPE, chaque pièce reliée au code React et MapLibre. »
 
@@ -276,6 +279,6 @@ Le flux rejoué : une parcelle choisie sur la carte, la croûte cadastrale perc�
 - **Ordre de peinture.** Ce qui est derrière l'axe de coupe se peint d'abord : la demi-paroi arrière du forage, puis le carottier entier, puis les faces de coupe, puis les tranches de brides. Le câble passe derrière le mât au-dessus de la console et devant la poulie. Quand le carottier traverse une bride, il est dessiné dans l'angle ouvert, jamais à travers une tranche.
 - **Pièces de révolution et câble** : les viroles, brides, colonnes du mât, vis d'avance, tiges, carottier et poulie viennent de `kit/lathe.mjs`, le câble de `kit/tube.mjs`. L'audit du kit doit finir à zéro, carottier en haut, à mi-course et au fond.
 - **Textures** : les veines communales des Risques vont d'un plan de coupe à l'autre et finissent sur l'arête extérieure. Les lamines du DPE finissent sur les brides. Les graviers des Ventes restent dans leur lit.
-- **Avance** : profil trapézoïdal (rampe courte, palier à vitesse constante, arrêt net), le même pour le tour, le pointeur et le clavier ; la vis d'avance et la manivelle tournent à la même vitesse que le carottier descend. Aucun suivi amorti : c'est le caractère de 03.
+- **Avance** : profil trapézoïdal (rampe courte, palier à vitesse constante, arrêt net), le même pour le tour, le pointeur et le clavier ; la vis d'avance et la manivelle tournent à la même vitesse que le carottier descend. La course de la poignée, tirée à l'écran, se convertit en profondeur par un rapport fixe (toute la colonne pour un tour et demi de manivelle environ) ; la poignée suit la main, le carottier suit la poignée à sa vitesse de vis. Aucun suivi amorti : c'est le caractère de 03.
 - **Plateau** : rainures en trait seul, sans aplat ; le liseré de KJ 33 s'allume par le ton de sa rainure double, pas par un remplissage.
 - **Budget** : SVG ≤ 250 Ko brut, module de mouvement ≤ 20 Ko minifié.

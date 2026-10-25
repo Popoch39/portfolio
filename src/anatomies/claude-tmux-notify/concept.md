@@ -74,11 +74,11 @@ Elle suit sa ligne de la grille sans la contester.
 | 01 typomaniac | large et basse | 3/4 classique | porte ouverte ; frappes | taper une lettre |
 | **02 claude-tmux-notify** | **haute et plate, murale, portrait** | **presque de face, à hauteur du tableau** | **capot déposé ; chutes, déclics, vibration** | **acquitter une fenêtre : y brancher la fiche** |
 | 03 claude-status-line | longue et fine | rasante, le long de la rampe | fenêtre vitrée ; aiguille amortie | faire avancer le temps |
-| 04 pointcloud-viewer | haute et grêle | plongée | extérieur pur ; balayage continu | viser avec la tête |
-| 05 trekker | cube massif | presque de face, depuis le bas | éclaté partiel, coulissement | tirer un tiroir |
-| 06 ma_parcelle | colonne verticale | plongée dans l'écorché | écorché ; descente du carottier | descendre dans les couches |
+| 04 pointcloud-viewer | haute et grêle | vraie plongée | extérieur pur ; balayage continu | viser avec la tête |
+| 05 trekker | cube massif | 3/4 bas, flanc en grande face | éclaté partiel, coulissement | tirer un tiroir vers soi |
+| 06 ma_parcelle | colonne verticale | 3/4 haut, dans l'écorché | écorché ; descente du carottier | tirer la manivelle vers le bas |
 
-Seul tableau accroché au mur, seul mouvement discret (tout ou rien, à la seconde), seule pièce qu'on branche : rien n'y coulisse sur un guide, rien ne s'amortit en aiguille. La vue frontale est proche de celle de 05 depuis la revue (R1) : 02 regarde un mur à hauteur d'homme, flanc gauche à peine visible, 05 regarde un meuble posé au sol, flanc droit visible.
+Seul tableau accroché au mur, seule vue frontale, seul mouvement discret (tout ou rien, à la seconde), seule pièce qu'on branche : rien n'y coulisse sur un guide, rien ne s'amortit en aiguille.
 
 ## 4. Nomenclature
 

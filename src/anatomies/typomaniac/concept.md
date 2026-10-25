@@ -94,9 +94,9 @@ de **lampes de manche**. Au-dessus, un **mât** fin porte deux curseurs de rang,
 |---|---|---|
 | 02 claude-tmux-notify.nvim | tableau d'annonciateur mural, presque de face, capot déposé | haute et plate, sans profondeur, volets qui tombent ; le banc est bas, profond, vu de 3/4, et ses contrôles sont des bras de barrière |
 | 03 claude-status-line | rampe à cadran, vue rasante, fenêtre vitrée | une seule aiguille amortie sur une longue rampe, vue par une fenêtre ; ici, deux postes symétriques, des frappes sèches, et une porte ouverte |
-| 04 pointcloud-viewer | scanner sur trépied, en plongée, extérieur pur | haut et grêle au-dessus d'un terrain ; le banc est posé à plat |
-| 05 trekker | meuble à fiches, éclaté partiel, presque de face depuis le bas | cube massif et tiroir qui sort ; ici, rien ne s'éclate et la vue est à hauteur classique |
-| 06 ma_parcelle | colonne de sondage écorchée, en plongée | colonne verticale ouverte sur un quart ; ici, horizontal et fermé, découvert par une porte |
+| 04 pointcloud-viewer | scanner sur trépied, en vraie plongée (58–60°), extérieur pur | haut et grêle au-dessus d'un terrain ; le banc est posé à plat |
+| 05 trekker | meuble à fiches, éclaté partiel, 3/4 bas, flanc en grande face | cube massif et tiroir qui sort ; ici, rien ne s'éclate et la vue est à hauteur classique, côté long devant |
+| 06 ma_parcelle | colonne de sondage écorchée, vue de 3/4 haut (40°) | colonne verticale ouverte sur un quart ; ici, horizontal et fermé, découvert par une porte |
 
 ## 3. Nomenclature
 

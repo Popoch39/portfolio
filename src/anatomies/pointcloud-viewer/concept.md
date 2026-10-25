@@ -7,9 +7,22 @@ Fiche de concept de l'anatomie de `pointcloud-viewer` (ticket #18, spec #10). El
 - **Base des permaliens** : `https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/`. Toutes les plages de lignes ci-dessous sont lues à ce SHA.
 - **Taille** : « Figure » du skill `anatomy`, en SVG seul, sans WebGL ni 3D.
 
+## Décisions de la revue (#21)
+
+Validé par Louis le 2026-10-25. Les renvois visent la page de revue : ressemblances R1 à R15, incohérences I1 et I2, décisions ouvertes n° 1 à 39 (n° 20 à 28 pour cette fiche).
+
+- **Extérieur pur (R2).** 01, 03 et 04 se déclaraient tous « en fonctionnement ». 04 n'a aucune ouverture ni coupe : tout se lit sur la surface (faisceau, dépôt du nuage, gravure du disque).
+- **Viser au lieu de glisser (R3).** Le glisser horizontal amorti était le geste de 03. La tête vise le pointeur : son azimut suit l'angle du pointeur autour de la station. Tourner dans le sens de la spirale lit les points, revenir fait patiner le cliquet. Au toucher, toucher un point du terrain tourne la tête jusqu'à lui, en avant seulement. Le volant moleté d'orientation, qui doublait la tête et le volant de 03, est retiré. Consignes, libellé et clavier suivent.
+- **Disque gravé au lieu de la cassette (R4).** La bande sur deux bobines est à 02. Le PCBK devient un disque gravé en quatre secteurs dont les angles suivent les blocs (positions 240°, intensité 40°, RGB 60°, classification 20°), l'en-tête de 72 octets au moyeu. Il se grave secteur par secteur, puis glisse sur le rail jusqu'au support de carnet, loquet compris. Identifiant `cassette` → `disque`.
+- **Orthophoto en trame (R10).** Le trait gravé reste à 06, dont le plan cadastral est vectoriel. Les tuiles d'orthophoto, un raster, deviennent de la trame : aplats tonals en pointillé ou en hachure, sans contour gravé.
+- **Élan de moteur (R12).** L'amortissement critique reste à 03. La tête garde son élan de moteur : elle accélère, file et freine, y compris quand on la vise.
+- **Format carré (R13, I2).** La fiche annonçait « un peu en hauteur » avec un viewBox plus large que haut. Tranché : carré, 600 × 600.
+- **Décisions n° 20 à 28.** L'option de la fiche est retenue : instrument hors d'échelle dit dans la légende, un point dessiné sur 40, modes de couleur en tons d'encre calculés avec les formules du dépôt, bake rejoué au ralenti sans durée affichée, « 1,80 Mo » à la virgule, vitesse affichée plafonnée avec flou de bougé, plongée à 50°, format tranché par I2. La n° 26 (poses précalculées ou petit projeteur pour la tête) reste ouverte : elle se tranche à la construction, selon le budget.
+- **Comptes.** 66 → 65 pièces dessinées (volant d'orientation retiré) ; nomenclature inchangée en nombre, 7 pièces, une seule pièce maîtresse.
+
 ## 1. La machine
 
-**Un scanner laser sur trépied**, mince et haut, planté au-dessus d'un carré de terrain fait de quatre dalles d'orthophoto. Sa tête tourne sans arrêt et son miroir dépose un nuage de points en spirale sur le terrain. Une borne marque un angle du nuage, et une cassette à bande, logée sur un support serré à une jambe, reçoit le fichier cuit.
+**Un scanner laser sur trépied**, mince et haut, planté au-dessus d'un carré de terrain fait de quatre dalles d'orthophoto. Sa tête tourne sans arrêt et son miroir dépose un nuage de points en spirale sur le terrain. Une borne marque un angle du nuage, et un disque gravé, qui glisse jusqu'à un support serré à une jambe, reçoit le fichier cuit.
 
 Le dépôt fournit lui-même la vérité du mouvement. Son fichier d'essai, `sample.laz`, est une spirale de 100 000 points écrite par [`generate-sample.rs` L27-L44](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/examples/generate-sample.rs#L27-L44) : le point `i` est à l'angle `t = i / 100` radians, à `0,05 · t` mètres du centre et à `50 + 0,02 · t` mètres d'altitude. Un scanner qui tourne sur lui-même en allongeant sa visée trace exactement cette courbe. **La tête tourne d'un angle qui est l'indice du point lu** : un tour lit 628 points, et les 100 000 points prennent 159 tours.
 
@@ -24,20 +37,20 @@ La ligne de la grille est **suivie, pas contestée** : le code raconte précisé
 | Machine | Scanner sur trépied | Scanner laser de relevé, tête de révolution, sur trépied télescopique à trois jambes |
 | Silhouette | Haute et grêle, au-dessus d'un terrain | Trois jambes longues et écartées, une tête fine en colonne ; sous elle, un carré de terrain plat dont le nuage se relève en entonnoir vers le bord (0 à 20 m de haut pour 50 m de rayon) |
 | Vue | Plongée | Élévation 50° (le skill autorise de monter « pour regarder dans quelque chose d'ouvert », comme le bac à ondes à 44°), azimut 40°, pour lire le disque de la spirale et le sommet de la tête |
-| Mode de dessin | En fonctionnement | Machine en marche, rien d'éclaté ni de coupé |
-| Mouvement | Balayage continu, nuage qui se dépose | La tête tourne en continu, accélère au démarrage comme un vrai moteur, et la spirale grandit du centre vers le bord ; la bande s'enroule à la fin ; le nuage s'allume d'un bloc |
-| Geste | Orienter la tête | Glisser pour tourner la tête à la main : tourner en avant lit des points, tourner en arrière fait patiner le cliquet |
-| Format | (libre) | Presque carré, un peu en hauteur : viewBox de l'ordre de 600 × 560 |
+| Mode de dessin | En fonctionnement | **Extérieur pur** : machine en marche, rien d'éclaté, de coupé ni d'ouvert. Tout se lit sur la surface : le faisceau, le dépôt du nuage, la gravure du disque. La fente du miroir et la fente de carte sont des ouvertures de l'instrument réel, pas des vues sur son intérieur (R2) |
+| Mouvement | Balayage continu, nuage qui se dépose | La tête tourne en continu, accélère au démarrage comme un vrai moteur et garde cet élan quand on la vise : pas d'amortissement critique (R12). La spirale grandit du centre vers le bord ; le disque se grave secteur par secteur à la fin ; le nuage s'allume d'un bloc |
+| Geste | Orienter la tête | **Viser avec la tête** : la tête tourne vers le pointeur, son azimut suit l'angle du pointeur autour de la station. Tourner dans le sens de la spirale lit des points, revenir fait patiner le cliquet (R3) |
+| Format | (libre) | Carré : viewBox de 600 × 600 (R13, I2) |
 
 ### Ce qui la distingue des cinq autres lignes
 
 | Projet | Sa ligne | Écart avec ce concept |
 |---|---|---|
-| 01 typomaniac | Banc de duel large et bas, 3/4 classique | Ici une silhouette verticale et grêle, vue en plongée |
-| 02 claude-tmux-notify.nvim | Tableau mural, presque de face | Ici un objet posé au sol, vu d'en haut, sans face plane dominante |
-| 03 claude-status-line | Rampe longue, vue rasante | Ici une vue plongeante sur un disque, rien de long ni de rasant. Son cache est un tiroir frappé d'un tampon ; le PCBK est ici une cassette à deux bobines qui s'enroule |
-| 05 trekker | Cube massif à tiroirs, éclaté partiel | Aucun tiroir : le fichier PCBK est une cassette à bande, et rien n'est éclaté |
-| 06 ma_parcelle | Colonne en coupe, écorché | Aucune coupe ni strate : le terrain est vu par-dessus, en surface |
+| 01 typomaniac | Banc de duel large et bas, 3/4 classique, porte ouverte | Ici une silhouette verticale et grêle, vue en plongée, sans aucune ouverture |
+| 02 claude-tmux-notify.nvim | Tableau mural, presque de face, bande sur deux bobines | Ici un objet posé au sol, vu d'en haut, sans face plane dominante ; le PCBK est un disque gravé, pas une bande |
+| 03 claude-status-line | Rampe longue, vue rasante, glisser linéaire | Ici une vue plongeante sur un disque, rien de long ni de rasant ; on vise d'un geste angulaire, on ne glisse pas, et aucun volant moleté ne double la tête |
+| 05 trekker | Cube massif à tiroirs, éclaté partiel | Aucun tiroir : le fichier PCBK est un disque qui glisse sur un rail, et rien n'est éclaté |
+| 06 ma_parcelle | Colonne en coupe, écorché, plan cadastral gravé | Aucune coupe ni strate : le terrain est vu par-dessus, en surface, et la carte est une trame tonale, pas un trait gravé |
 
 **Pas de base par réflexe.** Il n'y a ni plaque sur pieds ni règle graduée. Le sol est le terrain lui-même : quatre tuiles d'orthophoto posées à plat, dans lesquelles les pointes des jambes s'enfoncent. La seule graduation est le cercle horizontal de la tête, une vraie pièce d'instrument de relevé.
 
@@ -50,9 +63,9 @@ La ligne de la grille est **suivie, pas contestée** : le code raconte précisé
 - **Tête de révolution** : le corps de la tête est un cylindre vertical. En tournant, sa silhouette ne change pas : seuls bougent la fente du miroir, le tambour, le cran du cercle et l'encoche de la carte. Le module de mouvement reste petit, et l'on évite de reconstruire des boîtes à chaque image.
 - **Tons** : terrain et pointes en `lo`, trépied et tête en `mid`, nuage en `hi`. Seule pièce bleue au repos : le tambour du miroir. Pas d'autre couleur, même pour les modes de couleur du nuage (voir § 5).
 
-## 3. Pièces dessinées (66)
+## 3. Pièces dessinées (65)
 
-Chaque pièce repose sur une autre. Les numéros entre crochets renvoient à la nomenclature (§ 4).
+Chaque pièce repose sur une autre. Les numéros entre crochets renvoient à la nomenclature (§ 4). Par groupe : socle 14, structure 20, mécanisme 20, commandes 5, sujet 6.
 
 ### Socle : le terrain (14)
 
@@ -61,8 +74,8 @@ Chaque pièce repose sur une autre. Les numéros entre crochets renvoient à la 
 3. Tuile d'orthophoto sud.
 4. Tuile d'orthophoto ouest.
 5. Joint en croix entre les quatre tuiles, rainure `faint` qui court d'un bord à l'autre.
-6. Îlots bâtis en marqueterie à plat sur les tuiles, coupés net au bord de chaque tuile (le quartier de l'Odéon, sous la station de l'échantillon).
-7. Allée de jardin gravée qui traverse deux tuiles et se termine sur leurs bords.
+6. Îlots bâtis en trame sur les tuiles : aplats tonals en pointillé serré, sans contour gravé, coupés net au bord de chaque tuile (le quartier de l'Odéon, sous la station de l'échantillon).
+7. Allée de jardin en trame claire, une hachure fine qui traverse deux tuiles et se termine sur leurs bords, sans contour.
 8. Clou de station au centre du terrain, tête ronde et anneau.
 9. Borne d'angle [5], pierre trapue biseautée, posée à l'angle sud-ouest du nuage.
 10. Disque de bronze scellé sur la borne, croix gravée.
@@ -88,7 +101,7 @@ Chaque pièce repose sur une autre. Les numéros entre crochets renvoient à la 
 
 35. Embase à trois vis calantes, posée sur le plateau.
 36. Nivelle sphérique sur l'embase, bulle centrée.
-37. Socle fixe de la tête, cylindre bas : il porte le cliquet et le dock de la cassette.
+37. Socle fixe de la tête, cylindre bas : il porte le cliquet et le dock de gravure du disque.
 38. Couronne à rochet, dents tout autour du pied de la partie tournante.
 39. Cliquet fixe, son ressort et son axe, appuyé sur la couronne.
 40. Cercle horizontal gradué sur la partie tournante, traits pendus à son bord, un majeur tous les 5.
@@ -102,28 +115,27 @@ Chaque pièce repose sur une autre. Les numéros entre crochets renvoient à la 
 48. Carte LAS/LAZ [1], plaquette mince avec ses contacts dorés en peigne et son encoche.
 49. Faisceau laser, du miroir au point d'impact.
 50. Point d'impact, le point terminal du faisceau sur le nuage.
-51. Cassette PCBK [4], boîtier à bande avec sa fenêtre : deux bobines, la bande entre elles, et des repères de blocs sur la bobine réceptrice.
-52. Dock de la cassette dans le socle fixe, et rail court jusqu'au support de carnet.
-53. Câble spiralé du socle fixe à la cassette, avec ses deux coquilles de connecteur.
+51. Disque PCBK [4], galette mince gravée en quatre secteurs dont les angles suivent les blocs (positions 240°, intensité 40°, RGB 60°, classification 20°), l'en-tête de 72 octets au moyeu ; des sillons concentriques marquent le secteur gravé.
+52. Dock de gravure dans le socle fixe (plateau tournant et pointe de gravure), rail court jusqu'au support de carnet, et chariot porte-disque qui y glisse.
+53. Câble spiralé du socle fixe au chariot porte-disque, avec ses deux coquilles de connecteur.
 54. Bague collectrice entre la partie tournante et le socle fixe, trait de joint.
 
-### Commandes (6)
+### Commandes (5)
 
 55. Roue de filtres [7] sur le sommet de la tête, quatre fenêtres rondes.
 56. Bille d'indexage de la roue, dans son logement.
-57. Volant moleté d'orientation sur le socle fixe, engrené sur la couronne : il tourne quand la tête tourne.
-58. Bouton de marche sur le boîtier, avec sa bague.
-59. Voyant d'état à côté du bouton : éteint, clignotant pendant le bake, fixe une fois le nuage rendu (en tons, sans couleur).
-60. Loquet de la cassette, qui bascule du côté du socle au côté du support au moment du transfert.
+57. Bouton de marche sur le boîtier, avec sa bague.
+58. Voyant d'état à côté du bouton : éteint, clignotant pendant le bake, fixe une fois le nuage rendu (en tons, sans couleur).
+59. Loquet du disque, qui bascule du côté du socle au côté du support au moment du transfert.
 
 ### Sujet (6)
 
-61. Nuage de points [6] : la spirale de 100 000 points lus, dont 2 500 dessinés (un sur 40), en entonnoir de 0 à 20 m.
-62. Points tout juste écrits, au ton `lo` pendant le bake : le tampon en mémoire, pas encore rendu.
-63. Spire courante, la dernière posée, au ton `mid`.
-64. Halo doux sous la cassette et son support.
-65. Halo doux sous chaque pointe de jambe et sous la borne.
-66. Halo doux sous le trépied, au centre.
+60. Nuage de points [6] : la spirale de 100 000 points lus, dont 2 500 dessinés (un sur 40), en entonnoir de 0 à 20 m.
+61. Points tout juste écrits, au ton `lo` pendant le bake : le tampon en mémoire, pas encore rendu.
+62. Spire courante, la dernière posée, au ton `mid`.
+63. Halo doux sous le disque et son support.
+64. Halo doux sous chaque pointe de jambe et sous la borne.
+65. Halo doux sous le trépied, au centre.
 
 ## 4. Nomenclature (7 pièces)
 
@@ -134,7 +146,7 @@ Chaque pièce repose sur une autre. Les numéros entre crochets renvoient à la 
 | 1 | `carte` | Carte LAS/LAZ | Le fichier choisi. Un `.las` ou un `.laz` part au bake dans un Worker, un `.bin` déjà cuit s'ouvre sur place. | [`src/hooks/use-bake.ts` L78-L87](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/hooks/use-bake.ts#L78-L87) |
 | 2 | `boitier` | Boîtier scellé | Le Web Worker : il lit les octets du fichier, initialise le WebAssembly une seule fois, remonte la progression et rend le PCBK par transfert, sans copie. | [`src/workers/bake-worker.ts` L13-L37](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/workers/bake-worker.ts#L13-L37) |
 | 3 | `miroir` | **Tambour du miroir** (pièce maîtresse) | Le bake Rust compilé en WebAssembly : il parcourt les points du LAS/LAZ, les recentre sur le minimum par axe pour qu'ils restent précis en f32, puis écrit l'en-tête de 72 octets et les blocs planaires. | [`webassembly/src/lib.rs` L48-L132](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L48-L132) |
-| 4 | `cassette` | Cassette PCBK | Le format maison : vérifie le magic et la version, puis pose des vues TypedArray sur le buffer, sans rien décoder. | [`src/lib/baked-pointcloud.ts` L41-L91](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/baked-pointcloud.ts#L41-L91) |
+| 4 | `disque` | Disque PCBK | Le format maison : vérifie le magic et la version, puis pose des vues TypedArray sur le buffer, sans rien décoder. | [`src/lib/baked-pointcloud.ts` L41-L91](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/baked-pointcloud.ts#L41-L91) |
 | 5 | `borne` | Borne d'angle | L'ancre : seul le World Offset est reprojeté (proj4 vers WGS84, puis Mercator), et tout le nuage se place autour de lui. | [`src/lib/map-anchor.ts` L22-L46](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/map-anchor.ts#L22-L46) |
 | 6 | `nuage` | Nuage de points | Le calque three.js sur le contexte WebGL de MapLibre : positions envoyées telles quelles, matrices composées en doubles à chaque image. | [`src/lib/pointcloud-layer.ts` L25-L121](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/pointcloud-layer.ts#L25-L121) |
 | 7 | `roue` | Roue de filtres | Le mode de couleur (RGB, intensité, classification, altitude) : un uniform change, la géométrie reste. | [`src/lib/pointcloud-shaders.ts` L127-L156](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/pointcloud-shaders.ts#L127-L156) |
@@ -147,7 +159,7 @@ Ne sont pas des pièces de nomenclature : le trépied, l'embase, les vis, le cli
 
 ### Au repos
 
-Le bake de `sample.laz` est fini et le nuage est rendu en mode RGB : 100 000 points lus, 2 500 dessinés au ton `hi`. La tête est arrêtée, la fente du miroir pointe vers le dernier point de la spirale, sur le bord sud-est, et la carte affleure dans sa fente. La cassette est dans le support de carnet, loquet du côté du support. La roue de filtres est sur RGB, le voyant fixe.
+Le bake de `sample.laz` est fini et le nuage est rendu en mode RGB : 100 000 points lus, 2 500 dessinés au ton `hi`. La tête est arrêtée, la fente du miroir pointe vers le dernier point de la spirale, sur le bord sud-est, et la carte affleure dans sa fente. Le disque, gravé de ses quatre secteurs, est dans le support de carnet, loquet du côté du support. La roue de filtres est sur RGB, le voyant fixe.
 
 C'est la pose du SVG au repos, de l'image de partage et du mouvement réduit.
 
@@ -157,11 +169,11 @@ Chaque temps rejoue une étape du vrai flux, dans l'ordre du code.
 
 | Temps | Ce qu'on voit | Ce que le code fait |
 |---|---|---|
-| 0 – 1,2 s | Le nuage s'efface en 0,6 s. La carte ressort de 6 unités puis s'enfonce dans sa fente. La cassette revient au dock et son loquet bascule. | Choix d'un fichier ([`bake-panel.tsx` L55](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/components/bake-panel.tsx#L55)), réglages remis à zéro ([`app.tsx` L20-L27](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/app.tsx#L20-L27)), aiguillage `.laz` → bake ([`use-bake.ts` L78-L87](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/hooks/use-bake.ts#L78-L87)), l'ancien Worker est arrêté et un nouveau démarre ([`use-bake.ts` L49-L76](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/hooks/use-bake.ts#L49-L76)). |
+| 0 – 1,2 s | Le nuage s'efface en 0,6 s. La carte ressort de 6 unités puis s'enfonce dans sa fente. Le disque revient au dock, son loquet bascule et ses secteurs s'effacent : il est vierge. | Choix d'un fichier ([`bake-panel.tsx` L55](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/components/bake-panel.tsx#L55)), réglages remis à zéro ([`app.tsx` L20-L27](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/app.tsx#L20-L27)), aiguillage `.laz` → bake ([`use-bake.ts` L78-L87](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/hooks/use-bake.ts#L78-L87)), l'ancien Worker est arrêté et un nouveau démarre ([`use-bake.ts` L49-L76](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/hooks/use-bake.ts#L49-L76)). |
 | 1,2 – 2 s | Le voyant clignote, le tambour se met à tourner, la tête reste immobile. | Lecture des octets, initialisation unique du WebAssembly ([`bake-worker.ts` L19-L26](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/workers/bake-worker.ts#L19-L26)), ouverture du LAS, lecture de l'en-tête, du minimum par axe et de l'EPSG ([`lib.rs` L52-L57](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L52-L57), [`crs.rs` L21-L46](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/crs.rs#L21-L46)). |
-| 2 – 16 s | La tête tourne, d'abord lentement (on suit un point par fente), puis accélère comme un moteur jusqu'à un flou régulier. Le faisceau balaie, la spirale pousse du centre vers le bord au ton `lo`, la spire courante au ton `mid`. Le volant moleté tourne avec la tête, le cliquet claque sur chaque dent. | La boucle `for point in reader.points()` : chaque point est recentré sur le minimum par axe, converti en f32, ajouté aux tableaux, et la bbox locale grandit ([`lib.rs` L66-L96](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L66-L96)). |
-| 16 – 17,5 s | La tête ralentit et s'arrête sur le dernier point. La bande de la cassette s'enroule vite ; la bobine réceptrice grossit et passe cinq repères : en-tête, positions, intensité, RGB, classification. | Dernier appel de progression ([`lib.rs` L97](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L97)), puis écriture du PCBK : l'en-tête de 72 octets et les quatre blocs planaires, dans cet ordre ([`lib.rs` L99-L131](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L99-L131)). |
-| 17,5 – 18,5 s | La cassette glisse sur son rail du dock au support de carnet, et le loquet bascule. Elle change de côté sans être recopiée. | Le Worker transfère le buffer au fil principal ([`bake-worker.ts` L31-L33](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/workers/bake-worker.ts#L31-L33)), qui le lit en vues zero-copy ([`baked-pointcloud.ts` L72-L88](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/baked-pointcloud.ts#L72-L88)). |
+| 2 – 16 s | La tête tourne, d'abord lentement (on suit un point par fente), puis accélère comme un moteur jusqu'à un flou régulier. Le faisceau balaie, la spirale pousse du centre vers le bord au ton `lo`, la spire courante au ton `mid`. Le cliquet claque sur chaque dent de la couronne. | La boucle `for point in reader.points()` : chaque point est recentré sur le minimum par axe, converti en f32, ajouté aux tableaux, et la bbox locale grandit ([`lib.rs` L66-L96](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L66-L96)). |
+| 16 – 17,5 s | La tête ralentit et s'arrête sur le dernier point. Le disque tourne sous la pointe de gravure : d'abord le moyeu (l'en-tête), puis les quatre secteurs l'un après l'autre, positions (240°), intensité (40°), RGB (60°), classification (20°). | Dernier appel de progression ([`lib.rs` L97](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L97)), puis écriture du PCBK : l'en-tête de 72 octets et les quatre blocs planaires, dans cet ordre ([`lib.rs` L99-L131](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L99-L131)). |
+| 17,5 – 18,5 s | Le disque glisse sur son rail, dans son chariot, du dock au support de carnet, et le loquet bascule. Il change de côté sans être recopié. | Le Worker transfère le buffer au fil principal ([`bake-worker.ts` L31-L33](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/workers/bake-worker.ts#L31-L33)), qui le lit en vues zero-copy ([`baked-pointcloud.ts` L72-L88](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/baked-pointcloud.ts#L72-L88)). |
 | 18,5 – 19,5 s | Le disque de bronze de la borne prend un éclat bref (un ton plus clair, sans bleu). Tout le nuage passe du ton `lo` au ton `hi` d'un seul fondu ; le voyant devient fixe. | L'EPSG 2154 est accepté ([`app.tsx` L34](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/app.tsx#L34)), l'ancre est calculée ([`map-anchor.ts` L22-L46](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/map-anchor.ts#L22-L46)), puis three.js envoie toutes les positions au GPU en une fois et le rendu suit la carte ([`pointcloud-layer.ts` L58-L97](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/pointcloud-layer.ts#L58-L97)). |
 | 19,5 – 26 s | La roue de filtres saute de cran toutes les 1,6 s : RGB → intensité → classification → altitude → RGB. À chaque cran, tout le nuage change de tons d'un coup, sans que la spirale bouge. | Changement d'un uniform, sans reconstruire la géométrie ([`pointcloud-shaders.ts` L154-L156](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/pointcloud-shaders.ts#L154-L156), [`pointcloud-layer.ts` L110-L114](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/pointcloud-layer.ts#L110-L114)). |
 
@@ -174,17 +186,17 @@ Chaque temps rejoue une étape du vrai flux, dans l'ordre du code.
 
 ### Pointeur
 
-- **Glisser horizontalement sur la scène** oriente la tête, comme on tourne la partie haute d'un instrument à la main. Le moteur se débraye, et la tête suit le pointeur avec un suivi amorti.
-  - Tourner **en avant**, au-delà de l'angle déjà atteint, lit les points suivants : 628 par tour, posés sur la spirale.
-  - Tourner **en arrière** fait patiner le cliquet : la tête recule, mais aucun point n'est relu ni effacé, et le compteur ne baisse pas. C'est l'itérateur `reader.points()`, qui ne va que vers l'avant.
-  - Au lâcher, la tête garde un peu d'élan, puis le moteur reprend le tour après 2 s d'inactivité.
+- **Viser avec la tête** : la tête vise le pointeur, sans clic ni glisser. Son azimut suit l'angle du pointeur autour de la station, mesuré dans le plan du terrain (le pointeur est ramené au sol par la projection inverse). Le moteur reste embrayé : la tête court vers l'angle visé avec l'élan d'un moteur, accélère, file et freine en arrivant, sans amortissement critique.
+  - Faire tourner le pointeur autour de la station **dans le sens de la spirale**, au-delà de l'angle déjà atteint, lit les points suivants : 628 par tour, posés sur la spirale.
+  - Le ramener **en sens inverse** fait patiner le cliquet : la tête recule, mais aucun point n'est relu ni effacé, et le compteur ne baisse pas. C'est l'itérateur `reader.points()`, qui ne va que vers l'avant.
+  - Quand le pointeur quitte la scène, la tête finit sa course sur son élan, puis le moteur reprend le tour après 2 s d'inactivité.
 - **Clic sur la roue de filtres** (une fois le nuage rendu) : mode de couleur suivant. Avant la fin du bake, la roue est bloquée par sa bille, comme les réglages, qui n'apparaissent dans l'app qu'une fois le nuage chargé ([`app.tsx` L43-L46](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/app.tsx#L43-L46)).
 - **Clic sur la carte** : nouveau bake depuis zéro (l'ancien Worker est arrêté).
 - **Survol d'une pièce** : mise en avant commune, la ligne de nomenclature s'éclaire.
 
 ### Toucher
 
-Les mêmes gestes au doigt : glisser horizontalement pour orienter la tête, toucher la roue pour changer de mode, toucher la carte pour relancer. Un glissement vertical laisse défiler la page (`touch-action: pan-y`).
+Toucher un point du terrain tourne la tête jusqu'à lui, **en avant seulement** : si le point est derrière l'angle atteint, la tête fait le tour par l'avant et lit les points en chemin. Toucher la roue change de mode, toucher la carte relance. Aucun glisser n'est capté : la page défile librement.
 
 ### Clavier (scène focalisée, aucun écouteur global)
 
@@ -215,7 +227,7 @@ Tous les chiffres affichés viennent du code au SHA lu. Ceux qui en sont dériv�
 | Drapeaux d'attributs | RGB = 1, intensité = 2, classification = 4 ; l'échantillon a les trois, soit 7 | [`lib.rs` L10-L12](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L10-L12), [`lib.rs` L99](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L99) |
 | Octets par point | 18 = positions f32 × 3 (12) + intensité u16 (2) + RGB u8 × 3 (3) + classification u8 (1) | [`lib.rs` L41-L47](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L41-L47) |
 | Ordre des blocs | positions, intensité, RGB, classification : l'intensité passe avant le RGB pour que chaque bloc reste aligné | [`lib.rs` L115-L130](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L115-L130), ADR 0001 |
-| Repères de la bande | en-tête 72 o, positions 1 200 000 o (66,7 %), intensité 200 000 o (11,1 %), RGB 300 000 o (16,7 %), classification 100 000 o (5,6 %) | dérivé des deux lignes ci-dessus pour 100 000 points |
+| Secteurs du disque | en-tête 72 o au moyeu, positions 1 200 000 o (66,7 %, 240°), intensité 200 000 o (11,1 %, 40°), RGB 300 000 o (16,7 %, 60°), classification 100 000 o (5,6 %, 20°) | dérivé des deux lignes ci-dessus pour 100 000 points ; angle = part des 1 800 000 octets de blocs × 360° |
 | RGB 16 bits | réduit à 8 bits par `>> 8`, sauf si toutes les valeurs tiennent déjà sur 8 bits | [`lib.rs` L121-L129](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L121-L129) |
 | Pas de progression | tous les 500 000 points, plus un dernier appel à la fin | [`lib.rs` L8](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L8), [`lib.rs` L93-L97](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L93-L97) |
 | Maximum de points | 4 294 967 295 (`count` en u32), au-delà `TooManyPoints` | [`lib.rs` L54](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L54) |
@@ -276,11 +288,11 @@ Le relevé est en bas à droite de la carte, en Fragment Mono, avec des espaces 
 - **Accroche** : Un nuage LiDAR lu en Rust compilé en WebAssembly, puis posé sur la carte par three.js : tout se passe dans le *navigateur*.
   - Mot en emphase : « navigateur ».
 - **Titre de la figure** : Un tour de tête, 628 points
-- **Consigne pointeur** : Glisser pour orienter la tête · clic sur la roue : couleur
-- **Consigne toucher** : Glisser du doigt pour orienter la tête · toucher la roue : couleur
+- **Consigne pointeur** : Visez le terrain : la tête tourne vers le pointeur · clic sur la roue : couleur
+- **Consigne toucher** : Touchez le terrain : la tête tourne jusqu'au point · toucher la roue : couleur
 - **Relevé au repos** : `100 000 pts · 1,80 Mo · EPSG:2154`
-- **Légende** : Le scanner relit `sample.laz`, le fichier d'essai du dépôt : 100 000 points en spirale autour d'une station du 6ᵉ arrondissement, en Lambert-93. Chaque tour de tête lit 628 points. Le miroir, c'est-à-dire le bake Rust compilé en WebAssembly dans un Web Worker, recentre chaque point sur la borne d'angle, le minimum du nuage, pour qu'il reste précis en f32. La cassette reçoit alors le PCBK : 72 octets d'en-tête puis 18 octets par point, en quatre blocs. Le bake fini, three.js pose tout le nuage d'un coup sur le fond IGN, et la roue en change les couleurs sans toucher à la géométrie. Un point dessiné en représente 40, et l'instrument n'est pas à l'échelle du terrain.
-- **Libellé accessible** : Scanner laser sur un trépied haut et fin, planté sur quatre dalles d'orthophoto. Sa tête tourne et son miroir, en bleu, dépose une spirale de points qui se relève vers le bord du terrain. Une borne marque l'angle du nuage, un jalon l'angle opposé, et une cassette à bande, fixée à une jambe, reçoit le fichier cuit.
+- **Légende** : Le scanner relit `sample.laz`, le fichier d'essai du dépôt : 100 000 points en spirale autour d'une station du 6ᵉ arrondissement, en Lambert-93. Chaque tour de tête lit 628 points. Le miroir, c'est-à-dire le bake Rust compilé en WebAssembly dans un Web Worker, recentre chaque point sur la borne d'angle, le minimum du nuage, pour qu'il reste précis en f32. Le disque reçoit alors le PCBK : 72 octets d'en-tête au moyeu, puis 18 octets par point, en quatre secteurs, un par bloc. Le bake fini, three.js pose tout le nuage d'un coup sur le fond IGN, et la roue en change les couleurs sans toucher à la géométrie. Un point dessiné en représente 40, et l'instrument n'est pas à l'échelle du terrain.
+- **Libellé accessible** : Scanner laser sur un trépied haut et fin, planté sur quatre dalles d'orthophoto. Sa tête tourne et son miroir, en bleu, dépose une spirale de points qui se relève vers le bord du terrain ; la tête vise le pointeur, et un point du terrain touché l'attire. Une borne marque l'angle du nuage, un jalon l'angle opposé, et un disque gravé en quatre secteurs, posé sur un support fixé à une jambe, reçoit le fichier cuit. Flèches pour tourner la tête d'un huitième de tour, C pour changer de couleur.
 - **Titre SEO** : pointcloud-viewer · nuages LiDAR en Rust, WebAssembly et three.js
 - **Description SEO** : Un scanner sur trépied explique pointcloud-viewer : un .laz lu en Rust compilé en WebAssembly dans un Web Worker, puis rendu en three.js sur la carte IGN.
 
@@ -290,5 +302,8 @@ Le relevé est en bas à droite de la carte, en Fragment Mono, avec des espaces 
 - **Tête** : elle est de révolution pour que sa silhouette ne change pas. Seuls la fente, le tambour (un petit cylindre horizontal), le cran du cercle et l'encoche de carte sont recalculés en tournant. Il reste à trancher, selon le budget (SVG ≤ 250 Ko, mouvement ≤ 20 Ko), entre des poses précalculées et un petit projeteur dans le module de mouvement.
 - **Vitesse** : 159 tours en 14 s font plus de 11 tours par seconde, ce qui crénèlerait. La vitesse affichée de la tête est donc plafonnée, et au-delà, la fente et le tambour passent en flou de bougé (les traits de la couronne s'estompent). Le nombre de tours lu dans le relevé reste exact.
 - **Faisceau** : une ligne du miroir au point d'impact, terminée par un point. Elle ne traverse aucune jambe : l'azimut 40° et l'emplacement de la jambe avant sont choisis pour cela, et la ligne passe derrière une jambe quand la tête tire de l'autre côté.
-- **Câble spiralé** : il est tracé avec `kit/tube.mjs` et ses coquilles de connecteur. L'audit du kit doit finir à zéro (tubes et pièces de révolution présents).
+- **Câble spiralé** : il est tracé avec `kit/tube.mjs` et ses coquilles de connecteur, et suit le chariot porte-disque sur son rail. L'audit du kit doit finir à zéro (tubes et pièces de révolution présents), disque au dock et au support.
+- **Disque** : ses quatre secteurs et son moyeu sont dans le plan du disque, posé à plat ; les angles sont calculés depuis la taille des blocs, pas écrits à la main. Les sillons d'un secteur finissent sur ses deux rayons.
+- **Terrain en trame** : les tuiles sont des aplats tonals en pointillé ou en hachure, sans contour gravé ; seuls les joints entre dalles sont des traits. Aucun trait de la carte ne doit rappeler les rainures du plateau cadastral de 06.
+- **Visée** : l'angle du pointeur se mesure autour du clou de station, après projection inverse sur le plan du terrain. Hors du terrain, la visée garde le dernier angle valide.
 - **Une seule pièce bleue** : le tambour. L'éclat de la borne et le passage du nuage au ton `hi` restent en tons d'encre.

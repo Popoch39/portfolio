@@ -6,10 +6,24 @@
 | Slug | `ma-parcelle` |
 | Commit lu | `8d83a60bcf40c7d61355296887bcbdec026b8d4d` (branche `main`, identique à la référence de la spec `8d83a60bcf40`) |
 | Machine | **Colonne de sondage** |
-| Taille (skill `anatomy`) | Figure : 65 pièces dessinées, SVG seul, ni WebGL ni 3D |
+| Taille (skill `anatomy`) | Figure : 63 pièces dessinées, SVG seul, ni WebGL ni 3D |
 | Ticket | #20, parent #10. Revue : #21. Construction : #27 |
 
 Tous les liens vers le code sont des permaliens complets, figés sur ce commit.
+
+## Décisions de la revue (#21)
+
+Validé par Louis le 2026-10-25. Les renvois visent la page de revue : ressemblances R1 à R15, incohérences I1 et I2, décisions ouvertes n° 1 à 39 (n° 34 à 39 pour cette fiche).
+
+- **Élévation 40° (R1).** À azimut 45° et élévation 32°, la caméra était celle de 01 à quelques degrés près : la coupe est un mode de dessin, pas une vue. Elle monte à environ 40°, azimut 45° gardé : on regarde dans l'écorché, et le plateau gravé se lit mieux.
+- **Plateau en trait seul (R10).** 04 et 06 posaient tous deux la machine sur un plan de ville gravé. 04 passe à la trame (l'orthophoto est un raster) ; 06 reste du trait, comme le PCI vectoriel : rainures des limites, aucun aplat. La parcelle KJ 33 n'est donc plus incrustée : elle est cernée d'une rainure double, qui s'allume.
+- **Compteur de strate retiré (R11).** Il doublait les brides et le log, et faisait de 06 la quatrième machine à tambour chiffré. La profondeur se lit aux brides et au log.
+- **Avance de perceuse à colonne (R12).** L'amortissement critique reste à 03. Le carottier avance à vitesse constante de la vis, avec une rampe courte au départ et un arrêt net.
+- **Format (R13).** Portrait plus étroit, environ 0,60 : viewBox de 400 × 660, pour s'écarter de 02 (0,80).
+- **Plaque signalétique retirée (R15).** Plaque muette à trois filets et quatre rivets : elle part. Le dessin n'a plus d'inscription gravée.
+- **Ce qui reste à 06 seul.** Le mât à deux colonnes rondes et vis d'avance (R9 : 02 n'a plus de chariot sur tige, 01 garde son tube carré à crémaillères), l'écorché (R2), le trait gravé (R10).
+- **Décisions n° 34 à 39.** L'option de la fiche est retenue partout : profondeur dans l'ordre de lecture, avec le témoin « en cours » allumé dès la croûte percée et la légende qui le dit ; épaisseurs = requêtes (1, 8, 11, 5, 3, 4, soit 32) ; strate perdue un tour sur deux ; relance depuis le cache quatre fois plus rapide, « 0 req. » ; au toucher, toucher une strate, sans glisser vertical ; îlot de la section KJ stylisé, textures dans les encres de la palette.
+- **Comptes.** 65 → 63 pièces dessinées ; nomenclature inchangée, 7 pièces, une seule pièce maîtresse.
 
 ## 1. Ce que fait le projet (la vérité de départ)
 
@@ -24,7 +38,7 @@ La fiche empile les blocs dans un ordre fixe, du cadastre au DPE. On la lit de h
 
 ## 2. La machine
 
-**Une colonne de sondage** : une colonne de sol en viroles d'acier boulonnées, comme celles des laboratoires de géotechnique, coupée en écorché sur un quart. Un petit carottier sur mât est monté sur sa bride de tête. Le dessus de la colonne est un plateau gravé du plan cadastral. Sous ce plateau, chaque virole contient une strate. Le carottier part de la parcelle incrustée dans le plateau, traverse la croûte puis les strates une à une, et remonte une carotte où toutes les couches sont superposées. Un log de sondage, fixé au mât, note ce que chaque strate a livré.
+**Une colonne de sondage** : une colonne de sol en viroles d'acier boulonnées, comme celles des laboratoires de géotechnique, coupée en écorché sur un quart. Un petit carottier sur mât est monté sur sa bride de tête. Le dessus de la colonne est un plateau gravé du plan cadastral. Sous ce plateau, chaque virole contient une strate. Le carottier part de la parcelle cernée sur le plateau, traverse la croûte puis les strates une à une, et remonte une carotte où toutes les couches sont superposées. Un log de sondage, fixé au mât, note ce que chaque strate a livré.
 
 > **Ce qui bouge = ce que ça signifie.** Le carottier bleu descend de la parcelle choisie à travers six strates : chaque strate qu'il franchit est un bloc de la fiche interrogé à sa source publique, et la carotte qu'il remonte, couche sur couche, est la fiche elle-même.
 
@@ -42,9 +56,9 @@ Pourquoi cette machine raconte bien le code :
 | Axe | Grille de la spec | Ce concept |
 |---|---|---|
 | Machine | Carotte de calques | Colonne de sondage : colonne de sol en viroles, carottier sur mât, la carotte des six calques remonte dans le tube intérieur. **Grille suivie.** |
-| Silhouette | Colonne verticale | Une colonne : un fût cylindrique d'environ 110 unités de diamètre sur 330 de haut, prolongé par un mât de 230. Elle est presque trois fois plus haute que large, et le format de la carte est **portrait** (viewBox d'environ 400 × 640). |
-| Vue | Coupe (écorché) | Le quart de la colonne tourné vers le lecteur est enlevé jusqu'à l'axe. On voit les deux plans de coupe, avec les strates et les brides tranchées, le forage ouvert dans l'angle et le carottier entier dedans. Caméra : azimut 45°, pour que les deux plans de coupe s'ouvrent de façon symétrique, et élévation 32°, pour lire le plateau gravé sans écraser la hauteur. |
-| Mode et mouvement | Le carottier traverse les strates | Une descente verticale lourde et continue : les tiges tournent, l'avance est lente et régulière, avec une pause dans chaque strate. Les curseurs du log se calent avec un petit ressort. Au fond, le treuil remonte le tube intérieur et sa carotte. |
+| Silhouette | Colonne verticale | Une colonne : un fût cylindrique d'environ 110 unités de diamètre sur 330 de haut, prolongé par un mât de 230. Elle est presque trois fois plus haute que large, et le format de la carte est un **portrait** étroit, environ 0,60 (viewBox de 400 × 660, R13). |
+| Vue | Coupe (écorché) | Le quart de la colonne tourné vers le lecteur est enlevé jusqu'à l'axe. On voit les deux plans de coupe, avec les strates et les brides tranchées, le forage ouvert dans l'angle et le carottier entier dedans. Caméra : azimut 45°, pour que les deux plans de coupe s'ouvrent de façon symétrique, et élévation d'environ 40° (R1) : on regarde dans l'écorché, et le plateau gravé se lit bien sans écraser la hauteur. |
+| Mode et mouvement | Le carottier traverse les strates | Écorché. Une descente verticale lourde, comme une perceuse à colonne : les tiges tournent, la vis d'avance pousse le carottier à vitesse constante, avec une rampe courte au départ et un arrêt net dans chaque strate (R12). Les curseurs du log se calent avec un petit ressort. Au fond, le treuil remonte le tube intérieur et sa carotte. |
 | Geste | Descendre dans les couches | Le pointeur règle la profondeur : plus il est bas sur la colonne, plus le carottier descend. Au toucher, une strate touchée y fait descendre le carottier. |
 
 **Rien à contester.** Le code raconte bien une descente : la fiche se lit de haut en bas, une première couche conditionne les suivantes et chaque couche vient d'une source distincte. La grille tient.
@@ -53,22 +67,22 @@ Pourquoi cette machine raconte bien le code :
 
 | | Silhouette | Vue | Mode | Geste |
 |---|---|---|---|---|
-| 01 typomaniac | large et basse | 3/4 classique | en fonctionnement | taper une lettre |
-| 02 claude-tmux-notify | haute et plate, murale | presque de face | volets, sonnette | acquitter |
-| 03 claude-status-line | longue et fine | rasante | instrument, aiguille | faire avancer le temps |
-| 04 pointcloud-viewer | grêle sur terrain | plongée | balayage continu | orienter la tête |
-| 05 trekker | cube massif | 3/4 bas | éclaté partiel | tirer un tiroir |
-| **06 ma_parcelle** | **colonne pleine, format portrait** | **écorché en quart, intérieur visible** | **traversée verticale** | **descendre** |
+| 01 typomaniac | large et basse | 3/4 classique (az 35°, él 30°) | porte ouverte | taper une lettre |
+| 02 claude-tmux-notify | haute et plate, murale | presque de face (az 18°, él 16°) | capot déposé ; volets, sonnette | acquitter : brancher la fiche |
+| 03 claude-status-line | longue et fine | rasante (az 70°, él 12°) | fenêtre vitrée ; aiguille | faire avancer le temps |
+| 04 pointcloud-viewer | grêle sur terrain | plongée (az 40°, él 50°) | extérieur pur ; balayage continu | viser avec la tête |
+| 05 trekker | cube massif | presque de face, depuis le bas (az 22°, él 20°) | éclaté partiel | tirer un tiroir |
+| **06 ma_parcelle** | **colonne pleine, portrait étroit** | **plongée dans l'écorché (az 45°, él 40°)** | **écorché en quart ; traversée verticale** | **descendre** |
 
-C'est la seule figure en écorché et la seule dont le mouvement principal est vertical vers le bas. Le 02 est lui aussi au format portrait, mais c'est une planche plate vue de face. Ici, c'est un volume rond ouvert sur un quart, dont on voit l'intérieur. Le 01 a aussi un mât, mais c'est un tube carré à crémaillères. Celui-ci est fait de deux colonnes rondes avec une vis d'avance, comme une perceuse à colonne. **Pas de base sur pieds ni de règle graduée.** La colonne repose sur sa bride de fond pleine, comme une vraie colonne de laboratoire. La profondeur se lit aux brides et au compteur de strate, pas sur une règle. Le seul trépied de la série reste celui du 04 : celle-ci n'a pas de pieds.
+C'est la seule figure en écorché et la seule dont le mouvement principal est vertical vers le bas. Le 02 est lui aussi au format portrait (0,80 contre 0,60 ici), mais c'est une planche plate vue de face. Ici, c'est un volume rond ouvert sur un quart, dont on voit l'intérieur. Le 01 a aussi un mât, mais c'est un tube carré à crémaillères. Celui-ci est fait de deux colonnes rondes avec une vis d'avance, comme une perceuse à colonne. Le plateau gravé est du trait, quand le terrain de 04 est une trame (R10). **Pas de base sur pieds ni de règle graduée.** La colonne repose sur sa bride de fond pleine, comme une vraie colonne de laboratoire. La profondeur se lit aux brides et au log, pas sur une règle ni sur un compteur. Le seul trépied de la série reste celui du 04 : celle-ci n'a pas de pieds.
 
 **Tons.** La colonne et le mât sont en `mid`. La bride de fond et les brides de jonction sont en `lo`. Le plateau, le log et les strates sont en `hi`. Les textures de strate restent dans les encres de la palette, sans couleur de terre. Le seul bleu au repos est le carottier, la pièce maîtresse.
 
-## 4. Pièces dessinées (65)
+## 4. Pièces dessinées (63)
 
-Le sujet est ce que le lecteur regarde : le plateau, les strates, la carotte et le log. Chaque pièce repose sur une autre.
+Le sujet est ce que le lecteur regarde : le plateau, les strates, la carotte et le log. Chaque pièce repose sur une autre. Par groupe : socle 6, structure 26, mécanisme 13, commandes 5, sujet 13.
 
-**Socle (7)**
+**Socle (6)**
 
 1. Bride de fond pleine, épaisse et chanfreinée, posée sur un halo.
 2. Couronne de 12 boulons de la bride de fond.
@@ -76,73 +90,71 @@ Le sujet est ce que le lecteur regarde : le plateau, les strates, la carotte et 
 4. Oreille de levage droite.
 5. Robinet de purge : corps et clé à ailettes.
 6. Bec de purge avec son écrou six pans.
-7. Plaque signalétique rivetée sur le chant de la bride (3 filets, 4 rivets).
 
 **Structure (26)**
 
-8. Virole 1 : croûte cadastrale (épaisseur de 1 requête).
-9. Virole 2 : Urbanisme (8 requêtes).
-10. Virole 3 : Risques (11 requêtes).
-11. Virole 4 : Ventes (5 requêtes).
-12. Virole 5 : Bâtiment (3 requêtes).
-13. Virole 6 : DPE (4 requêtes).
-14. à 18. Cinq brides de jonction entre viroles, chacune avec sa couronne de boulons.
-19. Bride de tête, sous le plateau.
-20. Joints entre brides (liserés sombres).
-21. Faces de coupe de l'écorché : deux plans, de la bride de tête à la bride de fond.
-22. Tranches des brides coupées, d'un ton plein et plus sombre, sans hachures.
-23. Paroi du forage, demi-cylindre visible dans l'angle de coupe.
-24. Mât à deux colonnes de guidage rondes, chromées.
-25. Console du mât, boulonnée sur la bride de tête.
-26. Gousset gauche de la console.
-27. Gousset droit de la console.
-28. Vis d'avance trapézoïdale, entre les deux colonnes.
-29. Bagues de butée hautes, serrées sur les colonnes.
-30. Bagues de butée basses.
-31. Traverse de tête qui relie les deux colonnes, avec la poulie de tête et son axe.
-32. Tambour du treuil, à joues.
-33. Flasques du treuil, boulonnées sur la bride de tête.
+7. Virole 1 : croûte cadastrale (épaisseur de 1 requête).
+8. Virole 2 : Urbanisme (8 requêtes).
+9. Virole 3 : Risques (11 requêtes).
+10. Virole 4 : Ventes (5 requêtes).
+11. Virole 5 : Bâtiment (3 requêtes).
+12. Virole 6 : DPE (4 requêtes).
+13. à 17. Cinq brides de jonction entre viroles, chacune avec sa couronne de boulons.
+18. Bride de tête, sous le plateau.
+19. Joints entre brides (liserés sombres).
+20. Faces de coupe de l'écorché : deux plans, de la bride de tête à la bride de fond.
+21. Tranches des brides coupées, d'un ton plein et plus sombre, sans hachures.
+22. Paroi du forage, demi-cylindre visible dans l'angle de coupe.
+23. Mât à deux colonnes de guidage rondes, chromées.
+24. Console du mât, boulonnée sur la bride de tête.
+25. Gousset gauche de la console.
+26. Gousset droit de la console.
+27. Vis d'avance trapézoïdale, entre les deux colonnes.
+28. Bagues de butée hautes, serrées sur les colonnes.
+29. Bagues de butée basses.
+30. Traverse de tête qui relie les deux colonnes, avec la poulie de tête et son axe.
+31. Tambour du treuil, à joues.
+32. Flasques du treuil, boulonnées sur la bride de tête.
 
 **Mécanisme (13)**
 
-34. Chariot à quatre bagues de guidage, deux par colonne.
-35. Écrou d'avance en bronze, visible par la lumière du chariot.
-36. Moteur de rotation à ailettes.
-37. Carter de réducteur.
-38. Mandrin.
-39. Train de tiges, en 3 tronçons.
-40. Manchons de raccord des tiges.
-41. **Carottier** (tube extérieur), la pièce maîtresse en bleu.
-42. Couronne diamantée à 8 segments.
-43. Tube intérieur avec la carotte : 6 bandes, une par strate, qui reprennent leurs textures.
-44. Câble de repêchage, du tambour au carottier en passant par la poulie de tête.
-45. Émerillon au sommet de la tête, par où entre le câble.
-46. Tubage de tête : collier à brides posé sur la parcelle incrustée.
+33. Chariot à quatre bagues de guidage, deux par colonne.
+34. Écrou d'avance en bronze, visible par la lumière du chariot.
+35. Moteur de rotation à ailettes.
+36. Carter de réducteur.
+37. Mandrin.
+38. Train de tiges, en 3 tronçons.
+39. Manchons de raccord des tiges.
+40. **Carottier** (tube extérieur), la pièce maîtresse en bleu.
+41. Couronne diamantée à 8 segments.
+42. Tube intérieur avec la carotte : 6 bandes, une par strate, qui reprennent leurs textures.
+43. Câble de repêchage, du tambour au carottier en passant par la poulie de tête.
+44. Émerillon au sommet de la tête, par où entre le câble.
+45. Tubage de tête : collier à brides posé sur la parcelle cernée.
 
-**Commandes (6)**
+**Commandes (5)**
 
-47. Manivelle d'avance, en bout de vis sur la traverse de tête.
-48. Poignée moletée de la manivelle.
-49. Levier d'embrayage de rotation, à boule.
-50. Vis de blocage moletée du chariot.
-51. Levier de frein du treuil.
-52. Compteur de strate à tambour : 6 crans gravés, sans chiffres.
+46. Manivelle d'avance, en bout de vis sur la traverse de tête.
+47. Poignée moletée de la manivelle.
+48. Levier d'embrayage de rotation, à boule.
+49. Vis de blocage moletée du chariot.
+50. Levier de frein du treuil.
 
 **Sujet (13)**
 
-53. Plateau parcellaire : disque posé sur la bride de tête.
-54. Rainures gravées des limites de parcelles : un îlot de la section KJ de Bordeaux, stylisé.
-55. Incrustation de la parcelle KJ 33, sous le tubage.
-56. Log de sondage : plaque fixée au mât.
-57. Six curseurs à trois crans (info, vigilance, alerte), un par strate.
-58. Témoin « en cours » du log.
-59. Deux colliers qui fixent le log au mât.
-60. Texture de la croûte cadastrale : un grain fin et serré.
-61. Texture de l'Urbanisme, 8 corps pour 8 requêtes GPU : un banc continu fait de 4 lits soudés (zone, secteur, document, commune, qui doivent réussir ensemble), une lentille (prescriptions) et les trois formes des servitudes (une nappe, une veine et un nodule, pour surface, ligne et point).
-62. Texture des Risques : 12 inclusions, 6 nodules groupés près du forage (risques localisés autour du centroïde) et 6 veines qui traversent toute la colonne (risques connus à l'échelle de la commune).
-63. Texture des Ventes : 5 lits de graviers, un par page Cerema reçue.
-64. Texture du Bâtiment : 3 assises de blocs maçonnés (BDNB, millésime, altimétrie).
-65. Texture du DPE : 7 lamines, de A à G.
+51. Plateau parcellaire : disque posé sur la bride de tête.
+52. Rainures gravées des limites de parcelles : un îlot de la section KJ de Bordeaux, stylisé, en trait seul, sans aplat.
+53. Liseré de la parcelle KJ 33 : rainure double, plus profonde, sous le tubage ; elle s'allume à la sélection, toujours sans aplat.
+54. Log de sondage : plaque fixée au mât.
+55. Six curseurs à trois crans (info, vigilance, alerte), un par strate.
+56. Témoin « en cours » du log.
+57. Deux colliers qui fixent le log au mât.
+58. Texture de la croûte cadastrale : un grain fin et serré.
+59. Texture de l'Urbanisme, 8 corps pour 8 requêtes GPU : un banc continu fait de 4 lits soudés (zone, secteur, document, commune, qui doivent réussir ensemble), une lentille (prescriptions) et les trois formes des servitudes (une nappe, une veine et un nodule, pour surface, ligne et point).
+60. Texture des Risques : 12 inclusions, 6 nodules groupés près du forage (risques localisés autour du centroïde) et 6 veines qui traversent toute la colonne (risques connus à l'échelle de la commune).
+61. Texture des Ventes : 5 lits de graviers, un par page Cerema reçue.
+62. Texture du Bâtiment : 3 assises de blocs maçonnés (BDNB, millésime, altimétrie).
+63. Texture du DPE : 7 lamines, de A à G.
 
 Les textures de strate finissent sur les brides et sur l'arête de coupe : aucune ne s'arrête au milieu d'une face.
 
@@ -160,7 +172,7 @@ Les textures de strate finissent sur les brides et sur l'arête de coupe : aucun
 
 Mention d'en-tête : « 7 pièces · une seule les compte ».
 
-Crochets de pièce dans le SVG : `plateau` couvre les pièces 53–55, `tubage` la 46, `croute` les 8 et 60, `carottier` les 41 et 43, `couronne` la 42, `viroles` les 9–19, `log` les 56–59. La couronne est vissée au bout du carottier mais garde son propre crochet. L'identifiant `carottier` peut figurer sur deux groupes (tube extérieur et tube intérieur), que l'ordre de peinture sépare autour de la paroi du forage.
+Crochets de pièce dans le SVG : `plateau` couvre les pièces 51–53, `tubage` la 45, `croute` les 7 et 58, `carottier` les 40 et 42, `couronne` la 41, `viroles` les 8–18, `log` les 54–57. La couronne est vissée au bout du carottier mais garde son propre crochet. L'identifiant `carottier` peut figurer sur deux groupes (tube extérieur et tube intérieur), que l'ordre de peinture sépare autour de la paroi du forage.
 
 ## 6. Les chiffres et leur source
 
@@ -216,13 +228,13 @@ La parcelle rejouée est **33063 KJ 33** (Bordeaux, rue Sainte-Catherine). C'est
 
 Le flux rejoué : une parcelle choisie sur la carte, la croûte cadastrale percée, puis les cinq couches publiques interrogées et superposées dans la carotte, sans compte ni serveur.
 
-**Au repos.** KJ 33 est incrustée sous le tubage, le carottier attend juste au-dessus du plateau, les tiges sont immobiles, le log est vierge et le témoin éteint. Relevé : « 33063 KJ 33 · prêt · 0/6 ».
+**Au repos.** Le liseré de KJ 33 est sous le tubage, le carottier attend juste au-dessus du plateau, les tiges sont immobiles, le log est vierge et le témoin éteint. Relevé : « 33063 KJ 33 · prêt · 0/6 ».
 
 **Tour de démonstration** (boucle, environ 18 s, quand personne n'y touche) :
 
-1. **Choix.** L'incrustation de KJ 33 s'allume d'un coup, sans attendre le cadastre (le surlignage vient de la tuile, comme `SelectionLayer`). Le témoin s'allume.
+1. **Choix.** Le liseré de KJ 33 s'allume d'un coup, sans attendre le cadastre (le surlignage vient de la tuile, comme `SelectionLayer`). Le témoin s'allume.
 2. **Croûte.** Les tiges se mettent à tourner et le carottier perce la croûte (1 requête). Relevé : « 1/6 Cadastre · 1 req. · 131 m² ». Le curseur 1 se cale sur info.
-3. **Strates.** Le carottier descend et marque une pause dans chaque virole. À chaque strate, le relevé passe à la suivante et son curseur se cale (ou la ligne reste vierge) :
+3. **Strates.** Le carottier descend à vitesse constante et s'arrête net dans chaque virole, le temps de la lire, puis repart après une rampe courte. À chaque strate, le relevé passe à la suivante et son curseur se cale (ou la ligne reste vierge) :
    - « 2/6 Urbanisme · 8 req. · aucune zone publiée », vigilance ;
    - « 3/6 Risques · 11 req. · vigilance au plus », ligne vierge ;
    - « 4/6 Ventes · 5 req. · 4 125 €/m² (7) », info ;
@@ -233,7 +245,7 @@ Le flux rejoué : une parcelle choisie sur la carte, la croûte cadastrale perc�
 
 **Pointeur** (aperçu et fiche) :
 
-- La hauteur du pointeur sur la colonne fixe la profondeur visée, entre le plateau et la bride de fond. Le carottier suit avec un amortissement critique, sans dépassement, la manivelle et le compteur de strate tournent avec lui, et le relevé affiche la strate atteinte. On descend dans les couches comme on lit la fiche.
+- La hauteur du pointeur sur la colonne fixe la profondeur visée, entre le plateau et la bride de fond. Le carottier y va comme sur une perceuse à colonne : rampe courte, avance à vitesse constante de la vis, arrêt net à la profondeur visée, sans dépassement ni approche amortie. La manivelle tourne avec lui, et le relevé affiche la strate atteinte. On descend dans les couches comme on lit la fiche.
 - Un clic sur le plateau choisit de nouveau la parcelle. Comme les réponses sont en cache (12 h), le carottier redescend quatre fois plus vite, le témoin ne s'allume pas et le log se remplit d'un coup. Relevé : « 33063 KJ 33 · en cache · 0 req. ».
 - Quand le pointeur quitte la figure, le carottier reste où il est. Le tour reprend après 4 s d'inactivité.
 
@@ -255,7 +267,7 @@ Le flux rejoué : une parcelle choisie sur la carte, la croûte cadastrale perc�
 - **Relevé au repos** : « 33063 KJ 33 · prêt · 0/6 »
 - **Format du relevé** : « {n}/6 {strate} · {requêtes} req. · {valeur} », par exemple « 4/6 Ventes · 5 req. · 4 125 €/m² (7) ». Variantes : « 6/6 · 32 req. · 0 serveur » au fond, « 5/6 Bâtiment · BDNB 500 · strate perdue » pour la strate perdue, « 33063 KJ 33 · en cache · 0 req. » quand le sondage est relancé.
 - **Légende** : « Le carottier part de la parcelle choisie sur le plan cadastral et traverse six strates, une par bloc de la fiche, dans leur ordre d'affichage. Chaque strate est aussi épaisse que le nombre de requêtes que son bloc envoie pour la parcelle 33063 KJ 33 : 32 en tout, du navigateur aux API publiques, sans serveur. Seule la croûte du cadastre conditionne les autres, qui sont interrogées ensemble ; une strate perdue manque au log sans arrêter le sondage. »
-- **Libellé accessible** : « Colonne de sondage en écorché. Un carottier bleu descend d'un plateau gravé du plan cadastral à travers six strates de sol, de haut en bas : cadastre, urbanisme, risques, ventes, bâtiment et DPE. Un log fixé au mât note ce que chaque strate a livré. »
+- **Libellé accessible** : « Colonne de sondage en écorché, vue en plongée. Un carottier bleu descend d'un plateau gravé du plan cadastral à travers six strates de sol, de haut en bas : cadastre, urbanisme, risques, ventes, bâtiment et DPE. Un log fixé au mât note ce que chaque strate a livré. »
 - **Titre SEO** : « ma_parcelle — anatomie d'une carte des données publiques · Louis Pocheron »
 - **Description SEO** : « Comment ma_parcelle réunit ce que les données publiques disent d'une parcelle : une colonne de sondage interactive traverse cadastre, urbanisme, risques, ventes, bâtiment et DPE, chaque pièce reliée au code React et MapLibre. »
 
@@ -264,4 +276,6 @@ Le flux rejoué : une parcelle choisie sur la carte, la croûte cadastrale perc�
 - **Ordre de peinture.** Ce qui est derrière l'axe de coupe se peint d'abord : la demi-paroi arrière du forage, puis le carottier entier, puis les faces de coupe, puis les tranches de brides. Le câble passe derrière le mât au-dessus de la console et devant la poulie. Quand le carottier traverse une bride, il est dessiné dans l'angle ouvert, jamais à travers une tranche.
 - **Pièces de révolution et câble** : les viroles, brides, colonnes du mât, vis d'avance, tiges, carottier et poulie viennent de `kit/lathe.mjs`, le câble de `kit/tube.mjs`. L'audit du kit doit finir à zéro, carottier en haut, à mi-course et au fond.
 - **Textures** : les veines communales des Risques vont d'un plan de coupe à l'autre et finissent sur l'arête extérieure. Les lamines du DPE finissent sur les brides. Les graviers des Ventes restent dans leur lit.
+- **Avance** : profil trapézoïdal (rampe courte, palier à vitesse constante, arrêt net), le même pour le tour, le pointeur et le clavier ; la vis d'avance et la manivelle tournent à la même vitesse que le carottier descend. Aucun suivi amorti : c'est le caractère de 03.
+- **Plateau** : rainures en trait seul, sans aplat ; le liseré de KJ 33 s'allume par le ton de sa rainure double, pas par un remplissage.
 - **Budget** : SVG ≤ 250 Ko brut, module de mouvement ≤ 20 Ko minifié.

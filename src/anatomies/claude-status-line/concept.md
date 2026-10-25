@@ -9,6 +9,18 @@ Fiche de concept de l'anatomie (ticket #17, spec #10). Il n'y a ni géométrie n
 - Le code tient dans un seul fichier, `statusline.ts` (304 lignes). Autour : `install.sh`, `scripts/build-all.sh` et la CI de release, qui ne servent qu'à la distribution.
 - Base des permaliens : `https://github.com/Popoch39/claude-status-line/blob/f77fa09f17d4781dbdefbff2542ae951852b67d0/statusline.ts#Lx-Ly`
 
+## Décisions de la revue (#21)
+
+Validé par Louis le 2026-10-25. Les renvois visent la page de revue : ressemblances R1 à R15, incohérences I1 et I2, décisions ouvertes n° 1 à 39 (n° 14 à 19 pour cette fiche).
+
+- **Capsule de cache au lieu du tiroir (R5).** Le tiroir est la machine et le geste de 05. Le cache devient une capsule vissée sous la tête d'aiguillage, pièce tournée sans glissière, qui garde sa fenêtre témoin et son tampon d'écriture. Identifiant `cartouche-cache` → `capsule-cache`.
+- **Plus de volet « — » (R6).** Le volet qui tombe est la pièce maîtresse de 02. Une fenêtre sans pourcentage garde ses dix lames baissées et sa fenêtre de tambour affiche « — ». Les deux volets (anciennes pièces 41 et 42) sont retirés.
+- **Croix de Malte au lieu de l'échappement (R7).** La roue d'échappement et l'ancre disaient « période » comme celles de 02. Le volant tourne en continu et entraîne le doigt d'une croix de Malte ; la croix avance d'un cran sec par tour du doigt, soit un rendu de la status line par cran.
+- **Élévation 12° (R14).** La vue descend de 16° à environ 12° pour s'écarter de 02, qui garde 16° ; les lames se découpent encore mieux sur le papier. Cela remplace les 16° de la décision n° 18, dont le principe (vue rasante plutôt que 30°) tient.
+- **Ce qui reste à 03 seul.** La fenêtre vitrée (R2 : mode de dessin « fenêtre », 01 passe à une porte ouverte), le glisser linéaire (R3 : 04 passe à un geste angulaire), l'amortissement critique (R12), les tambours de reset (R11) et la plaque « v1.0.0 », qui dit la version (R15). Format inchangé, environ 2,7 : 1 (R13).
+- **Décisions n° 14 à 19.** L'option de la fiche est retenue partout : `refreshInterval` supposé en secondes et vérifié dans la doc de Claude Code à la construction, entrées d'exemple du README dites dans la légende, format du code plutôt que du README, trois zones de ton sans nouvelle couleur, vue rasante (à 12°, voir R14), cadran à au moins 22 % de la hauteur et recadrage à 110–118 % à 390 px.
+- **Comptes.** 64 → 62 pièces dessinées ; nomenclature inchangée, 8 pièces, une seule pièce maîtresse.
+
 ## Ce que fait le projet
 
 Claude Code lance la status line et lui passe un JSON sur stdin. Le binaire répond par **une seule ligne**, faite de quatre segments séparés par « · » : modèle, dossier (branche), fenêtre `5h`, fenêtre `sem`. Chaque fenêtre s'écrit comme une barre de 10 cases, un pourcentage coloré et le délai avant reset.
@@ -27,23 +39,23 @@ Les limites (`rate_limits`) n'arrivent sur stdin qu'après la première réponse
 
 Deux tiges de pourcentage courent dans la rampe, de l'aiguillage jusqu'au cadran. On les voit par une fenêtre vitrée longitudinale.
 
-**Ce qui bouge = ce que ça signifie.** Quand on tourne le volant, le temps avance. Chaque cran d'échappement est un rendu de la status line, et les tambours décomptent jusqu'au reset. La course de chaque tige est le pourcentage lu. Ses cames lèvent une lame du peigne à chaque dixième arrondi. Les aiguilles amorties portent ce pourcentage sur un cadran à trois zones, aux seuils 50 et 80.
+**Ce qui bouge = ce que ça signifie.** Quand on tourne le volant, le temps avance. Le volant entraîne une croix de Malte : chacun de ses crans secs est un rendu de la status line, et les tambours décomptent jusqu'au reset. La course de chaque tige est le pourcentage lu. Ses cames lèvent une lame du peigne à chaque dixième arrondi. Les aiguilles amorties portent ce pourcentage sur un cadran à trois zones, aux seuils 50 et 80.
 
 | Axe | Ligne de la grille | Ce que fixe le concept |
 |---|---|---|
 | Machine | Rampe à cadran | Retenue telle quelle. Le code raconte bien une ligne unique (`Claude Code n'affiche que la première`, L252), lue de gauche à droite, avec un instrument de mesure au bout. |
-| Silhouette | longue et fine | Profilé d'environ 640 × 16 × 22 unités, soit un rapport de plus de 25:1. Les seuls reliefs sont le cadran rond à droite, les deux peignes de lames dressées et la tête d'aiguillage à gauche. Format de carte large, viewBox d'environ 880 × 330. |
-| Vue | rasante, le long de la rampe | Azimut d'environ 70°, élévation d'environ 16° (au lieu des 30° par défaut). L'œil frôle le dessus de la rampe depuis le bout du cadran. Les dessus deviennent de minces bandes, et les **lames levées se lisent en silhouette** sur le papier, comme une ligne d'horizon : c'est la raison d'être de cette vue. Cadran, tambours et fenêtre vitrée sont dans le plan de la face avant verticale, bien en vue. |
-| Mode | en fonctionnement, instrument de mesure | Pas d'éclaté ni de coupe : une seule ouverture, la fenêtre vitrée sur les tiges. |
-| Mouvement | aiguille amortie | Aiguilles à amortissement critique (pas de dépassement, environ 0,6 s pour s'établir), entraînées par un amortisseur à huile visible sous le cadran. Les lames basculent d'un cran sec, sans rebond. Les tambours roulent chiffre par chiffre. Le levier d'aiguillage claque sur ses crans. Rythme calme : seul le volant tourne en continu. |
+| Silhouette | longue et fine | Profilé d'environ 640 × 16 × 22 unités, soit un rapport de plus de 25:1. Les seuls reliefs sont le cadran rond à droite, les deux peignes de lames dressées et la tête d'aiguillage à gauche. Format de carte large, viewBox d'environ 880 × 330 (2,7 : 1, gardé par la revue, R13). |
+| Vue | rasante, le long de la rampe | Azimut d'environ 70°, élévation d'environ 12° (au lieu des 30° par défaut, et sous les 16° de 02, R14). L'œil frôle le dessus de la rampe depuis le bout du cadran. Les dessus deviennent de minces bandes, et les **lames levées se lisent en silhouette** sur le papier, comme une ligne d'horizon : c'est la raison d'être de cette vue. Cadran, tambours et fenêtre vitrée sont dans le plan de la face avant verticale, bien en vue. |
+| Mode | en fonctionnement, instrument de mesure | **Fenêtre vitrée** : instrument de mesure fermé, en fonctionnement. Pas d'éclaté, de coupe, de porte ni de capot : une seule ouverture, la fenêtre vitrée longitudinale sur les tiges (R2). |
+| Mouvement | aiguille amortie | Aiguilles à amortissement critique (pas de dépassement, environ 0,6 s pour s'établir), entraînées par un amortisseur à huile visible sous le cadran : c'est le seul amortissement critique de la série (R12). Les lames basculent d'un cran sec, sans rebond. La croix de Malte avance d'un cran sec à chaque rendu, puis reste verrouillée. Les tambours roulent chiffre par chiffre. Le levier d'aiguillage claque sur ses crans. Rythme calme : seul le volant tourne en continu. |
 | Geste | faire avancer le temps | Tourner le volant, par glisser au pointeur ou au doigt, ou au clavier. |
 
 **Ce qui la distingue des cinq autres lignes.**
 
 - Typomaniac (banc large, bas et symétrique, en 3/4) : ici, rien de symétrique, et un seul axe très long.
-- L'annonciateur (haut, mural, vu de face, volets qui tombent) : ici, les lames se **lèvent** sur le dessus et se lisent en silhouette rasante, pas sur une façade.
-- Le scanner (plongée) : c'est la vue opposée.
-- Le meuble à fiches (cube massif) et la carotte (colonne en coupe) : c'est la silhouette opposée.
+- L'annonciateur (haut, mural, vu de face, volets qui tombent, échappement à la seconde) : ici, les lames se **lèvent** sur le dessus et se lisent en silhouette rasante, pas sur une façade ; aucun volet, et la période est battue par une croix de Malte, pas par une ancre.
+- Le scanner (plongée, geste angulaire) : c'est la vue opposée, et ici le glisser est linéaire, comme le temps.
+- Le meuble à fiches (cube massif) et la carotte (colonne en coupe) : c'est la silhouette opposée. Le cache n'est pas un tiroir : c'est une capsule vissée, sans glissière.
 
 **Pas de base sur pieds.** La rampe n'a ni pieds ni règle graduée. Elle tient par deux brides en C au chant d'une tablette mince, dont on ne voit qu'une bande. Les seules graduations appartiennent aux instruments : l'échelle de 0 à 100 % du cadran et les 60 crans du volant.
 
@@ -55,16 +67,16 @@ Une seule pièce maîtresse : le **cadran**.
 |---|---|---|---|---|
 | 1 | `aiguillage` | Tête d'aiguillage | Boisseau rotatif à levier et trois crans : stdin, API, cache. Il choisit d'où viennent les limites à chaque rendu. | [`statusline.ts` L211–L227](https://github.com/Popoch39/claude-status-line/blob/f77fa09f17d4781dbdefbff2542ae951852b67d0/statusline.ts#L211-L227) `resolveRateLimits` |
 | 2 | `sonde-api` | Sonde API | Plongeur à ressort avec une bague de temporisation de 2,5 s. Il part demander un jeton et revient avec les en-têtes `anthropic-ratelimit-unified-*`. | [`statusline.ts` L157–L209](https://github.com/Popoch39/claude-status-line/blob/f77fa09f17d4781dbdefbff2542ae951852b67d0/statusline.ts#L157-L209) `readOAuthToken`, `windowFromHeaders`, `fetchFreshRateLimits` |
-| 3 | `cartouche-cache` | Cartouche de cache | Tiroir glissé sous la tête, frappé d'un tampon à chaque écriture et relu en dernier recours. | [`statusline.ts` L115–L145](https://github.com/Popoch39/claude-status-line/blob/f77fa09f17d4781dbdefbff2542ae951852b67d0/statusline.ts#L115-L145) `CACHE_PATH`, `readCache`, `writeCache`, `hasFreshData` |
+| 3 | `capsule-cache` | Capsule de cache | Capsule tournée, vissée sous la tête, sans glissière : frappée d'un tampon à chaque écriture, elle montre son contenu par une fenêtre témoin et n'est relue qu'en dernier recours. | [`statusline.ts` L115–L145](https://github.com/Popoch39/claude-status-line/blob/f77fa09f17d4781dbdefbff2542ae951852b67d0/statusline.ts#L115-L145) `CACHE_PATH`, `readCache`, `writeCache`, `hasFreshData` |
 | 4 | `rampe` | Rampe | Profilé qui porte les segments dans l'ordre (plaques modèle et dossier, deux fenêtres), séparés par trois goujons « · ». Il sort une seule ligne. | [`statusline.ts` L231–L254](https://github.com/Popoch39/claude-status-line/blob/f77fa09f17d4781dbdefbff2542ae951852b67d0/statusline.ts#L231-L254) `render` |
-| 5 | `peignes` | Peignes à dix lames | Un module par fenêtre (`5h`, puis `sem`) : une fente de libellé, un peigne de 10 lames et une fenêtre de tambour. Sans pourcentage, toutes les lames restent baissées et un volet « — » tombe. | [`statusline.ts` L103–L109](https://github.com/Popoch39/claude-status-line/blob/f77fa09f17d4781dbdefbff2542ae951852b67d0/statusline.ts#L103-L109) `windowSegment` |
+| 5 | `peignes` | Peignes à dix lames | Un module par fenêtre (`5h`, puis `sem`) : une fente de libellé, un peigne de 10 lames et une fenêtre de tambour. Sans pourcentage, les dix lames restent baissées et la fenêtre de tambour affiche « — ». | [`statusline.ts` L103–L109](https://github.com/Popoch39/claude-status-line/blob/f77fa09f17d4781dbdefbff2542ae951852b67d0/statusline.ts#L103-L109) `windowSegment` |
 | 6 | `cadran` ★ | **Cadran à deux aiguilles** (pièce maîtresse) | Échelle de 0 à 100 % en trois zones de ton : sous 50, de 50 à 80, au-delà de 80. Aiguille longue pour 5 h, courte pour la semaine. Il borne, arrondit et juge chaque pourcentage. | [`statusline.ts` L52–L69](https://github.com/Popoch39/claude-status-line/blob/f77fa09f17d4781dbdefbff2542ae951852b67d0/statusline.ts#L52-L69) `colorFor`, `BAR_WIDTH`, `bar` |
 | 7 | `tambours` | Tambours de reset | Compteurs à tambours dans la face avant de chaque module. Ils affichent le délai avant reset en jours, en heures-minutes ou en minutes. | [`statusline.ts` L73–L85](https://github.com/Popoch39/claude-status-line/blob/f77fa09f17d4781dbdefbff2542ae951852b67d0/statusline.ts#L73-L85) `fmtReset` |
-| 8 | `volant` | Volant du temps et échappement | Volant moleté à manivelle au bout de la rampe, qui entraîne l'arbre du temps. Son échappement libère un rendu par cran, soit 60 crans par tour. | [`statusline.ts` L280–L285](https://github.com/Popoch39/claude-status-line/blob/f77fa09f17d4781dbdefbff2542ae951852b67d0/statusline.ts#L280-L285) `settings.statusLine` (`refreshInterval: 60`) |
+| 8 | `volant` | Volant du temps et croix de Malte | Volant moleté à manivelle au bout de la rampe. Par un pignon multiplicateur (1 : 60), il fait tourner le doigt d'une croix de Malte, qui avance d'un cran sec par tour du doigt et entraîne l'arbre du temps : un rendu par cran, soit 60 crans par tour de volant. | [`statusline.ts` L280–L285](https://github.com/Popoch39/claude-status-line/blob/f77fa09f17d4781dbdefbff2542ae951852b67d0/statusline.ts#L280-L285) `settings.statusLine` (`refreshInterval: 60`) |
 
-## Pièces dessinées (64)
+## Pièces dessinées (62)
 
-Vis, crans et graduations ne sont pas des pièces de nomenclature (glossaire), mais ce sont bien des pièces dessinées. Les numéros entre crochets renvoient à la nomenclature.
+Vis, crans et graduations ne sont pas des pièces de nomenclature (glossaire), mais ce sont bien des pièces dessinées. Les numéros entre crochets renvoient à la nomenclature. Par groupe : socle 9, structure 17, mécanisme 22, commandes 6, sujet 8.
 
 **Socle : la tablette et ses brides (9).** La rampe n'a pas de base propre.
 
@@ -94,11 +106,11 @@ Vis, crans et graduations ne sont pas des pièces de nomenclature (glossaire), m
 21. Guides de lames, deux peignes de guidage fendus [5].
 22. Carter rond du cadran, pièce tournée [6].
 23. Lunette du cadran, anneau tourné, avec quatre vis [6].
-24. Boîte d'échappement, avec un hublot [8].
+24. Boîte de la croix de Malte, avec un hublot [8].
 25. Paliers de l'arbre du temps : quatre semelles sous la rampe.
 26. Plaque gravée « v1.0.0 » sur l'embout droit : la seule inscription du dessin (`VERSION`, L22).
 
-**Mécanisme (24)**
+**Mécanisme (22)**
 
 27. Raccord stdin : tube venu de derrière la tablette, avec bride et collier [1].
 28. Boisseau rotatif de l'aiguillage [1].
@@ -106,44 +118,42 @@ Vis, crans et graduations ne sont pas des pièces de nomenclature (glossaire), m
 30. Plongeur de la sonde [2].
 31. Ressort hélicoïdal de la sonde, coupé en moitiés arrière et avant [2].
 32. Bague de temporisation 2,5 s, avec cinq graduations de 0,5 s [2].
-33. Tiroir de la cartouche [3].
-34. Fenêtre témoin de la cartouche [3].
-35. Tampon d'écriture : un marteau qui frappe la cartouche à chaque `writeCache` [3].
+33. Capsule de cache : corps tourné vissé sous la tête d'aiguillage, filet visible au collet, sans glissière [3].
+34. Fenêtre témoin de la capsule [3].
+35. Tampon d'écriture : un marteau qui frappe la capsule à chaque `writeCache` [3].
 36. Tige de pourcentage 5 h, avec ses dix cames à 5, 15, …, 95 %.
 37. Tige de pourcentage semaine, avec ses dix cames.
 38. Dix lames du peigne 5 h, chacune avec son pivot [5].
 39. Dix lames du peigne semaine, chacune avec son pivot [5].
 40. Ressorts de rappel des lames, en rangée sous les guides [5].
-41. Volet « — » du module 5 h, pour une fenêtre sans pourcentage [5].
-42. Volet « — » du module semaine [5].
-43. Tambours de reset du module 5 h : quatre tambours, pour « 2h14 » [7].
-44. Tambours de reset du module semaine [7].
-45. Pignons d'entraînement des tambours, sur l'arbre [7].
-46. Arbre du temps, sous la rampe [8].
-47. Roue d'échappement à 60 dents [8].
-48. Ancre d'échappement [8].
-49. Crémaillères et pignons qui relient les tiges à l'axe des aiguilles [6].
-50. Amortisseur à huile : cylindre, tige et chape sous le cadran [6].
+41. Tambours de reset du module 5 h : quatre tambours, pour « 2h14 », dont une face porte « — » pour une fenêtre sans pourcentage [7].
+42. Tambours de reset du module semaine, avec la même face « — » [7].
+43. Pignons d'entraînement des tambours, sur l'arbre [7].
+44. Arbre du temps, sous la rampe [8].
+45. Croix de Malte à six fentes, sur l'arbre du temps [8].
+46. Plateau menant à doigt et son disque de verrouillage, entraînés par le pignon multiplicateur du volant [8].
+47. Crémaillères et pignons qui relient les tiges à l'axe des aiguilles [6].
+48. Amortisseur à huile : cylindre, tige et chape sous le cadran [6].
 
 **Commandes (6)**
 
-51. Volant moleté [8].
-52. Manivelle et poignée tournante [8].
-53. Rayons du volant, quatre bras.
-54. Couronne de 60 crans sur la jante du volant, un majeur tous les 15.
-55. Index fixe du volant, sur la boîte d'échappement.
-56. Levier d'aiguillage à boule [1].
+49. Volant moleté [8].
+50. Manivelle et poignée tournante [8].
+51. Rayons du volant, quatre bras.
+52. Couronne de 60 crans sur la jante du volant, un majeur tous les 15.
+53. Index fixe du volant, sur la boîte de la croix de Malte.
+54. Levier d'aiguillage à boule [1].
 
 **Sujet : le cadran (8).** C'est la seule partie éclairée.
 
-57. Fond du cadran, dans le plan de la face avant.
-58. Graduation de 0 à 100 % : un trait tous les 5, un majeur tous les 10, le zéro en ton fort.
-59. Zone de 50 à 80, en ton moyen.
-60. Zone au-delà de 80, en ton plein.
-61. Aiguille 5 h, longue : l'accent éclairé.
-62. Aiguille semaine, courte.
-63. Moyeu et contrepoids des aiguilles.
-64. Glace bombée du cadran, avec un reflet.
+55. Fond du cadran, dans le plan de la face avant.
+56. Graduation de 0 à 100 % : un trait tous les 5, un majeur tous les 10, le zéro en ton fort.
+57. Zone de 50 à 80, en ton moyen.
+58. Zone au-delà de 80, en ton plein.
+59. Aiguille 5 h, longue : l'accent éclairé.
+60. Aiguille semaine, courte.
+61. Moyeu et contrepoids des aiguilles.
+62. Glace bombée du cadran, avec un reflet.
 
 ## Vrais chiffres et leur source
 
@@ -174,7 +184,7 @@ Toutes les lignes renvoient à `statusline.ts` au SHA lu.
 
 **Hypothèses et écarts, énoncés une fois.**
 
-- **Unité de `refreshInterval`.** Le code ne la dit pas. La figure suppose des secondes : un rendu par minute, donc un cran d'échappement par minute et 60 par tour de volant. À vérifier dans la documentation de Claude Code au moment de la construction.
+- **Unité de `refreshInterval`.** Le code ne la dit pas. La figure suppose des secondes : un rendu par minute, donc un cran de croix de Malte par minute et 60 par tour de volant. À vérifier dans la documentation de Claude Code au moment de la construction.
 - **README et code.** L'exemple du README (`68% (2h14)`) omet le « reset dans » que le code écrit (L107). La figure suit le code.
 - **Couleurs.** Vert, jaune et rouge sont des codes ANSI (L43–L50). La palette du site est monochrome avec une seule couleur, le bleu de la pièce maîtresse. Les trois verdicts deviennent donc trois zones de ton sur le cadran, du clair au plein, sans nouvelle couleur.
 - **Entrées d'exemple.** La status line ne calcule pas l'usage, elle le lit. Les pourcentages et les instants de reset que reçoit la figure sont donc des **entrées d'exemple**, celles du README : 68 % (2h14) et 41 % (3j). Tout ce que la figure en fait est le vrai traitement du code : source, bornage, arrondi en 10 cases, seuils et format du délai.
@@ -185,10 +195,10 @@ Le modèle de la figure est une fonction pure du temps simulé *t*, en minutes d
 
 | *t* | Entrée stdin (exemple) | Ce que fait la machine | Ce que montre le relevé |
 |---|---|---|---|
-| 0 | Pas de `rate_limits`, premier rendu | Le levier claque sur **API**. La sonde part, sa bague fait un tour en 2,5 s au plus, puis elle revient avec 0,68 et 0,41 et deux `-reset` : *t* = 135 min pour 5 h, *t* = 3 j 6 h pour la semaine. Le marteau frappe la cartouche. Les tiges avancent, les aiguilles montent en s'amortissant, 7 puis 4 lames se lèvent de gauche à droite, et les tambours roulent jusqu'à « 2h15 » et « 3j ». | `API · 5h 68 % · reset 2h15 · sem 41 % · 3j` |
+| 0 | Pas de `rate_limits`, premier rendu | Le levier claque sur **API**. La sonde part, sa bague fait un tour en 2,5 s au plus, puis elle revient avec 0,68 et 0,41 et deux `-reset` : *t* = 135 min pour 5 h, *t* = 3 j 6 h pour la semaine. Le marteau frappe la capsule. Les tiges avancent, les aiguilles montent en s'amortissant, 7 puis 4 lames se lèvent de gauche à droite, et les tambours roulent jusqu'à « 2h15 » et « 3j ». | `API · 5h 68 % · reset 2h15 · sem 41 % · 3j` |
 | 1 | Première réponse : 68 %, 41 %, resets inchangés | Le levier passe sur **stdin**. La sonde reste rentrée, sans réseau, et le marteau frappe à chaque rendu. C'est la **pose au repos**. | `stdin · 5h 68 % · reset 2h14 · sem 41 % · 3j` |
 | 1 → 41 | La session travaille : 5 h gagne 0,5 point par minute, la semaine 0,05, jusqu'à 88 % et 43 % | À 75 % (*t* = 15), la 8ᵉ lame se lève. À 80,5 % (*t* = 26), l'aiguille 5 h entre dans la zone pleine : jugé rouge, affiché « 81% ». À 85 % (*t* = 35), la 9ᵉ lame se lève. | `stdin · 5h 88 % · reset 1h34 · sem 43 % · 3j` |
-| 41 → 75 | La session s'arrête : valeurs inchangées | Seuls le volant, l'échappement et les tambours bougent. | … `reset 1h00` |
+| 41 → 75 | La session s'arrête : valeurs inchangées | Seuls le volant, la croix de Malte et les tambours bougent. | … `reset 1h00` |
 | 76 | — | Le délai passe sous l'heure : le tambour des heures s'efface et le format passe de « 1h00 » à « 59m ». | … `reset 59m` |
 | 135 | — | `resets_at` est atteint : le tambour affiche « 0m » (`delta <= 0`). | … `reset 0m` |
 | 136 | La fenêtre 5 h repart : 2 %, reset 5 h plus tard | La tige recule, l'aiguille redescend en s'amortissant, les 9 lames retombent (round(0,2) = 0). Le tambour affiche « 5h00 », puis « 4h59 » au cran suivant, par arrondi inférieur. | `stdin · 5h 2 % · reset 5h00 · sem 43 % · 3j` |
@@ -226,8 +236,9 @@ Le modèle de la figure est une fonction pure du temps simulé *t*, en minutes d
 
 ## Notes pour la construction (#24)
 
-- **Taille.** C'est une « Figure » du skill, en SVG seul : 64 pièces dessinées, dans la fourchette de 40 à 80.
-- **Pièces tournées.** Le carter du cadran, la lunette, le volant, la bague de temporisation, le boisseau et le cylindre de l'amortisseur viennent de `kit/lathe.mjs`. Le raccord stdin vient de `kit/tube.mjs`. L'audit est donc obligatoire et doit finir à zéro.
-- **Dessins dans le plan de la face avant** (`sideMatrix`) : le cadran, les tambours, la fenêtre vitrée et les fentes de libellé. Les chiffres des tambours sont découpés dans leurs fenêtres et dimensionnés pour la chaîne la plus large, « 23h59 ».
+- **Taille.** C'est une « Figure » du skill, en SVG seul : 62 pièces dessinées, dans la fourchette de 40 à 80.
+- **Pièces tournées.** Le carter du cadran, la lunette, le volant, la bague de temporisation, le boisseau, la capsule de cache et le cylindre de l'amortisseur viennent de `kit/lathe.mjs`. Le raccord stdin vient de `kit/tube.mjs`. L'audit est donc obligatoire et doit finir à zéro.
+- **Dessins dans le plan de la face avant** (`sideMatrix`) : le cadran, les tambours, la fenêtre vitrée et les fentes de libellé. Les chiffres des tambours sont découpés dans leurs fenêtres et dimensionnés pour la chaîne la plus large, « 23h59 » ; le tiret « — » d'une fenêtre sans pourcentage y tient aussi.
+- **Croix de Malte.** Elle se voit par le hublot de sa boîte : le doigt fait un tour par rendu, la croix avance d'un sixième de tour d'un coup sec puis reste verrouillée par le disque. À 5 min/s dans le tour, cela fait cinq crans par seconde, ce qui reste lisible.
 - **Ordre de peinture.** Les lames sont triées par profondeur le long de la rampe, avec la vue rasante. Le ressort de la sonde est coupé en deux moitiés, arrière et avant.
 - **Lisibilité à 390 px.** Le format très large réduit la hauteur. Le cadran doit faire au moins 22 % de la hauteur de la figure. Si besoin, appliquer le recadrage à 110–118 % du skill, sans couper la tête d'aiguillage ni le volant.

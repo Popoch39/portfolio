@@ -21,6 +21,8 @@ export interface Identity {
 	languages: string[];
 	/** Langages pratiqués ponctuellement (« un peu de … »). */
 	sideLanguages: string[];
+	/** Compétences déclarées aux moteurs de recherche (JSON-LD `knowsAbout`). */
+	skills: string[];
 	employer: Employer;
 	email: string;
 	links: {
@@ -31,6 +33,8 @@ export interface Identity {
 
 const givenName = 'Louis';
 const familyName = 'Pocheron';
+const languages = ['TypeScript', 'PHP', 'Rust'];
+const sideLanguages = ['Go', 'Lua'];
 
 export const identity: Identity = {
 	givenName,
@@ -40,8 +44,18 @@ export const identity: Identity = {
 	roleDetail: 'Concepteur & développeur d’applications, fullstack',
 	city: 'Besançon',
 	country: 'France',
-	languages: ['TypeScript', 'PHP', 'Rust'],
-	sideLanguages: ['Go', 'Lua'],
+	languages,
+	sideLanguages,
+	skills: [
+		'Développement d’applications web fullstack',
+		'Conception d’API',
+		'Cartographie web (SIG)',
+		...languages,
+		...sideLanguages,
+		'SQL',
+		'PostgreSQL',
+		'PostGIS',
+	],
 	employer: { name: 'Da Viking Code', city: 'Dijon', since: 2023 },
 	email: 'pocheron.louis@gmail.com',
 	links: {

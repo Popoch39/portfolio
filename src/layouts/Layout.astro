@@ -5,6 +5,25 @@ import { identity, pageMeta } from '../data/profile';
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const { shareImage } = pageMeta;
 const shareImageUrl = new URL(shareImage.path, Astro.site).href;
+
+// Ni téléphone, ni adresse postale, ni date de naissance (règle de contenu du spec).
+const person = {
+	'@context': 'https://schema.org',
+	'@type': 'Person',
+	name: identity.name,
+	givenName: identity.givenName,
+	familyName: identity.familyName,
+	jobTitle: identity.roleDetail,
+	worksFor: { '@type': 'Organization', name: identity.employer.name },
+	homeLocation: { '@type': 'Place', name: `${identity.city}, ${identity.country}` },
+	url: canonical,
+	image: shareImageUrl,
+	email: `mailto:${identity.email}`,
+	sameAs: [identity.links.github],
+	knowsAbout: identity.skills,
+};
+// `<` échappé : aucune valeur ne peut fermer la balise <script> avant l'heure.
+const personJsonLd = JSON.stringify(person).replaceAll('<', '\\u003c');
 ---
 
 <!doctype html>
@@ -31,6 +50,7 @@ const shareImageUrl = new URL(shareImage.path, Astro.site).href;
 		<meta property="profile:last_name" content={identity.familyName} />
 		{/* X reprend titre, description et image d'Open Graph : seul le format de carte lui est propre. */}
 		<meta name="twitter:card" content="summary_large_image" />
+		<script is:inline type="application/ld+json" set:html={personJsonLd} />
 		{/* Seule la romaine d'Archivo est préchargée : c'est elle qui dessine le héros. */}
 		<Font cssVariable="--font-archivo" preload={[{ style: 'normal', subset: 'latin' }]} />
 		<Font cssVariable="--font-mono" />

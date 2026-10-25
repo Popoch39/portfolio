@@ -1,11 +1,13 @@
 ---
+import { formatNumber } from '../lib/activity';
+
 interface Props {
 	/** Contributions GitHub sur 12 mois. */
 	contributions: number;
 }
 
 const { contributions } = Astro.props;
-const total = new Intl.NumberFormat('fr-FR').format(contributions);
+const total = formatNumber(contributions);
 ---
 
 <footer class="mono status">

@@ -2,10 +2,15 @@
 import SectionHeader from './SectionHeader.astro';
 import { identity } from '../data/profile';
 import { githubSnapshot } from '../data/github-snapshot';
-import { activityStats, formatDay, formatNumber, heatmap, heatmapLegend, monthlyTotals } from '../lib/activity';
+import { formatDay, formatNumber, heatmap, heatmapLegend, monthlyTotals, type ActivityStats } from '../lib/activity';
 
-const stats = activityStats(githubSnapshot);
-const heat = heatmap(githubSnapshot);
+interface Props {
+	/** Statistiques de `githubSnapshot`, partagées avec la barre d'état. */
+	stats: ActivityStats;
+}
+
+const { stats } = Astro.props;
+const heat = heatmap(githubSnapshot, stats);
 const monthly = monthlyTotals(githubSnapshot);
 // Une case d'étiquette par semaine : l'étiquette déborde à droite sur les semaines vides,
 // sans avoir à placer de colonne en style inline.

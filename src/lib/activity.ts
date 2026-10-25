@@ -178,7 +178,7 @@ export interface Heatmap {
 	ariaLabel: string;
 }
 
-export function heatmap(snapshot: ContributionSnapshot): Heatmap {
+export function heatmap(snapshot: ContributionSnapshot, { total, record }: ActivityStats): Heatmap {
 	const { counts } = snapshot;
 	const weeks = Math.ceil(counts.length / 7);
 	const first = dayOf(snapshot, 0);
@@ -194,7 +194,6 @@ export function heatmap(snapshot: ContributionSnapshot): Heatmap {
 		previousMonth = sunday.getUTCMonth();
 	}
 
-	const { total, record } = activityStats(snapshot);
 	return {
 		weeks,
 		cells: counts.map((count, i) => ({

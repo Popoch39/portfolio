@@ -11,6 +11,8 @@ import Contact from '../components/Contact.astro';
 import StatusBar from '../components/StatusBar.astro';
 import { githubSnapshot } from '../data/github-snapshot';
 import { activityStats } from '../lib/activity';
+
+const stats = activityStats(githubSnapshot);
 ---
 
 <Layout>
@@ -25,10 +27,10 @@ import { activityStats } from '../lib/activity';
 		<div class="container">
 			<Projects />
 			<Career />
-			<Activity />
+			<Activity stats={stats} />
 			<Stack />
 			<Contact />
 		</div>
 	</main>
-	<StatusBar contributions={activityStats(githubSnapshot).total} />
+	<StatusBar contributions={stats.total} />
 </Layout>

@@ -1,0 +1,94 @@
+---
+import SectionNumber from './SectionNumber.astro';
+import { identity } from '../data/profile';
+
+const { email, links } = identity;
+const githubHandle = new URL(links.github).pathname.slice(1);
+const [mailbox, domain] = email.split('@');
+---
+
+<section id="contact" class="grid contact">
+	<SectionNumber class="num" number={5} />
+	<div class="body">
+		<p class="wq" aria-hidden="true">:wq</p>
+		<p class="pitch">Une API, une interface, un outil à construire&nbsp;? Écrivez-moi.</p>
+		{/* Coupure préférée après « @ » plutôt qu'au milieu du domaine. */}
+		<a class="mail" href={`mailto:${email}`}>{mailbox}@<wbr />{domain}</a>
+		<div class="links">
+			<a href={links.github}>GitHub — {githubHandle} ↗</a>{' '}
+			<a href={links.nvimConfig}>Config Neovim ↗</a>{' '}
+			<span class="place">{identity.city}, {identity.country}</span>
+		</div>
+	</div>
+</section>
+
+<style>
+	.contact {
+		row-gap: 18px;
+		padding: clamp(72px, 9vw, 136px) 0 clamp(56px, 6vw, 96px);
+	}
+
+	.body {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 22px;
+		/* Laisse l'adresse se replier dans la colonne au lieu de l'élargir. */
+		min-width: 0;
+	}
+
+	.wq {
+		margin: 0;
+		font-size: clamp(88px, 14vw, 216px);
+		line-height: 0.78;
+		font-weight: 900;
+		font-stretch: 62%;
+		color: var(--accent);
+	}
+
+	.pitch {
+		margin: 0;
+		font-size: clamp(20px, 2vw, 28px);
+		line-height: 1.25;
+		letter-spacing: -0.01em;
+	}
+
+	/* Filet de sécurité si même une moitié de l'adresse ne tient pas : couper plutôt que déborder. */
+	.mail {
+		font-size: clamp(30px, 6.2vw, 92px);
+		line-height: 1.05;
+		font-weight: 800;
+		font-stretch: 70%;
+		letter-spacing: -0.02em;
+		text-decoration: none;
+		overflow-wrap: anywhere;
+	}
+
+	.links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px 28px;
+		margin-top: 10px;
+		font-size: 16px;
+		font-weight: 500;
+	}
+
+	.links a {
+		text-underline-offset: 4px;
+	}
+
+	.place {
+		color: var(--muted);
+	}
+
+	/* Tablette et au-delà : numéro dans la première colonne, contenu sur les 11 autres. */
+	@media (min-width: 600px) {
+		.num {
+			grid-column: span 1;
+		}
+
+		.body {
+			grid-column: 2 / span 11;
+		}
+	}
+</style>

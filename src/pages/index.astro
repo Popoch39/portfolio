@@ -4,7 +4,10 @@ import SiteHeader from '../components/SiteHeader.astro';
 import Hero from '../components/Hero.astro';
 import Marquee from '../components/Marquee.astro';
 import Projects from '../components/Projects.astro';
+import Activity from '../components/Activity.astro';
 import StatusBar from '../components/StatusBar.astro';
+import { githubSnapshot } from '../data/github-snapshot';
+import { activityStats } from '../lib/activity';
 ---
 
 <Layout>
@@ -18,8 +21,8 @@ import StatusBar from '../components/StatusBar.astro';
 		<Marquee />
 		<div class="container">
 			<Projects />
+			<Activity />
 		</div>
 	</main>
-	{/* Total saisi provisoirement : le ticket #5 le dérive de l'instantané GitHub. */}
-	<StatusBar contributions={2699} />
+	<StatusBar contributions={activityStats(githubSnapshot).total} />
 </Layout>

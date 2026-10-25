@@ -61,6 +61,6 @@ test("la barre d'état façon Neovim : mode, branche, fichier, contributions, po
 	for (const part of ['NORMAL', 'main', '~/louis/portfolio.md', 'Bas', ':wq']) {
 		assert.ok(content.includes(part), `« ${part} » absent de la barre d'état`);
 	}
-	// Espace fine insécable de Intl.NumberFormat('fr-FR').
-	assert.match(content, /2 699 contributions · 12 mois/);
+	// Le total, dérivé de l'instantané GitHub, est vérifié par activite.test.mjs.
+	assert.match(content, /\d contributions · 12 mois/);
 });

@@ -1,0 +1,423 @@
+---
+import SectionHeader from './SectionHeader.astro';
+import { identity } from '../data/profile';
+import { githubSnapshot } from '../data/github-snapshot';
+import { activityStats, formatDay, formatNumber, heatmap, heatmapLegend, monthlyTotals } from '../lib/activity';
+
+const stats = activityStats(githubSnapshot);
+const heat = heatmap(githubSnapshot);
+const monthly = monthlyTotals(githubSnapshot);
+// Une case d'étiquette par semaine : l'étiquette déborde à droite sur les semaines vides,
+// sans avoir à placer de colonne en style inline.
+const weekLabels = Array.from(
+	{ length: heat.weeks },
+	(_, week) => heat.monthLabels.find((m) => m.column === week + 1)?.label ?? '',
+);
+---
+
+<section id="activite" class="activity">
+	<SectionHeader
+		number={3}
+		title="Activité"
+		note={`${identity.links.github.replace('https://', '')} ↗`}
+		noteHref={identity.links.github}
+	/>
+	<div class="grid body">
+		<div class="summary">
+			<p class="total">
+				<span class="total-value">{formatNumber(stats.total)}</span>{' '}
+				<span class="total-caption">contributions sur GitHub, ces 12 derniers mois</span>
+			</p>
+			<dl class="stats">
+				<div class="stat">
+					<dt>jours actifs, sur {formatNumber(githubSnapshot.counts.length)}</dt>
+					<dd>{formatNumber(stats.activeDays)}</dd>
+				</div>
+				<div class="stat">
+					<dt>plus longue série</dt>
+					<dd>{formatNumber(stats.longestStreak)} jours</dd>
+				</div>
+				<div class="stat">
+					<dt>record, le {formatDay(stats.record.date)}</dt>
+					<dd>{formatNumber(stats.record.count)}</dd>
+				</div>
+			</dl>
+		</div>
+
+		<figure class="chart heatmap">
+			<figcaption class="caption">
+				<span class="caption-title">Contributions par jour</span>{' '}
+				<span class="mono caption-note">{heat.period} · survolez une case</span>
+			</figcaption>
+			{/* Zone en sens de lecture inversé, contenu en sens normal : sans JS, elle s'ouvre
+			    sur sa fin, donc sur les mois les plus récents quand elle défile. */}
+			<div class="scroll scroll-from-end">
+				<div class="heatmap-frame">
+					<div class="mono months" aria-hidden="true">
+						{weekLabels.map((label) => <span class="month">{label}</span>)}
+					</div>
+					<div class="cells" role="img" aria-label={heat.ariaLabel}>
+						{heat.cells.map((cell) => <span class:list={['cell', `level-${cell.level}`]} title={cell.title} />)}
+					</div>
+				</div>
+			</div>
+			<div class="mono legend">
+				<span>contributions / jour</span>
+				{
+					heatmapLegend.map(({ level, label }) => (
+						<>
+							{' '}
+							<span class="legend-item">
+								<span class:list={['swatch', `level-${level}`]} aria-hidden="true" />
+								{label}
+							</span>
+						</>
+					))
+				}
+			</div>
+		</figure>
+
+		<figure class="chart months-chart">
+			<figcaption class="caption">
+				<span class="caption-title">Contributions par mois</span>
+				{
+					monthly.partialNote && (
+						<>
+							{' '}
+							<span class="mono caption-note">{monthly.partialNote}</span>
+						</>
+					)
+				}
+			</figcaption>
+			<div class="scroll">
+				<div class="bars-frame">
+					<div class="bars" role="img" aria-label={monthly.ariaLabel}>
+						{
+							monthly.months.map((m) => (
+								<span class="bar" title={m.title}>
+									{m.showValue && <span class="mono bar-value">{formatNumber(m.value)}</span>}
+									{/* La hauteur passe par l'attribut du SVG : aucun style inline. */}
+									<svg class="bar-fill" height={m.height} aria-hidden="true" focusable="false" />
+								</span>
+							))
+						}
+					</div>
+					<div class="mono bar-labels" aria-hidden="true">
+						{monthly.months.map((m) => <span>{m.label}</span>)}
+					</div>
+				</div>
+			</div>
+			<details class="mono data">
+				<summary>Voir les données par mois</summary>
+				<table>
+					<thead>
+						<tr><th class="month-cell">Mois</th><th class="value-cell">Contributions</th></tr>
+					</thead>
+					<tbody>
+						{
+							monthly.months.map((m) => (
+								<tr>
+									<td class="month-cell">{m.name}</td>
+									<td class="value-cell">{formatNumber(m.value)}</td>
+								</tr>
+							))
+						}
+					</tbody>
+				</table>
+			</details>
+		</figure>
+	</div>
+</section>
+
+<style>
+	.activity {
+		padding-top: clamp(64px, 8vw, 120px);
+	}
+
+	.body {
+		row-gap: 56px;
+		align-items: start;
+		padding-top: 40px;
+	}
+
+	.summary {
+		display: flex;
+		flex-direction: column;
+		gap: 24px;
+	}
+
+	.total {
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.total-value {
+		font-size: clamp(96px, 11vw, 168px);
+		line-height: 0.82;
+		font-weight: 800;
+		font-stretch: 62%;
+		letter-spacing: -0.02em;
+	}
+
+	.total-caption {
+		font-size: 17px;
+	}
+
+	.stats {
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.stat {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 16px;
+		padding: 14px 0;
+		border-top: 1px solid var(--rule);
+	}
+
+	.stat:last-child {
+		border-bottom: 1px solid var(--rule);
+	}
+
+	.stat dt {
+		font-size: 15px;
+		color: var(--muted);
+	}
+
+	.stat dd {
+		margin: 0;
+		font-size: 30px;
+		line-height: 1;
+		font-weight: 700;
+		font-stretch: 75%;
+	}
+
+	/* Tablette : les trois statistiques côte à côte, au-dessus de la heatmap pleine largeur. */
+	@media (min-width: 600px) and (max-width: 1023px) {
+		.stats {
+			display: grid;
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			column-gap: var(--gutter);
+		}
+
+		.stat {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 8px;
+			border-bottom: 1px solid var(--rule);
+		}
+	}
+
+	/* Laptop et au-delà : chiffres sur 4 colonnes, heatmap sur 8, comme la maquette. */
+	@media (min-width: 1024px) {
+		.summary {
+			grid-column: 1 / span 4;
+		}
+
+		.heatmap {
+			grid-column: 5 / span 8;
+		}
+	}
+
+	.chart {
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+	}
+
+	.caption {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 8px;
+	}
+
+	.caption-title {
+		font-size: 17px;
+		font-weight: 600;
+	}
+
+	.caption-note {
+		font-size: 12px;
+		color: var(--muted);
+	}
+
+	.scroll {
+		overflow-x: auto;
+	}
+
+	.scroll-from-end {
+		direction: rtl;
+	}
+
+	.heatmap .scroll {
+		padding: 2px;
+	}
+
+	.heatmap-frame {
+		direction: ltr;
+		min-width: 640px;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	/* Colonnes implicites : autant que de semaines dans l'instantané. */
+	.months,
+	.cells {
+		display: grid;
+		grid-auto-flow: column;
+		grid-auto-columns: minmax(0, 1fr);
+		gap: 3px;
+	}
+
+	.months {
+		height: 16px;
+		font-size: 11px;
+		line-height: 16px;
+		color: var(--muted);
+	}
+
+	.month {
+		white-space: nowrap;
+	}
+
+	.cells {
+		grid-template-rows: repeat(7, auto);
+	}
+
+	.cell {
+		aspect-ratio: 1 / 1;
+		border-radius: 2px;
+	}
+
+	.legend {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px 16px;
+		font-size: 12px;
+		color: var(--muted);
+	}
+
+	.legend-item {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.swatch {
+		width: 12px;
+		height: 12px;
+		border-radius: 2px;
+	}
+
+	.level-0 {
+		background: var(--heat-0);
+	}
+
+	.level-1 {
+		background: var(--heat-1);
+	}
+
+	.level-2 {
+		background: var(--heat-2);
+	}
+
+	.level-3 {
+		background: var(--heat-3);
+	}
+
+	.level-4 {
+		background: var(--heat-4);
+	}
+
+	.bars-frame {
+		min-width: 560px;
+	}
+
+	.bars,
+	.bar-labels {
+		display: grid;
+		grid-auto-flow: column;
+		grid-auto-columns: minmax(0, 1fr);
+		gap: 8px;
+	}
+
+	.bars {
+		align-items: end;
+		height: 230px;
+		border-bottom: 1px solid var(--ink);
+	}
+
+	.bar {
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		justify-content: flex-end;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.bar-value {
+		font-size: 12px;
+	}
+
+	.bar-fill {
+		display: block;
+		width: min(24px, 70%);
+		border-radius: 4px 4px 0 0;
+		background: var(--accent);
+	}
+
+	.bar-labels {
+		padding-top: 8px;
+		font-size: 11.5px;
+		color: var(--muted);
+		text-align: center;
+	}
+
+	.data {
+		font-size: 13px;
+	}
+
+	.data summary {
+		min-height: 44px;
+		display: flex;
+		align-items: center;
+		cursor: pointer;
+	}
+
+	.data table {
+		border-collapse: collapse;
+		margin-top: 8px;
+	}
+
+	.data th {
+		padding: 6px 0;
+		border-bottom: 1px solid var(--ink);
+		font-weight: 500;
+	}
+
+	.data td {
+		padding: 5px 0;
+		border-bottom: 1px solid var(--rule);
+	}
+
+	.month-cell {
+		padding-right: 28px;
+		text-align: left;
+	}
+
+	.value-cell {
+		text-align: right;
+		font-variant-numeric: tabular-nums;
+	}
+</style>

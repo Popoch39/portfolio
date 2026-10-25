@@ -11,6 +11,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
+    "og:capture": "node og/capture.mjs",
     "test": "astro build && node --test \"tests/**/*.test.mjs\""
   },
   "dependencies": {

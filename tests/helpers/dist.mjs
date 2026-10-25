@@ -5,13 +5,16 @@ import { readFileSync, existsSync } from 'node:fs';
 
 const DIST = new URL('../../dist/', import.meta.url);
 
-/** Contenu d'un fichier de `dist/` (ex. `index.html`, `robots.txt`). */
-export function readDist(path) {
+/**
+ * Contenu d'un fichier de `dist/` (ex. `index.html`, `robots.txt`) : texte, ou `Buffer`
+ * avec `encoding: null` pour un fichier binaire.
+ */
+export function readDist(path, encoding = 'utf8') {
 	const url = new URL(path, DIST);
 	if (!existsSync(url)) {
 		throw new Error(`dist/${path} introuvable : lancer \`pnpm build\` (ou \`pnpm test\`, qui build d'abord).`);
 	}
-	return readFileSync(url, 'utf8');
+	return readFileSync(url, encoding);
 }
 
 export const readHome = () => readDist('index.html');

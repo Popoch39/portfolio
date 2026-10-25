@@ -50,17 +50,34 @@ export const identity: Identity = {
 	},
 };
 
+export interface ShareImage {
+	/** Chemin depuis la racine du site ; l'URL absolue dérive de l'URL du site. */
+	path: string;
+	width: number;
+	height: number;
+	alt: string;
+}
+
 export interface PageMeta {
 	title: string;
 	description: string;
 	/** Couleur de l'interface du navigateur : le fond de la page. */
 	themeColor: string;
+	/** Image d'aperçu du lien partagé (Open Graph, Twitter, JSON-LD). */
+	shareImage: ShareImage;
 }
 
 export const pageMeta: PageMeta = {
 	title: `${identity.name} — Concepteur & développeur d’applications fullstack, ${identity.city}`,
 	description: `${identity.name}, concepteur & développeur d’applications fullstack à ${identity.city} : API, interfaces web et outils de développement en ${identity.languages.join(', ')}. Projets, parcours, activité GitHub et stack.`,
 	themeColor: '#f3f3ef',
+	shareImage: {
+		// Produite par `og/capture.mjs` à partir de `og/composition.html`, puis versionnée.
+		path: '/og.png',
+		width: 1200,
+		height: 630,
+		alt: `${identity.name} en lettres capitales condensées, suivi d’un curseur bleu, avec la mention « ${identity.roleDetail} — ${identity.city} ».`,
+	},
 };
 
 export interface Section {

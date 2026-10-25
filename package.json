@@ -11,7 +11,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
-    "og:capture": "node og/capture.mjs",
+    "og:capture": "node scripts/capture-og.mjs",
+    "favicon:ico": "node scripts/favicon-ico.mjs",
     "test": "astro build && node --test \"tests/**/*.test.mjs\""
   },
   "dependencies": {

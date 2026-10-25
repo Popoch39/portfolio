@@ -1,11 +1,11 @@
-// Capture og/composition.html en public/og.png (1200×630) avec Chromium headless.
+// Capture scripts/og-composition.html en public/og.png (1200×630) avec Chromium headless.
 // Lancé à la main (`pnpm og:capture`) quand la composition change, pas au build :
 // l'image est versionnée, le build n'a besoin ni de navigateur ni de dépendance.
 // Navigateur : variable CHROMIUM, sinon `chromium` du PATH.
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const composition = new URL('./composition.html', import.meta.url);
+const composition = new URL('./og-composition.html', import.meta.url);
 const output = fileURLToPath(new URL('../public/og.png', import.meta.url));
 
 execFileSync(

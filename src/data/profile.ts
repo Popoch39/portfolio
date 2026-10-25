@@ -86,7 +86,7 @@ export const pageMeta: PageMeta = {
 	description: `${identity.name}, concepteur & développeur d’applications fullstack à ${identity.city} : API, interfaces web et outils de développement en ${identity.languages.join(', ')}. Projets, parcours, activité GitHub et stack.`,
 	themeColor: '#f3f3ef',
 	shareImage: {
-		// Produite par `og/capture.mjs` à partir de `og/composition.html`, puis versionnée.
+		// Produite par `pnpm og:capture` à partir de `scripts/og-composition.html`, puis versionnée.
 		path: '/og.png',
 		width: 1200,
 		height: 630,

@@ -35,6 +35,9 @@ const personJsonLd = JSON.stringify(person).replaceAll('<', '\\u003c');
 		<meta name="description" content={pageMeta.description} />
 		<link rel="canonical" href={canonical} />
 		<meta name="theme-color" content={pageMeta.themeColor} />
+		{/* `sizes` sur le .ico : sans lui, Chrome le préfère au SVG. */}
+		<link rel="icon" href="/favicon.ico" sizes="32x32" />
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 		<link rel="sitemap" href="/sitemap.xml" />
 		<meta property="og:type" content="profile" />
 		<meta property="og:locale" content="fr_FR" />

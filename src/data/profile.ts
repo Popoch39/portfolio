@@ -169,6 +169,11 @@ export const marqueeWords: string[] = [
 export interface Project {
 	/** Nom du dépôt sous le compte GitHub de `identity.github` : c'est aussi le nom affiché. */
 	repo: string;
+	/**
+	 * Segment de l'adresse de la fiche (`/projets/<slug>/`). Ni point ni tiret bas : certains
+	 * hébergeurs prennent « .nvim » pour une extension, et Google déconseille « _ » entre les mots.
+	 */
+	slug: string;
 	description: string;
 	stack: string[];
 	year: number;
@@ -178,6 +183,7 @@ export interface Project {
 export const projects: Project[] = [
 	{
 		repo: 'typomaniac',
+		slug: 'typomaniac',
 		description:
 			'Jeu de dactylo multijoueur : runs solo, duels classés en Bo3, MMR et classement. Serveur de duel autoritaire en WebSocket.',
 		stack: ['TypeScript', 'Elysia', 'Bun', 'React 19'],
@@ -185,6 +191,7 @@ export const projects: Project[] = [
 	},
 	{
 		repo: 'claude-tmux-notify.nvim',
+		slug: 'claude-tmux-notify',
 		description:
 			'Un toast Neovim quand une session Claude Code, dans une autre fenêtre tmux, vous attend.',
 		stack: ['Lua', 'Neovim', 'tmux', '★ 3'],
@@ -192,6 +199,7 @@ export const projects: Project[] = [
 	},
 	{
 		repo: 'claude-status-line',
+		slug: 'claude-status-line',
 		description:
 			'L’usage d’abonnement Claude Code dans la status line — binaire Bun multi-plateforme, installeur curl | sh.',
 		stack: ['TypeScript', 'Bun'],
@@ -199,6 +207,7 @@ export const projects: Project[] = [
 	},
 	{
 		repo: 'pointcloud-viewer',
+		slug: 'pointcloud-viewer',
 		description:
 			'Nuages de points LiDAR dans le navigateur — parsing en Rust compilé en WebAssembly, rendu three.js.',
 		stack: ['Rust', 'WASM', 'React', 'three.js'],
@@ -206,6 +215,7 @@ export const projects: Project[] = [
 	},
 	{
 		repo: 'trekker',
+		slug: 'trekker',
 		description:
 			'API de catalogue de randonnées — NestJS 11, Drizzle et Postgres, contrats Zod partagés en monorepo.',
 		stack: ['TypeScript', 'NestJS', 'Drizzle'],
@@ -213,6 +223,7 @@ export const projects: Project[] = [
 	},
 	{
 		repo: 'ma_parcelle',
+		slug: 'ma-parcelle',
 		description:
 			'Tout ce que les données publiques disent d’une parcelle, sur une carte plein écran — sans compte, sans serveur.',
 		stack: ['React 19', 'Vite', 'MapLibre'],

@@ -19,7 +19,7 @@ test('l’en-tête numérote la section et annonce le volume de dépôts', () =>
 	assert.match(content, /6 sélectionnés · 41 dépôts publics/);
 });
 
-test('six projets en liste ordonnée, chacun lié à son dépôt GitHub', () => {
+test('six projets en liste ordonnée, chacun lié à sa fiche', () => {
 	const lists = elements(section, 'ol');
 	assert.equal(lists.length, 1);
 	const items = elements(lists[0], 'li');
@@ -33,20 +33,21 @@ test('six projets en liste ordonnée, chacun lié à son dépôt GitHub', () => 
 		hrefs,
 		[
 			'typomaniac',
-			'claude-tmux-notify.nvim',
+			'claude-tmux-notify',
 			'claude-status-line',
 			'pointcloud-viewer',
 			'trekker',
-			'ma_parcelle',
-		].map((repo) => `https://github.com/Popoch39/${repo}`),
+			'ma-parcelle',
+		].map((slug) => `/projets/${slug}/`),
 	);
 });
 
+// La flèche suit celle du reste du site : « ↗ » sort vers un autre site, « → » reste sur celui-ci.
 test('chaque lien se lit : numéro, nom, description, stack, année', () => {
 	const [first, second] = elements(section, 'li').map((li) => text(elements(li, 'a')[0]));
 	assert.equal(
 		first,
-		'01 typomaniac Jeu de dactylo multijoueur : runs solo, duels classés en Bo3, MMR et classement. Serveur de duel autoritaire en WebSocket. TypeScript · Elysia · Bun · React 19 2026 ↗',
+		'01 typomaniac Jeu de dactylo multijoueur : runs solo, duels classés en Bo3, MMR et classement. Serveur de duel autoritaire en WebSocket. TypeScript · Elysia · Bun · React 19 2026 →',
 	);
-	assert.match(second, /^02 claude-tmux-notify\.nvim Un toast Neovim .* Lua · Neovim · tmux · ★ 3 2026 ↗$/);
+	assert.match(second, /^02 claude-tmux-notify\.nvim Un toast Neovim .* Lua · Neovim · tmux · ★ 3 2026 →$/);
 });

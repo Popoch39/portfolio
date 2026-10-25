@@ -76,7 +76,7 @@ Elle suit sa ligne de la grille sans la contester.
 | 03 claude-status-line | longue et fine | rasante, le long de la rampe | fenêtre vitrée ; aiguille amortie | faire avancer le temps |
 | 04 pointcloud-viewer | haute et grêle | vraie plongée | extérieur pur ; balayage continu | viser avec la tête |
 | 05 trekker | cube massif | 3/4 bas, flanc en grande face | éclaté partiel, coulissement | tirer un tiroir vers soi |
-| 06 ma_parcelle | colonne verticale | 3/4 haut, dans l'écorché | écorché ; descente du carottier | tirer la manivelle vers le bas |
+| 06 ma_parcelle | colonne verticale | 3/4 haut, dans l'écorché | écorché ; descente du carottier | maintenir pour forer |
 
 Seul tableau accroché au mur, seule vue frontale, seul mouvement discret (tout ou rien, à la seconde), seule pièce qu'on branche : rien n'y coulisse sur un guide, rien ne s'amortit en aiguille.
 

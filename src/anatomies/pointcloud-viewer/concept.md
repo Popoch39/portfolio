@@ -51,7 +51,7 @@ La ligne de la grille est **suivie, pas contestée** : le code raconte précisé
 | 02 claude-tmux-notify.nvim | Tableau mural, presque de face, bande sur deux bobines | Ici un objet posé au sol, vu d'en haut, sans face plane dominante ; le PCBK est un disque gravé, pas une bande |
 | 03 claude-status-line | Rampe longue, vue rasante, glisser linéaire | Ici une vue plongeante sur un disque, rien de long ni de rasant ; on vise d'un geste angulaire, on ne glisse pas, et aucun volant moleté ne double la tête |
 | 05 trekker | Cube massif à tiroirs, éclaté partiel | Aucun tiroir : le fichier PCBK est un disque qui glisse sur un rail, et rien n'est éclaté |
-| 06 ma_parcelle | Colonne en coupe, écorché, plan cadastral gravé, vue à 40°, manivelle qu'on tire | Aucune coupe ni strate : le terrain est vu presque d'aplomb (58–60°), en surface, et la carte est une trame tonale, pas un trait gravé ; on vise, on ne tire rien |
+| 06 ma_parcelle | Colonne en coupe, écorché, plan cadastral gravé, vue à 40°, appui maintenu pour forer | Aucune coupe ni strate : le terrain est vu presque d'aplomb (58–60°), en surface, et la carte est une trame tonale, pas un trait gravé ; on vise sans appuyer, la tête suit l'angle du pointeur |
 
 **Pas de base par réflexe.** Il n'y a ni plaque sur pieds ni règle graduée. Le sol est le terrain lui-même : quatre tuiles d'orthophoto posées à plat, dans lesquelles les pointes des jambes s'enfoncent. La seule graduation est le cercle horizontal de la tête, une vraie pièce d'instrument de relevé.
 

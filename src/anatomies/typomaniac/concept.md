@@ -19,6 +19,9 @@ incohérences I1 et I2, décisions ouvertes n° 1 à 39 (n° 1 à 7 pour cette f
 
 - **Vue gardée (R1).** 01 reste la caméra de référence de la série (azimut 35°, élévation 30°) :
   ce sont 05 et 06 qui s'en écartent.
+- **Vue acceptée (arbitrage final de Louis, 2026-10-25).** La caméra de 06 (azimut 45°,
+  élévation 40°) reste à environ 10° de celle de 01 sur chaque axe. Louis accepte cet écart : 06
+  regarde dans une colonne écorchée, 01 un banc bas et fermé ; la vue de 01 ne change pas.
 - **Porte ouverte au lieu de la fenêtre (R2).** La fenêtre vitrée reste à 03 seul. Le guichet se
   découvre ici par la porte de la tour, ouverte sur ses charnières et battue de côté. Mode de
   dessin : porte ouverte.

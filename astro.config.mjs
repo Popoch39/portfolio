@@ -3,8 +3,8 @@ import { defineConfig, fontProviders } from 'astro/config';
 
 // https://astro.build/config
 export default defineConfig({
-	// PROVISOIRE : placeholder en attendant le choix d'un domaine. Canonique (et plus tard
-	// Open Graph, JSON-LD, robots, sitemap) en dérivent : c'est le seul réglage à changer.
+	// PROVISOIRE : placeholder en attendant le choix d'un domaine. Canonique, Open Graph,
+	// JSON-LD, robots.txt et sitemap.xml en dérivent : c'est le seul réglage à changer.
 	site: 'https://louis-pocheron.example',
 	build: {
 		// Aucune feuille de style externe : la CSS part avec le HTML, rien ne bloque le premier rendu.

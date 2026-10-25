@@ -1,0 +1,129 @@
+---
+import { githubRepoUrl, projects, type Project } from '../data/profile';
+import type { Lede } from '../anatomies/contract';
+
+interface Props {
+	project: Project;
+	lede: Lede;
+}
+
+const { project, lede } = Astro.props;
+const pad = (n: number) => String(n).padStart(2, '0');
+const rank = projects.indexOf(project) + 1;
+const repoUrl = githubRepoUrl(project.repo);
+---
+
+<section id="top" class="hero">
+	<div class="mono topline">
+		<span><span class="mode">-- NORMAL --</span> ~/projets/{project.repo}.md</span>{' '}
+		<span>projet {pad(rank)} / {pad(projects.length)}</span>
+	</div>
+	<h1 class="title">{project.repo}<span class="cursor" aria-hidden="true"></span></h1>
+	<div class="body">
+		<p class="lede">{lede.before}<em>{lede.emphasis}</em>{lede.after}</p>
+		<dl class="facts">
+			<div>
+				<dt class="mono">Stack</dt>
+				<dd>{project.stack.join(' · ')}</dd>
+			</div>
+			<div>
+				<dt class="mono">Année</dt>
+				<dd>{project.year}</dd>
+			</div>
+			<div>
+				<dt class="mono">Dépôt</dt>
+				<dd><a href={repoUrl}>{repoUrl.replace('https://', '')} ↗</a></dd>
+			</div>
+		</dl>
+	</div>
+</section>
+
+<style>
+	/* Valeurs de la maquette A · Fiche ; typographie commune avec le héros de l'accueil. */
+	.hero {
+		padding: clamp(28px, 4vw, 48px) 0 clamp(40px, 5vw, 72px);
+	}
+
+	.topline {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		gap: 8px 16px;
+		margin-bottom: 22px;
+		font-size: 13px;
+		color: var(--muted);
+	}
+
+	.mode {
+		color: var(--ink);
+	}
+
+	.title {
+		margin: 0;
+		font-size: clamp(64px, 15.5vw, 236px);
+		line-height: 0.8;
+		font-weight: 800;
+		font-stretch: 62%;
+		letter-spacing: -0.015em;
+		text-transform: uppercase;
+		/* Les noms de dépôt longs (« claude-tmux-notify.nvim ») passent à la ligne plutôt que déborder. */
+		overflow-wrap: anywhere;
+	}
+
+	/* Curseur figé, comme sur l'accueil. */
+	.cursor {
+		display: inline-block;
+		width: 0.3em;
+		height: 0.7em;
+		margin-left: 0.05em;
+		background: var(--accent);
+	}
+
+	.body {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		gap: 32px clamp(24px, 4vw, 64px);
+		margin-top: clamp(28px, 4vw, 56px);
+	}
+
+	.lede {
+		flex: 999 1 520px;
+		margin: 0;
+		font-size: clamp(22px, 2.35vw, 34px);
+		line-height: 1.2;
+		letter-spacing: -0.012em;
+		text-wrap: pretty;
+	}
+
+	.lede em {
+		font-style: italic;
+		color: var(--accent);
+	}
+
+	.facts {
+		flex: 1 1 280px;
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		margin: 0;
+		font-size: 15px;
+		line-height: 1.4;
+	}
+
+	.facts div {
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+	}
+
+	.facts dt {
+		font-size: 12px;
+		color: var(--muted);
+	}
+
+	.facts dd {
+		margin: 0;
+		overflow-wrap: anywhere;
+	}
+</style>

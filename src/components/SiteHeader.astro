@@ -62,6 +62,14 @@ const home = onHome ? '' : '/';
 		text-decoration: none;
 	}
 
+	/* Section dont relève la page (une fiche relève de « Projets ») : soulignée en bleu, comme la maquette. */
+	.nav a[aria-current] {
+		text-decoration: underline;
+		text-decoration-color: var(--accent);
+		text-decoration-thickness: 2px;
+		text-underline-offset: 5px;
+	}
+
 	/* Zones tactiles ≥ 44 px tant que la navigation n'a pas sa place de la maquette. */
 	.nav a,
 	.name {

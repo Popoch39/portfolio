@@ -19,6 +19,19 @@ export function readDist(path, encoding = 'utf8') {
 
 export const readHome = () => readDist('index.html');
 
+/** Projets mis en avant, dans l'ordre de l'accueil : adresse de la fiche et nom du dépôt. */
+export const PROJECTS = [
+	{ slug: 'typomaniac', repo: 'typomaniac' },
+	{ slug: 'claude-tmux-notify', repo: 'claude-tmux-notify.nvim' },
+	{ slug: 'claude-status-line', repo: 'claude-status-line' },
+	{ slug: 'pointcloud-viewer', repo: 'pointcloud-viewer' },
+	{ slug: 'trekker', repo: 'trekker' },
+	{ slug: 'ma-parcelle', repo: 'ma_parcelle' },
+];
+
+/** HTML de la fiche d'un projet (`/projets/<slug>/`). */
+export const readFiche = (slug) => readDist(`projets/${slug}/index.html`);
+
 /** Toutes les occurrences d'une balise ouvrante, attributs compris (ex. `tags(html, 'link')`). */
 export function tags(html, name) {
 	return html.match(new RegExp(`<${name}\\b[^>]*>`, 'gi')) ?? [];
@@ -30,6 +43,11 @@ export function attr(tag, name) {
 	return m ? (m[1] ?? m[2] ?? m[3]) : undefined;
 }
 
+/** Présence d'un attribut dans une balise ouvrante, avec ou sans valeur (`data-master`). */
+export function hasAttr(tag, name) {
+	return new RegExp(`\\s${name}(?=[\\s=>/])`, 'i').test(tag);
+}
+
 /** Éléments complets `<name …>…</name>` (sans imbrication du même nom). */
 export function elements(html, name) {
 	return html.match(new RegExp(`<${name}\\b[^>]*>[\\s\\S]*?</${name}>`, 'gi')) ?? [];
@@ -39,11 +57,13 @@ export function elements(html, name) {
  * Texte d'un fragment : balises retirées sans insérer d'espace (comme `textContent`,
  * pour qu'un espace manquant entre deux `<span>` se voie), entités courantes décodées,
  * blancs ASCII normalisés. Les espaces insécables (U+00A0, U+202F de `Intl`) sont
- * conservés : ils font partie de la typographie testée.
+ * conservés : ils font partie de la typographie testée. Les césures conditionnelles,
+ * invisibles tant que le mot tient sur sa ligne, sont retirées.
  */
 export function text(fragment) {
 	return fragment
 		.replace(/<[^>]+>/g, '')
+		.replace(/&shy;|­/g, '')
 		.replace(/&amp;/g, '&')
 		.replace(/&#39;|&#x27;/g, "'")
 		.replace(/&nbsp;|&#160;/g, ' ')

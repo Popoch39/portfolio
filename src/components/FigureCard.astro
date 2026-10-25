@@ -1,0 +1,112 @@
+---
+// Carte de figure : Fig. n et titre en haut, la scène au milieu, la consigne et le relevé en
+// bas ; la légende dessous. Sur la fiche, la scène épouse le format de la figure, 900 px au plus.
+import '../vendor/anatomy/iso.css';
+import '../anatomies/palette.css';
+
+interface Props {
+	fig: number;
+	title: string;
+	hints: { pointer: string; touch: string };
+	readout: string;
+	caption: string;
+	/** La figure au repos, en SVG intégré à la page. */
+	svg: string;
+}
+
+const { fig, title, hints, readout, caption, svg } = Astro.props;
+---
+
+<figure class="figure">
+	<div class="card">
+		<div class="mono row">
+			<span class="fig">Fig. {fig}</span>{' '}
+			<span>{title}</span>
+		</div>
+		<div class="scene iso anatomy" data-theme="light" set:html={svg}></div>
+		<div class="mono row">
+			<span class="hint pointer">{hints.pointer}</span>
+			<span class="hint touch">{hints.touch}</span>{' '}
+			<span class="readout"><span class="dot" aria-hidden="true"></span><span data-readout>{readout}</span></span>
+		</div>
+	</div>
+	<figcaption class="caption"><span class="mono caption-fig">Fig. {fig} —</span> {caption}</figcaption>
+</figure>
+
+<style>
+	.figure {
+		margin: 32px 0 0;
+	}
+
+	.card {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		padding: clamp(16px, 2vw, 28px);
+		background: var(--paper);
+		border: 1px solid var(--rule);
+	}
+
+	.row {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		gap: 8px 24px;
+		font-size: 12px;
+		color: var(--muted);
+	}
+
+	.fig {
+		color: var(--ink);
+	}
+
+	.scene {
+		width: 100%;
+		max-width: 900px;
+		margin: 0 auto;
+	}
+
+	/* Une seule consigne visible : celle du pointeur s'il sait survoler, sinon celle du toucher. */
+	.pointer {
+		display: none;
+	}
+
+	@media (hover: hover) and (pointer: fine) {
+		.pointer {
+			display: inline;
+		}
+
+		.touch {
+			display: none;
+		}
+	}
+
+	.readout {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		color: var(--ink);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.dot {
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: var(--accent);
+	}
+
+	.caption {
+		max-width: 760px;
+		margin-top: 14px;
+		font-size: 15px;
+		line-height: 1.45;
+		color: var(--muted);
+		text-wrap: pretty;
+	}
+
+	.caption-fig {
+		font-size: 12px;
+		color: var(--ink);
+	}
+</style>

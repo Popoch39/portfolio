@@ -176,8 +176,13 @@ export interface Project {
 	slug: string;
 	description: string;
 	stack: string[];
+	/** Langage principal du dépôt (JSON-LD `programmingLanguage` de la fiche). */
+	language: string;
 	year: number;
 }
+
+/** Adresse de la fiche d'un projet, slash final compris : c'est son URL canonique. */
+export const fichePath = (project: Project) => `/projets/${project.slug}/`;
 
 /** Projets mis en avant, dans l'ordre d'affichage. Certains dépôts sont volontairement absents. */
 export const projects: Project[] = [
@@ -187,6 +192,7 @@ export const projects: Project[] = [
 		description:
 			'Jeu de dactylo multijoueur : runs solo, duels classés en Bo3, MMR et classement. Serveur de duel autoritaire en WebSocket.',
 		stack: ['TypeScript', 'Elysia', 'Bun', 'React 19'],
+		language: 'TypeScript',
 		year: 2026,
 	},
 	{
@@ -195,6 +201,7 @@ export const projects: Project[] = [
 		description:
 			'Un toast Neovim quand une session Claude Code, dans une autre fenêtre tmux, vous attend.',
 		stack: ['Lua', 'Neovim', 'tmux', '★ 3'],
+		language: 'Lua',
 		year: 2026,
 	},
 	{
@@ -203,6 +210,7 @@ export const projects: Project[] = [
 		description:
 			'L’usage d’abonnement Claude Code dans la status line — binaire Bun multi-plateforme, installeur curl | sh.',
 		stack: ['TypeScript', 'Bun'],
+		language: 'TypeScript',
 		year: 2026,
 	},
 	{
@@ -211,6 +219,7 @@ export const projects: Project[] = [
 		description:
 			'Nuages de points LiDAR dans le navigateur — parsing en Rust compilé en WebAssembly, rendu three.js.',
 		stack: ['Rust', 'WASM', 'React', 'three.js'],
+		language: 'Rust',
 		year: 2026,
 	},
 	{
@@ -219,6 +228,7 @@ export const projects: Project[] = [
 		description:
 			'API de catalogue de randonnées — NestJS 11, Drizzle et Postgres, contrats Zod partagés en monorepo.',
 		stack: ['TypeScript', 'NestJS', 'Drizzle'],
+		language: 'TypeScript',
 		year: 2026,
 	},
 	{
@@ -227,6 +237,7 @@ export const projects: Project[] = [
 		description:
 			'Tout ce que les données publiques disent d’une parcelle, sur une carte plein écran — sans compte, sans serveur.',
 		stack: ['React 19', 'Vite', 'MapLibre'],
+		language: 'TypeScript',
 		year: 2026,
 	},
 ];

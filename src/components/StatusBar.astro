@@ -4,9 +4,11 @@ interface Props {
 	path?: string;
 	/** Segment de droite, masqué sur mobile (« 2 688 contributions · 12 mois »). */
 	secondary: string;
+	/** Position dans le fichier, façon Neovim ; `null` masque le segment (la maquette de fiche ne l'a pas). */
+	position?: string | null;
 }
 
-const { path = '~/louis/portfolio.md', secondary } = Astro.props;
+const { path = '~/louis/portfolio.md', secondary, position = 'Bas' } = Astro.props;
 ---
 
 <footer class="mono status">
@@ -34,7 +36,7 @@ const { path = '~/louis/portfolio.md', secondary } = Astro.props;
 	</div>
 	<div class="side right">
 		<span class="seg secondary">{secondary}</span>
-		<span class="seg dark">Bas</span>
+		{position && <span class="seg dark">{position}</span>}
 		<span class="seg mode">:wq</span>
 	</div>
 </footer>

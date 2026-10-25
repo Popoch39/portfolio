@@ -1,0 +1,66 @@
+---
+// « Autres projets » : la fiche précédente et la suivante, en boucle de 06 à 01.
+import { fichePath, projects, type Project } from '../data/profile';
+
+interface Props {
+	project: Project;
+}
+
+const { project } = Astro.props;
+const at = projects.indexOf(project);
+const previous = projects[(at + projects.length - 1) % projects.length];
+const next = projects[(at + 1) % projects.length];
+const rank = (p: Project) => String(projects.indexOf(p) + 1).padStart(2, '0');
+---
+
+<nav class="others" aria-label="Autres projets">
+	<a class="link" href={fichePath(previous)}>
+		<span class="mono label">← précédent · {rank(previous)}</span>{' '}
+		<span class="name">{previous.repo}</span>
+	</a>
+	<a class="link next" href={fichePath(next)}>
+		<span class="mono label">{rank(next)} · suivant →</span>{' '}
+		<span class="name">{next.repo}</span>
+	</a>
+</nav>
+
+<style>
+	.others {
+		display: flex;
+		flex-wrap: wrap;
+		margin-top: clamp(64px, 8vw, 120px);
+		margin-bottom: clamp(48px, 6vw, 88px);
+		border-top: 1px solid var(--ink);
+	}
+
+	.link {
+		flex: 1 1 320px;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		padding: 28px 24px 32px 0;
+		border-bottom: 1px solid var(--rule);
+		text-decoration: none;
+	}
+
+	.next {
+		align-items: flex-end;
+		padding: 28px 0 32px 24px;
+		text-align: right;
+	}
+
+	.label {
+		font-size: 12px;
+		color: var(--muted);
+	}
+
+	.name {
+		font-size: clamp(32px, 4vw, 56px);
+		line-height: 0.95;
+		font-weight: 800;
+		font-stretch: 62%;
+		text-transform: uppercase;
+		overflow-wrap: anywhere;
+	}
+</style>

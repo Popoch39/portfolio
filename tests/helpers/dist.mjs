@@ -71,6 +71,23 @@ export function text(fragment) {
 		.trim();
 }
 
+/**
+ * Code d'un script module servi par le site (`/_astro/x.js`) et des morceaux qu'il importe
+ * statiquement, de proche en proche : ce que le navigateur exécute au chargement de la page.
+ * Les morceaux importés à la demande (`import("./y.js")`) n'en font pas partie.
+ */
+export function moduleGraph(src) {
+	const seen = new Map();
+	const visit = (path) => {
+		if (seen.has(path)) return;
+		const code = readDist(path.slice(1));
+		seen.set(path, code);
+		for (const [, chunk] of code.matchAll(/(?:\bfrom|\bimport)\s*["'](\.\/[\w.-]+\.js)["']/g)) visit(new URL(chunk, `file://${path}`).pathname);
+	};
+	visit(src);
+	return { paths: [...seen.keys()], code: [...seen.values()].join('\n') };
+}
+
 /** Toute la CSS livrée dans la page (contenu des balises `<style>`). */
 export function css(html) {
 	return elements(html, 'style')

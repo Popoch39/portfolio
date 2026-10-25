@@ -1,38 +1,69 @@
 ---
 // Carte de figure : Fig. n et titre en haut, la scène au milieu, la consigne et le relevé en
 // bas ; la légende dessous. Sur la fiche, la scène épouse le format de la figure, 900 px au plus.
+// Dans l'aperçu de l'accueil, la scène a une taille fixe et la figure s'y inscrit : changer de
+// projet ne décale rien.
 import '../vendor/anatomy/iso.css';
 import '../anatomies/palette.css';
 
-interface Props {
-	fig: number;
+interface Common {
+	fig: number | string;
 	title: string;
 	hints: { pointer: string; touch: string };
 	readout: string;
-	caption: string;
-	/** La figure au repos, en SVG intégré à la page. */
-	svg: string;
+	caption?: string;
 	/** Le dossier du module de mouvement, que le chargeur monte sur la scène. */
 	motion: string;
+	/** Scène de taille fixe, où la figure s'inscrit (aperçu de l'accueil). */
+	fixed?: boolean;
 }
 
-const { fig, title, hints, readout, caption, svg, motion } = Astro.props;
+type Props = Common &
+	(
+		| {
+				/** La figure au repos, en SVG intégré à la page. */
+				svg: string;
+				image?: never;
+		  }
+		| {
+				/**
+				 * L'image d'attente : le SVG au repos autonome, que le script de la page remplace par la
+				 * figure insérée. Elle n'est demandée que si `media` vaut : sans JavaScript, le
+				 * navigateur ignore `loading="lazy"` et la chargerait même masquée.
+				 */
+				image: { src: string; media: string; width: number; height: number; alt: string };
+				svg?: never;
+		  }
+	);
+
+const { fig, title, hints, readout, caption, svg, image, motion, fixed = false } = Astro.props;
 ---
 
-<figure class="figure">
+<figure class:list={['figure', { fixed }]}>
 	<div class="card">
 		<div class="mono row">
 			<span class="fig">Fig. {fig}</span>{' '}
 			<span>{title}</span>
 		</div>
-		<div class="scene iso anatomy" data-theme="light" data-motion={motion} set:html={svg}></div>
-		<div class="mono row">
+		{
+			image ? (
+				<div class="scene iso anatomy" data-theme="light" data-motion={motion}>
+					<picture>
+						<source media={image.media} srcset={image.src} type="image/svg+xml" width={image.width} height={image.height} />
+						<img width={image.width} height={image.height} alt={image.alt} loading="lazy" decoding="async" />
+					</picture>
+				</div>
+			) : (
+				<div class="scene iso anatomy" data-theme="light" data-motion={motion} set:html={svg} />
+			)
+		}
+		<div class="mono row foot">
 			<span class="hint pointer">{hints.pointer}</span>
 			<span class="hint touch">{hints.touch}</span>{' '}
 			<span class="readout"><span class="dot" aria-hidden="true"></span><span data-readout>{readout}</span></span>
 		</div>
 	</div>
-	<figcaption class="caption"><span class="mono caption-fig">Fig. {fig} —</span> {caption}</figcaption>
+	{caption && <figcaption class="caption"><span class="mono caption-fig">Fig. {fig} —</span> {caption}</figcaption>}
 </figure>
 
 <style>
@@ -94,6 +125,7 @@ const { fig, title, hints, readout, caption, svg, motion } = Astro.props;
 	}
 
 	.dot {
+		flex: none;
 		width: 7px;
 		height: 7px;
 		border-radius: 50%;
@@ -112,5 +144,43 @@ const { fig, title, hints, readout, caption, svg, motion } = Astro.props;
 	.caption-fig {
 		font-size: 12px;
 		color: var(--ink);
+	}
+
+	/* Scène fixe : la figure s'y inscrit, image d'attente comme SVG inséré (qui ne porte pas
+	   l'attribut de portée du composant). Chaque texte tient sur une ligne, la consigne au-dessus
+	   du relevé, pour que la carte garde sa hauteur quel que soit le relevé. */
+	.fixed {
+		margin: 0;
+	}
+
+	.fixed .scene {
+		max-width: none;
+		aspect-ratio: 4 / 3;
+	}
+
+	.fixed .scene > picture,
+	.fixed .scene img,
+	.fixed .scene > :global(svg) {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+	}
+
+	.fixed .row {
+		flex-wrap: nowrap;
+		white-space: nowrap;
+	}
+
+	.fixed .foot {
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.fixed .row > *,
+	.fixed [data-readout] {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 </style>

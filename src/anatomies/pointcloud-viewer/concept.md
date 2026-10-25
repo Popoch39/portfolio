@@ -9,7 +9,7 @@ Fiche de concept de l'anatomie de `pointcloud-viewer` (ticket #18, spec #10). El
 
 ## 1. La machine
 
-**Un scanner laser sur trépied**, mince et haut, planté au-dessus d'un carré de terrain fait de quatre dalles d'orthophoto. Sa tête tourne sans arrêt et son miroir dépose un nuage de points en spirale sur le terrain. Une borne marque un angle du nuage, et une cartouche à bande, logée sur un support serré à une jambe, reçoit le fichier cuit.
+**Un scanner laser sur trépied**, mince et haut, planté au-dessus d'un carré de terrain fait de quatre dalles d'orthophoto. Sa tête tourne sans arrêt et son miroir dépose un nuage de points en spirale sur le terrain. Une borne marque un angle du nuage, et une cassette à bande, logée sur un support serré à une jambe, reçoit le fichier cuit.
 
 Le dépôt fournit lui-même la vérité du mouvement. Son fichier d'essai, `sample.laz`, est une spirale de 100 000 points écrite par [`generate-sample.rs` L27-L44](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/examples/generate-sample.rs#L27-L44) : le point `i` est à l'angle `t = i / 100` radians, à `0,05 · t` mètres du centre et à `50 + 0,02 · t` mètres d'altitude. Un scanner qui tourne sur lui-même en allongeant sa visée trace exactement cette courbe. **La tête tourne d'un angle qui est l'indice du point lu** : un tour lit 628 points, et les 100 000 points prennent 159 tours.
 
@@ -35,8 +35,8 @@ La ligne de la grille est **suivie, pas contestée** : le code raconte précisé
 |---|---|---|
 | 01 typomaniac | Banc de duel large et bas, 3/4 classique | Ici une silhouette verticale et grêle, vue en plongée |
 | 02 claude-tmux-notify.nvim | Tableau mural, presque de face | Ici un objet posé au sol, vu d'en haut, sans face plane dominante |
-| 03 claude-status-line | Rampe longue, vue rasante | Ici une vue plongeante sur un disque, rien de long ni de rasant |
-| 05 trekker | Cube massif à tiroirs, éclaté partiel | Aucun tiroir : le fichier PCBK est une cartouche à bande, et rien n'est éclaté |
+| 03 claude-status-line | Rampe longue, vue rasante | Ici une vue plongeante sur un disque, rien de long ni de rasant. Son cache est un tiroir frappé d'un tampon ; le PCBK est ici une cassette à deux bobines qui s'enroule |
+| 05 trekker | Cube massif à tiroirs, éclaté partiel | Aucun tiroir : le fichier PCBK est une cassette à bande, et rien n'est éclaté |
 | 06 ma_parcelle | Colonne en coupe, écorché | Aucune coupe ni strate : le terrain est vu par-dessus, en surface |
 
 **Pas de base par réflexe.** Il n'y a ni plaque sur pieds ni règle graduée. Le sol est le terrain lui-même : quatre tuiles d'orthophoto posées à plat, dans lesquelles les pointes des jambes s'enfoncent. La seule graduation est le cercle horizontal de la tête, une vraie pièce d'instrument de relevé.
@@ -88,7 +88,7 @@ Chaque pièce repose sur une autre. Les numéros entre crochets renvoient à la 
 
 35. Embase à trois vis calantes, posée sur le plateau.
 36. Nivelle sphérique sur l'embase, bulle centrée.
-37. Socle fixe de la tête, cylindre bas : il porte le cliquet et le dock de la cartouche.
+37. Socle fixe de la tête, cylindre bas : il porte le cliquet et le dock de la cassette.
 38. Couronne à rochet, dents tout autour du pied de la partie tournante.
 39. Cliquet fixe, son ressort et son axe, appuyé sur la couronne.
 40. Cercle horizontal gradué sur la partie tournante, traits pendus à son bord, un majeur tous les 5.
@@ -102,9 +102,9 @@ Chaque pièce repose sur une autre. Les numéros entre crochets renvoient à la 
 48. Carte LAS/LAZ [1], plaquette mince avec ses contacts dorés en peigne et son encoche.
 49. Faisceau laser, du miroir au point d'impact.
 50. Point d'impact, le point terminal du faisceau sur le nuage.
-51. Cartouche PCBK [4], boîtier à bande avec sa fenêtre : deux bobines, la bande entre elles, et des repères de blocs sur la bobine réceptrice.
-52. Dock de la cartouche dans le socle fixe, et rail court jusqu'au support de carnet.
-53. Câble spiralé du socle fixe à la cartouche, avec ses deux coquilles de connecteur.
+51. Cassette PCBK [4], boîtier à bande avec sa fenêtre : deux bobines, la bande entre elles, et des repères de blocs sur la bobine réceptrice.
+52. Dock de la cassette dans le socle fixe, et rail court jusqu'au support de carnet.
+53. Câble spiralé du socle fixe à la cassette, avec ses deux coquilles de connecteur.
 54. Bague collectrice entre la partie tournante et le socle fixe, trait de joint.
 
 ### Commandes (6)
@@ -114,14 +114,14 @@ Chaque pièce repose sur une autre. Les numéros entre crochets renvoient à la 
 57. Volant moleté d'orientation sur le socle fixe, engrené sur la couronne : il tourne quand la tête tourne.
 58. Bouton de marche sur le boîtier, avec sa bague.
 59. Voyant d'état à côté du bouton : éteint, clignotant pendant le bake, fixe une fois le nuage rendu (en tons, sans couleur).
-60. Loquet de la cartouche, qui bascule du côté du socle au côté du support au moment du transfert.
+60. Loquet de la cassette, qui bascule du côté du socle au côté du support au moment du transfert.
 
 ### Sujet (6)
 
 61. Nuage de points [6] : la spirale de 100 000 points lus, dont 2 500 dessinés (un sur 40), en entonnoir de 0 à 20 m.
 62. Points tout juste écrits, au ton `lo` pendant le bake : le tampon en mémoire, pas encore rendu.
 63. Spire courante, la dernière posée, au ton `mid`.
-64. Halo doux sous la cartouche et son support.
+64. Halo doux sous la cassette et son support.
 65. Halo doux sous chaque pointe de jambe et sous la borne.
 66. Halo doux sous le trépied, au centre.
 
@@ -134,7 +134,7 @@ Chaque pièce repose sur une autre. Les numéros entre crochets renvoient à la 
 | 1 | `carte` | Carte LAS/LAZ | Le fichier choisi. Un `.las` ou un `.laz` part au bake dans un Worker, un `.bin` déjà cuit s'ouvre sur place. | [`src/hooks/use-bake.ts` L78-L87](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/hooks/use-bake.ts#L78-L87) |
 | 2 | `boitier` | Boîtier scellé | Le Web Worker : il lit les octets du fichier, initialise le WebAssembly une seule fois, remonte la progression et rend le PCBK par transfert, sans copie. | [`src/workers/bake-worker.ts` L13-L37](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/workers/bake-worker.ts#L13-L37) |
 | 3 | `miroir` | **Tambour du miroir** (pièce maîtresse) | Le bake Rust compilé en WebAssembly : il parcourt les points du LAS/LAZ, les recentre sur le minimum par axe pour qu'ils restent précis en f32, puis écrit l'en-tête de 72 octets et les blocs planaires. | [`webassembly/src/lib.rs` L48-L132](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L48-L132) |
-| 4 | `cartouche` | Cartouche PCBK | Le format maison : vérifie le magic et la version, puis pose des vues TypedArray sur le buffer, sans rien décoder. | [`src/lib/baked-pointcloud.ts` L41-L91](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/baked-pointcloud.ts#L41-L91) |
+| 4 | `cassette` | Cassette PCBK | Le format maison : vérifie le magic et la version, puis pose des vues TypedArray sur le buffer, sans rien décoder. | [`src/lib/baked-pointcloud.ts` L41-L91](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/baked-pointcloud.ts#L41-L91) |
 | 5 | `borne` | Borne d'angle | L'ancre : seul le World Offset est reprojeté (proj4 vers WGS84, puis Mercator), et tout le nuage se place autour de lui. | [`src/lib/map-anchor.ts` L22-L46](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/map-anchor.ts#L22-L46) |
 | 6 | `nuage` | Nuage de points | Le calque three.js sur le contexte WebGL de MapLibre : positions envoyées telles quelles, matrices composées en doubles à chaque image. | [`src/lib/pointcloud-layer.ts` L25-L121](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/pointcloud-layer.ts#L25-L121) |
 | 7 | `roue` | Roue de filtres | Le mode de couleur (RGB, intensité, classification, altitude) : un uniform change, la géométrie reste. | [`src/lib/pointcloud-shaders.ts` L127-L156](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/pointcloud-shaders.ts#L127-L156) |
@@ -147,7 +147,7 @@ Ne sont pas des pièces de nomenclature : le trépied, l'embase, les vis, le cli
 
 ### Au repos
 
-Le bake de `sample.laz` est fini et le nuage est rendu en mode RGB : 100 000 points lus, 2 500 dessinés au ton `hi`. La tête est arrêtée, la fente du miroir pointe vers le dernier point de la spirale, sur le bord sud-est, et la carte affleure dans sa fente. La cartouche est dans le support de carnet, loquet du côté du support. La roue de filtres est sur RGB, le voyant fixe.
+Le bake de `sample.laz` est fini et le nuage est rendu en mode RGB : 100 000 points lus, 2 500 dessinés au ton `hi`. La tête est arrêtée, la fente du miroir pointe vers le dernier point de la spirale, sur le bord sud-est, et la carte affleure dans sa fente. La cassette est dans le support de carnet, loquet du côté du support. La roue de filtres est sur RGB, le voyant fixe.
 
 C'est la pose du SVG au repos, de l'image de partage et du mouvement réduit.
 
@@ -157,11 +157,11 @@ Chaque temps rejoue une étape du vrai flux, dans l'ordre du code.
 
 | Temps | Ce qu'on voit | Ce que le code fait |
 |---|---|---|
-| 0 – 1,2 s | Le nuage s'efface en 0,6 s. La carte ressort de 6 unités puis s'enfonce dans sa fente. La cartouche revient au dock et son loquet bascule. | Choix d'un fichier ([`bake-panel.tsx` L55](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/components/bake-panel.tsx#L55)), réglages remis à zéro ([`app.tsx` L20-L27](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/app.tsx#L20-L27)), aiguillage `.laz` → bake ([`use-bake.ts` L78-L87](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/hooks/use-bake.ts#L78-L87)), l'ancien Worker est arrêté et un nouveau démarre ([`use-bake.ts` L49-L76](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/hooks/use-bake.ts#L49-L76)). |
+| 0 – 1,2 s | Le nuage s'efface en 0,6 s. La carte ressort de 6 unités puis s'enfonce dans sa fente. La cassette revient au dock et son loquet bascule. | Choix d'un fichier ([`bake-panel.tsx` L55](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/components/bake-panel.tsx#L55)), réglages remis à zéro ([`app.tsx` L20-L27](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/app.tsx#L20-L27)), aiguillage `.laz` → bake ([`use-bake.ts` L78-L87](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/hooks/use-bake.ts#L78-L87)), l'ancien Worker est arrêté et un nouveau démarre ([`use-bake.ts` L49-L76](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/hooks/use-bake.ts#L49-L76)). |
 | 1,2 – 2 s | Le voyant clignote, le tambour se met à tourner, la tête reste immobile. | Lecture des octets, initialisation unique du WebAssembly ([`bake-worker.ts` L19-L26](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/workers/bake-worker.ts#L19-L26)), ouverture du LAS, lecture de l'en-tête, du minimum par axe et de l'EPSG ([`lib.rs` L52-L57](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L52-L57), [`crs.rs` L21-L46](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/crs.rs#L21-L46)). |
 | 2 – 16 s | La tête tourne, d'abord lentement (on suit un point par fente), puis accélère comme un moteur jusqu'à un flou régulier. Le faisceau balaie, la spirale pousse du centre vers le bord au ton `lo`, la spire courante au ton `mid`. Le volant moleté tourne avec la tête, le cliquet claque sur chaque dent. | La boucle `for point in reader.points()` : chaque point est recentré sur le minimum par axe, converti en f32, ajouté aux tableaux, et la bbox locale grandit ([`lib.rs` L66-L96](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L66-L96)). |
-| 16 – 17,5 s | La tête ralentit et s'arrête sur le dernier point. La bande de la cartouche s'enroule vite ; la bobine réceptrice grossit et passe cinq repères : en-tête, positions, intensité, RGB, classification. | Dernier appel de progression ([`lib.rs` L97](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L97)), puis écriture du PCBK : l'en-tête de 72 octets et les quatre blocs planaires, dans cet ordre ([`lib.rs` L99-L131](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L99-L131)). |
-| 17,5 – 18,5 s | La cartouche glisse sur son rail du dock au support de carnet, et le loquet bascule. Elle change de côté sans être recopiée. | Le Worker transfère le buffer au fil principal ([`bake-worker.ts` L31-L33](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/workers/bake-worker.ts#L31-L33)), qui le lit en vues zero-copy ([`baked-pointcloud.ts` L72-L88](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/baked-pointcloud.ts#L72-L88)). |
+| 16 – 17,5 s | La tête ralentit et s'arrête sur le dernier point. La bande de la cassette s'enroule vite ; la bobine réceptrice grossit et passe cinq repères : en-tête, positions, intensité, RGB, classification. | Dernier appel de progression ([`lib.rs` L97](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L97)), puis écriture du PCBK : l'en-tête de 72 octets et les quatre blocs planaires, dans cet ordre ([`lib.rs` L99-L131](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/webassembly/src/lib.rs#L99-L131)). |
+| 17,5 – 18,5 s | La cassette glisse sur son rail du dock au support de carnet, et le loquet bascule. Elle change de côté sans être recopiée. | Le Worker transfère le buffer au fil principal ([`bake-worker.ts` L31-L33](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/workers/bake-worker.ts#L31-L33)), qui le lit en vues zero-copy ([`baked-pointcloud.ts` L72-L88](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/baked-pointcloud.ts#L72-L88)). |
 | 18,5 – 19,5 s | Le disque de bronze de la borne prend un éclat bref (un ton plus clair, sans bleu). Tout le nuage passe du ton `lo` au ton `hi` d'un seul fondu ; le voyant devient fixe. | L'EPSG 2154 est accepté ([`app.tsx` L34](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/app.tsx#L34)), l'ancre est calculée ([`map-anchor.ts` L22-L46](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/map-anchor.ts#L22-L46)), puis three.js envoie toutes les positions au GPU en une fois et le rendu suit la carte ([`pointcloud-layer.ts` L58-L97](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/pointcloud-layer.ts#L58-L97)). |
 | 19,5 – 26 s | La roue de filtres saute de cran toutes les 1,6 s : RGB → intensité → classification → altitude → RGB. À chaque cran, tout le nuage change de tons d'un coup, sans que la spirale bouge. | Changement d'un uniform, sans reconstruire la géométrie ([`pointcloud-shaders.ts` L154-L156](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/pointcloud-shaders.ts#L154-L156), [`pointcloud-layer.ts` L110-L114](https://github.com/Popoch39/pointcloud-viewer/blob/e30a105e0cf22c12d500d6bbf06fcd26b12697a1/src/lib/pointcloud-layer.ts#L110-L114)). |
 
@@ -279,8 +279,8 @@ Le relevé est en bas à droite de la carte, en Fragment Mono, avec des espaces 
 - **Consigne pointeur** : Glisser pour orienter la tête · clic sur la roue : couleur
 - **Consigne toucher** : Glisser du doigt pour orienter la tête · toucher la roue : couleur
 - **Relevé au repos** : `100 000 pts · 1,80 Mo · EPSG:2154`
-- **Légende** : Le scanner relit `sample.laz`, le fichier d'essai du dépôt : 100 000 points en spirale autour d'une station du 6ᵉ arrondissement, en Lambert-93. Chaque tour de tête lit 628 points. Le miroir, c'est-à-dire le bake Rust compilé en WebAssembly dans un Web Worker, recentre chaque point sur la borne d'angle, le minimum du nuage, pour qu'il reste précis en f32. La cartouche reçoit alors le PCBK : 72 octets d'en-tête puis 18 octets par point, en quatre blocs. Le bake fini, three.js pose tout le nuage d'un coup sur le fond IGN, et la roue en change les couleurs sans toucher à la géométrie. Un point dessiné en représente 40, et l'instrument n'est pas à l'échelle du terrain.
-- **Libellé accessible** : Scanner laser sur un trépied haut et fin, planté sur quatre dalles d'orthophoto. Sa tête tourne et son miroir, en bleu, dépose une spirale de points qui se relève vers le bord du terrain. Une borne marque l'angle du nuage, un jalon l'angle opposé, et une cartouche à bande, fixée à une jambe, reçoit le fichier cuit.
+- **Légende** : Le scanner relit `sample.laz`, le fichier d'essai du dépôt : 100 000 points en spirale autour d'une station du 6ᵉ arrondissement, en Lambert-93. Chaque tour de tête lit 628 points. Le miroir, c'est-à-dire le bake Rust compilé en WebAssembly dans un Web Worker, recentre chaque point sur la borne d'angle, le minimum du nuage, pour qu'il reste précis en f32. La cassette reçoit alors le PCBK : 72 octets d'en-tête puis 18 octets par point, en quatre blocs. Le bake fini, three.js pose tout le nuage d'un coup sur le fond IGN, et la roue en change les couleurs sans toucher à la géométrie. Un point dessiné en représente 40, et l'instrument n'est pas à l'échelle du terrain.
+- **Libellé accessible** : Scanner laser sur un trépied haut et fin, planté sur quatre dalles d'orthophoto. Sa tête tourne et son miroir, en bleu, dépose une spirale de points qui se relève vers le bord du terrain. Une borne marque l'angle du nuage, un jalon l'angle opposé, et une cassette à bande, fixée à une jambe, reçoit le fichier cuit.
 - **Titre SEO** : pointcloud-viewer · nuages LiDAR en Rust, WebAssembly et three.js
 - **Description SEO** : Un scanner sur trépied explique pointcloud-viewer : un .laz lu en Rust compilé en WebAssembly dans un Web Worker, puis rendu en three.js sur la carte IGN.
 

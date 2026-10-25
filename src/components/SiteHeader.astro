@@ -1,0 +1,108 @@
+---
+import { identity, sections } from '../data/profile';
+---
+
+<header class="site-header">
+	<a class="name" href="#top">{identity.name}</a>
+	<span class="mono meta role">{identity.role}</span>
+	<span class="mono meta city">{identity.city}, {identity.country}</span>
+	<nav class="nav" aria-label="Sections">
+		{sections.map((s) => <a href={`#${s.id}`}>{s.label}</a>)}
+	</nav>
+</header>
+
+<style>
+	.site-header {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		/* Les zones tactiles de 44 px apportent déjà l'air : 11 px + la moitié de la
+		   zone ≈ les 22 px de la maquette autour du texte. */
+		padding: 11px 0;
+		border-bottom: 1px solid var(--ink);
+		font-size: 13px;
+	}
+
+	.name {
+		font-size: 15px;
+		font-weight: 700;
+		text-decoration: none;
+	}
+
+	.meta {
+		display: none;
+		color: var(--muted);
+	}
+
+	.nav {
+		display: flex;
+		flex-wrap: wrap;
+		column-gap: 20px;
+		font-size: 14px;
+		font-weight: 500;
+	}
+
+	.nav a {
+		text-decoration: none;
+	}
+
+	/* Zones tactiles ≥ 44 px tant que la navigation n'a pas sa place de la maquette. */
+	.nav a,
+	.name {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+	}
+
+	@media (min-width: 600px) {
+		.site-header {
+			flex-direction: row;
+			justify-content: space-between;
+			align-items: center;
+			column-gap: var(--gutter);
+		}
+
+		.nav {
+			flex-wrap: nowrap;
+			justify-content: flex-end;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.site-header {
+			display: grid;
+			grid-template-columns: repeat(12, minmax(0, 1fr));
+			align-items: baseline;
+			row-gap: 8px;
+			padding: 22px 0;
+		}
+
+		.name {
+			grid-column: span 3;
+		}
+
+		.role {
+			grid-column: span 3;
+		}
+
+		.city {
+			grid-column: span 2;
+		}
+
+		.meta {
+			display: block;
+		}
+
+		.nav {
+			grid-column: span 4;
+			flex-wrap: wrap;
+			gap: 6px 20px;
+		}
+
+		.nav a,
+		.name {
+			display: inline;
+			min-height: 0;
+		}
+	}
+</style>

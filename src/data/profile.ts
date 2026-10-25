@@ -8,6 +8,8 @@ export interface Employer {
 }
 
 export interface Identity {
+	givenName: string;
+	familyName: string;
 	name: string;
 	/** Intitulé court, affiché dans l'en-tête du site. */
 	role: string;
@@ -27,8 +29,13 @@ export interface Identity {
 	};
 }
 
+const givenName = 'Louis';
+const familyName = 'Pocheron';
+
 export const identity: Identity = {
-	name: 'Louis Pocheron',
+	givenName,
+	familyName,
+	name: `${givenName} ${familyName}`,
 	role: 'Concepteur & développeur d’applications',
 	roleDetail: 'Concepteur & développeur d’applications, fullstack',
 	city: 'Besançon',

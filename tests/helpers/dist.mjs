@@ -35,15 +35,16 @@ export function elements(html, name) {
 /**
  * Texte d'un fragment : balises retirées sans insérer d'espace (comme `textContent`,
  * pour qu'un espace manquant entre deux `<span>` se voie), entités courantes décodées,
- * espaces normalisés.
+ * blancs ASCII normalisés. Les espaces insécables (U+00A0, U+202F de `Intl`) sont
+ * conservés : ils font partie de la typographie testée.
  */
 export function text(fragment) {
 	return fragment
 		.replace(/<[^>]+>/g, '')
 		.replace(/&amp;/g, '&')
 		.replace(/&#39;|&#x27;/g, "'")
-		.replace(/&nbsp;|&#160;/g, ' ')
-		.replace(/\s+/g, ' ')
+		.replace(/&nbsp;|&#160;/g, ' ')
+		.replace(/[ \t\n\r\f]+/g, ' ')
 		.trim();
 }
 

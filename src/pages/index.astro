@@ -1,8 +1,19 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { identity } from '../data/profile';
+import SiteHeader from '../components/SiteHeader.astro';
+import Hero from '../components/Hero.astro';
+import StatusBar from '../components/StatusBar.astro';
 ---
 
 <Layout>
-	<h1>{identity.name}</h1>
+	<div class="container">
+		<SiteHeader />
+	</div>
+	<main>
+		<div class="container">
+			<Hero />
+		</div>
+	</main>
+	{/* Total saisi provisoirement : le ticket #5 le dérive de l'instantané GitHub. */}
+	<StatusBar contributions={2699} />
 </Layout>

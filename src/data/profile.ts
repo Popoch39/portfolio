@@ -184,6 +184,9 @@ export interface Project {
 /** Adresse de la fiche d'un projet, slash final compris : c'est son URL canonique. */
 export const fichePath = (project: Project) => `/projets/${project.slug}/`;
 
+/** Adresse du SVG au repos autonome d'un projet (`src/pages/figures/[slug].svg.ts`). */
+export const restFigurePath = (project: Project) => `/figures/${project.slug}.svg`;
+
 /** Projets mis en avant, dans l'ordre d'affichage. Certains dépôts sont volontairement absents. */
 export const projects: Project[] = [
 	{

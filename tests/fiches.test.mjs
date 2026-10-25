@@ -1,7 +1,7 @@
 // Fiches projet : une page par projet, avec son héros, son anatomie et la navigation.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROJECTS, readDist, readFiche, tags, attr, hasAttr, elements, text } from './helpers/dist.mjs';
+import { PROJECTS, moduleGraph, readDist, readFiche, tags, attr, hasAttr, elements, text } from './helpers/dist.mjs';
 
 const fiches = PROJECTS.map((project) => ({ ...project, html: readFiche(project.slug) }));
 
@@ -85,7 +85,8 @@ test('le chargeur monte le mouvement de la figure, chargé à la demande dans un
 		assert.equal(attr(scenes[0], 'tabindex'), undefined, `${repo} : scène focalisable sans script`);
 		const loaders = tags(html, 'script').filter((t) => attr(t, 'type') === 'module');
 		assert.equal(loaders.length, 1, `${repo} : un chargeur`);
-		const loader = readDist((attr(loaders[0], 'src') ?? '').slice(1));
+		// Le chargeur, commun à l'accueil, peut vivre dans un morceau que le script importe.
+		const loader = moduleGraph(attr(loaders[0], 'src') ?? '').code;
 		assert.ok(loader.includes(`./${motion}/motion.ts`), `${repo} : le chargeur ne connaît pas le module « ${motion} »`);
 		const chunks = [...loader.matchAll(/import\(\s*["'`]\.\/([\w.-]+\.js)["'`]\s*\)/g)].map((m) => m[1]);
 		assert.ok(chunks.length > 0, `${repo} : aucun morceau chargé à la demande`);

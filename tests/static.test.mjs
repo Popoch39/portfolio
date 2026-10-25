@@ -60,11 +60,6 @@ test('la CSS livrée ne contient ni transition ni :hover, et ses animations sont
 	}
 });
 
-test('l’accueil n’anime rien', () => {
-	assert.doesNotMatch(styles, /\banimation(-[a-z-]+)?\s*:/i);
-	assert.doesNotMatch(styles, /@keyframes/i);
-});
-
 test('une seule police préchargée, en woff2', () => {
 	const preloads = tags(html, 'link').filter((t) => attr(t, 'rel') === 'preload' && attr(t, 'as') === 'font');
 	assert.equal(preloads.length, 1);

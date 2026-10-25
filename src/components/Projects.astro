@@ -1,6 +1,13 @@
 ---
 import SectionHeader from './SectionHeader.astro';
-import { fichePath, projects, publicRepoCount } from '../data/profile';
+import FigureCard from './FigureCard.astro';
+import { fichePath, projects, publicRepoCount, restFigurePath } from '../data/profile';
+import { anatomyOf } from '../anatomies/registry';
+
+const numberOf = (index: number) => String(index + 1).padStart(2, '0');
+
+/** La bascule A3 : grand écran, pointeur qui survole, JavaScript actif. La CSS ci-dessous en garde une copie. */
+const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 ---
 
 <section id="projets" class="projects">
@@ -9,23 +16,159 @@ import { fichePath, projects, publicRepoCount } from '../data/profile';
 		title="Projets"
 		note={`${projects.length} sélectionnés · ${publicRepoCount} dépôts publics`}
 	/>
-	<ol class="list">
-		{
-			projects.map((p, i) => (
-				<li class="item">
-					{/* Les `{' '}` font lire le lien « 01 typomaniac … » et non « 01typomaniac… ». */}
-					<a class="grid row" href={fichePath(p)}>
-						<span class="mono num">{String(i + 1).padStart(2, '0')}</span>{' '}
-						<span class="name">{p.repo}</span>{' '}
-						<span class="desc">{p.description}</span>{' '}
-						<span class="mono stack">{p.stack.join(' · ')}</span>{' '}
-						<span class="mono year">{p.year} →</span>
-					</a>
-				</li>
-			))
-		}
-	</ol>
+	<div class="grid layout">
+		<ol class="list">
+			{
+				projects.map((p, i) => (
+					<li class="item">
+						{/* Les `{' '}` font lire le lien « 01 typomaniac … » et non « 01typomaniac… ». */}
+						<a class="grid row" href={fichePath(p)} data-selected={i === 0 ? '' : undefined}>
+							<span class="mono num">{numberOf(i)}</span>{' '}
+							<span class="name">{p.repo}</span>{' '}
+							<span class="desc">{p.description}</span>{' '}
+							<span class="mono stack">{p.stack.join(' · ')}</span>{' '}
+							<span class="mono year">{p.year} →</span>
+						</a>
+					</li>
+				))
+			}
+		</ol>
+		{/* L'aperçu A3 : un panneau par projet, seul l'actif est visible. Sa description et sa stack
+		    doublent celles de la ligne, que les technologies d'assistance lisent déjà. */}
+		<div class="preview">
+			{
+				projects.map((p, i) => {
+					const anatomy = anatomyOf(p);
+					const { content } = anatomy;
+					const { width, height } = anatomy.renderRest();
+					return (
+						<div class="panel" data-panel={p.slug} data-active={i === 0 ? '' : undefined}>
+							<FigureCard
+								fig={numberOf(i)}
+								title={content.machine}
+								hints={content.hints}
+								readout={content.readout}
+								motion={anatomy.motion}
+								image={{ src: restFigurePath(p), media: A3, width, height, alt: content.label }}
+								fixed
+							/>{' '}
+							<p class="preview-desc" aria-hidden="true">{p.description}</p>{' '}
+							<div class="mono preview-foot">
+								<span aria-hidden="true">{p.stack.join(' · ')}</span>{' '}
+								<a class="open" href={fichePath(p)} aria-label={`Ouvrir la fiche ${p.repo}`}>Ouvrir la fiche →</a>
+							</div>
+						</div>
+					);
+				})
+			}
+		</div>
+	</div>
 </section>
+
+<script>
+	// L'aperçu A3. La ligne survolée ou focalisée devient la sélection, qui reste quand le pointeur
+	// quitte la liste. Rien n'est téléchargé hors de l'A3 : à l'approche de la section, les SVG au
+	// repos arrivent ; le panneau actif passe en SVG inséré, dont le chargeur des fiches monte le
+	// mouvement ; les autres mouvements sont préchargés quand le navigateur est inactif.
+	import { mountFigure, preloadMotion } from '../anatomies/loader.ts';
+	import { linkPieces } from '../anatomies/highlight.ts';
+
+	const idle = (task: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(task) : setTimeout(task, 200));
+
+	const fetchRest = async (src: string) => {
+		const response = await fetch(src);
+		if (!response.ok) throw new Error(`Aperçu : ${src} a répondu ${response.status}`);
+		return response.text();
+	};
+
+	/** Le SVG au repos autonome, inséré dans la scène sans ses styles : la page a déjà ceux du kit et la palette. */
+	const insert = (scene: HTMLElement, markup: string) => {
+		const svg = new DOMParser().parseFromString(markup, 'image/svg+xml').documentElement;
+		if (!(svg instanceof SVGSVGElement)) throw new Error('Aperçu : SVG au repos illisible');
+		for (const style of svg.querySelectorAll('style')) style.remove();
+		const inserted = document.importNode(svg, true);
+		scene.replaceChildren(inserted);
+		linkPieces(scene);
+		return inserted;
+	};
+
+	function preview(section: HTMLElement) {
+		const rows = [...section.querySelectorAll<HTMLAnchorElement>('ol > li > a')];
+		const panels = [...section.querySelectorAll<HTMLElement>('[data-panel]')].flatMap((panel) => {
+			const scene = panel.querySelector<HTMLElement>('[data-motion]');
+			const readout = panel.querySelector<HTMLElement>('[data-readout]');
+			const src = scene?.querySelector('source')?.getAttribute('srcset');
+			return scene?.dataset.motion && readout && src ? [{ panel, scene, readout, src, motion: scene.dataset.motion }] : [];
+		});
+		if (rows.length === 0 || rows.length !== panels.length) return;
+
+		let selected = Math.max(rows.findIndex((row) => row.hasAttribute('data-selected')), 0);
+		let rests: Promise<string>[] | null = null;
+		/** Chaque panneau n'est inséré qu'une fois, même quand on y revient pendant son arrivée. */
+		const inserted = new Map<number, Promise<SVGSVGElement>>();
+		let pending: AbortController | null = null;
+		let stopShown = () => {};
+
+		// Changer de projet arrête l'ancienne figure ; un changement rapide annule le montage en cours.
+		const show = async (index: number) => {
+			pending?.abort();
+			stopShown();
+			stopShown = () => {};
+			const attempt = (pending = new AbortController());
+			const { scene, readout, motion } = panels[index];
+			const rest = rests?.[index];
+			if (!rest) return;
+			if (!inserted.has(index)) inserted.set(index, rest.then((markup) => insert(scene, markup)));
+			const svg = await inserted.get(index);
+			if (!svg || attempt.signal.aborted) return;
+			const stop = await mountFigure({ scene, svg, readout }, motion, { signal: attempt.signal });
+			if (attempt.signal.aborted) stop();
+			else stopShown = stop;
+		};
+
+		const select = (index: number) => {
+			if (index < 0 || index === selected) return;
+			selected = index;
+			rows.forEach((row, i) => row.toggleAttribute('data-selected', i === index));
+			panels.forEach(({ panel }, i) => panel.toggleAttribute('data-active', i === index));
+			if (rests) void show(index);
+		};
+		const rowOf = (target: EventTarget | null) => (target instanceof Node ? rows.findIndex((row) => row.contains(target)) : -1);
+		const list = rows[0].closest('ol');
+		list?.addEventListener('pointerover', (event) => select(rowOf(event.target)));
+		list?.addEventListener('focusin', (event) => select(rowOf(event.target)));
+
+		const approach = new IntersectionObserver(
+			(entries) => {
+				if (!entries.some((entry) => entry.isIntersecting)) return;
+				approach.disconnect();
+				rests = panels.map(({ src }) => fetchRest(src));
+				void show(selected);
+				idle(() => {
+					const others = new Set(panels.map(({ motion }) => motion));
+					others.delete(panels[selected].motion);
+					for (const motion of others) void preloadMotion(motion);
+				});
+			},
+			{ rootMargin: '100% 0px' },
+		);
+		approach.observe(section);
+	}
+
+	// La bascule A3 est celle de l'image au repos des panneaux : une seule requête pour les deux.
+	const section = document.querySelector<HTMLElement>('#projets');
+	const a3 = matchMedia(section?.querySelector('[data-panel] source')?.getAttribute('media') ?? 'not all');
+	if (section && a3.matches) preview(section);
+	else if (section) {
+		// Une fenêtre élargie après coup passe en A3 : l'aperçu démarre à ce moment-là.
+		const wake = () => {
+			if (!a3.matches) return;
+			a3.removeEventListener('change', wake);
+			preview(section);
+		};
+		a3.addEventListener('change', wake);
+	}
+</script>
 
 <style>
 	.projects {
@@ -90,6 +233,56 @@ import { fichePath, projects, publicRepoCount } from '../data/profile';
 		white-space: nowrap;
 	}
 
+	/* Hors de l'A3, l'aperçu n'existe pas, et la source de ses images ne vaut pas : rien n'est demandé. */
+	.preview {
+		display: none;
+	}
+
+	/* Les panneaux s'empilent dans la même case : l'aperçu prend la hauteur du plus grand, et
+	   changer de projet ne change pas sa taille. */
+	.preview {
+		grid-template: 'panel' / minmax(0, 1fr);
+	}
+
+	.panel {
+		grid-area: panel;
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.panel:not([data-active]) {
+		visibility: hidden;
+	}
+
+	.preview-desc {
+		margin: 0;
+		font-size: 17px;
+		line-height: 1.45;
+		text-wrap: pretty;
+	}
+
+	.preview-foot {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		align-items: center;
+		gap: 8px 20px;
+		font-size: 12px;
+		color: var(--muted);
+	}
+
+	.open {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		padding: 0 16px;
+		background: var(--ink);
+		color: var(--bg);
+		font-size: 13px;
+		text-decoration: none;
+	}
+
 	/* Tablette : numéro + nom, puis description, stack et année sous le nom. */
 	@media (min-width: 600px) {
 		.num {
@@ -130,6 +323,101 @@ import { fichePath, projects, publicRepoCount } from '../data/profile';
 
 		.year {
 			grid-column: 12 / span 1;
+		}
+	}
+
+	/* A3 : grand écran, pointeur qui survole et JavaScript actif. Copie de la requête `A3` du
+	   composant, que le script lit sur l'image au repos. Les lignes compactes à gauche,
+	   l'aperçu collant à droite. La sélection (`data-selected`, `data-active`) est posée par le
+	   script ; le projet 01 l'a dès le build. */
+	@media (min-width: 1024px) and (hover: hover) and (scripting: enabled) {
+		.layout {
+			column-gap: clamp(24px, 4vw, 56px);
+			align-items: start;
+		}
+
+		.list {
+			grid-column: 1 / span 6;
+		}
+
+		.preview {
+			display: grid;
+			grid-column: 7 / span 6;
+			position: sticky;
+			top: 24px;
+			padding-top: 24px;
+		}
+
+		.row {
+			position: relative;
+			display: flex;
+			gap: 20px;
+			padding-block: 22px;
+		}
+
+		.num {
+			flex: 0 0 48px;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			color: var(--muted);
+		}
+
+		.name {
+			flex: 1 1 0;
+			min-width: 0;
+			font-size: clamp(26px, 2.8vw, 40px);
+			color: var(--muted);
+		}
+
+		/* La description et la stack restent dans la ligne pour les lecteurs d'écran et les
+		   moteurs, masquées à l'œil : l'aperçu les montre. */
+		.desc,
+		.stack,
+		.row[data-selected] .year {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+			clip-path: inset(50%);
+			white-space: nowrap;
+		}
+
+		/* L'année et « Anatomie → » occupent la même largeur : sélectionner une ligne ne fait
+		   pas passer son nom à la ligne. */
+		.year,
+		.row[data-selected]::after {
+			flex: 0 0 10ch;
+			font-size: 12px;
+			text-align: right;
+			white-space: nowrap;
+		}
+
+		.year {
+			color: var(--muted);
+		}
+
+		.row[data-selected] .num,
+		.row[data-selected]::after {
+			color: var(--accent);
+		}
+
+		.row[data-selected] .name {
+			color: var(--ink);
+		}
+
+		.row[data-selected] .num::after {
+			content: '';
+			width: 7px;
+			height: 7px;
+			background: var(--accent);
+		}
+
+		/* Repère visuel seul : le lien se lit toujours avec son année. */
+		.row[data-selected]::after {
+			content: 'Anatomie →';
+			content: 'Anatomie →' / '';
+			font-family: var(--font-mono);
 		}
 	}
 </style>

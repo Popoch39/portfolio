@@ -20,10 +20,13 @@ export const formatDay = (date: Date) => dayFormat.format(date);
 /** « octobre 2025 ». */
 const formatMonth = (date: Date) => monthFormat.format(date);
 
+/** « jour », « jours » : en français, 0 et 1 restent au singulier. */
+const plural = (count: number, word: string) => `${word}${count > 1 ? 's' : ''}`;
+
 /** « aucune contribution », « 1 contribution », « 2 688 contributions ». */
 function contributions(count: number): string {
 	if (count === 0) return 'aucune contribution';
-	return `${formatNumber(count)} contribution${count > 1 ? 's' : ''}`;
+	return `${formatNumber(count)} ${plural(count, 'contribution')}`;
 }
 
 /** « d’octobre », « de mars » : élision devant une voyelle. */
@@ -89,8 +92,8 @@ export interface MonthBar {
 
 export interface MonthlyTotals {
 	months: MonthBar[];
-	/** « * mois incomplets : 6 jours en oct. 2025, 25 en oct. 2026 », ou `null` si tous sont complets. */
-	partialNote: string | null;
+	/** « * mois incomplets : 6 jours en oct. 2025, 25 en oct. 2026 ». */
+	partialNote: string;
 	ariaLabel: string;
 }
 
@@ -111,10 +114,11 @@ export function monthlyTotals(snapshot: ContributionSnapshot): MonthlyTotals {
 	const partials: string[] = [];
 	const months = groups.map((g, i) => {
 		const { firstDay } = g;
-		const daysInMonth = new Date(Date.UTC(firstDay.getUTCFullYear(), firstDay.getUTCMonth() + 1, 0)).getUTCDate();
-		const partial = g.days < daysInMonth;
+		// Règle de la maquette : l'instantané couvre 365 jours glissants, donc ses mois extrêmes
+		// sont tronqués, même si l'un d'eux tombe pile sur un mois entier.
+		const partial = i === 0 || i === groups.length - 1;
 		if (partial) {
-			const days = partials.length === 0 ? `${g.days} jour${g.days > 1 ? 's' : ''}` : String(g.days);
+			const days = partials.length === 0 ? `${g.days} ${plural(g.days, 'jour')}` : String(g.days);
 			partials.push(`${days} en ${shortMonthYearFormat.format(firstDay)}`);
 		}
 		return {
@@ -129,7 +133,7 @@ export function monthlyTotals(snapshot: ContributionSnapshot): MonthlyTotals {
 
 	return {
 		months,
-		partialNote: partials.length > 0 ? `* mois incomplets : ${partials.join(', ')}` : null,
+		partialNote: `* mois incomplets : ${partials.join(', ')}`,
 		ariaLabel: `Contributions par mois : ${months.map((m) => `${m.name} ${formatNumber(m.value)}`).join(', ')}.`,
 	};
 }

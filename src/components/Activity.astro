@@ -79,15 +79,8 @@ const weekLabels = Array.from(
 
 		<figure class="chart months-chart">
 			<figcaption class="caption">
-				<span class="caption-title">Contributions par mois</span>
-				{
-					monthly.partialNote && (
-						<>
-							{' '}
-							<span class="mono caption-note">{monthly.partialNote}</span>
-						</>
-					)
-				}
+				<span class="caption-title">Contributions par mois</span>{' '}
+				<span class="mono caption-note">{monthly.partialNote}</span>
 			</figcaption>
 			<div class="scroll">
 				<div class="bars-frame">

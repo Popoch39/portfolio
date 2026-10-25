@@ -20,8 +20,10 @@
 	--anatomy-lit-shade: #dfe2ff;
 }
 
-/* La pièce maîtresse en bleu, avec une nuance par facette pour garder le volume. */
-.iso.anatomy [data-piece][data-master] {
+/* La pièce maîtresse en bleu au repos, et la pièce visée (`data-on`, posé par le script de mise en
+   avant) à sa place : une nuance par facette pour garder le volume. */
+.iso.anatomy [data-piece][data-master],
+.iso.anatomy [data-piece][data-on] {
 	--anatomy-hi: #2433ff;
 	--anatomy-mid: #5b6bff;
 	--anatomy-lo: #8e9bff;
@@ -31,4 +33,18 @@
 	--anatomy-shade-1: #d6daff;
 	--anatomy-shade-2: #e2e5ff;
 	--anatomy-shade-3: #eceeff;
+}
+
+/* Une seule pièce bleue à la fois : tant qu'une autre est visée, la maîtresse reprend les tons
+   de la figure. */
+.iso.anatomy:has([data-piece][data-on]) [data-piece][data-master]:not([data-on]) {
+	--anatomy-hi: inherit;
+	--anatomy-mid: inherit;
+	--anatomy-lo: inherit;
+	--anatomy-faint: inherit;
+	--anatomy-top: inherit;
+	--anatomy-shade-0: inherit;
+	--anatomy-shade-1: inherit;
+	--anatomy-shade-2: inherit;
+	--anatomy-shade-3: inherit;
 }

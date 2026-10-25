@@ -90,6 +90,9 @@ export interface Stage {
 
 /**
  * Monte le mouvement d'une figure sur sa scène et son relevé, et renvoie de quoi tout arrêter
- * (boucle, écouteurs, observateurs). Ne touche jamais aux attributs de mise en avant des pièces.
+ * (boucle, écouteurs, observateurs) et rendre la figure au repos. Le chargeur a déjà rendu la scène
+ * focalisable ; le mouvement y pose son rôle et le libellé qui explique ses touches, et n'écoute
+ * le clavier que sur elle. Il s'appuie sur les outils de `live.ts` et ne touche jamais aux
+ * attributs de mise en avant des pièces (`data-piece`, `data-master`, `data-on`).
  */
 export type MountMotion = (stage: Stage) => () => void;

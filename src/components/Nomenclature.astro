@@ -82,6 +82,17 @@ const { pieces, codeUrl } = Astro.props;
 		color: var(--accent);
 	}
 
+	/* La ligne de la pièce visée, dans la liste ou dans la figure (`data-on`, posé par le script
+	   de mise en avant). */
+	.item[data-on] {
+		background: var(--paper);
+	}
+
+	.item[data-on] .num,
+	.item[data-on] .name {
+		color: var(--accent);
+	}
+
 	.master {
 		width: 7px;
 		height: 7px;

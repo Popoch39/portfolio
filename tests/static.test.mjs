@@ -1,33 +1,64 @@
-// La page est statique et autonome : ni JavaScript client, ni feuille de style externe,
-// ni mouvement (spec #1 : animations et effets de survol hors périmètre).
+// Les pages sont statiques et autonomes : ni JavaScript client, ni feuille de style externe.
+// Règles de D1 révisées pour les figures (ADR 0001) : l'attribut `style` n'est toléré que dans
+// les SVG de figure, `animation` et `@keyframes` que dans la CSS du kit ; jamais de
+// `transition` ni de `:hover`.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readHome, tags, attr, css } from './helpers/dist.mjs';
+import { PROJECTS, readFiche, readHome, tags, attr, elements, css } from './helpers/dist.mjs';
 
 const html = readHome();
 const styles = css(html);
+const pages = [
+	{ name: 'accueil', html },
+	...PROJECTS.map(({ slug }) => ({ name: `fiche ${slug}`, html: readFiche(slug) })),
+];
+
+/** Le HTML sans les SVG de figure (`<svg class="iso-svg …">`), où le kit émet des attributs `style`. */
+const withoutFigures = (page) =>
+	elements(page, 'svg').reduce((rest, svg) => (/\bclass="[^"]*\biso-svg\b/.test(tags(svg, 'svg')[0]) ? rest.replace(svg, '') : rest), page);
 
 test('aucun <script> hormis les données structurées JSON-LD', () => {
-	const scripts = tags(html, 'script').filter((t) => attr(t, 'type') !== 'application/ld+json');
-	assert.deepEqual(scripts, []);
+	for (const page of pages) {
+		const scripts = tags(page.html, 'script').filter((t) => attr(t, 'type') !== 'application/ld+json');
+		assert.deepEqual(scripts, [], page.name);
+	}
 });
 
 test('aucune feuille de style externe', () => {
-	const stylesheets = tags(html, 'link').filter((t) => /\bstylesheet\b/i.test(attr(t, 'rel') ?? ''));
-	assert.deepEqual(stylesheets, []);
+	for (const page of pages) {
+		const stylesheets = tags(page.html, 'link').filter((t) => /\bstylesheet\b/i.test(attr(t, 'rel') ?? ''));
+		assert.deepEqual(stylesheets, [], page.name);
+	}
 });
 
-test('aucun attribut style inline', () => {
-	const withStyle = (html.match(/<[a-z][^>]*\sstyle=/gi) ?? []).map((t) => t.slice(0, 80));
-	assert.deepEqual(withStyle, []);
+test('aucun attribut style inline hors des SVG de figure', () => {
+	for (const page of pages) {
+		const withStyle = (withoutFigures(page.html).match(/<[a-z][^>]*\sstyle=/gi) ?? []).map((t) => t.slice(0, 80));
+		assert.deepEqual(withStyle, [], page.name);
+	}
 });
 
-test('la CSS livrée ne contient ni animation, ni transition, ni :hover', () => {
-	assert.ok(styles.length > 0, 'aucune CSS trouvée dans la page');
+test('la CSS livrée ne contient ni transition ni :hover, et ses animations sont celles du kit', () => {
+	for (const page of pages) {
+		const pageStyles = css(page.html);
+		assert.ok(pageStyles.length > 0, `${page.name} : aucune CSS trouvée`);
+		assert.doesNotMatch(pageStyles, /\btransition(-[a-z-]+)?\s*:/i, page.name);
+		// La pseudo-classe, pas la requête média `(hover: hover)`, qui teste ce que sait le pointeur.
+		assert.doesNotMatch(pageStyles, /(?<!\(\s*hover\s*):hover\b/i, page.name);
+		const keyframes = [...pageStyles.matchAll(/@keyframes\s+([\w-]+)/gi)].map((m) => m[1]);
+		assert.deepEqual(keyframes.filter((name) => !name.startsWith('iso-')), [], `${page.name} : @keyframes hors du kit`);
+		const animated = [...pageStyles.matchAll(/([^{}]+)\{[^{}]*\banimation(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap((m) => m[1].split(','));
+		assert.deepEqual(
+			animated.map((selector) => selector.trim()).filter((selector) => !selector.startsWith('.iso')),
+			[],
+			`${page.name} : animation hors de la CSS du kit`,
+		);
+	}
+});
+
+test('l’accueil n’anime rien', () => {
 	assert.doesNotMatch(styles, /\banimation(-[a-z-]+)?\s*:/i);
 	assert.doesNotMatch(styles, /@keyframes/i);
-	assert.doesNotMatch(styles, /\btransition(-[a-z-]+)?\s*:/i);
-	assert.doesNotMatch(styles, /:hover\b/i);
 });
 
 test('une seule police préchargée, en woff2', () => {

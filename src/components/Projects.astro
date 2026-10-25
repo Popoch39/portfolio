@@ -1,6 +1,6 @@
 ---
 import SectionHeader from './SectionHeader.astro';
-import { identity, projects, publicRepoCount } from '../data/profile';
+import { githubRepoUrl, projects, publicRepoCount } from '../data/profile';
 ---
 
 <section id="projets" class="projects">
@@ -14,7 +14,7 @@ import { identity, projects, publicRepoCount } from '../data/profile';
 			projects.map((p, i) => (
 				<li class="item">
 					{/* Les `{' '}` font lire le lien « 01 typomaniac … » et non « 01typomaniac… ». */}
-					<a class="grid row" href={`${identity.links.github}/${p.repo}`}>
+					<a class="grid row" href={githubRepoUrl(p.repo)}>
 						<span class="mono num">{String(i + 1).padStart(2, '0')}</span>{' '}
 						<span class="name">{p.repo}</span>{' '}
 						<span class="desc">{p.description}</span>{' '}

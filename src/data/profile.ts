@@ -25,6 +25,12 @@ export interface Identity {
 	skills: string[];
 	employer: Employer;
 	email: string;
+	github: {
+		/** « Popoch39 » */
+		handle: string;
+		/** URL du profil sans protocole, pour l'affichage : « github.com/Popoch39 ». */
+		profile: string;
+	};
 	links: {
 		github: string;
 		nvimConfig: string;
@@ -64,6 +70,13 @@ const givenName = 'Louis';
 const familyName = 'Pocheron';
 const languages = ['TypeScript', 'PHP', 'Rust'];
 const sideLanguages = ['Go', 'Lua'];
+// L'identifiant GitHub est la seule source : profil, liens et dépôts en dérivent.
+const githubHandle = 'Popoch39';
+const githubProfile = `github.com/${githubHandle}`;
+const githubUrl = `https://${githubProfile}`;
+
+/** URL d'un dépôt du compte GitHub. */
+export const githubRepoUrl = (repo: string) => `${githubUrl}/${repo}`;
 
 export const identity: Identity = {
 	givenName,
@@ -83,9 +96,10 @@ export const identity: Identity = {
 	],
 	employer: { name: 'Da Viking Code', city: 'Dijon', since: 2023 },
 	email: 'pocheron.louis@gmail.com',
+	github: { handle: githubHandle, profile: githubProfile },
 	links: {
-		github: 'https://github.com/Popoch39',
-		nvimConfig: 'https://github.com/Popoch39/nvim',
+		github: githubUrl,
+		nvimConfig: githubRepoUrl('nvim'),
 	},
 };
 
@@ -153,7 +167,7 @@ export const marqueeWords: string[] = [
 ];
 
 export interface Project {
-	/** Nom du dépôt sous le compte GitHub de `identity.links.github` : c'est aussi le nom affiché. */
+	/** Nom du dépôt sous le compte GitHub de `identity.github` : c'est aussi le nom affiché. */
 	repo: string;
 	description: string;
 	stack: string[];

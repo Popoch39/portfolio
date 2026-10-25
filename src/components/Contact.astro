@@ -2,8 +2,7 @@
 import SectionNumber from './SectionNumber.astro';
 import { identity } from '../data/profile';
 
-const { email, links } = identity;
-const githubHandle = new URL(links.github).pathname.slice(1);
+const { email, github, links } = identity;
 const [mailbox, domain] = email.split('@');
 ---
 
@@ -15,7 +14,7 @@ const [mailbox, domain] = email.split('@');
 		{/* Coupure préférée après « @ » plutôt qu'au milieu du domaine. */}
 		<a class="mail" href={`mailto:${email}`}>{mailbox}@<wbr />{domain}</a>
 		<div class="links">
-			<a href={links.github}>GitHub — {githubHandle} ↗</a>{' '}
+			<a href={links.github}>GitHub — {github.handle} ↗</a>{' '}
 			<a href={links.nvimConfig}>Config Neovim ↗</a>{' '}
 			<span class="place">{identity.city}, {identity.country}</span>
 		</div>

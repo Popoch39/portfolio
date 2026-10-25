@@ -1,23 +1,146 @@
+---
+import { Font } from 'astro:assets';
+import { identity, pageMeta } from '../data/profile';
+
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const { shareImage } = pageMeta;
+const shareImageUrl = new URL(shareImage.path, Astro.site).href;
+
+// Ni téléphone, ni adresse postale, ni date de naissance (règle de contenu du spec).
+const person = {
+	'@context': 'https://schema.org',
+	'@type': 'Person',
+	name: identity.name,
+	givenName: identity.givenName,
+	familyName: identity.familyName,
+	jobTitle: identity.roleDetail,
+	worksFor: { '@type': 'Organization', name: identity.employer.name },
+	homeLocation: { '@type': 'Place', name: `${identity.city}, ${identity.country}` },
+	url: canonical,
+	image: shareImageUrl,
+	email: `mailto:${identity.email}`,
+	sameAs: [identity.links.github],
+	knowsAbout: identity.skills,
+};
+// `<` échappé : aucune valeur ne peut fermer la balise <script> avant l'heure.
+const personJsonLd = JSON.stringify(person).replaceAll('<', '\\u003c');
+---
+
 <!doctype html>
-<html lang="en">
+<html lang="fr">
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{pageMeta.title}</title>
+		<meta name="description" content={pageMeta.description} />
+		<link rel="canonical" href={canonical} />
+		<meta name="theme-color" content={pageMeta.themeColor} />
+		{/* `sizes` sur le .ico : sans lui, Chrome le préfère au SVG. */}
+		<link rel="icon" href="/favicon.ico" sizes="32x32" />
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+		<link rel="sitemap" href="/sitemap.xml" />
+		<meta property="og:type" content="profile" />
+		<meta property="og:locale" content="fr_FR" />
+		<meta property="og:url" content={canonical} />
+		<meta property="og:title" content={pageMeta.title} />
+		<meta property="og:description" content={pageMeta.description} />
+		<meta property="og:image" content={shareImageUrl} />
+		<meta property="og:image:type" content="image/png" />
+		<meta property="og:image:width" content={String(shareImage.width)} />
+		<meta property="og:image:height" content={String(shareImage.height)} />
+		<meta property="og:image:alt" content={shareImage.alt} />
+		<meta property="profile:first_name" content={identity.givenName} />
+		<meta property="profile:last_name" content={identity.familyName} />
+		{/* X reprend titre, description et image d'Open Graph : seul le format de carte lui est propre. */}
+		<meta name="twitter:card" content="summary_large_image" />
+		<script is:inline type="application/ld+json" set:html={personJsonLd} />
+		{/* Seule la romaine d'Archivo est préchargée : c'est elle qui dessine le héros. */}
+		<Font cssVariable="--font-archivo" preload={[{ style: 'normal', subset: 'latin' }]} />
+		<Font cssVariable="--font-mono" />
 	</head>
 	<body>
 		<slot />
 	</body>
 </html>
 
-<style>
-	html,
+<style is:global>
+	/* Valeurs reprises à l'identique de la maquette D1 · Activité. */
+	:root {
+		--bg: #f3f3ef;
+		--ink: #111110;
+		--muted: #5f5f5a;
+		--rule: #d6d6d0;
+		--accent: #2433ff;
+		--accent-light: #8e9bff;
+		--on-ink-muted: #bdbdb6;
+		--stack-sep: #a3a39c;
+		--status-segment: #2a2a28;
+		--heat-0: #e3e3dd;
+		--heat-1: #8e9bff;
+		--heat-2: #5b6bff;
+		--heat-3: #2b3bf5;
+		--heat-4: #161f9e;
+
+		--container: 1440px;
+		--page-margin: clamp(16px, 4vw, 56px);
+		--gutter: 24px;
+		--status-height: 30px;
+
+		--font-sans: var(--font-archivo);
+	}
+
+	*,
+	::before,
+	::after {
+		box-sizing: border-box;
+	}
+
+	html {
+		background: var(--bg);
+		/* La barre d'état collée en bas masquerait l'élément qui reçoit le focus au clavier :
+		   le défilement le garde au-dessus d'elle, contour compris (WCAG 2.4.11). */
+		scroll-padding-bottom: calc(var(--status-height) + 8px);
+	}
+
 	body {
 		margin: 0;
-		width: 100%;
-		height: 100%;
+		background: var(--bg);
+		color: var(--ink);
+		font-family: var(--font-sans);
+		font-size: 16px;
+		line-height: 1.5;
+	}
+
+	a {
+		color: var(--ink);
+	}
+
+	:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 3px;
+	}
+
+	.mono {
+		font-family: var(--font-mono);
+	}
+
+	/* Conteneur de contenu : plafonné à 1440 px, centré. Les bandes pleine largeur
+	   (bandeau, barre d'état) restent en dehors. */
+	.container {
+		max-width: var(--container);
+		margin: 0 auto;
+		padding: 0 var(--page-margin);
+	}
+
+	/* Grille de 12 colonnes. Mobile-first : chaque enfant occupe toute la largeur,
+	   les composants placent leurs colonnes à partir de 600 / 1024 px. */
+	.grid {
+		display: grid;
+		grid-template-columns: repeat(12, minmax(0, 1fr));
+		column-gap: var(--gutter);
+	}
+
+	.grid > * {
+		grid-column: 1 / -1;
 	}
 </style>

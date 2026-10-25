@@ -1,0 +1,182 @@
+---
+import SectionHeader from './SectionHeader.astro';
+import { career, careerSummary, education } from '../data/profile';
+---
+
+<section id="parcours" class="career">
+	<SectionHeader number={2} title="Parcours" note={careerSummary} />
+	<div class="grid steps">
+		{
+			career.map((p) => (
+				<article class:list={['step', { current: p.current }]}>
+					<span class="year" aria-hidden="true">{p.year}</span>
+					<span class="mono when">{p.period} · {p.city}</span>
+					<h3 class="company">{p.company}</h3>
+					<p class="role">{p.role}</p>
+					<ul class="missions">
+						{p.missions.map((m) => (
+							<li class="mission">
+								<span class="dash" aria-hidden="true">—</span>
+								<span>{m}</span>
+							</li>
+						))}
+					</ul>
+				</article>
+			))
+		}
+	</div>
+	<div class="grid education">
+		<h3 class="mono education-title">Formation</h3>
+		<ol class="degrees">
+			{
+				education.map((f) => (
+					<li class="degree">
+						{/* Les `{' '}` font lire « 2018 Baccalauréat … » et non « 2018Baccalauréat… ». */}
+						<span class="mono degree-when">{f.period}</span>{' '}
+						<span class="degree-title">{f.degree}</span>{' '}
+						<span class="degree-school">{f.school}</span>
+					</li>
+				))
+			}
+		</ol>
+	</div>
+</section>
+
+<style>
+	.career {
+		padding-top: clamp(64px, 8vw, 120px);
+	}
+
+	.steps {
+		row-gap: 48px;
+		padding-top: 40px;
+	}
+
+	.step {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		min-width: 0;
+		padding-top: 18px;
+		border-top: 4px solid var(--ink);
+	}
+
+	.current {
+		border-top-color: var(--accent);
+	}
+
+	.year {
+		font-size: clamp(64px, 7.4vw, 108px);
+		line-height: 0.82;
+		font-weight: 800;
+		font-stretch: 62%;
+	}
+
+	.when {
+		font-size: 12px;
+		color: var(--muted);
+	}
+
+	.company {
+		margin: 0;
+		font-size: 26px;
+		line-height: 1.15;
+		font-weight: 700;
+		letter-spacing: -0.015em;
+	}
+
+	.role {
+		margin: 0;
+		font-size: 15px;
+		color: var(--muted);
+	}
+
+	.missions {
+		display: flex;
+		flex-direction: column;
+		gap: 9px;
+		margin: 6px 0 0;
+		padding: 0;
+		list-style: none;
+		font-size: 15px;
+		line-height: 1.45;
+	}
+
+	.mission {
+		display: flex;
+		gap: 10px;
+	}
+
+	.dash {
+		color: var(--muted);
+	}
+
+	.education {
+		row-gap: 14px;
+		margin-top: 72px;
+	}
+
+	.education-title {
+		margin: 0;
+		padding-top: 14px;
+		font-size: 13px;
+		font-weight: 400;
+		color: var(--muted);
+	}
+
+	.degrees {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.degree {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 4px 20px;
+		padding: 14px 0;
+		border-top: 1px solid var(--rule);
+		font-size: 17px;
+	}
+
+	.degree-when {
+		flex-shrink: 0;
+		width: 110px;
+		font-size: 13px;
+		color: var(--muted);
+	}
+
+	.degree-title {
+		flex: 1 1 260px;
+		font-weight: 600;
+	}
+
+	.degree-school {
+		color: var(--muted);
+	}
+
+	/* Tablette : le poste actuel en pleine largeur, les deux précédents côte à côte ;
+	   Formation déjà en 3/9. */
+	@media (min-width: 600px) {
+		.step:not(.current) {
+			grid-column: span 6;
+		}
+
+		.education-title {
+			grid-column: span 3;
+		}
+
+		.degrees {
+			grid-column: span 9;
+		}
+	}
+
+	/* Laptop et au-delà : les trois étapes en 4/4/4, comme la maquette. */
+	@media (min-width: 1024px) {
+		.step,
+		.step:not(.current) {
+			grid-column: span 4;
+		}
+	}
+</style>

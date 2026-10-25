@@ -9,9 +9,17 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "check": "astro check",
+    "og:capture": "node scripts/capture-og.mjs",
+    "favicon:ico": "node scripts/favicon-ico.mjs",
+    "test": "astro build && node --test \"tests/**/*.test.mjs\""
   },
   "dependencies": {
     "astro": "^7.4.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "typescript": "^6.0.3"
   }
 }

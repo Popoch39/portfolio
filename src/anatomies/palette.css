@@ -1,0 +1,34 @@
+/* Palette des figures : les tokens du kit `anatomy` (thème clair) calés sur D1, sans modifier
+   le kit. Elle vaut pour le SVG intégré à la page (dans un `.iso.anatomy[data-theme="light"]`)
+   comme pour le SVG autonome, qui l'embarque. Plus spécifique que `.iso[data-theme="light"]`. */
+.iso.anatomy[data-theme='light'] {
+	--anatomy-page: #f3f3ef;
+	--anatomy-card: #fbfbfa;
+	--anatomy-paper: #fbfbfa;
+	--anatomy-text: #5f5f5a;
+	--anatomy-strong: #111110;
+	/* Celui du kit (#8c8c90) tombe à 3,3:1 sur le papier : sous l'AA. */
+	--anatomy-muted: #5f5f5a;
+	--anatomy-hi: #111110;
+	--anatomy-mid: #8a8a85;
+	--anatomy-lo: #b4b4ae;
+	--anatomy-faint: #d6d6d0;
+	--anatomy-dot: #111110;
+	--anatomy-mono: var(--font-mono, ui-monospace, Menlo, monospace);
+	--anatomy-lit: #2433ff;
+	--anatomy-lit-top: #f1f2ff;
+	--anatomy-lit-shade: #dfe2ff;
+}
+
+/* La pièce maîtresse en bleu, avec une nuance par facette pour garder le volume. */
+.iso.anatomy [data-piece][data-master] {
+	--anatomy-hi: #2433ff;
+	--anatomy-mid: #5b6bff;
+	--anatomy-lo: #8e9bff;
+	--anatomy-faint: #c3c9ff;
+	--anatomy-top: #f1f2ff;
+	--anatomy-shade-0: #c9ceff;
+	--anatomy-shade-1: #d6daff;
+	--anatomy-shade-2: #e2e5ff;
+	--anatomy-shade-3: #eceeff;
+}

@@ -208,3 +208,73 @@ export const projects: Project[] = [
 
 /** Nombre de dépôts publics sur GitHub, relevé à la main (affiché dans l'en-tête des projets). */
 export const publicRepoCount = 41;
+
+// ── Parcours et formation (section 02) ──
+
+/** Mention de l'en-tête de la section Parcours. */
+export const careerSummary = '~4 ans · santé, énergie, sport';
+
+export interface Position {
+	/** Année de début, affichée en grand à titre décoratif. */
+	year: number;
+	period: string;
+	city: string;
+	company: string;
+	role: string;
+	missions: string[];
+	/** Poste actuel, signalé par un filet bleu. */
+	current?: boolean;
+}
+
+/** Étapes professionnelles, de la plus récente à la plus ancienne. Les clients restent anonymes. */
+export const career: Position[] = [
+	{
+		year: identity.employer.since,
+		period: 'mars 2023 → aujourd’hui',
+		city: identity.employer.city,
+		company: identity.employer.name,
+		role: 'Concepteur & développeur d’applications',
+		current: true,
+		missions: [
+			'Back-office d’une plateforme de santé — NestJS 11, Prisma, PostgreSQL, GraphQL, React 19',
+			'Micro-services Rust (Axum) — serveur de tuiles, fichiers CAD, nuages de points',
+			'Applications cartographiques pour un grand acteur de l’énergie — Laravel 12, React 19',
+			'Plateforme mobile terrain avec mode hors-ligne — React Native',
+			'Monorepos, Docker, CI/CD, Cloudflare Workers, authentification',
+		],
+	},
+	{
+		year: 2022,
+		period: 'fév. 2022 → fév. 2023',
+		city: 'Dijon',
+		company: 'Conseil départemental olympique et sportif',
+		role: 'Concepteur & développeur d’applications',
+		missions: [
+			'Application web sous Symfony',
+			'Application mobile React Native',
+			'API back-end en Node.js / TypeScript (Express)',
+		],
+	},
+	{
+		year: 2021,
+		period: 'sept. → déc. 2021',
+		city: 'Doucier',
+		company: 'Jordel Média',
+		role: 'Stage — développeur web',
+		missions: ['Nouvelles fonctionnalités sur le CMS interne de l’entreprise'],
+	},
+];
+
+export interface Education {
+	period: string;
+	degree: string;
+	school: string;
+}
+
+/** Formation, de la plus récente à la plus ancienne. */
+export const education: Education[] = [
+	{ period: '2022 — 2023', degree: 'Concepteur & développeur d’applications', school: 'Access Code School, Besançon' },
+	{ period: '2020 — 2021', degree: 'Développeur web & développeur mobile', school: 'Access Code School, Besançon' },
+	{ period: '2018 — 2020', degree: 'Langues étrangères appliquées (LEA)', school: 'UFR SLHS, Besançon' },
+	{ period: '2018', degree: 'Baccalauréat économique et social', school: 'Lycée Carnot, Dijon' },
+];

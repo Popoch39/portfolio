@@ -11,9 +11,9 @@ import { marqueeWords } from '../data/profile';
 <style>
 	.marquee {
 		display: flex;
-		/* Les mots ne sont plus doublés comme dans la maquette : au-delà de ~2400 px ils
-		   ne remplissent plus la bande, on les répartit. Quand ils débordent, l'espace
-		   libre est négatif et `space-between` revient à un alignement au début. */
+		/* Chaque mot n'apparaît qu'une fois : au-delà de ~2400 px ils ne remplissent pas
+		   la bande, on les répartit. Quand ils débordent, l'espace libre est négatif et
+		   `space-between` revient à un alignement au début. */
 		justify-content: space-between;
 		margin: 0;
 		padding: 0;

@@ -1,0 +1,129 @@
+---
+import SectionHeader from './SectionHeader.astro';
+import { identity, projects, publicRepoCount } from '../data/profile';
+---
+
+<section id="projets" class="projects">
+	<SectionHeader
+		number={1}
+		title="Projets"
+		note={`${projects.length} sélectionnés · ${publicRepoCount} dépôts publics`}
+	/>
+	<ol class="list">
+		{
+			projects.map((p, i) => (
+				<li class="item">
+					{/* Les `{' '}` font lire le lien « 01 typomaniac … » et non « 01typomaniac… ». */}
+					<a class="grid row" href={`${identity.links.github}/${p.repo}`}>
+						<span class="mono num">{String(i + 1).padStart(2, '0')}</span>{' '}
+						<span class="name">{p.repo}</span>{' '}
+						<span class="desc">{p.description}</span>{' '}
+						<span class="mono stack">{p.stack.join(' · ')}</span>{' '}
+						<span class="mono year">{p.year} ↗</span>
+					</a>
+				</li>
+			))
+		}
+	</ol>
+</section>
+
+<style>
+	.projects {
+		padding-top: clamp(56px, 7vw, 108px);
+	}
+
+	.list {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.item {
+		border-bottom: 1px solid var(--rule);
+	}
+
+	/* Les 14 px débordants de la maquette élargissent la zone du lien (et son focus)
+	   sans décaler le texte. */
+	.row {
+		row-gap: 8px;
+		align-items: baseline;
+		margin: 0 -14px;
+		padding: 26px 14px;
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.num,
+	.year {
+		font-size: 13px;
+	}
+
+	.name {
+		font-size: clamp(24px, 2.5vw, 36px);
+		line-height: 1.05;
+		font-weight: 700;
+		font-stretch: 80%;
+		letter-spacing: -0.015em;
+		overflow-wrap: anywhere;
+	}
+
+	.desc {
+		font-size: 16px;
+		line-height: 1.45;
+		color: var(--muted);
+		text-wrap: pretty;
+	}
+
+	.stack {
+		font-size: 12px;
+		line-height: 1.6;
+		color: var(--muted);
+	}
+
+	.year {
+		white-space: nowrap;
+	}
+
+	/* Tablette : numéro + nom, puis description, stack et année sous le nom. */
+	@media (min-width: 600px) {
+		.num {
+			grid-column: 1 / span 1;
+		}
+
+		.name {
+			grid-column: 2 / -1;
+		}
+
+		.desc {
+			grid-column: 2 / span 6;
+		}
+
+		.stack {
+			grid-column: 8 / span 3;
+		}
+
+		.year {
+			grid-column: 11 / span 2;
+			text-align: right;
+		}
+	}
+
+	/* Laptop et au-delà : la grille 1/4/4/2/1 de la maquette. */
+	@media (min-width: 1024px) {
+		.name {
+			grid-column: 2 / span 4;
+		}
+
+		.desc {
+			grid-column: 6 / span 4;
+		}
+
+		.stack {
+			grid-column: 10 / span 2;
+		}
+
+		.year {
+			grid-column: 12 / span 1;
+		}
+	}
+</style>

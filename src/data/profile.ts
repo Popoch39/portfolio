@@ -108,3 +108,78 @@ export const sections: Section[] = [
 	{ id: 'stack', label: 'Stack' },
 	{ id: 'contact', label: 'Contact' },
 ];
+
+/** Mots du bandeau noir sous le héros, dans l'ordre d'affichage. */
+export const marqueeWords: string[] = [
+	'TypeScript',
+	'React',
+	'Node',
+	'Rust',
+	'Neovim',
+	'NestJS',
+	'Laravel',
+	'Bun',
+	'Axum',
+	'Elysia',
+	'Next.js',
+	'PostgreSQL',
+	'Lua',
+	'Go',
+];
+
+export interface Project {
+	/** Nom du dépôt sous le compte GitHub de `identity.links.github` : c'est aussi le nom affiché. */
+	repo: string;
+	description: string;
+	stack: string[];
+	year: number;
+}
+
+/** Projets mis en avant, dans l'ordre d'affichage. Certains dépôts sont volontairement absents. */
+export const projects: Project[] = [
+	{
+		repo: 'typomaniac',
+		description:
+			'Jeu de dactylo multijoueur : runs solo, duels classés en Bo3, MMR et classement. Serveur de duel autoritaire en WebSocket.',
+		stack: ['TypeScript', 'Elysia', 'Bun', 'React 19'],
+		year: 2026,
+	},
+	{
+		repo: 'claude-tmux-notify.nvim',
+		description:
+			'Un toast Neovim quand une session Claude Code, dans une autre fenêtre tmux, vous attend.',
+		stack: ['Lua', 'Neovim', 'tmux', '★ 3'],
+		year: 2026,
+	},
+	{
+		repo: 'claude-status-line',
+		description:
+			'L’usage d’abonnement Claude Code dans la status line — binaire Bun multi-plateforme, installeur curl | sh.',
+		stack: ['TypeScript', 'Bun'],
+		year: 2026,
+	},
+	{
+		repo: 'pointcloud-viewer',
+		description:
+			'Nuages de points LiDAR dans le navigateur — parsing en Rust compilé en WebAssembly, rendu three.js.',
+		stack: ['Rust', 'WASM', 'React', 'three.js'],
+		year: 2026,
+	},
+	{
+		repo: 'trekker',
+		description:
+			'API de catalogue de randonnées — NestJS 11, Drizzle et Postgres, contrats Zod partagés en monorepo.',
+		stack: ['TypeScript', 'NestJS', 'Drizzle'],
+		year: 2026,
+	},
+	{
+		repo: 'ma_parcelle',
+		description:
+			'Tout ce que les données publiques disent d’une parcelle, sur une carte plein écran — sans compte, sans serveur.',
+		stack: ['React 19', 'Vite', 'MapLibre'],
+		year: 2026,
+	},
+];
+
+/** Nombre de dépôts publics sur GitHub, relevé à la main (affiché dans l'en-tête des projets). */
+export const publicRepoCount = 41;

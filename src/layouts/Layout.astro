@@ -14,6 +14,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site).href;
 		<meta name="description" content={pageMeta.description} />
 		<link rel="canonical" href={canonical} />
 		<meta name="theme-color" content={pageMeta.themeColor} />
+		<link rel="sitemap" href="/sitemap.xml" />
 		{/* Seule la romaine d'Archivo est préchargée : c'est elle qui dessine le héros. */}
 		<Font cssVariable="--font-archivo" preload={[{ style: 'normal', subset: 'latin' }]} />
 		<Font cssVariable="--font-mono" />

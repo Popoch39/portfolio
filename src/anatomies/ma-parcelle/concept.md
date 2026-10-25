@@ -60,7 +60,7 @@ Pourquoi cette machine raconte bien le code :
 | 05 trekker | cube massif | 3/4 bas | éclaté partiel | tirer un tiroir |
 | **06 ma_parcelle** | **colonne pleine, format portrait** | **écorché en quart, intérieur visible** | **traversée verticale** | **descendre** |
 
-C'est la seule figure en écorché, la seule au format portrait et la seule dont le mouvement principal est vertical vers le bas. **Pas de base sur pieds ni de règle graduée.** La colonne repose sur sa bride de fond pleine, comme une vraie colonne de laboratoire. La profondeur se lit aux brides et au compteur de strate, pas sur une règle. Le seul trépied de la série reste celui du 04 : celle-ci n'a pas de pieds.
+C'est la seule figure en écorché et la seule dont le mouvement principal est vertical vers le bas. Le 02 est lui aussi au format portrait, mais c'est une planche plate vue de face. Ici, c'est un volume rond ouvert sur un quart, dont on voit l'intérieur. Le 01 a aussi un mât, mais c'est un tube carré à crémaillères. Celui-ci est fait de deux colonnes rondes avec une vis d'avance, comme une perceuse à colonne. **Pas de base sur pieds ni de règle graduée.** La colonne repose sur sa bride de fond pleine, comme une vraie colonne de laboratoire. La profondeur se lit aux brides et au compteur de strate, pas sur une règle. Le seul trépied de la série reste celui du 04 : celle-ci n'a pas de pieds.
 
 **Tons.** La colonne et le mât sont en `mid`. La bride de fond et les brides de jonction sont en `lo`. Le plateau, le log et les strates sont en `hi`. Les textures de strate restent dans les encres de la palette, sans couleur de terre. Le seul bleu au repos est le carottier, la pièce maîtresse.
 
@@ -92,21 +92,21 @@ Le sujet est ce que le lecteur regarde : le plateau, les strates, la carotte et 
 21. Faces de coupe de l'écorché : deux plans, de la bride de tête à la bride de fond.
 22. Tranches des brides coupées, d'un ton plein et plus sombre, sans hachures.
 23. Paroi du forage, demi-cylindre visible dans l'angle de coupe.
-24. Mât, en tube carré.
+24. Mât à deux colonnes de guidage rondes, chromées.
 25. Console du mât, boulonnée sur la bride de tête.
 26. Gousset gauche de la console.
 27. Gousset droit de la console.
-28. Crémaillère d'avance le long du mât.
-29. Butée haute.
-30. Butée basse.
-31. Chapeau de mât avec sa poulie de tête et son axe.
+28. Vis d'avance trapézoïdale, entre les deux colonnes.
+29. Bagues de butée hautes, serrées sur les colonnes.
+30. Bagues de butée basses.
+31. Traverse de tête qui relie les deux colonnes, avec la poulie de tête et son axe.
 32. Tambour du treuil, à joues.
 33. Flasques du treuil, boulonnées sur la bride de tête.
 
 **Mécanisme (13)**
 
-34. Chariot sur le mât, avec 4 bagues de guidage.
-35. Pignon d'avance, visible par la lumière du chariot.
+34. Chariot à quatre bagues de guidage, deux par colonne.
+35. Écrou d'avance en bronze, visible par la lumière du chariot.
 36. Moteur de rotation à ailettes.
 37. Carter de réducteur.
 38. Mandrin.
@@ -121,7 +121,7 @@ Le sujet est ce que le lecteur regarde : le plateau, les strates, la carotte et 
 
 **Commandes (6)**
 
-47. Manivelle d'avance sur le chariot.
+47. Manivelle d'avance, en bout de vis sur la traverse de tête.
 48. Poignée moletée de la manivelle.
 49. Levier d'embrayage de rotation, à boule.
 50. Vis de blocage moletée du chariot.
@@ -262,6 +262,6 @@ Le flux rejoué : une parcelle choisie sur la carte, la croûte cadastrale perc�
 ## 9. Notes pour la construction (#27)
 
 - **Ordre de peinture.** Ce qui est derrière l'axe de coupe se peint d'abord : la demi-paroi arrière du forage, puis le carottier entier, puis les faces de coupe, puis les tranches de brides. Le câble passe derrière le mât au-dessus de la console et devant la poulie. Quand le carottier traverse une bride, il est dessiné dans l'angle ouvert, jamais à travers une tranche.
-- **Pièces de révolution et câble** : les viroles, brides, tiges, carottier et poulie viennent de `kit/lathe.mjs`, le câble de `kit/tube.mjs`. L'audit du kit doit finir à zéro, carottier en haut, à mi-course et au fond.
+- **Pièces de révolution et câble** : les viroles, brides, colonnes du mât, vis d'avance, tiges, carottier et poulie viennent de `kit/lathe.mjs`, le câble de `kit/tube.mjs`. L'audit du kit doit finir à zéro, carottier en haut, à mi-course et au fond.
 - **Textures** : les veines communales des Risques vont d'un plan de coupe à l'autre et finissent sur l'arête extérieure. Les lamines du DPE finissent sur les brides. Les graviers des Ventes restent dans leur lit.
 - **Budget** : SVG ≤ 250 Ko brut, module de mouvement ≤ 20 Ko minifié.

@@ -53,6 +53,12 @@ import { identity, projects, publicRepoCount } from '../data/profile';
 		text-decoration: none;
 	}
 
+	/* Sous ~475 px, la ligne touche presque le bord de l'écran : un contour extérieur y perd
+	   ses côtés et ne se lit plus que comme deux filets. Rentré dans le padding, il reste entier. */
+	.row:focus-visible {
+		outline-offset: -2px;
+	}
+
 	.num,
 	.year {
 		font-size: 13px;

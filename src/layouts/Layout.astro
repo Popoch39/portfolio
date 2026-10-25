@@ -84,6 +84,7 @@ const personJsonLd = JSON.stringify(person).replaceAll('<', '\\u003c');
 		--container: 1440px;
 		--page-margin: clamp(16px, 4vw, 56px);
 		--gutter: 24px;
+		--status-height: 30px;
 
 		--font-sans: var(--font-archivo);
 	}
@@ -96,6 +97,9 @@ const personJsonLd = JSON.stringify(person).replaceAll('<', '\\u003c');
 
 	html {
 		background: var(--bg);
+		/* La barre d'état collée en bas masquerait l'élément qui reçoit le focus au clavier :
+		   le défilement le garde au-dessus d'elle, contour compris (WCAG 2.4.11). */
+		scroll-padding-bottom: calc(var(--status-height) + 8px);
 	}
 
 	body {

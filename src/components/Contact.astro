@@ -4,6 +4,7 @@ import { identity } from '../data/profile';
 
 const { email, links } = identity;
 const githubHandle = new URL(links.github).pathname.slice(1);
+const [mailbox, domain] = email.split('@');
 ---
 
 <section id="contact" class="grid contact">
@@ -11,7 +12,8 @@ const githubHandle = new URL(links.github).pathname.slice(1);
 	<div class="body">
 		<p class="wq" aria-hidden="true">:wq</p>
 		<p class="pitch">Une API, une interface, un outil à construire&nbsp;? Écrivez-moi.</p>
-		<a class="mail" href={`mailto:${email}`}>{email}</a>
+		{/* Coupure préférée après « @ » plutôt qu'au milieu du domaine. */}
+		<a class="mail" href={`mailto:${email}`}>{mailbox}@<wbr />{domain}</a>
 		<div class="links">
 			<a href={links.github}>GitHub — {githubHandle} ↗</a>{' '}
 			<a href={links.nvimConfig}>Config Neovim ↗</a>{' '}
@@ -51,7 +53,7 @@ const githubHandle = new URL(links.github).pathname.slice(1);
 		letter-spacing: -0.01em;
 	}
 
-	/* L'adresse est un seul mot : `anywhere` la coupe à 320 px plutôt que de déborder. */
+	/* Filet de sécurité si même une moitié de l'adresse ne tient pas : couper plutôt que déborder. */
 	.mail {
 		font-size: clamp(30px, 6.2vw, 92px);
 		line-height: 1.05;

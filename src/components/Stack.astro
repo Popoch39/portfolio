@@ -1,0 +1,89 @@
+---
+import SectionHeader from './SectionHeader.astro';
+import { identity, stack, dailyTools } from '../data/profile';
+---
+
+<section id="stack" class="stack">
+	<SectionHeader number={4} title="Stack" note=":set stack?" />
+	<dl class="categories">
+		{
+			stack.map((category) => (
+				<div class="grid category">
+					<dt class="mono label">{category.label}</dt>
+					<dd class="items">
+						{/* Espace insécable avant « / » : la barre ne commence jamais une ligne. Les
+						   vrais espaces hors du séparateur masqué gardent les mots distincts à l'oral. */}
+						{category.items.map((item, i) => (
+							<Fragment>
+								{i > 0 && (
+									<Fragment>
+										{' '}
+										<span class="sep" aria-hidden="true">/</span>{' '}
+									</Fragment>
+								)}
+								<span>{item}</span>
+							</Fragment>
+						))}
+					</dd>
+				</div>
+			))
+		}
+	</dl>
+	<p class="mono tools">
+		{dailyTools.map((tool) => `${tool.role} : ${tool.name}`).join(' · ')} —{' '}
+		<a href={identity.links.nvimConfig}>la config est sur GitHub</a>
+	</p>
+</section>
+
+<style>
+	.stack {
+		padding-top: clamp(64px, 8vw, 120px);
+	}
+
+	.categories {
+		margin: 0;
+	}
+
+	.category {
+		row-gap: 6px;
+		align-items: baseline;
+		padding: 22px 0;
+		border-bottom: 1px solid var(--rule);
+	}
+
+	.label {
+		font-size: 13px;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	.items {
+		margin: 0;
+		font-size: clamp(22px, 2.4vw, 34px);
+		line-height: 1.22;
+		font-weight: 500;
+		letter-spacing: -0.015em;
+	}
+
+	.sep {
+		color: var(--stack-sep);
+	}
+
+	.tools {
+		margin: 22px 0 0;
+		font-size: 13px;
+		color: var(--muted);
+	}
+
+	/* Tablette et au-delà : la grille 3/9 de la maquette. */
+	@media (min-width: 600px) {
+		.label {
+			grid-column: span 3;
+		}
+
+		.items {
+			grid-column: span 9;
+		}
+	}
+</style>

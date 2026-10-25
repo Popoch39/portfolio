@@ -31,6 +31,35 @@ export interface Identity {
 	};
 }
 
+export interface StackCategory {
+	label: string;
+	items: string[];
+}
+
+/** Stack par catégorie, dans l'ordre d'affichage (section Stack, et compétences du JSON-LD). */
+export const stack: StackCategory[] = [
+	{ label: 'Langages', items: ['TypeScript', 'Rust', 'PHP', 'SQL', 'Go', 'Lua'] },
+	{ label: 'Back-end', items: ['NestJS', 'Laravel', 'Axum', 'Elysia', 'Node', 'GraphQL', 'REST'] },
+	{ label: 'Front-end', items: ['React', 'Next.js', 'Vue', 'Vite', 'Tailwind'] },
+	{ label: 'Data', items: ['PostgreSQL', 'Redis', 'Prisma', 'Drizzle'] },
+	{ label: 'DevOps', items: ['Docker', 'CI/CD', 'Cloudflare', 'AWS', 'Sentry'] },
+	{ label: 'Outils', items: ['Bun', 'Monorepo', 'Git', 'Neovim', 'tmux', 'Agile/Scrum'] },
+	{ label: 'Carto & 3D', items: ['OpenLayers', 'MapLibre GL', 'PostGIS', 'Three.js'] },
+];
+
+export interface DailyTool {
+	/** Rôle de l'outil (« éditeur »). */
+	role: string;
+	name: string;
+}
+
+/** Outils du quotidien, sous la stack (la config Neovim est dans `identity.links.nvimConfig`). */
+export const dailyTools: DailyTool[] = [
+	{ role: 'éditeur', name: 'neovim' },
+	{ role: 'multiplexeur', name: 'tmux' },
+	{ role: 'runtime', name: 'bun' },
+];
+
 const givenName = 'Louis';
 const familyName = 'Pocheron';
 const languages = ['TypeScript', 'PHP', 'Rust'];
@@ -50,11 +79,7 @@ export const identity: Identity = {
 		'Développement d’applications web fullstack',
 		'Conception d’API',
 		'Cartographie web (SIG)',
-		...languages,
-		...sideLanguages,
-		'SQL',
-		'PostgreSQL',
-		'PostGIS',
+		...stack.flatMap((category) => category.items),
 	],
 	employer: { name: 'Da Viking Code', city: 'Dijon', since: 2023 },
 	email: 'pocheron.louis@gmail.com',

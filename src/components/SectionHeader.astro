@@ -2,8 +2,8 @@
 import SectionNumber from './SectionNumber.astro';
 
 interface Props {
-	/** Rang de la section dans la page (1 → « 01 »). */
-	number: number;
+	/** Rang de la section dans la page (1 → « 01 »), ou repère texte (« A »). */
+	number: number | string;
 	/** Texte du h2. */
 	title: string;
 	/** Mention à droite du titre (sous le titre sur mobile et tablette). */

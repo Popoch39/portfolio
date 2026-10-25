@@ -14,3 +14,7 @@ test('un seul h1, qui contient le nom', () => {
 	assert.equal(h1s.length, 1);
 	assert.match(text(h1s[0]), /Louis\s+Pocheron/i);
 });
+
+test('un h2 par section, dans l’ordre Projets, Parcours, Activité, Stack', () => {
+	assert.deepEqual(elements(html, 'h2').map(text), ['Projets', 'Parcours', 'Activité', 'Stack']);
+});

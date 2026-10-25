@@ -1,7 +1,7 @@
 // Fiches projet : une page par projet, avec son héros, son anatomie et la navigation.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROJECTS, readFiche, tags, attr, hasAttr, elements, text } from './helpers/dist.mjs';
+import { PROJECTS, readDist, readFiche, tags, attr, hasAttr, elements, text } from './helpers/dist.mjs';
 
 const fiches = PROJECTS.map((project) => ({ ...project, html: readFiche(project.slug) }));
 
@@ -73,6 +73,26 @@ test('une figure role="img" avec un libellé, dans une carte : Fig. 1, titre, co
 		assert.ok(readout, `${repo} : relevé absent`);
 		const readoutText = text(figure.slice(figure.indexOf(readout)).match(/^<span[^>]*>[\s\S]*?<\/span>/)?.[0] ?? '');
 		assert.ok(readoutText.length > 0, `${repo} : relevé vide`);
+	}
+});
+
+test('le chargeur monte le mouvement de la figure, chargé à la demande dans un morceau séparé', () => {
+	for (const { repo, html } of fiches) {
+		const scenes = tags(anatomyOf(html), 'div').filter((t) => attr(t, 'data-motion') !== undefined);
+		assert.equal(scenes.length, 1, `${repo} : une scène qui nomme son module de mouvement`);
+		const motion = attr(scenes[0], 'data-motion');
+		// Sans JavaScript, la figure reste au repos : pas d'arrêt de tabulation sur une scène inerte.
+		assert.equal(attr(scenes[0], 'tabindex'), undefined, `${repo} : scène focalisable sans script`);
+		const loaders = tags(html, 'script').filter((t) => attr(t, 'type') === 'module');
+		assert.equal(loaders.length, 1, `${repo} : un chargeur`);
+		const loader = readDist((attr(loaders[0], 'src') ?? '').slice(1));
+		assert.ok(loader.includes(`./${motion}/motion.ts`), `${repo} : le chargeur ne connaît pas le module « ${motion} »`);
+		const chunks = [...loader.matchAll(/import\(\s*["'`]\.\/([\w.-]+\.js)["'`]\s*\)/g)].map((m) => m[1]);
+		assert.ok(chunks.length > 0, `${repo} : aucun morceau chargé à la demande`);
+		for (const chunk of chunks) {
+			assert.ok(readDist(`_astro/${chunk}`).length > 0, `${repo} : morceau ${chunk} vide`);
+			assert.ok(!html.includes(chunk), `${repo} : le morceau ${chunk} est chargé avec la page`);
+		}
 	}
 });
 

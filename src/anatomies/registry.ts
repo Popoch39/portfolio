@@ -3,17 +3,21 @@
 // d'`index.ts` : il est ignoré, et le projet garde la figure témoin.
 import { githubRepoUrl, type Project } from '../data/profile';
 import type { Anatomy, AnatomyContent, Piece } from './contract.ts';
-import { REPO as WITNESS_REPO, witnessFor } from './_temoin/witness.ts';
+import { MOTION as WITNESS_MOTION, REPO as WITNESS_REPO, witnessFor } from './_temoin/witness.ts';
 
 const modules = import.meta.glob<Anatomy>('./*/index.ts', { eager: true, import: 'anatomy' });
+const folderOf = (path: string) => path.split('/')[1];
 
-const bySlug = new Map(
-	Object.entries(modules).map(([path, anatomy]) => [path.split('/')[1], anatomy] as const),
-);
+const bySlug = new Map(Object.entries(modules).map(([path, anatomy]) => [folderOf(path), anatomy] as const));
+
+/** Les dossiers qui ont un module de mouvement : le chargeur les découvre par le même motif. */
+const motions = new Set(Object.keys(import.meta.glob('./*/motion.ts')).map(folderOf));
 
 export interface ProjectAnatomy extends Anatomy {
 	/** Permalien GitHub de la pièce, figé sur le commit lu, avec sa plage de lignes. */
 	codeUrl: (piece: Piece) => string;
+	/** Le dossier du module de mouvement, que la scène confie au chargeur (`data-motion`). */
+	motion: string;
 }
 
 const permalink = (repo: string, sha: string) => (piece: Piece) =>
@@ -23,16 +27,19 @@ const permalink = (repo: string, sha: string) => (piece: Piece) =>
 export function anatomyOf(project: Project): ProjectAnatomy {
 	const anatomy = bySlug.get(project.slug);
 	const resolved: ProjectAnatomy = anatomy
-		? { ...anatomy, codeUrl: permalink(project.repo, anatomy.content.sha) }
+		? { ...anatomy, codeUrl: permalink(project.repo, anatomy.content.sha), motion: project.slug }
 		: witnessOf(project);
 	assertContract(project.slug, resolved.content);
+	if (!motions.has(resolved.motion)) {
+		throw new Error(`Anatomie « ${project.slug} » : module de mouvement absent (src/anatomies/${resolved.motion}/motion.ts)`);
+	}
 	return resolved;
 }
 
 /** Repli sur la figure témoin, dont les pièces vivent dans le dépôt du portfolio. */
 function witnessOf(project: Project): ProjectAnatomy {
 	const witness = witnessFor(project);
-	return { ...witness, codeUrl: permalink(WITNESS_REPO, witness.content.sha) };
+	return { ...witness, codeUrl: permalink(WITNESS_REPO, witness.content.sha), motion: WITNESS_MOTION };
 }
 
 /** Le contrat que les tests vérifient sur la sortie, vérifié dès le build pour nommer le module fautif. */

@@ -50,6 +50,7 @@ const sourceCode = {
 				readout={content.readout}
 				caption={content.caption}
 				svg={restSvg(anatomy)}
+				motion={anatomy.motion}
 			/>
 			<Nomenclature pieces={content.pieces} codeUrl={anatomy.codeUrl} />
 		</section>
@@ -57,6 +58,21 @@ const sourceCode = {
 	</main>
 	<StatusBar path={`~/louis/projets/${project.repo}.md`} secondary={`Fig. 1 · ${content.pieces.length} pièces`} position={null} />
 </Layout>
+
+<script>
+	// Le chargeur de la fiche : la figure arrive dessinée, seul son mouvement passe par ici.
+	import { mountFigure } from '../../anatomies/loader.ts';
+	import { linkPieces } from '../../anatomies/highlight.ts';
+
+	const scene = document.querySelector<HTMLElement>('[data-motion]');
+	const svg = scene?.querySelector('svg');
+	const readout = scene?.closest('figure')?.querySelector<HTMLElement>('[data-readout]');
+	const anatomy = scene?.closest('section');
+	if (scene?.dataset.motion && svg && readout && anatomy) {
+		linkPieces(anatomy);
+		void mountFigure({ scene, svg, readout }, scene.dataset.motion);
+	}
+</script>
 
 <style>
 	.anatomy {

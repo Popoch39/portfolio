@@ -12,9 +12,11 @@ interface Props {
 	caption: string;
 	/** La figure au repos, en SVG intégré à la page. */
 	svg: string;
+	/** Le dossier du module de mouvement, que le chargeur monte sur la scène. */
+	motion: string;
 }
 
-const { fig, title, hints, readout, caption, svg } = Astro.props;
+const { fig, title, hints, readout, caption, svg, motion } = Astro.props;
 ---
 
 <figure class="figure">
@@ -23,7 +25,7 @@ const { fig, title, hints, readout, caption, svg } = Astro.props;
 			<span class="fig">Fig. {fig}</span>{' '}
 			<span>{title}</span>
 		</div>
-		<div class="scene iso anatomy" data-theme="light" set:html={svg}></div>
+		<div class="scene iso anatomy" data-theme="light" data-motion={motion} set:html={svg}></div>
 		<div class="mono row">
 			<span class="hint pointer">{hints.pointer}</span>
 			<span class="hint touch">{hints.touch}</span>{' '}
@@ -64,6 +66,8 @@ const { fig, title, hints, readout, caption, svg } = Astro.props;
 		width: 100%;
 		max-width: 900px;
 		margin: 0 auto;
+		/* Le doigt agit sur la figure et fait toujours défiler la page. */
+		touch-action: pan-y;
 	}
 
 	/* Une seule consigne visible : celle du pointeur s'il sait survoler, sinon celle du toucher. */

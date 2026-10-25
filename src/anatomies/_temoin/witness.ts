@@ -6,6 +6,9 @@ import { pieces, readout, SHA } from './model.ts';
 
 export { REPO } from './model.ts';
 
+/** Le dossier de son module de mouvement (`motion.ts`), pour le chargeur. */
+export const MOTION = '_temoin';
+
 export const witnessFor = (project: Project): Anatomy => ({
 	content: {
 		slug: project.slug,
@@ -18,8 +21,8 @@ export const witnessFor = (project: Project): Anatomy => ({
 		},
 		title: 'Le portfolio en six blocs, en attendant la machine',
 		hints: {
-			pointer: 'Pointez un bloc : sa pièce s’éclaire',
-			touch: 'Touchez un bloc : sa pièce s’éclaire',
+			pointer: 'Pointez un bloc : il se lève et sa pièce s’éclaire',
+			touch: 'Touchez un bloc : il se lève et sa pièce s’éclaire',
 		},
 		readout,
 		caption: `Chaque bloc est une pièce du portfolio, aussi haut que son code compte de lignes ; le bloc bleu, les données de profil, porte toutes les fiches. La machine de ${project.repo} prendra sa place.`,

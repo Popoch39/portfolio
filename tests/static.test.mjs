@@ -1,7 +1,7 @@
-// Les pages sont statiques et autonomes : ni JavaScript client, ni feuille de style externe.
-// Règles de D1 révisées pour les figures (ADR 0001) : l'attribut `style` n'est toléré que dans
-// les SVG de figure, `animation` et `@keyframes` que dans la CSS du kit ; jamais de
-// `transition` ni de `:hover`.
+// Les pages sont statiques et autonomes : aucune feuille de style externe.
+// Règles de D1 révisées pour les figures (ADR 0001) : pour tout script, le JSON-LD et le chargeur
+// des figures ; l'attribut `style` n'est toléré que dans les SVG de figure, `animation` et
+// `@keyframes` que dans la CSS du kit ; jamais de `transition` ni de `:hover`.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PROJECTS, readFiche, readHome, tags, attr, elements, css } from './helpers/dist.mjs';
@@ -17,10 +17,14 @@ const pages = [
 const withoutFigures = (page) =>
 	elements(page, 'svg').reduce((rest, svg) => (/\bclass="[^"]*\biso-svg\b/.test(tags(svg, 'svg')[0]) ? rest.replace(svg, '') : rest), page);
 
-test('aucun <script> hormis les données structurées JSON-LD', () => {
+test('scripts limités au JSON-LD et au chargeur : au plus un module, servi par le site', () => {
 	for (const page of pages) {
 		const scripts = tags(page.html, 'script').filter((t) => attr(t, 'type') !== 'application/ld+json');
-		assert.deepEqual(scripts, [], page.name);
+		assert.ok(scripts.length <= 1, `${page.name} : ${scripts.length} scripts hors JSON-LD`);
+		for (const script of scripts) {
+			assert.equal(attr(script, 'type'), 'module', page.name);
+			assert.match(attr(script, 'src') ?? '', /^\/_astro\/[\w.-]+\.js$/, `${page.name} : ${script}`);
+		}
 	}
 });
 

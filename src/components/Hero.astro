@@ -42,6 +42,8 @@ const languagesLabel = `${languages.join(', ')} — un peu de ${sideLanguages.jo
 
 <style>
 	.hero {
+		/* Sert d'étalon au h1 : 100cqi = largeur du contenu. */
+		container-type: inline-size;
 		padding: clamp(28px, 4vw, 52px) 0 clamp(48px, 6vw, 88px);
 	}
 
@@ -60,7 +62,10 @@ const languagesLabel = `${languages.join(', ')} — un peu de ${sideLanguages.jo
 
 	.title {
 		margin: 0;
-		font-size: clamp(72px, 22vw, 330px);
+		/* La maquette (clamp(72px, 22vw, 330px)) fait déborder « POCHERON » + curseur
+		   (≈ 4,25 em) de la colonne de contenu à toutes les largeurs, et de la page sous
+		   330 px. Le plafond en cqi garde la ligne dans le contenu, au plus près de la maquette. */
+		font-size: min(22vw, 330px, 23.2cqi);
 		line-height: 0.8;
 		font-weight: 800;
 		font-stretch: 62%;

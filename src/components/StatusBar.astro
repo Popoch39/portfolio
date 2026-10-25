@@ -1,13 +1,12 @@
 ---
-import { formatNumber } from '../lib/activity';
-
 interface Props {
-	/** Contributions GitHub sur 12 mois. */
-	contributions: number;
+	/** Fichier « ouvert » : celui de la page. */
+	path?: string;
+	/** Segment de droite, masqué sur mobile (« 2 688 contributions · 12 mois »). */
+	secondary: string;
 }
 
-const { contributions } = Astro.props;
-const total = formatNumber(contributions);
+const { path = '~/louis/portfolio.md', secondary } = Astro.props;
 ---
 
 <footer class="mono status">
@@ -31,10 +30,10 @@ const total = formatNumber(contributions);
 			>
 			<span>main</span>
 		</span>
-		<span class="seg path">~/louis/portfolio.md</span>
+		<span class="seg path">{path}</span>
 	</div>
 	<div class="side right">
-		<span class="seg secondary">{total} contributions · 12 mois</span>
+		<span class="seg secondary">{secondary}</span>
 		<span class="seg dark">Bas</span>
 		<span class="seg mode">:wq</span>
 	</div>

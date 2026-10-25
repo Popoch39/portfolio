@@ -1,23 +1,102 @@
+---
+import { Font } from 'astro:assets';
+import { pageMeta } from '../data/profile';
+
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+---
+
 <!doctype html>
-<html lang="en">
+<html lang="fr">
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{pageMeta.title}</title>
+		<meta name="description" content={pageMeta.description} />
+		<link rel="canonical" href={canonical} />
+		<meta name="theme-color" content={pageMeta.themeColor} />
+		{/* Seule la romaine d'Archivo est préchargée : c'est elle qui dessine le héros. */}
+		<Font cssVariable="--font-archivo" preload={[{ style: 'normal', subset: 'latin' }]} />
+		<Font cssVariable="--font-mono" />
 	</head>
 	<body>
 		<slot />
 	</body>
 </html>
 
-<style>
-	html,
+<style is:global>
+	/* Valeurs reprises à l'identique de la maquette D1 · Activité. */
+	:root {
+		--bg: #f3f3ef;
+		--ink: #111110;
+		--muted: #5f5f5a;
+		--rule: #d6d6d0;
+		--accent: #2433ff;
+		--accent-light: #8e9bff;
+		--on-ink-muted: #bdbdb6;
+		--stack-sep: #a3a39c;
+		--status-segment: #2a2a28;
+		--heat-0: #e3e3dd;
+		--heat-1: #8e9bff;
+		--heat-2: #5b6bff;
+		--heat-3: #2b3bf5;
+		--heat-4: #161f9e;
+
+		--container: 1440px;
+		--page-margin: clamp(16px, 4vw, 56px);
+		--gutter: 24px;
+
+		--font-sans: var(--font-archivo);
+	}
+
+	*,
+	::before,
+	::after {
+		box-sizing: border-box;
+	}
+
+	html {
+		background: var(--bg);
+	}
+
 	body {
 		margin: 0;
-		width: 100%;
-		height: 100%;
+		background: var(--bg);
+		color: var(--ink);
+		font-family: var(--font-sans);
+		font-size: 16px;
+		line-height: 1.5;
+	}
+
+	a {
+		color: var(--ink);
+	}
+
+	:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 3px;
+	}
+
+	.mono {
+		font-family: var(--font-mono);
+	}
+
+	/* Conteneur de contenu : plafonné à 1440 px, centré. Les bandes pleine largeur
+	   (bandeau, barre d'état) restent en dehors. */
+	.container {
+		max-width: var(--container);
+		margin: 0 auto;
+		padding: 0 var(--page-margin);
+	}
+
+	/* Grille de 12 colonnes. Mobile-first : chaque enfant occupe toute la largeur,
+	   les composants placent leurs colonnes à partir de 600 / 1024 px. */
+	.grid {
+		display: grid;
+		grid-template-columns: repeat(12, minmax(0, 1fr));
+		column-gap: var(--gutter);
+	}
+
+	.grid > * {
+		grid-column: 1 / -1;
 	}
 </style>

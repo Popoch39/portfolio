@@ -1,0 +1,61 @@
+---
+import SectionNumber from './SectionNumber.astro';
+
+interface Props {
+	/** Rang de la section dans la page (1 → « 01 »). */
+	number: number;
+	/** Texte du h2. */
+	title: string;
+	/** Mention à droite du titre (sous le titre sur mobile et tablette). */
+	note: string;
+	/** Fait de la mention un lien. */
+	noteHref?: string;
+}
+
+const { number, title, note, noteHref } = Astro.props;
+---
+
+<div class="grid section-header">
+	<SectionNumber class="number" number={number} />
+	<h2 class="title">{title}</h2>
+	{noteHref ? <a class="mono note" href={noteHref}>{note}</a> : <span class="mono note">{note}</span>}
+</div>
+
+<style>
+	.section-header {
+		row-gap: 10px;
+		align-items: end;
+		padding-bottom: 18px;
+		border-bottom: 1px solid var(--ink);
+	}
+
+	.title {
+		margin: 0;
+		font-size: clamp(52px, 8vw, 120px);
+		line-height: 0.84;
+		font-weight: 800;
+		font-stretch: 62%;
+		text-transform: uppercase;
+	}
+
+	.note {
+		font-size: 13px;
+		color: var(--muted);
+	}
+
+	/* La maquette empile l'en-tête sous 860 px ; le palier le plus proche est 1024. */
+	@media (min-width: 1024px) {
+		.number {
+			grid-column: span 1;
+		}
+
+		.title {
+			grid-column: span 8;
+		}
+
+		.note {
+			grid-column: span 3;
+			text-align: right;
+		}
+	}
+</style>

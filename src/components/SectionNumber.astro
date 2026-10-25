@@ -1,0 +1,33 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'span'> {
+	/** Rang de la section dans la page (1 → « 01 »). */
+	number: number;
+}
+
+// `class` et le reste des attributs (dont le `data-astro-cid-*` du parent) sont
+// transmis pour que le parent place le numéro dans sa grille avec ses styles scopés.
+const { number, class: className, ...rest } = Astro.props;
+---
+
+<span class:list={['mono', 'section-number', className]} {...rest}
+	><span class="dot" aria-hidden="true"></span>{String(number).padStart(2, '0')}</span
+>
+
+<style>
+	.section-number {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		height: fit-content;
+		font-size: 13px;
+	}
+
+	.dot {
+		flex-shrink: 0;
+		width: 9px;
+		height: 9px;
+		background: var(--accent);
+	}
+</style>

@@ -133,6 +133,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 	let tourT = 0;
 	let holdFor = 0;
 	let idle = 0;
+	let hovering = false;
 	let lastText = '';
 
 	const draw = (pose: Pose) => {
@@ -256,7 +257,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 	const resumeLater = () => {
 		clearTimeout(idle);
 		idle = window.setTimeout(() => {
-			if (asksForStillness() || scene.matches(':focus')) return;
+			if (asksForStillness() || hovering || scene.matches(':focus')) return;
 			startTour();
 		}, TOUR_DELAY);
 	};
@@ -301,12 +302,34 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 	);
 	const release = (event: PointerEvent) => {
 		if (!drag || event.pointerId !== drag.id) return;
-		// Un toucher bref avance d'un cran.
-		if (!drag.moved && event.type === 'pointerup' && event.pointerType === 'touch') aim(Math.round(target) + 1);
+		const dx = event.clientX - drag.x;
+		// Un glisser dont les mouvements ne sont pas parvenus compte à son point d'arrivée ; un toucher
+		// bref avance d'un cran.
+		if (event.type === 'pointerup' && Math.abs(dx) > 3) aim(drag.t + dx * MINUTES_PER_PX);
+		else if (!drag.moved && event.type === 'pointerup' && event.pointerType === 'touch') aim(Math.round(target) + 1);
 		if (scene.hasPointerCapture(event.pointerId)) scene.releasePointerCapture(event.pointerId);
 		drag = null;
 		resumeLater();
 	};
+	// Le pointeur qui survole la figure suspend le tour ; il reprend 4 s après son départ.
+	scene.addEventListener(
+		'pointerenter',
+		(event) => {
+			if (event.pointerType === 'touch') return;
+			hovering = true;
+			takeOver();
+		},
+		{ signal },
+	);
+	scene.addEventListener(
+		'pointerleave',
+		(event) => {
+			if (event.pointerType === 'touch') return;
+			hovering = false;
+			if (!drag) resumeLater();
+		},
+		{ signal },
+	);
 	scene.addEventListener('pointerup', release, { signal });
 	scene.addEventListener('pointercancel', release, { signal });
 	scene.addEventListener('focus', takeOver, { signal });

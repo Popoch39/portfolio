@@ -9,7 +9,6 @@ import {
 	lineOnTop,
 	lineSvg,
 	pathOf,
-	planOutline,
 	ring as ringOnTop,
 	sideMatrix,
 	sideSeam,
@@ -786,7 +785,7 @@ export function build(t = REST) {
 			[wx, Lay.FRONT + 6.5, wz],
 			spokes +
 				hub +
-				ringSvg(ringBand(s0, s1, rIn, rOut, F, P, { hole: [s1, rIn] }), { tone: 'hi', crease: 'lo' }) +
+				ringSvg(ringBand(s0, s1, rIn, rOut, F, P, { hole: [s1, rIn] }), { tone: 'mid' }) +
 				phases +
 				`<g transform="${face(Lay.FRONT + s1)}"><g data-csl="notches" transform="rotate(${round(rest.wheel * 360)} ${wx} ${-wz})">${L(crown, { tone: 'lo' })}${L(notches.minor, { tone: 'lo' })}${L(notches.major, { tone: 'hi' })}</g></g>`,
 			[A.ring(F, s0, s1, rIn, rOut, vol('rim')), A.disc(F, s0, s1 + 1, 3.6, vol('hub')), ...spokePolygons(rest.wheel).map((polygon, i) => A.prism(alongY(wx, 0, wz), polygon, SPOKES_Y[0], SPOKES_Y[1], vol(`spoke-${i}`)))],
@@ -868,7 +867,7 @@ export function build(t = REST) {
 		// Index fixe du volant, sur le flanc gauche de la boîte.
 		const Fi = alongY(Bx.x, Lay.BOX_FRONT - 4, wz);
 		const pointer: [number, number][] = [[-(Bx.x - wx - rOut - 0.7), 0], [0, -1.4], [0, 1.4]];
-		put('volant.index', 'volant', [Bx.x - 4, Lay.BOX_FRONT - 3, wz], S(G.prismOf(Fi, pointer, 0, 2, P), { tone: 'hi', crease: 'lo' }), [A.prism(Fi, pointer, 0, 2, vol('index'))], { bias: 0.4 });
+		put('volant.index', 'volant', [Bx.x - 4, Lay.BOX_FRONT - 3, wz], S(G.prismOf(Fi, pointer, 0, 2, P), { tone: 'mid' }), [A.prism(Fi, pointer, 0, 2, vol('index'))], { bias: 0.4 });
 	}
 
 	return { items, routes };

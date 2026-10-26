@@ -1,19 +1,19 @@
 // Règle de temps : sous la figure qui a un temps (la rampe à cadran de claude-status-line), une
 // règle graduée, ses événements marqués, et le bouton qui lance le tour. Sans script, rien n'y agit.
-// Graduations, lecture et consignes sont des textes de l'anatomie : la version anglaise montre le
-// français tant que l'anatomie n'est pas traduite ; le bouton du tour suit la langue de la page.
+// Graduations, lecture et consignes sont des textes de l'anatomie, dans la langue de la page comme
+// le bouton du tour ; « minute 12 » se dit pareil dans les deux.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PROJECTS, readFiche, readHome, tags, attr, hasAttr, elements, text } from './helpers/dist.mjs';
 
 const VERSIONS = [
-	{ locale: 'fr', anatomy: 'Anatomie', tour: 'Lancer le tour' },
-	{ locale: 'en', anatomy: 'Anatomy', tour: 'Start the tour' },
+	{ locale: 'fr', anatomy: 'Anatomie', tour: 'Lancer le tour', marks: ['0', '30 min', '1 h', '1 h 30', '2 h', '2 h 30'], ruler: /règle/ },
+	{ locale: 'en', anatomy: 'Anatomy', tour: 'Start the tour', marks: ['0', '30 min', '1 h', '1½ h', '2 h', '2½ h'], ruler: /\bruler\b/ },
 ];
 
 const rulersOf = (html) => tags(html, 'div').filter((t) => hasAttr(t, 'data-regle'));
 
-for (const { locale, anatomy, tour: tourLabel } of VERSIONS) {
+for (const { locale, anatomy, tour: tourLabel, marks: markTexts, ruler: designatesRuler } of VERSIONS) {
 	const anatomyOf = (html) => elements(html, 'section').find((s) => elements(s, 'h2').map(text).includes(anatomy)) ?? '';
 	const cardOf = (html) => elements(anatomyOf(html), 'figure')[0] ?? '';
 	const html = readFiche('claude-status-line', locale);
@@ -29,7 +29,7 @@ for (const { locale, anatomy, tour: tourLabel } of VERSIONS) {
 
 	test(`${locale} : la règle est graduée de 0 à 2 h 30, toutes les 5 minutes`, () => {
 		const marks = elements(ruler, 'text').filter((t) => /class="mark\b/.test(t)).map(text);
-		assert.deepEqual(marks, ['0', '30 min', '1 h', '1 h 30', '2 h', '2 h 30']);
+		assert.deepEqual(marks, markTexts);
 		const ticks = tags(ruler, 'line').filter((t) => /class="tick\b/.test(t));
 		assert.equal(ticks.length, 150 / 5 + 1);
 		assert.deepEqual(ticks.slice(0, 2).map((t) => attr(t, 'x1')), ['0%', `${(5 / 150) * 100}%`.replace(/(\.\d{3})\d+/, '$1')]);
@@ -61,6 +61,6 @@ for (const { locale, anatomy, tour: tourLabel } of VERSIONS) {
 	test(`${locale} : la consigne désigne la règle et la figure`, () => {
 		const consignes = elements(card, 'span').filter((s) => /class="consigne\b/.test(s)).map(text);
 		assert.equal(consignes.length, 2);
-		for (const consigne of consignes) assert.match(consigne, /règle/);
+		for (const consigne of consignes) assert.match(consigne, designatesRuler);
 	});
 }

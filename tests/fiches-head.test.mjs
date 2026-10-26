@@ -2,7 +2,7 @@
 // l'en-tête du site, qui ramène aux sections de l'accueil.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROJECTS, readFiche, readHome, tags, attr, hasAttr, elements, text } from './helpers/dist.mjs';
+import { PROJECTS, readDist, readFiche, readHome, tags, attr, hasAttr, elements, text } from './helpers/dist.mjs';
 
 const headOf = (html) => elements(html, 'head')[0] ?? '';
 const meta = (head, key, value) => attr(tags(head, 'meta').find((t) => attr(t, key) === value) ?? '', 'content');
@@ -28,8 +28,7 @@ test('chaque fiche a son titre, sa description et son URL canonique absolue', ()
 	}
 });
 
-test('Open Graph décrit la fiche, avec l’image du site pour l’instant', () => {
-	const siteImage = meta(headOf(home), 'property', 'og:image');
+test('Open Graph décrit la fiche', () => {
 	for (const { repo, html } of fiches) {
 		const head = headOf(html);
 		assert.equal(meta(head, 'property', 'og:url'), linkHref(head, 'canonical'), repo);
@@ -37,7 +36,31 @@ test('Open Graph décrit la fiche, avec l’image du site pour l’instant', () 
 		assert.equal(meta(head, 'property', 'og:description'), meta(head, 'name', 'description'), repo);
 		assert.equal(meta(head, 'property', 'og:type'), 'website', `${repo} : une fiche n'est pas un profil`);
 		assert.deepEqual(tags(head, 'meta').filter((t) => (attr(t, 'property') ?? '').startsWith('profile:')), [], repo);
-		assert.equal(meta(head, 'property', 'og:image'), siteImage, repo);
+	}
+});
+
+test('chaque fiche a sa propre image de partage : PNG 1200×630 en URL absolue, avec texte alternatif', () => {
+	for (const { slug, repo, html } of fiches) {
+		const head = headOf(html);
+		const image = meta(head, 'property', 'og:image');
+		assert.ok(image && URL.canParse(image), `${repo} : og:image absente ou non absolue : ${image}`);
+		assert.equal(new URL(image).origin, new URL(linkHref(head, 'canonical')).origin, repo);
+		assert.equal(new URL(image).pathname, `/og/${slug}.png`, `${repo} : l'image de la fiche, pas celle du site`);
+		assert.equal(meta(head, 'property', 'og:image:type'), 'image/png', repo);
+		assert.equal(meta(head, 'property', 'og:image:width'), '1200', repo);
+		assert.equal(meta(head, 'property', 'og:image:height'), '630', repo);
+		assert.ok((meta(head, 'property', 'og:image:alt') ?? '').includes(repo), `${repo} : le texte alternatif nomme le projet`);
+		assert.equal(meta(head, 'name', 'twitter:card'), 'summary_large_image', `${repo} : carte Twitter grand format`);
+	}
+});
+
+test('l’image de partage de chaque fiche est livrée par le site : un PNG de 1200×630', () => {
+	for (const { repo, html } of fiches) {
+		const png = readDist(new URL(meta(headOf(html), 'property', 'og:image')).pathname.slice(1), null);
+		assert.deepEqual([...png.subarray(0, 8)], [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], `${repo} : signature PNG absente`);
+		// Premier bloc IHDR : largeur puis hauteur, entiers 32 bits gros-boutistes.
+		assert.equal(png.toString('latin1', 12, 16), 'IHDR', repo);
+		assert.deepEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [1200, 630], repo);
 	}
 });
 

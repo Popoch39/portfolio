@@ -8,7 +8,7 @@ import FigureCard from '../../components/FigureCard.astro';
 import Nomenclature from '../../components/Nomenclature.astro';
 import ProjectNav from '../../components/ProjectNav.astro';
 import StatusBar from '../../components/StatusBar.astro';
-import { fichePath, githubRepoUrl, projects, type Project } from '../../data/profile';
+import { fichePath, githubRepoUrl, projects, shareImageOf, type Project } from '../../data/profile';
 import { person } from '../../lib/structured-data';
 import { anatomyOf } from '../../anatomies/registry';
 import { restSvg } from '../../anatomies/figure';
@@ -35,7 +35,13 @@ const sourceCode = {
 };
 ---
 
-<Layout title={content.seo.title} description={content.seo.description} ogType="website" structuredData={sourceCode}>
+<Layout
+	title={content.seo.title}
+	description={content.seo.description}
+	shareImage={shareImageOf(project, content.machine)}
+	ogType="website"
+	structuredData={sourceCode}
+>
 	<div class="container">
 		<SiteHeader current="projets" />
 	</div>

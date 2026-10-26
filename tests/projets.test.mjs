@@ -117,24 +117,39 @@ test('chaque panneau montre la carte vivante, la description, la stack et le lie
 	});
 });
 
-test('l’aperçu vit par le chargeur des fiches, qui charge chaque mouvement à la demande', () => {
+/** Les morceaux qu'un code importe à la demande (`import("./y.js")`), en chemins servis. */
+const onDemand = (code) => [...code.matchAll(/import\(\s*["'`]\.\/([\w.-]+\.js)["'`]\s*\)/g)].map((m) => `/_astro/${m[1]}`);
+
+// Hors de l'A3 (téléphone, toucher, sans survol), l'accueil reste léger : il ne télécharge que son
+// script d'amorce. L'aperçu, le chargeur des fiches et la mise en avant des pièces n'arrivent qu'une
+// fois la bascule vérifiée, par import dynamique.
+test('l’aperçu vit par le chargeur des fiches, importé à la demande seulement en A3', () => {
 	const scripts = tags(html, 'script').filter((t) => attr(t, 'type') === 'module');
 	assert.equal(scripts.length, 1, 'un seul script module');
 	const home = moduleGraph(attr(scripts[0], 'src') ?? '');
+	assert.ok(!home.code.includes('/motion.ts'), `le chargeur arrive avec la page : ${home.paths.join(', ')}`);
+	assert.ok(!home.code.includes('data-piece'), `la mise en avant des pièces arrive avec la page : ${home.paths.join(', ')}`);
+	// L'amorce et l'assistant d'import à la demande de Vite : 5,8 Ko avec le chargeur et l'aperçu.
+	const weight = home.paths.reduce((sum, path) => sum + readDist(path.slice(1)).length, 0);
+	assert.ok(weight <= 2500, `script d’amorce de ${weight} o`);
+
+	const preview = onDemand(home.code).map(moduleGraph);
+	assert.ok(preview.length > 0, 'aucun morceau chargé à la demande');
 	const motions = new Set(panels.map((panel) => attr(tags(panel, 'div').find((t) => attr(t, 'data-motion') !== undefined) ?? '', 'data-motion')));
-	for (const motion of motions) assert.ok(home.code.includes(`./${motion}/motion.ts`), `le chargeur ne connaît pas le module « ${motion} »`);
+	for (const motion of motions) assert.ok(preview.some((graph) => graph.code.includes(`./${motion}/motion.ts`)), `le chargeur ne connaît pas le module « ${motion} »`);
 
 	// Un seul chargeur : le même morceau sert l'accueil et les fiches.
 	const fiche = readFiche(PROJECTS[0].slug);
 	const ficheScript = tags(fiche, 'script').find((t) => attr(t, 'type') === 'module') ?? '';
 	const ficheGraph = moduleGraph(attr(ficheScript, 'src') ?? '');
-	const loaders = (graph) => graph.paths.filter((path) => readDist(path.slice(1)).includes('/motion.ts'));
-	const shared = loaders(home).filter((path) => loaders(ficheGraph).includes(path));
-	assert.equal(shared.length, 1, `chargeurs : accueil ${loaders(home)}, fiche ${loaders(ficheGraph)}`);
+	const loaders = (paths) => paths.filter((path) => readDist(path.slice(1)).includes('/motion.ts'));
+	const homeLoaders = loaders([...new Set(preview.flatMap((graph) => graph.paths))]);
+	const shared = homeLoaders.filter((path) => loaders(ficheGraph.paths).includes(path));
+	assert.equal(shared.length, 1, `chargeurs : accueil ${homeLoaders}, fiche ${loaders(ficheGraph.paths)}`);
 
-	const chunks = [...home.code.matchAll(/import\(\s*["'`]\.\/([\w.-]+\.js)["'`]\s*\)/g)].map((m) => m[1]);
-	assert.ok(chunks.length > 0, 'aucun morceau chargé à la demande');
-	for (const chunk of chunks) assert.ok(!html.includes(chunk), `le morceau ${chunk} est chargé avec la page`);
+	for (const path of [...preview.flatMap((graph) => graph.paths), ...preview.flatMap((graph) => onDemand(graph.code))]) {
+		assert.ok(!html.includes(path.slice('/_astro/'.length)), `le morceau ${path} est chargé avec la page`);
+	}
 });
 
 // La description et la stack sont lues dans la ligne ; leur doublon visuel dans l'aperçu est tu.

@@ -97,6 +97,17 @@ test('le chargeur monte le mouvement de la figure, chargé à la demande dans un
 	}
 });
 
+test('chaque fiche monte sa propre anatomie, et le chargeur ne connaît que celles des six projets', () => {
+	const known = new Set();
+	for (const { slug, repo, html } of fiches) {
+		const [scene] = tags(anatomyOf(html), 'div').filter((t) => attr(t, 'data-motion') !== undefined);
+		assert.equal(attr(scene ?? '', 'data-motion'), slug, `${repo} : la scène ne monte pas le module du projet`);
+		const [loader] = tags(html, 'script').filter((t) => attr(t, 'type') === 'module');
+		for (const [, folder] of moduleGraph(attr(loader, 'src') ?? '').code.matchAll(/\.\/([\w-]+)\/motion\.ts/g)) known.add(folder);
+	}
+	assert.deepEqual([...known].sort(), PROJECTS.map(({ slug }) => slug).sort());
+});
+
 test('la légende vraie suit la carte : « Fig. 1 — … »', () => {
 	for (const { repo, html } of fiches) {
 		const [caption] = elements(anatomyOf(html), 'figcaption');

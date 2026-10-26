@@ -1,9 +1,8 @@
 // Registre des anatomies : découvre seul les modules `src/anatomies/<slug>/index.ts`, sans
-// fichier commun à modifier. Un dossier qui n'a encore que sa fiche de concept n'a pas
-// d'`index.ts` : il est ignoré, et le projet garde la figure témoin.
+// fichier commun à modifier. Chaque projet mis en avant doit avoir le sien, complet : sans figure
+// ni mouvement, sa fiche n'aurait rien à montrer, donc le build échoue.
 import { githubRepoUrl, type Project } from '../data/profile';
 import type { Anatomy, AnatomyContent, Piece } from './contract.ts';
-import { MOTION as WITNESS_MOTION, REPO as WITNESS_REPO, witnessFor } from './_temoin/witness.ts';
 
 const modules = import.meta.glob<Anatomy>('./*/index.ts', { eager: true, import: 'anatomy' });
 const folderOf = (path: string) => path.split('/')[1];
@@ -23,23 +22,17 @@ export interface ProjectAnatomy extends Anatomy {
 const permalink = (repo: string, sha: string) => (piece: Piece) =>
 	`${githubRepoUrl(repo)}/blob/${sha}/${piece.code.path}#L${piece.code.lines[0]}-L${piece.code.lines[1]}`;
 
-/** L'anatomie d'un projet : son module, ou la figure témoin tant qu'il n'en a pas. */
+/** L'anatomie d'un projet, tirée de son module. */
 export function anatomyOf(project: Project): ProjectAnatomy {
 	const anatomy = bySlug.get(project.slug);
-	const resolved: ProjectAnatomy = anatomy
-		? { ...anatomy, codeUrl: permalink(project.repo, anatomy.content.sha), motion: project.slug }
-		: witnessOf(project);
-	assertContract(project.slug, resolved.content);
-	if (!motions.has(resolved.motion)) {
-		throw new Error(`Anatomie « ${project.slug} » : module de mouvement absent (src/anatomies/${resolved.motion}/motion.ts)`);
+	if (!anatomy) {
+		throw new Error(`Anatomie « ${project.slug} » : module manquant (src/anatomies/${project.slug}/index.ts)`);
 	}
-	return resolved;
-}
-
-/** Repli sur la figure témoin, dont les pièces vivent dans le dépôt du portfolio. */
-function witnessOf(project: Project): ProjectAnatomy {
-	const witness = witnessFor(project);
-	return { ...witness, codeUrl: permalink(WITNESS_REPO, witness.content.sha), motion: WITNESS_MOTION };
+	assertContract(project.slug, anatomy.content);
+	if (!motions.has(project.slug)) {
+		throw new Error(`Anatomie « ${project.slug} » : module de mouvement absent (src/anatomies/${project.slug}/motion.ts)`);
+	}
+	return { ...anatomy, codeUrl: permalink(project.repo, anatomy.content.sha), motion: project.slug };
 }
 
 /** Le contrat que les tests vérifient sur la sortie, vérifié dès le build pour nommer le module fautif. */

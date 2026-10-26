@@ -1,4 +1,6 @@
 ---
+import { localeOf, ui } from '../lib/i18n';
+
 interface Props {
 	/** Fichier « ouvert » : celui de la page. */
 	path?: string;
@@ -8,7 +10,7 @@ interface Props {
 	position?: string | null;
 }
 
-const { path = '~/louis/portfolio.md', secondary, position = 'Bas' } = Astro.props;
+const { path = '~/louis/portfolio.md', secondary, position = ui.statusBottom[localeOf(Astro.currentLocale)] } = Astro.props;
 ---
 
 <footer class="mono status">

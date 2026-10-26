@@ -1,21 +1,23 @@
 ---
 import SectionNumber from './SectionNumber.astro';
-import { identity } from '../data/profile';
+import { identity, sections } from '../data/profile';
+import { localeOf, ui } from '../lib/i18n';
 
+const locale = localeOf(Astro.currentLocale);
 const { email, github, links } = identity;
 const [mailbox, domain] = email.split('@');
 ---
 
-<section id="contact" class="grid contact">
+<section id={sections.contact.id[locale]} class="grid contact">
 	<SectionNumber class="num" number={5} />
 	<div class="body">
 		<p class="wq" aria-hidden="true">:wq</p>
-		<p class="pitch">Une API, une interface, un outil à construire&nbsp;? Écrivez-moi.</p>
+		<p class="pitch">{ui.pitch[locale]}</p>
 		{/* Coupure préférée après « @ » plutôt qu'au milieu du domaine. */}
 		<a class="mail" href={`mailto:${email}`}>{mailbox}@<wbr />{domain}</a>
 		<div class="links">
 			<a href={links.github}>GitHub — {github.handle} ↗</a>{' '}
-			<a href={links.nvimConfig}>Config Neovim ↗</a>{' '}
+			<a href={links.nvimConfig}>{ui.nvimConfig[locale]}</a>{' '}
 			<span class="place">{identity.city}, {identity.country}</span>
 		</div>
 	</div>

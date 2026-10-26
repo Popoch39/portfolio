@@ -1,0 +1,73 @@
+---
+// Le sélecteur de langue, en fin de navigation : « FR / EN », la langue courante soulignée en bleu
+// comme la section courante, l'autre un lien vers la même page dans sa langue. Aucun script.
+import { formats, localeOf, locales, pathOf, type Page } from '../lib/i18n';
+
+interface Props {
+	/** La page affichée : le lien mène à son autre version. */
+	page: Page;
+}
+
+const { page } = Astro.props;
+const current = localeOf(Astro.currentLocale);
+---
+
+<span class="mono switch">
+	{
+		locales.map((locale, i) => (
+			<>
+				{i > 0 && (
+					<>
+						{' '}
+						<span class="sep" aria-hidden="true">/</span>{' '}
+					</>
+				)}
+				{locale === current ? (
+					<span aria-current="true">{locale.toUpperCase()}</span>
+				) : (
+					<a href={pathOf(page, locale)} hreflang={formats[locale].lang} lang={formats[locale].lang}>
+						{locale.toUpperCase()}
+					</a>
+				)}
+			</>
+		))
+	}
+</span>
+
+<style>
+	.switch {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5ch;
+		font-size: 13px;
+		font-weight: 400;
+	}
+
+	.sep {
+		color: var(--muted);
+	}
+
+	a {
+		position: relative;
+		text-decoration: none;
+	}
+
+	/* Zone tactile de 44 px centrée sur les deux lettres, sans pousser la ligne de la navigation. */
+	a::after {
+		content: '';
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: 44px;
+		height: 44px;
+		transform: translate(-50%, -50%);
+	}
+
+	/* La langue courante : soulignée en bleu, comme la section courante de la navigation. */
+	[aria-current] {
+		text-decoration: underline;
+		text-decoration-color: var(--accent);
+		text-decoration-thickness: 2px;
+		text-underline-offset: 5px;
+	}
+</style>

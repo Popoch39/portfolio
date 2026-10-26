@@ -11,6 +11,7 @@ const html = readHome();
 const styles = css(html);
 const pages = [
 	{ name: 'accueil', html },
+	{ name: 'accueil anglais', html: readHome('en') },
 	...PROJECTS.map(({ slug }) => ({ name: `fiche ${slug}`, html: readFiche(slug) })),
 ];
 

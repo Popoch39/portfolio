@@ -1,23 +1,27 @@
 ---
 import SectionHeader from './SectionHeader.astro';
-import { career, careerSummary, education } from '../data/profile';
+import { career, careerSummary, education, sections } from '../data/profile';
+import { formats, localeOf, ui } from '../lib/i18n';
+
+const locale = localeOf(Astro.currentLocale);
+const { id, label } = sections.career;
 ---
 
-<section id="parcours" class="career">
-	<SectionHeader number={2} title="Parcours" note={careerSummary} />
+<section id={id[locale]} class="career">
+	<SectionHeader number={2} title={label[locale]} note={careerSummary[locale]} />
 	<div class="grid steps">
 		{
 			career.map((p) => (
 				<article class:list={['step', { current: p.current }]}>
 					<span class="year" aria-hidden="true">{p.year}</span>
-					<span class="mono when">{p.period} · {p.city}</span>
+					<span class="mono when">{p.period[locale]} · {p.city}</span>
 					<h3 class="company">{p.company}</h3>
-					<p class="role">{p.role}</p>
+					<p class="role">{p.role[locale]}</p>
 					<ul class="missions">
 						{p.missions.map((m) => (
 							<li class="mission">
 								<span class="dash" aria-hidden="true">—</span>
-								<span>{m}</span>
+								<span>{m[locale]}</span>
 							</li>
 						))}
 					</ul>
@@ -26,14 +30,16 @@ import { career, careerSummary, education } from '../data/profile';
 		}
 	</div>
 	<div class="grid education">
-		<h3 class="mono education-title">Formation</h3>
+		<h3 class="mono education-title">{ui.education[locale]}</h3>
 		<ol class="degrees">
 			{
 				education.map((f) => (
 					<li class="degree">
-						{/* Les `{' '}` font lire « 2018 Baccalauréat … » et non « 2018Baccalauréat… ». */}
+						{/* Les `{' '}` font lire « 2018 Baccalauréat … » et non « 2018Baccalauréat… ». Hors du
+						    français, l'équivalent est suivi du nom d'origine, en italique comme tout terme
+						    étranger, et lu en français. */}
 						<span class="mono degree-when">{f.period}</span>{' '}
-						<span class="degree-title">{f.degree}</span>{' '}
+						<span class="degree-title">{f.degree[locale]}{locale !== 'fr' && <> — <i lang={formats.fr.lang}>{f.degree.fr}</i></>}</span>{' '}
 						<span class="degree-school">{f.school}</span>
 					</li>
 				))

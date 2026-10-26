@@ -17,7 +17,23 @@ export function readDist(path, encoding = 'utf8') {
 	return readFileSync(url, encoding);
 }
 
-export const readHome = () => readDist('index.html');
+/** HTML de la page servie à un chemin du site (`/`, `/en/`, `/projets/trekker/`). */
+export const readPage = (pathname) => readDist(`${pathname.slice(1)}index.html`);
+
+/** Adresse de l'accueil dans chaque langue. */
+export const HOME = { fr: '/', en: '/en/' };
+
+/** HTML de l'accueil, en français par défaut. */
+export const readHome = (locale = 'fr') => readPage(HOME[locale]);
+
+/** Le `<head>` d'une page. */
+export const headOf = (html) => elements(html, 'head')[0] ?? '';
+
+/** Les `<link rel="alternate" hreflang>` d'une page : `{ fr, en, 'x-default' }` → URL. */
+export function alternates(html) {
+	const links = tags(headOf(html), 'link').filter((t) => attr(t, 'rel') === 'alternate' && attr(t, 'hreflang'));
+	return Object.fromEntries(links.map((t) => [attr(t, 'hreflang'), attr(t, 'href')]));
+}
 
 /** Projets mis en avant, dans l'ordre de l'accueil : adresse de la fiche et nom du dépôt. */
 export const PROJECTS = [

@@ -41,7 +41,7 @@ test('les trames du grain : dans chaque SVG autonome, et une seule fois par page
 	for (const { slug, svg } of figures) {
 		for (const id of ids) assert.match(svg, new RegExp(`<pattern id="${id}"`), `${slug} : trame ${id} absente`);
 	}
-	const pages = [{ name: 'accueil', html: readHome() }, ...PROJECTS.map(({ slug }) => ({ name: `fiche ${slug}`, html: readFiche(slug) }))];
+	const pages = [{ name: 'accueil', html: readHome() }, { name: 'accueil anglais', html: readHome('en') }, ...PROJECTS.map(({ slug }) => ({ name: `fiche ${slug}`, html: readFiche(slug) }))];
 	for (const { name, html } of pages) {
 		for (const id of ids) assert.equal(html.match(new RegExp(`\\sid="${id}"`, 'g'))?.length ?? 0, 1, `${name} : trame ${id}`);
 	}

@@ -1,8 +1,9 @@
 ---
 import SectionHeader from './SectionHeader.astro';
-import { identity } from '../data/profile';
+import { identity, sections } from '../data/profile';
 import { githubSnapshot } from '../data/github-snapshot';
-import { formatDay, formatNumber, heatmap, heatmapLegend, monthlyTotals, type ActivityStats } from '../lib/activity';
+import { days, formatDay, formatNumber, heatmap, heatmapLegend, monthlyTotals, type ActivityStats } from '../lib/activity';
+import { localeOf, ui } from '../lib/i18n';
 
 interface Props {
 	/** Statistiques de `githubSnapshot`, partagées avec la barre d'état. */
@@ -10,8 +11,10 @@ interface Props {
 }
 
 const { stats } = Astro.props;
-const heat = heatmap(githubSnapshot, stats);
-const monthly = monthlyTotals(githubSnapshot);
+const locale = localeOf(Astro.currentLocale);
+const { id, label } = sections.activity;
+const heat = heatmap(githubSnapshot, stats, locale);
+const monthly = monthlyTotals(githubSnapshot, locale);
 // Une case d'étiquette par semaine : l'étiquette déborde à droite sur les semaines vides,
 // sans avoir à placer de colonne en style inline.
 const weekLabels = Array.from(
@@ -20,39 +23,39 @@ const weekLabels = Array.from(
 );
 ---
 
-<section id="activite" class="activity">
+<section id={id[locale]} class="activity">
 	<SectionHeader
 		number={3}
-		title="Activité"
+		title={label[locale]}
 		note={`${identity.github.profile} ↗`}
 		noteHref={identity.links.github}
 	/>
 	<div class="grid body">
 		<div class="summary">
 			<p class="total">
-				<span class="total-value">{formatNumber(stats.total)}</span>{' '}
-				<span class="total-caption">contributions sur GitHub, ces 12 derniers mois</span>
+				<span class="total-value">{formatNumber(stats.total, locale)}</span>{' '}
+				<span class="total-caption">{ui.activityTotal[locale]}</span>
 			</p>
 			<dl class="stats">
 				<div class="stat">
-					<dt>jours actifs, sur {formatNumber(githubSnapshot.counts.length)}</dt>
-					<dd>{formatNumber(stats.activeDays)}</dd>
+					<dt>{ui.activeDays[locale](formatNumber(githubSnapshot.counts.length, locale))}</dt>
+					<dd>{formatNumber(stats.activeDays, locale)}</dd>
 				</div>
 				<div class="stat">
-					<dt>plus longue série</dt>
-					<dd>{formatNumber(stats.longestStreak)} jours</dd>
+					<dt>{ui.longestStreak[locale]}</dt>
+					<dd>{days(stats.longestStreak, locale)}</dd>
 				</div>
 				<div class="stat">
-					<dt>record, le {formatDay(stats.record.date)}</dt>
-					<dd>{formatNumber(stats.record.count)}</dd>
+					<dt>{ui.recordDay[locale](formatDay(stats.record.date, locale))}</dt>
+					<dd>{formatNumber(stats.record.count, locale)}</dd>
 				</div>
 			</dl>
 		</div>
 
 		<figure class="chart heatmap">
 			<figcaption class="caption">
-				<span class="caption-title">Contributions par jour</span>{' '}
-				<span class="mono caption-note">{heat.period} · survolez une case</span>
+				<span class="caption-title">{ui.perDay[locale]}</span>{' '}
+				<span class="mono caption-note">{heat.period} · {ui.hoverCell[locale]}</span>
 			</figcaption>
 			{/* Zone en sens de lecture inversé, contenu en sens normal : sans JS, elle s'ouvre
 			    sur sa fin, donc sur les mois les plus récents quand elle défile. */}
@@ -67,9 +70,9 @@ const weekLabels = Array.from(
 				</div>
 			</div>
 			<div class="mono legend">
-				<span>contributions / jour</span>
+				<span>{ui.perDayLegend[locale]}</span>
 				{
-					heatmapLegend.map(({ level, label }) => (
+					heatmapLegend(locale).map(({ level, label }) => (
 						<>
 							{' '}
 							<span class="legend-item">
@@ -84,7 +87,7 @@ const weekLabels = Array.from(
 
 		<figure class="chart months-chart">
 			<figcaption class="caption">
-				<span class="caption-title">Contributions par mois</span>{' '}
+				<span class="caption-title">{ui.perMonth[locale]}</span>{' '}
 				<span class="mono caption-note">{monthly.partialNote}</span>
 			</figcaption>
 			<div class="scroll">
@@ -93,7 +96,7 @@ const weekLabels = Array.from(
 						{
 							monthly.months.map((m) => (
 								<span class="bar" title={m.title}>
-									{m.showValue && <span class="mono bar-value">{formatNumber(m.value)}</span>}
+									{m.showValue && <span class="mono bar-value">{formatNumber(m.value, locale)}</span>}
 									{/* La hauteur passe par l'attribut du SVG : aucun style inline. */}
 									<svg class="bar-fill" height={m.height} aria-hidden="true" focusable="false" />
 								</span>
@@ -106,17 +109,17 @@ const weekLabels = Array.from(
 				</div>
 			</div>
 			<details class="mono data">
-				<summary>Voir les données par mois</summary>
+				<summary>{ui.monthlyData[locale]}</summary>
 				<table>
 					<thead>
-						<tr><th class="month-cell">Mois</th><th class="value-cell">Contributions</th></tr>
+						<tr><th class="month-cell">{ui.month[locale]}</th><th class="value-cell">{ui.contributions[locale]}</th></tr>
 					</thead>
 					<tbody>
 						{
 							monthly.months.map((m) => (
 								<tr>
 									<td class="month-cell">{m.name}</td>
-									<td class="value-cell">{formatNumber(m.value)}</td>
+									<td class="value-cell">{formatNumber(m.value, locale)}</td>
 								</tr>
 							))
 						}

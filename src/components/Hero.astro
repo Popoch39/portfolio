@@ -1,8 +1,10 @@
 ---
 import { identity } from '../data/profile';
+import { localeOf, ui } from '../lib/i18n';
 
+const locale = localeOf(Astro.currentLocale);
 const { languages, sideLanguages, employer } = identity;
-const languagesLabel = `${languages.join(', ')} — un peu de ${sideLanguages.join(' et de ')}`;
+const lede = ui.heroLede[locale];
 ---
 
 <section id="top" class="hero">
@@ -15,26 +17,23 @@ const languagesLabel = `${languages.join(', ')} — un peu de ${sideLanguages.jo
 		<span class="line">{identity.givenName}</span>{' '}<span class="line last">{identity.familyName}<span class="cursor" aria-hidden="true"></span></span>
 	</h1>
 	<div class="grid body">
-		<p class="lede">
-			Je conçois des applications web <em>de bout en bout</em> — l’API, l’interface, et les outils
-			qui rendent le tout agréable à développer.
-		</p>
+		<p class="lede">{lede.before}<em>{lede.emphasis}</em>{lede.after}</p>
 		<dl class="facts">
 			<div>
-				<dt class="mono">Rôle</dt>
-				<dd>{identity.roleDetail}</dd>
+				<dt class="mono">{ui.role[locale]}</dt>
+				<dd>{identity.roleDetail[locale]}</dd>
 			</div>
 			<div>
-				<dt class="mono">Langages</dt>
-				<dd>{languagesLabel}</dd>
+				<dt class="mono">{ui.languages[locale]}</dt>
+				<dd>{ui.languagesLine[locale](languages, sideLanguages)}</dd>
 			</div>
 			<div>
-				<dt class="mono">Aujourd’hui</dt>
-				<dd>{employer.name}, {employer.city} — depuis {employer.since}</dd>
+				<dt class="mono">{ui.today[locale]}</dt>
+				<dd>{ui.employerLine[locale](employer.name, employer.city, employer.since)}</dd>
 			</div>
 		</dl>
 		<div class="actions">
-			<a class="write" href={`mailto:${identity.email}`}>Écrire <span class="mono">:wq</span></a>
+			<a class="write" href={`mailto:${identity.email}`}>{ui.write[locale]} <span class="mono">:wq</span></a>
 			<a class="github" href={identity.links.github}>GitHub ↗</a>
 		</div>
 	</div>

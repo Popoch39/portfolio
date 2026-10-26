@@ -2,24 +2,21 @@
 import SectionHeader from './SectionHeader.astro';
 import FigureCard from './FigureCard.astro';
 import GrainPatterns from './GrainPatterns.astro';
-import { projects, publicRepoCount, restFigurePath, type Project } from '../data/profile';
+import { projects, publicRepoCount, restFigurePath, sections, type Project } from '../data/profile';
 import { anatomyOf } from '../anatomies/registry';
-import { fiche, localeOf, pathOf } from '../lib/i18n';
+import { fiche, linkTo, localeOf, ui } from '../lib/i18n';
 
 const locale = localeOf(Astro.currentLocale);
-const hrefOf = (p: Project) => pathOf(fiche(p.slug), locale);
+const { id, label } = sections.projects;
+const hrefOf = (p: Project) => linkTo(fiche(p.slug), locale);
 const numberOf = (index: number) => String(index + 1).padStart(2, '0');
 
 /** La bascule A3 : grand écran, pointeur qui survole, JavaScript actif. La CSS ci-dessous en garde une copie. */
 const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 ---
 
-<section id="projets" class="projects">
-	<SectionHeader
-		number={1}
-		title="Projets"
-		note={`${projects.length} sélectionnés · ${publicRepoCount} dépôts publics`}
-	/>
+<section id={id[locale]} class="projects">
+	<SectionHeader number={1} title={label[locale]} note={ui.projectsNote[locale](projects.length, publicRepoCount)} />
 	<div class="grid layout">
 		<ol class="list">
 			{
@@ -29,7 +26,7 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 						<a class="grid row" href={hrefOf(p)} data-selected={i === 0 ? '' : undefined}>
 							<span class="mono num">{numberOf(i)}</span>{' '}
 							<span class="name">{p.repo}</span>{' '}
-							<span class="desc">{p.description}</span>{' '}
+							<span class="desc">{p.description[locale]}</span>{' '}
 							<span class="mono stack">{p.stack.join(' · ')}</span>{' '}
 							<span class="mono year">{p.year} →</span>
 						</a>
@@ -56,10 +53,10 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 								image={{ src: restFigurePath(p), media: A3, width, height, alt: content.label }}
 								fixed
 							/>{' '}
-							<p class="preview-desc" aria-hidden="true">{p.description}</p>{' '}
+							<p class="preview-desc" aria-hidden="true">{p.description[locale]}</p>{' '}
 							<div class="mono preview-foot">
 								<span aria-hidden="true">{p.stack.join(' · ')}</span>{' '}
-								<a class="open" href={hrefOf(p)} aria-label={`Ouvrir la fiche ${p.repo}`}>Ouvrir la fiche →</a>
+								<a class="open" href={hrefOf(p)} aria-label={ui.openFicheLabel[locale](p.repo)}>{ui.openFiche[locale]}</a>
 							</div>
 						</div>
 					);
@@ -75,7 +72,8 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 	// L'amorce de l'aperçu A3, seul script que télécharge l'accueil hors de l'A3 : l'aperçu, et avec
 	// lui le chargeur des fiches et la mise en avant des pièces, n'est importé qu'une fois la bascule
 	// vérifiée. Elle est celle de l'image au repos des panneaux : une seule requête pour les deux.
-	const section = document.querySelector<HTMLElement>('#projets');
+	// Par sa classe : l'ancre de la section change avec la langue.
+	const section = document.querySelector<HTMLElement>('section.projects');
 	const a3 = matchMedia(section?.querySelector('[data-panel] source')?.getAttribute('media') ?? 'not all');
 	const start = (section: HTMLElement) => void import('./preview.ts').then(({ preview }) => preview(section));
 	if (section && a3.matches) start(section);
@@ -341,6 +339,12 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 			content: 'Anatomie →';
 			content: 'Anatomie →' / '';
 			font-family: var(--font-mono);
+		}
+
+		/* La CSS ne lit pas le dictionnaire : la version anglaise a sa propre mention. */
+		.row[data-selected]:lang(en)::after {
+			content: 'Anatomy →';
+			content: 'Anatomy →' / '';
 		}
 	}
 </style>

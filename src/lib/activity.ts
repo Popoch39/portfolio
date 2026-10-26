@@ -2,35 +2,88 @@
 // maquette D1. Tout est calculé en UTC : le jour d'une contribution ne dépend pas du
 // fuseau de la machine de build.
 import type { ContributionSnapshot } from '../data/github-snapshot';
+import { formats, type Locale, type Localized } from './i18n';
 
 const DAY_MS = 86_400_000;
 
-const numberFormat = new Intl.NumberFormat('fr-FR');
-const dayFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
-const monthFormat = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-const shortMonthYearFormat = new Intl.DateTimeFormat('fr-FR', { month: 'short', year: 'numeric', timeZone: 'UTC' });
-const shortMonthFormat = new Intl.DateTimeFormat('fr-FR', { month: 'short', timeZone: 'UTC' });
+const formattersOf = (intl: string) => ({
+	number: new Intl.NumberFormat(intl),
+	day: new Intl.DateTimeFormat(intl, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }),
+	month: new Intl.DateTimeFormat(intl, { month: 'long', year: 'numeric', timeZone: 'UTC' }),
+	shortMonthYear: new Intl.DateTimeFormat(intl, { month: 'short', year: 'numeric', timeZone: 'UTC' }),
+	shortMonth: new Intl.DateTimeFormat(intl, { month: 'short', timeZone: 'UTC' }),
+	plural: new Intl.PluralRules(intl),
+});
 
-/** « 2 688 », avec l'espace fine insécable du français. */
-export const formatNumber = (n: number) => numberFormat.format(n);
+const formatters: Localized<ReturnType<typeof formattersOf>> = {
+	fr: formattersOf(formats.fr.intl),
+	en: formattersOf(formats.en.intl),
+};
 
-/** « 7 octobre 2026 ». */
-export const formatDay = (date: Date) => dayFormat.format(date);
+/** « 2 688 », avec l'espace fine insécable du français ; « 2,688 » en anglais. */
+export const formatNumber = (n: number, locale: Locale) => formatters[locale].number.format(n);
 
-/** « octobre 2025 ». */
-const formatMonth = (date: Date) => monthFormat.format(date);
+/** « 7 octobre 2026 », « 7 October 2026 ». */
+export const formatDay = (date: Date, locale: Locale) => formatters[locale].day.format(date);
 
-/** « jour », « jours » : en français, 0 et 1 restent au singulier. */
-const plural = (count: number, word: string) => `${word}${count > 1 ? 's' : ''}`;
+/** « octobre 2025 », « October 2025 ». */
+const formatMonth = (date: Date, locale: Locale) => formatters[locale].month.format(date);
 
-/** « aucune contribution », « 1 contribution », « 2 688 contributions ». */
-function contributions(count: number): string {
-	if (count === 0) return 'aucune contribution';
-	return `${formatNumber(count)} ${plural(count, 'contribution')}`;
-}
+/** « jour », « jours » : la règle de pluriel de la langue (en français, 0 et 1 restent au singulier). */
+const plural = (count: number, word: string, locale: Locale) =>
+	`${word}${formatters[locale].plural.select(count) === 'one' ? '' : 's'}`;
 
 /** « d’octobre », « de mars » : élision devant une voyelle. */
 const ofMonth = (month: string) => (/^[aeiouyéè]/.test(month) ? `d’${month}` : `de ${month}`);
+
+/** Les textes composés de l'activité, nombres et dates déjà formatés. */
+interface ActivityCopy {
+	/** « aucune contribution », « 1 contribution », « 2 688 contributions ». */
+	noContribution: string;
+	/** Le mot « jour », au singulier. */
+	day: string;
+	/** Jours d'un mois incomplet : « 6 jours en oct. 2025 », puis « 25 en oct. 2026 ». */
+	partialDays: (days: string, month: string) => string;
+	incomplete: string;
+	partialNote: (months: string) => string;
+	monthlyAria: (months: string) => string;
+	andOver: (low: number) => string;
+	heatmapAria: (from: string, to: string, total: string, record: string, recordDay: string) => string;
+}
+
+const copy: Localized<ActivityCopy> = {
+	fr: {
+		noContribution: 'aucune contribution',
+		day: 'jour',
+		partialDays: (days, month) => `${days} en ${month}`,
+		incomplete: ' (incomplet)',
+		partialNote: (months) => `* mois incomplets : ${months}`,
+		monthlyAria: (months) => `Contributions par mois : ${months}.`,
+		andOver: (low) => `${low} et plus`,
+		heatmapAria: (from, to, total, record, recordDay) =>
+			`Calendrier des contributions GitHub, ${ofMonth(from)} à ${to} : ${total}, record de ${record} le ${recordDay}.`,
+	},
+	en: {
+		noContribution: 'no contributions',
+		day: 'day',
+		partialDays: (days, month) => `${days} in ${month}`,
+		incomplete: ' (partial)',
+		partialNote: (months) => `* partial months: ${months}`,
+		monthlyAria: (months) => `Contributions per month: ${months}.`,
+		andOver: (low) => `${low} and over`,
+		heatmapAria: (from, to, total, record, recordDay) =>
+			`GitHub contribution calendar, ${from} to ${to}: ${total}, best day ${record} on ${recordDay}.`,
+	},
+};
+
+function contributions(count: number, locale: Locale): string {
+	if (count === 0) return copy[locale].noContribution;
+	return `${formatNumber(count, locale)} ${plural(count, 'contribution', locale)}`;
+}
+
+/** « 15 jours », « 15 days ». */
+export const days = (count: number, locale: Locale) =>
+	`${formatNumber(count, locale)} ${plural(count, copy[locale].day, locale)}`;
 
 /** Date (UTC, minuit) du `index`-ième jour de l'instantané ; `start` sans heure est lu en UTC. */
 function dayOf(snapshot: ContributionSnapshot, index: number): Date {
@@ -97,7 +150,9 @@ export interface MonthlyTotals {
 	ariaLabel: string;
 }
 
-export function monthlyTotals(snapshot: ContributionSnapshot): MonthlyTotals {
+export function monthlyTotals(snapshot: ContributionSnapshot, locale: Locale): MonthlyTotals {
+	const format = formatters[locale];
+	const text = copy[locale];
 	const groups: { firstDay: Date; days: number; value: number }[] = [];
 	snapshot.counts.forEach((count, i) => {
 		const day = dayOf(snapshot, i);
@@ -118,13 +173,13 @@ export function monthlyTotals(snapshot: ContributionSnapshot): MonthlyTotals {
 		// sont tronqués, même si l'un d'eux tombe pile sur un mois entier.
 		const partial = i === 0 || i === groups.length - 1;
 		if (partial) {
-			const days = partials.length === 0 ? `${g.days} ${plural(g.days, 'jour')}` : String(g.days);
-			partials.push(`${days} en ${shortMonthYearFormat.format(firstDay)}`);
+			const count = partials.length === 0 ? days(g.days, locale) : formatNumber(g.days, locale);
+			partials.push(text.partialDays(count, format.shortMonthYear.format(firstDay)));
 		}
 		return {
-			label: `${shortMonthFormat.format(firstDay)}${partial ? '*' : ''}`,
-			name: `${formatMonth(firstDay)}${partial ? ' (incomplet)' : ''}`,
-			title: `${formatMonth(firstDay)} · ${contributions(g.value)}`,
+			label: `${format.shortMonth.format(firstDay)}${partial ? '*' : ''}`,
+			name: `${formatMonth(firstDay, locale)}${partial ? text.incomplete : ''}`,
+			title: `${formatMonth(firstDay, locale)} · ${contributions(g.value, locale)}`,
 			value: g.value,
 			height: max === 0 ? BAR_MIN_HEIGHT : Math.max(BAR_MIN_HEIGHT, Math.round((g.value / max) * BAR_MAX_HEIGHT)),
 			showValue: g.value === max || i === groups.length - 1,
@@ -133,8 +188,8 @@ export function monthlyTotals(snapshot: ContributionSnapshot): MonthlyTotals {
 
 	return {
 		months,
-		partialNote: `* mois incomplets : ${partials.join(', ')}`,
-		ariaLabel: `Contributions par mois : ${months.map((m) => `${m.name} ${formatNumber(m.value)}`).join(', ')}.`,
+		partialNote: text.partialNote(partials.join(', ')),
+		ariaLabel: text.monthlyAria(months.map((m) => `${m.name} ${formatNumber(m.value, locale)}`).join(', ')),
 	};
 }
 
@@ -145,11 +200,12 @@ const LEVEL_THRESHOLDS = [1, 5, 15, 50];
 const levelOf = (count: number) => LEVEL_THRESHOLDS.filter((t) => count >= t).length;
 
 /** Les 5 paliers de la légende : « 0 », « 1–4 », « 5–14 », « 15–49 », « 50 et plus ». */
-export const heatmapLegend = [0, ...LEVEL_THRESHOLDS].map((low, level) => {
-	if (level === 0) return { level, label: '0' };
-	const next = LEVEL_THRESHOLDS[level];
-	return { level, label: next === undefined ? `${low} et plus` : `${low}–${next - 1}` };
-});
+export const heatmapLegend = (locale: Locale) =>
+	[0, ...LEVEL_THRESHOLDS].map((low, level) => {
+		if (level === 0) return { level, label: '0' };
+		const next = LEVEL_THRESHOLDS[level];
+		return { level, label: next === undefined ? copy[locale].andOver(low) : `${low}–${next - 1}` };
+	});
 
 export interface HeatmapCell {
 	/** Palier de la rampe, de 0 (aucune contribution) à 4. */
@@ -178,7 +234,8 @@ export interface Heatmap {
 	ariaLabel: string;
 }
 
-export function heatmap(snapshot: ContributionSnapshot, { total, record }: ActivityStats): Heatmap {
+export function heatmap(snapshot: ContributionSnapshot, { total, record }: ActivityStats, locale: Locale): Heatmap {
+	const format = formatters[locale];
 	const { counts } = snapshot;
 	const weeks = Math.ceil(counts.length / 7);
 	const first = dayOf(snapshot, 0);
@@ -189,7 +246,7 @@ export function heatmap(snapshot: ContributionSnapshot, { total, record }: Activ
 	for (let week = 1; week < weeks; week++) {
 		const sunday = dayOf(snapshot, week * 7);
 		if (sunday.getUTCMonth() !== previousMonth) {
-			monthLabels.push({ label: shortMonthFormat.format(sunday), column: week + 1 });
+			monthLabels.push({ label: format.shortMonth.format(sunday), column: week + 1 });
 		}
 		previousMonth = sunday.getUTCMonth();
 	}
@@ -198,12 +255,16 @@ export function heatmap(snapshot: ContributionSnapshot, { total, record }: Activ
 		weeks,
 		cells: counts.map((count, i) => ({
 			level: levelOf(count),
-			title: `${formatDay(dayOf(snapshot, i))} · ${contributions(count)}`,
+			title: `${formatDay(dayOf(snapshot, i), locale)} · ${contributions(count, locale)}`,
 		})),
 		monthLabels,
-		period: `${shortMonthYearFormat.format(first)} → ${shortMonthYearFormat.format(last)}`,
-		ariaLabel:
-			`Calendrier des contributions GitHub, ${ofMonth(formatMonth(first))} à ${formatMonth(last)} : ` +
-			`${contributions(total)}, record de ${formatNumber(record.count)} le ${formatDay(record.date)}.`,
+		period: `${format.shortMonthYear.format(first)} → ${format.shortMonthYear.format(last)}`,
+		ariaLabel: copy[locale].heatmapAria(
+			formatMonth(first, locale),
+			formatMonth(last, locale),
+			contributions(total, locale),
+			formatNumber(record.count, locale),
+			formatDay(record.date, locale),
+		),
 	};
 }

@@ -1,0 +1,40 @@
+---
+// L'accueil, rendu par la route de chaque langue (`src/pages/index.astro`, `src/pages/en/index.astro`) :
+// la langue vient de l'URL, par `Astro.currentLocale`.
+import Layout from '../layouts/Layout.astro';
+import SiteHeader from './SiteHeader.astro';
+import Hero from './Hero.astro';
+import Marquee from './Marquee.astro';
+import Projects from './Projects.astro';
+import Career from './Career.astro';
+import Activity from './Activity.astro';
+import Stack from './Stack.astro';
+import Contact from './Contact.astro';
+import StatusBar from './StatusBar.astro';
+import { githubSnapshot } from '../data/github-snapshot';
+import { activityStats, formatNumber } from '../lib/activity';
+import { home, localeOf, ui } from '../lib/i18n';
+
+const locale = localeOf(Astro.currentLocale);
+const stats = activityStats(githubSnapshot);
+---
+
+<Layout page={home}>
+	<div class="container">
+		<SiteHeader page={home} />
+	</div>
+	<main>
+		<div class="container">
+			<Hero />
+		</div>
+		<Marquee />
+		<div class="container">
+			<Projects />
+			<Career />
+			<Activity stats={stats} />
+			<Stack />
+			<Contact />
+		</div>
+	</main>
+	<StatusBar secondary={ui.statusContributions[locale](formatNumber(stats.total, locale))} />
+</Layout>

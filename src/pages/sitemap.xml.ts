@@ -1,15 +1,21 @@
 import type { APIRoute } from 'astro';
 import { projects } from '../data/profile';
-import { defaultLocale, fiche, home, pathOf } from '../lib/i18n';
+import { alternatesOf, fiche, home, pathOf, versionsOf } from '../lib/i18n';
 
-// L'accueil et les fiches : pas besoin de l'intégration @astrojs/sitemap.
+// L'accueil et les fiches, chaque version avec les mêmes alternatives que les `hreflang` de son
+// `<head>` : pas besoin de l'intégration @astrojs/sitemap.
 export const GET = (({ site }) => {
 	if (!site) throw new Error('`site` doit être défini dans astro.config.mjs : le sitemap en dérive.');
-	const paths = [home, ...projects.map((project) => fiche(project.slug))].map((page) => pathOf(page, defaultLocale));
+	const urls = [home, ...projects.map((project) => fiche(project.slug))].flatMap((page) => {
+		const alternates = alternatesOf(page)
+			.map(({ hreflang, path }) => `<xhtml:link rel="alternate" hreflang="${hreflang}" href="${new URL(path, site).href}"/>`)
+			.join('');
+		return versionsOf(page).map((locale) => `<url><loc>${new URL(pathOf(page, locale), site).href}</loc>${alternates}</url>`);
+	});
 	const body = [
 		'<?xml version="1.0" encoding="UTF-8"?>',
-		'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-		...paths.map((path) => `<url><loc>${new URL(path, site).href}</loc></url>`),
+		'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">',
+		...urls,
 		'</urlset>',
 		'',
 	].join('\n');

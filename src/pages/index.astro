@@ -1,36 +1,5 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import SiteHeader from '../components/SiteHeader.astro';
-import Hero from '../components/Hero.astro';
-import Marquee from '../components/Marquee.astro';
-import Projects from '../components/Projects.astro';
-import Career from '../components/Career.astro';
-import Activity from '../components/Activity.astro';
-import Stack from '../components/Stack.astro';
-import Contact from '../components/Contact.astro';
-import StatusBar from '../components/StatusBar.astro';
-import { githubSnapshot } from '../data/github-snapshot';
-import { activityStats, formatNumber } from '../lib/activity';
-
-const stats = activityStats(githubSnapshot);
+import Home from '../components/Home.astro';
 ---
 
-<Layout>
-	<div class="container">
-		<SiteHeader />
-	</div>
-	<main>
-		<div class="container">
-			<Hero />
-		</div>
-		<Marquee />
-		<div class="container">
-			<Projects />
-			<Career />
-			<Activity stats={stats} />
-			<Stack />
-			<Contact />
-		</div>
-	</main>
-	<StatusBar secondary={`${formatNumber(stats.total)} contributions · 12 mois`} />
-</Layout>
+<Home />

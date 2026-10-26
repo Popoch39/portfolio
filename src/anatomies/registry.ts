@@ -2,7 +2,7 @@
 // fichier commun à modifier. Chaque projet mis en avant doit avoir le sien, complet : sans figure
 // ni mouvement, sa fiche n'aurait rien à montrer, donc le build échoue.
 import { githubRepoUrl, type Project } from '../data/profile';
-import type { Locale, Localized } from '../lib/i18n';
+import type { Locale } from '../lib/i18n';
 import type { Anatomy, AnatomyContent, Consignes, Piece, RestFigure, Signature, Text } from './contract.ts';
 
 const modules = import.meta.glob<Anatomy>('./*/index.ts', { eager: true, import: 'anatomy' });
@@ -58,15 +58,9 @@ export function anatomyOf(project: Project, locale: Locale): ProjectAnatomy {
 	};
 }
 
-const isLocalized = (text: Text): text is Localized<string> => typeof text !== 'string';
-
-/**
- * Le contenu d'une anatomie dans une langue : le seul endroit où un texte d'anatomie choisit sa
- * langue. Une chaîne seule est le français d'une anatomie pas encore traduite : la version anglaise
- * l'affiche tel quel plutôt que rien.
- */
+/** Le contenu d'une anatomie dans une langue : le seul endroit où un texte d'anatomie choisit sa langue. */
 function inLocale(content: AnatomyContent, locale: Locale): AnatomyContent<'page'> {
-	const text = (value: Text) => (isLocalized(value) ? value[locale] : value);
+	const text = (value: Text) => value[locale];
 	const consignes = ({ pointer, touch }: Consignes) => ({ pointer: text(pointer), touch: text(touch) });
 	const { lede, seo, timeline } = content;
 	return {

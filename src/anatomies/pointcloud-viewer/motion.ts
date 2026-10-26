@@ -456,6 +456,8 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 			lastLine = line;
 			readout.textContent = line;
 		}
+		// Un geste se lit quand la tête s'arrête : les points lus ou le cliquet qui a patiné.
+		if (driver === 'user' && !state.rate && scene.getAttribute('aria-valuetext') !== line) describe();
 	};
 
 	const motion = loop(scene, (dt, calm) => {

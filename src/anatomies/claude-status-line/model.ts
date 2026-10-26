@@ -6,6 +6,7 @@
 // `refreshInterval` secondes (60), donc un rendu par minute entière. Fonction pure de `t` : revenir
 // en arrière rejoue exactement le même état, comme le code, sans état en mémoire hors du cache.
 
+import type { Locale, Localized } from '../../lib/i18n.ts';
 import type { Timeline } from '../contract.ts';
 
 export const SHA = 'f77fa09f17d4781dbdefbff2542ae951852b67d0';
@@ -251,21 +252,33 @@ export const EVENTS = [0, 15, 26, 35, 76, 135, 136, OFFLINE_FROM + 0.5];
 /** Espace fine insécable avant « % ». */
 const THIN = ' ';
 
-const segment = (pct: number | null) => (pct == null ? '—' : `${bar(pct).shown}${THIN}%`);
+/** Avant « % » : l'espace fine en français ; rien en anglais, comme la ligne du binaire. */
+const BEFORE_PERCENT: Localized<string> = { fr: THIN, en: '' };
 
 /** Relevé de la carte, au format de la fiche : `{source} · 5h {p5} % · reset {r5} · sem {p7} % · {r7}`. */
-export function releveOf(source: Source, five: Shown, week: Shown) {
+// Libellés et délais sont ceux que le binaire écrit : seule la typographie du pourcentage suit la langue.
+export function releveOf(source: Source, five: Shown, week: Shown, locale: Locale) {
+	const segment = (pct: number) => `${bar(pct).shown}${BEFORE_PERCENT[locale]}%`;
 	const first = five.pct == null ? '5h —' : `5h ${segment(five.pct)}${five.reset ? ` · reset ${five.reset}` : ''}`;
 	const second = week.pct == null ? 'sem —' : `sem ${segment(week.pct)}${week.reset ? ` · ${week.reset}` : ''}`;
 	return `${source} · ${first} · ${second}`;
 }
 
 export const restPose = poseAt(REST);
-export const releve = releveOf(SOURCES[restPose.lever], restPose.output.five, restPose.output.week);
+const restReleve = (locale: Locale) => releveOf(SOURCES[restPose.lever], restPose.output.five, restPose.output.week, locale);
+export const releve: Localized<string> = { fr: restReleve('fr'), en: restReleve('en') };
 
 // --- Règle de temps -------------------------------------------------------------------------------
 
-const hourLabel = (m: number) => (m === 0 ? '0' : m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60}` : ''}`);
+// « 1 h 30 » se lit en français ; l'anglais dit « 1½ h », aussi court, pour tenir à 390 px.
+const hourLabel = (m: number, locale: Locale) =>
+	m === 0 ? '0' : m < 60 ? `${m} min` : locale === 'en' && m % 60 === 30 ? `${Math.floor(m / 60)}½ h` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60}` : ''}`;
+
+/**
+ * La minute du rendu affiché, comme le relevé : « minute 12 » se dit pareil dans les deux langues.
+ * Le mouvement l'importe seule, pour laisser la règle et ses consignes hors de son morceau.
+ */
+export const minuteReading = (t: number) => `minute ${Math.floor(t)}`;
 
 /** La règle de la fiche : la session minute par minute, graduée toutes les 5 minutes, légendée toutes les 30. */
 export const timeline: Timeline = {
@@ -273,11 +286,16 @@ export const timeline: Timeline = {
 	rest: REST,
 	events: EVENTS,
 	tick: 5,
-	marks: [0, 30, 60, 90, 120, 150].map((at) => ({ at, text: hourLabel(at) })),
-	// La minute du rendu affiché, comme le relevé.
-	reading: (t) => `minute ${Math.floor(t)}`,
+	marks: [0, 30, 60, 90, 120, 150].map((at) => ({ at, text: { fr: hourLabel(at, 'fr'), en: hourLabel(at, 'en') } })),
+	reading: minuteReading,
 	consignes: {
-		pointer: 'Glissez la règle ou la figure pour faire avancer le temps ; les triangles marquent les événements',
-		touch: 'Glissez la règle ou la figure du doigt ; les triangles marquent les événements',
+		pointer: {
+			fr: 'Glissez la règle ou la figure pour faire avancer le temps ; les triangles marquent les événements',
+			en: 'Drag the ruler or the figure to move time forward; the triangles mark the events',
+		},
+		touch: {
+			fr: 'Glissez la règle ou la figure du doigt ; les triangles marquent les événements',
+			en: 'Drag the ruler or the figure with your finger; the triangles mark the events',
+		},
 	},
 };

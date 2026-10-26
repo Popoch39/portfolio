@@ -5,6 +5,7 @@
 // bascule le clapet et glisse au bac de rejet. Au repos, le tour tire les six tiroirs puis rejoue un
 // refus ; la poignée se tire à la main (pointeur, doigt) ou au clavier sur la scène.
 import { axisVector, translateAlong, type Point3 } from '../../vendor/anatomy/iso-kit.ts';
+import type { Localized } from '../../lib/i18n.ts';
 import type { MountMotion } from '../contract.ts';
 import { asksForStillness, follow, loop, spring, type Spring } from '../live.ts';
 import {
@@ -31,7 +32,19 @@ import {
 	TRAVEL,
 	WHEEL_PITCH,
 } from './layout.ts';
-import { check, DRAWERS, FIELDS, notched, pageRequest, PROXIMITY, REFUSED, releve as atRest, releveOf, REST_PAGE, rowsOf, TOTAL, type Request } from './model.ts';
+import { check, DRAWERS, FIELDS, notched, pageRequest, PROXIMITY, REFUSED, releveOf, REST_PAGE, rowsOf, TOTAL, type Request } from './model.ts';
+
+/** Ce que le mouvement annonce, dans la langue du document. */
+const T: Localized<{ keys: string; drawer: (n: number) => string }> = {
+	fr: {
+		keys: 'Meuble à fiches : les flèches choisissent un tiroir, Entrée ou Espace le tire et demande sa page, Échap le repousse.',
+		drawer: (n: number) => `Tiroir ${n}, page ${n}`,
+	},
+	en: {
+		keys: 'Card cabinet: the arrow keys choose a drawer, Enter or Space pulls it out and requests its page, Escape pushes it back in.',
+		drawer: (n: number) => `Drawer ${n}, page ${n}`,
+	},
+};
 
 /** Le tiroir : une masse menée vers un peu au-delà de sa butée, qui la frappe et s'y arrête. */
 const DRIVE = { stiffness: 14, damping: 7.5, beyond: 14 };
@@ -65,7 +78,10 @@ const pagesAt = (count: number) => {
 	return Math.floor(at) + smooth(((at % 1) - 0.95) / 0.05);
 };
 
-const mount: MountMotion = ({ scene, svg, releve }) => {
+const mount: MountMotion = ({ locale, scene, svg, releve }) => {
+	const texts = T[locale];
+	const releveOn = (req: Request) => releveOf(req, locale);
+	const atRest = releveOn(pageRequest(REST_PAGE));
 	const all = (selector: string) => [...svg.querySelectorAll<SVGElement>(selector)];
 	const one = (selector: string) => svg.querySelector<SVGElement>(selector);
 	const assembly = one('[data-drawer]');
@@ -297,7 +313,7 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 			state.counting = false;
 			state.countTarget = TOTAL;
 			state.liftTarget = 1;
-			say(releveOf(pageRequest(index + 1)));
+			say(releveOn(pageRequest(index + 1)));
 		}),
 		{ done: () => state.lift > 0.98 },
 	];
@@ -337,7 +353,7 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 			},
 			once(() => {
 				state.flapTarget = 0;
-				say(releveOf(req));
+				say(releveOn(req));
 			}),
 		];
 	};
@@ -414,7 +430,7 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 		state.flapTarget = 0;
 		if (state.chute.shown && state.chute.drop === 0) state.chute.shown = false;
 	};
-	const describe = (index: number) => `Tiroir ${index + 1}, page ${index + 1}`;
+	const describe = (index: number) => texts.drawer(index + 1);
 	const select = (index: number) => {
 		state.selected = index;
 		light(index);
@@ -560,7 +576,7 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 
 	const attributes = {
 		role: 'slider',
-		'aria-label': 'Meuble à fiches : les flèches choisissent un tiroir, Entrée ou Espace le tire et demande sa page, Échap le repousse.',
+		'aria-label': texts.keys,
 		'aria-valuemin': '1',
 		'aria-valuemax': String(DRAWERS),
 		'aria-valuenow': String(state.selected + 1),

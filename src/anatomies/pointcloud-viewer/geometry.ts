@@ -241,7 +241,8 @@ function jalon(): Item[] {
 	// Bandes alternées : une bande sur deux prend les tons d'une peinture sombre.
 	const dark = 'style="--anatomy-paper:var(--anatomy-mid);--anatomy-top:var(--anatomy-mid);--anatomy-shade-0:var(--anatomy-hi);--anatomy-shade-1:var(--anatomy-hi);--anatomy-shade-2:var(--anatomy-mid);--anatomy-shade-3:var(--anatomy-mid)"';
 	const bands = 7;
-	const [from, to] = [3.4, 44];
+	// Le tube s'arrête sous le haut de la cible, qui le cache.
+	const [from, to] = [3.4, 42.4];
 	for (let k = 0; k < bands; k++) {
 		const [s0, s1] = [from + ((to - from) * k) / bands, from + ((to - from) * (k + 1)) / bands];
 		const svg = S(cylinder(x, y, 1, GROUND + s0, s1 - s0, P, 16), { tone: 'hi', crease: 'none' });
@@ -698,14 +699,12 @@ export function chariot(disque: Piece, progress: number, home: boolean): Item[] 
 	const tray = turned(railPlane(CHARIOT.at, 0), RAIL_ANGLE, CHARIOT.half, RAILS.gauge / 2 + 1, 0.8, 3);
 	const centre = railPoint(CHARIOT.at, 0, 0);
 	const marks = discMarks(progress);
-	const latch = (side: number) => {
-		const pivot = railPoint(CHARIOT.at - side * (CHARIOT.half - 0.8), RAILS.gauge / 2 + 0.4, CHARIOT.z1);
-		const tip = add(pivot, add(mul(RAIL_DIR, -side * 1.9), mul(SIDE_DIR, -1.2)));
-		return pathOf([at(pivot), at(add(tip, [0, 0, 0]))]);
-	};
+	// Le loquet pivote au bord du plateau du chariot : couché vers le socle au dock, vers le support après.
+	const pivot = railPoint(CHARIOT.at, -RAILS.gauge / 2 - 0.2, CHARIOT.z1);
+	const latch = (side: number) => pathOf([at(pivot), at(add(pivot, add(mul(RAIL_DIR, -side * 2.2), mul(SIDE_DIR, 0.3))))]);
 	const shift = home ? 0 : TRAVEL;
 	const latchSvg = `<path class="iso-line" data-tone="hi" data-latch="dock" d="${latch(1)}"${home ? '' : ' visibility="hidden"'}/><path class="iso-line" data-tone="hi" data-latch="support" d="${latch(-1)}"${home ? ' visibility="hidden"' : ''}/>`;
-	const latchPins = dots([1, -1].map((side) => railPoint(CHARIOT.at - side * (CHARIOT.half - 0.8), RAILS.gauge / 2 + 0.4, CHARIOT.z1)), 0.5, 'hi');
+	const latchPins = dots([pivot], 0.5, 'hi');
 	const discSvg = pieceSvg(disque, [
 		S(cylinder(centre[0], centre[1], DISC.r, DISC.z0, DISC.z1 - DISC.z0, P, 36, 0.4), {
 			tone: 'hi',

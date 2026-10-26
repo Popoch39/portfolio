@@ -40,7 +40,8 @@ const smooth = (t: number) => {
 const wrap = (angle: number) => angle - TAU * Math.round(angle / TAU);
 /** Écart en avant seulement, dans [0, 2π[. */
 const ahead = (from: number, to: number) => (((to - from) % TAU) + TAU) % TAU;
-const indexOf = (read: number) => Math.min(POINTS, Math.floor(read * 100 + 1e-6));
+/** Points lus quand la tête a tourné de `read` : le point `i` est à l'angle `i / 100`, le point 0 compris. */
+const countOf = (read: number) => (read <= 0 ? 0 : Math.min(POINTS, Math.floor(read * 100 + 1e-6) + 1));
 const screenOf = (p: Point3) => iso(p, P);
 const offsetOf = (by: Point3): [number, number] => {
 	const [a, b] = [screenOf([0, 0, 0]), screenOf(by)];
@@ -134,7 +135,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 	let lastLine = '';
 
 	const lineOf = () => {
-		const read = indexOf(state.read);
+		const read = countOf(state.read);
 		switch (state.phase) {
 			case 'reset':
 			case 'spin':
@@ -150,7 +151,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 		}
 	};
 	const describe = () => {
-		scene.setAttribute('aria-valuenow', String(indexOf(state.read)));
+		scene.setAttribute('aria-valuenow', String(countOf(state.read)));
 		scene.setAttribute('aria-valuetext', lineOf());
 	};
 
@@ -162,6 +163,8 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 			// Les réglages reviennent à zéro : la tête retourne au trait 0 du cercle, par le plus court.
 			state.chase = false;
 			state.target = state.angle - wrap(state.angle);
+			// …et la roue revient en avant jusqu'au RGB, le mode par défaut d'un nuage coloré.
+			state.steps = Math.ceil(state.steps / MODES.length) * MODES.length;
 		} else if (phase === 'read') {
 			Object.assign(state, { read: 0, back: 0, shown: 0, writtenTo: 0, chase: driver === 'tour' });
 			written = written.map(() => '');
@@ -216,11 +219,16 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 			// En lecture, le moteur reçoit la vitesse du point courant : il le suit tant qu'il peut.
 			const feed = state.chase && state.phase === 'read' && driver === 'tour' ? readSpeed(state.read) : 0;
 			const error = state.chase ? ahead(state.angle, state.read) : state.target - state.angle;
+			const gapOf = () => (state.chase ? wrap(state.read - state.angle) : state.target - state.angle);
+			const was = gapOf();
 			const want = Math.sign(error) * Math.min(CAP, feed + Math.sqrt(2 * ACCEL * Math.abs(error)));
 			state.rate += Math.min(ACCEL * dt, Math.max(-ACCEL * dt, want - state.rate));
 			state.angle += state.rate * dt;
-			const gap = state.chase ? Math.abs(wrap(state.read - state.angle)) : Math.abs(state.target - state.angle);
-			if (!feed && gap < 2e-3 && Math.abs(state.rate) < 0.08) {
+			const gap = gapOf();
+			// Le moteur freine sur sa cible : s'il la franchit au pas de temps près, il s'y pose (en
+			// poursuite, la dépasser d'un cheveu lui ferait refaire un tour entier).
+			const crossed = Math.abs(gap) < 0.5 && Math.sign(gap) !== Math.sign(was) && Math.abs(state.rate) < 3;
+			if (!feed && (crossed || (Math.abs(gap) < 2e-3 && Math.abs(state.rate) < 0.08))) {
 				state.angle = state.chase ? state.angle + wrap(state.read - state.angle) : state.target;
 				state.rate = 0;
 			}
@@ -295,7 +303,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 	const drawCloud = () => {
 		const { phase } = state;
 		if (phase === 'read' || phase === 'write' || phase === 'transfer' || phase === 'anchor') {
-			const last = indexOf(state.read);
+			const last = countOf(state.read) - 1;
 			while (state.shown < DRAWN && drawnIndex(state.shown) <= last) state.shown++;
 			// La spire courante : les points des 628 derniers ; les plus anciens passent au ton `lo`.
 			while (state.writtenTo < state.shown && drawnIndex(state.writtenTo) <= last - PER_TURN) {
@@ -405,7 +413,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 		setAttr(beam, 'visibility', on ? null : 'hidden');
 		if (!on) return;
 		const from = mirrorAt(state.angle);
-		const to = impactAt(state.angle, Math.min(POINTS - 1, indexOf(state.read)));
+		const to = impactAt(state.angle, Math.max(0, countOf(state.read) - 1));
 		const slot = slots[beamSlot(from, to, facingOf(state.angle) > 0.05)];
 		if (slot && beam.parentNode !== slot) slot.appendChild(beam);
 		const [a, b] = [screenOf(from), screenOf(to)];

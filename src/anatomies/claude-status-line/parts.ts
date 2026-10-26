@@ -92,10 +92,10 @@ export function hammerSvg(angle: number) {
 		[-0.6, 7.4],
 	];
 	const head: [number, number][] = [
-		[-2.6, 6.6],
-		[-0.2, 6.6],
-		[-0.2, 9.4],
-		[-2.6, 9.4],
+		[-3.4, 6.2],
+		[-0.2, 6.2],
+		[-0.2, 9.8],
+		[-3.4, 9.8],
 	];
 	// Sens horaire vu de face : le bas du marteau part vers −x, vers la capsule.
 	return prismSvg(HAMMER_PIVOT[0], HAMMER_PIVOT[1], turned(arm, angle), HAMMER_Y, 'mid') + prismSvg(HAMMER_PIVOT[0], HAMMER_PIVOT[1], turned(head, angle), HAMMER_Y, 'hi');
@@ -209,7 +209,8 @@ export const drumChars = (text: string) => {
 };
 
 /** Croix de Malte (dans le plan du fond du hublot, coordonnées locales x, −z) et son doigt, en bas à droite. */
-export const CENTRES = 8 / Math.cos(Math.PI / 6);
+export const CROSS_R = 9;
+export const CENTRES = CROSS_R / Math.cos(Math.PI / 6);
 export const CROSS_AT: [number, number] = [PORTHOLE[0] - 3, -PORTHOLE[1] - 2.5];
 export const DRIVER_AT: [number, number] = [CROSS_AT[0] + CENTRES * Math.SQRT1_2, CROSS_AT[1] + CENTRES * Math.SQRT1_2];
 /** Angle du doigt (degrés, sens horaire depuis le haut) pour la fraction de minute écoulée. */

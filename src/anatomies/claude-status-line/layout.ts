@@ -60,8 +60,8 @@ export const CAPSULE_BODY = 13;
 /** Tampon d'écriture : pivot sous la tête, frappe la capsule par la droite. */
 export const HAMMER_PIVOT: [number, number] = [-12, -9];
 export const HAMMER_Y: [number, number] = [14, 18];
-/** Course du marteau (degrés) : sa tête vient au contact de la capsule, à 0,06 près. */
-export const HAMMER_SWING = 15;
+/** Course du marteau (degrés) : sa tête vient au contact de la capsule, à 0,05 près. */
+export const HAMMER_SWING = 9.6;
 /**
  * Raccord stdin : de derrière la tablette jusqu'au-dessus de la tête. Il monte derrière la tête et
  * tourne dans deux coudes à boule : un virage dans le plan y–z, vu de biais, se pincerait à l'écran.
@@ -154,7 +154,7 @@ export const BOX: Plan = { x: 640, y: 3, w: 44, d: 26, r: 2 };
 export const BOX_Z: [number, number] = [-6, 46];
 export const BOX_FRONT = BOX.y + BOX.d;
 export const PORTHOLE: [number, number] = [662, 28];
-export const PORTHOLE_R = 11;
+export const PORTHOLE_R = 13;
 export const PORTHOLE_DEPTH = 4;
 
 const extremes: Point3[] = [

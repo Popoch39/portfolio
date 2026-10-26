@@ -238,8 +238,11 @@ export function cacheLevel(t: number) {
 	return bar(last?.limits?.five_hour?.used_percentage ?? 0).clamped / 100;
 }
 
-/** Instants où il se passe quelque chose : requête, lame, seuil, format, reset, session hors ligne. */
-export const EVENTS = [0, 15, 26, 35, 76, 135, 136, 145];
+/**
+ * Instants où il se passe quelque chose : requête, lame, seuil, format, reset, et la session hors
+ * ligne une fois la temporisation écoulée (le levier sur le cache).
+ */
+export const EVENTS = [0, 15, 26, 35, 76, 135, 136, OFFLINE_FROM + 0.5];
 
 // --- Relevé ---------------------------------------------------------------------------------------
 

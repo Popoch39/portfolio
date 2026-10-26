@@ -33,6 +33,7 @@ import * as Lay from './layout.ts';
 import {
 	bladeSvg,
 	CENTRES,
+	CROSS_R,
 	crankAt,
 	CROSS_AT,
 	damperOut,
@@ -116,12 +117,16 @@ const solidOf = (profile: number[][], F: Frame, _P: unknown, options: object = {
 const ringSvg = (paths: Parameters<typeof solidSvg>[0], style?: SolidStyle) => S(paths, style).replace('<path class="iso-fill"', '<path class="iso-fill" fill-rule="evenodd"');
 const sphereOf = (centre: Point3, r: number, _P: unknown) => G.sphereOf(centre, r, P, { steps: Math.max(16, Math.min(48, stepsOf(r))) });
 
-export function build() {
+/**
+ * Les éléments de la figure à l'instant simulé `t` (minutes), aiguilles arrivées : la pose au
+ * repos pour le site, d'autres poses pour l'audit des pièces mobiles.
+ */
+export function build(t = REST) {
 	const items: Item[] = [];
 	const routes: Route[] = [];
 	const put = (name: string, id: string | null, center: Point3, svg: string, shapes: object[], extra: Partial<Item> = {}) =>
 		items.push({ name, piece: id ? piece(id) : undefined, at: center, svg, shapes, ...extra });
-	const rest = poseAt(REST);
+	const rest = poseAt(t);
 
 	// --- Tablette, chant et vis -------------------------------------------------------------------
 	const T = Lay.TABLET;
@@ -407,7 +412,7 @@ export function build() {
 		const angle = Lay.DETENTS[rest.lever];
 		put('aiguillage.lever', 'aiguillage', [px, Lay.LEVER_Y[0] + 0.8, pz], `<g data-csl="lever">${leverSvg(angle)}</g>`, [A.prism(alongY(px, 0, pz), [[-1.6, 2.2], [1.6, 2.2], [1.1, -Lay.LEVER_LEN], [-1.1, -Lay.LEVER_LEN]].map(([u, w]) => turn2(u, w, angle)), Lay.LEVER_Y[0], Lay.LEVER_Y[1], aig('lever'))], { bias: 0.3 });
 		const tip = leverTip(angle);
-		put('aiguillage.ball', 'aiguillage', tip, `<g data-csl="lever-ball" transform="${translateAlong(P, sub(tip, leverTip(0)))}">${S(sphereOf(leverTip(0), Lay.BALL_R, P), { tone: 'hi', crease: 'lo' })}</g>`, [A.ball(tip, Lay.BALL_R, aig('ball'))], { bias: 0.6 });
+		put('aiguillage.ball', 'aiguillage', tip, `<g data-csl="lever-ball" transform="${translateAlong(P, sub(tip, leverTip(0)))}">${S(sphereOf(leverTip(0), Lay.BALL_R, P), { tone: 'hi', crease: 'lo' })}</g>`, [A.ball(tip, Lay.BALL_R, aig('ball'))], { bias: 6 });
 		put('aiguillage.hub', 'aiguillage', [px, Lay.LEVER_Y[1], pz], S(disc(6, 8.8, 2.6, Fc, P), { tone: 'hi', crease: 'lo' }) + D([at([px, Lay.HEAD_FRONT + 8.8, pz])], { size: 0.5, tone: 'hi' }), [A.disc(Fc, 6, 8.8, 2.6, aig('hub'))], { bias: 0.9 });
 		// Bille et ressort de détente, sous le boisseau.
 		const Fd = alongY(px, Lay.HEAD_FRONT, pz - Lay.COLLAR_R - 2);
@@ -465,7 +470,7 @@ export function build() {
 		const pr = Lay.PROBE;
 		const sonde = (name: string) => ({ name: `sonde-api.${name}`, owner: 'sonde-api' });
 		const point = (s: number): Point3 => pointOf(F, s, 0, 0);
-		const out = 0;
+		const out = rest.probe * pr.stroke;
 		put('sonde-api.flange', 'sonde-api', point(0.5), S(disc(0, 1, 6.4, F, P), { tone: 'mid' }) + D(boltCircle(F, 0, 5.6, 6, P), { size: 0.4 }), [A.disc(F, 0, 1, 6.4, sonde('flange'))]);
 		// Index fixe de la bague : un trait sur le corps, au plus près du lecteur.
 		const ia = RING_INDEX * 2 * Math.PI;
@@ -483,21 +488,29 @@ export function build() {
 		const rod = G.rodOut(F, pr.gland[1], pr.tip, pr.rod, P, { stroke: pr.stroke });
 		const coilAt = probeCoil(out);
 		const clip = `${ID}-probe-rod`;
+		// Le plongeur sorti de `out` : tige et tête déplacées, découpe tenue en place au presse-étoupe.
+		const moved = out ? ` transform="${translateAlong(P, [-out, 0, 0])}"` : '';
+		const held = out ? ` transform="${translateAlong(P, [out, 0, 0])}"` : '';
+		const headProfile: [number, number][] = [
+			[pr.tip + out, 3.2],
+			[pr.tip + out + pr.head - 0.8, 3.2],
+			[pr.tip + out + pr.head, 2.4],
+		];
 		put(
 			'sonde-api.plunger',
 			'sonde-api',
 			point(16),
 			// Ressort coupé en deux : moitié arrière, tige, moitié avant.
-			`<defs><clipPath id="${clip}"><path data-hold="" d="${rod.clip}"/></clipPath></defs><g data-csl="probe"><g data-csl="coil-back">${L(coilAt.back, { tone: 'lo' })}</g><g clip-path="url(#${clip})">${S(rod.paths, { tone: 'hi', crease: 'lo' })}</g><g data-csl="coil-front">${L(coilAt.front, { tone: 'mid' })}</g></g>`,
-			[A.slide(F, pr.gland[1], pr.tip, pr.rod, sonde('rod')), A.ring(F, pr.gland[1], pr.tip, pr.coilR - 0.3, pr.coilR + 0.3, sonde('coil'))],
+			`<defs><clipPath id="${clip}"><path data-hold=""${held} d="${rod.clip}"/></clipPath></defs><g data-csl="probe"${moved}><g data-csl="coil-back">${L(coilAt.back, { tone: 'lo' })}</g><g clip-path="url(#${clip})">${S(rod.paths, { tone: 'hi', crease: 'lo' })}</g><g data-csl="coil-front">${L(coilAt.front, { tone: 'mid' })}</g></g>`,
+			[A.slide(F, pr.gland[1], pr.tip + out, pr.rod, sonde('rod')), A.ring(F, pr.gland[1], pr.tip + out, pr.coilR - 0.3, pr.coilR + 0.3, sonde('coil'))],
 			{ bias: 0.2 },
 		);
 		put(
 			'sonde-api.head',
 			'sonde-api',
-			point(pr.tip + 1.5),
-			`<g data-csl="probe-head">${S(solidOf([[pr.tip, 3.2], [pr.tip + pr.head - 0.8, 3.2], [pr.tip + pr.head, 2.4]], F, P), { tone: 'hi', crease: 'lo' })}</g>`,
-			[turnedShape(F, [[pr.tip, 3.2], [pr.tip + pr.head - 0.8, 3.2], [pr.tip + pr.head, 2.4]], sonde('head'))],
+			point(pr.tip + out + 1.5),
+			`<g data-csl="probe-head"${moved}>${S(solidOf(headProfile.map(([s, r]) => [s - out, r]), F, P), { tone: 'hi', crease: 'lo' })}</g>`,
+			[turnedShape(F, headProfile, sonde('head'))],
 			{ bias: -0.4 },
 		);
 	}
@@ -516,7 +529,7 @@ export function build() {
 			'capsule-cache.body',
 			'capsule-cache',
 			[cx, cy, cz - (neck + body) / 2],
-			S(disc(neck, body, Lay.CAPSULE_R, F, P), { tone: 'hi', crease: 'lo' }) + `<g data-csl="witness">${witnessSvg(cacheLevel(REST))}</g>`,
+			S(disc(neck, body, Lay.CAPSULE_R, F, P), { tone: 'hi', crease: 'lo' }) + `<g data-csl="witness">${witnessSvg(cacheLevel(t))}</g>`,
 			[A.disc(F, neck, body, Lay.CAPSULE_R, cap('body'))],
 		);
 		put('capsule-cache.dome', 'capsule-cache', pointOf(F, body + 3, 0, 0), S(sphereOf(pointOf(F, body, 0, 0), Lay.CAPSULE_R, P), { tone: 'hi', crease: 'lo' }), [A.ball(pointOf(F, body, 0, 0), Lay.CAPSULE_R, cap('dome'))], { bias: -6 });
@@ -524,7 +537,7 @@ export function build() {
 		const [hx, hz] = Lay.HAMMER_PIVOT;
 		const bracket = plan(hx - 2, hx + 2, Lay.HAMMER_Y[0] - 1.6, Lay.HAMMER_Y[1] + 1.6, 0.6);
 		put('capsule-cache.bracket', 'capsule-cache', [hx, 16, (hz + hz0) / 2], S(slabOf(bracket, hz - 1.6, hz0 - hz + 1.6, P, 2, 0.3), { tone: 'mid' }), [A.slab(bracket, hz - 1.6, hz0 - hz + 1.6, cap('bracket'), 2)], { bias: -0.5 });
-		put('capsule-cache.hammer', 'capsule-cache', [hx - 1.5, 16, hz - 5], `<g data-csl="hammer">${hammerSvg(rest.hammer * Lay.HAMMER_SWING)}</g>`, [A.prism(alongY(hx, 0, hz), [[-2.6, -0.9], [0.9, -0.9], [0.9, 9.4], [-2.6, 9.4]], Lay.HAMMER_Y[0], Lay.HAMMER_Y[1], cap('hammer'))]);
+		put('capsule-cache.hammer', 'capsule-cache', [hx - 1.5, 16, hz - 5], `<g data-csl="hammer">${hammerSvg(rest.hammer * Lay.HAMMER_SWING)}</g>`, [A.prism(alongY(hx, 0, hz), [[-3.4, -0.9], [0.9, -0.9], [0.9, 9.8], [-3.4, 9.8]], Lay.HAMMER_Y[0], Lay.HAMMER_Y[1], cap('hammer'))]);
 		const Fp = alongY(hx, Lay.HAMMER_Y[1], hz);
 		put('capsule-cache.pin', 'capsule-cache', [hx, Lay.HAMMER_Y[1] + 1, hz], S(disc(0, 2.2, 0.8, Fp, P), { tone: 'hi', crease: 'lo' }), [A.disc(Fp, 0, 2.2, 0.8, cap('pin'))], { bias: 0.3 });
 	}
@@ -625,7 +638,7 @@ export function build() {
 		const galbe = [dw.z1, dw.z0 + 1.6].map((z) => localPath([[dw.x0, -z], [dw.x1, -z], [dw.x1, -z + 1.6], [dw.x0, -z + 1.6]], true)).join('');
 		const seps = Array.from({ length: Lay.DRUMS - 1 }, (_, j) => {
 			const x = dw.x0 + 1.5 + Lay.DRUM_PITCH * (j + 1);
-			return localPath([[x, -dw.z1 - 0.5], [x, -dw.z0 + 0.5]]);
+			return localPath([[x, -dw.z1], [x, -dw.z0]]);
 		}).join('');
 		put(
 			`tambours.${key}`,
@@ -741,9 +754,9 @@ export function build() {
 		);
 		const lp = Lay.LEVER_PIVOT;
 		const lb = plan(lp[0] - 3, lp[0] + 3, lp[1] - 3, lp[1] - 1, 0.4);
-		put('cadran.link-bracket', 'cadran', [lp[0], lp[1] - 2, -2], S(slabOf(lb, -4, 4, P, 2, 0.3), { tone: 'mid' }), [A.slab(lb, -4, 4, cad('link-bracket'), 2)], { bias: -0.6 });
+		put('cadran.link-bracket', 'cadran', [lp[0], lp[1] - 2, -2], S(slabOf(lb, -4, 4, P, 2, 0.3), { tone: 'mid' }), [A.slab(lb, -4, 4, cad('link-bracket'), 2)], { bias: -3 });
 		const angle = linkAngle(five);
-		put('cadran.link', 'cadran', [lp[0], lp[1], lp[2] - 6.5], `<g data-csl="link">${linkSvg(angle)}</g>`, [A.prism(alongY(lp[0], 0, lp[2]), [[-1.1, -0.8], [1.1, -0.8], [0.9, 13.4], [-0.9, 13.4]].map(([u, w]) => turn2(u, w, angle)), lp[1] - 1, lp[1] + 1, cad('link'))], { bias: 0.3 });
+		put('cadran.link', 'cadran', [lp[0], lp[1], lp[2] - 6.5], `<g data-csl="link">${linkSvg(angle)}</g>`, [A.prism(alongY(lp[0], 0, lp[2]), [[-1.1, -0.8], [1.1, -0.8], [0.9, 13.4], [-0.9, 13.4]].map(([u, w]) => turn2(u, w, angle)), lp[1] - 1, lp[1] + 1, cad('link'))], { bias: -2.5 });
 	}
 
 	// --- Volant, croix de Malte, embout droit -----------------------------------------------------
@@ -825,7 +838,7 @@ export function build() {
 		const clipRear = `${ID}-porthole-rear`;
 		const cross = genevaCross();
 		const driver = genevaDriver();
-		const restPose = poseAt(REST);
+		const restPose = rest;
 		put(
 			'volant.geneva',
 			'volant',
@@ -899,9 +912,8 @@ function vcoil(cx: number, cy: number, r: number, z0: number, z1: number, turns:
 
 // --- Croix de Malte et doigt, à plat dans le plan du fond du hublot ----------------------------------
 
-const CROSS_R = 8;
 const CRANK = CENTRES * Math.sin(Math.PI / 6);
-const LOCK_R = 3.2;
+const LOCK_R = 3.6;
 
 function genevaCross() {
 	const pts: Flat[] = [];
@@ -950,7 +962,7 @@ function genevaDriver() {
 		const ex = p[0] - notch[0];
 		const ey = p[1] - notch[1];
 		const dist = Math.hypot(ex, ey);
-		pts.push(dist < 2.4 ? [notch[0] + (ex / dist) * 2.4, notch[1] + (ey / dist) * 2.4] : p);
+		pts.push(dist < 2.7 ? [notch[0] + (ex / dist) * 2.7, notch[1] + (ey / dist) * 2.7] : p);
 	}
 	const disc = localPath(pts, true);
 	const pin = polar(dx, dy, CRANK, 0);
@@ -963,7 +975,7 @@ function genevaSvg(cross: string, driver: ReturnType<typeof genevaDriver>, cross
 	const [dx, dy] = DRIVER_AT;
 	return (
 		`<g data-csl="driver" transform="rotate(${round(driverAngle(fraction))} ${round(dx)} ${round(dy)})"><path class="iso-shade" data-shade="3" d="${driver.disc}"/>${lineSvg(driver.disc, { tone: 'mid' })}<path class="iso-fill" d="${driver.arm}"/>${lineSvg(driver.arm, { tone: 'mid' })}<path class="iso-fill" d="${driver.pin}"/>${lineSvg(driver.pin, { tone: 'hi' })}</g>` +
-		`<g data-csl="cross" transform="rotate(${round(crossDeg % 360)} ${cx} ${cy})"><path class="iso-top" d="${cross}"/>${lineSvg(cross, { tone: 'hi' })}${lineSvg(arcPath(cx, cy, 1.4, 0, 360, true), { tone: 'mid' })}</g>` +
+		`<g data-csl="cross" transform="rotate(${round(crossDeg % 360)} ${cx} ${cy})"><path class="iso-top" d="${cross}"/>${lineSvg(cross, { tone: 'mid' })}${lineSvg(arcPath(cx, cy, 1.4, 0, 360, true), { tone: 'mid' })}</g>` +
 		`<path class="iso-fill" d="${driver.hub}"/>${lineSvg(driver.hub, { tone: 'mid' })}`
 	);
 }

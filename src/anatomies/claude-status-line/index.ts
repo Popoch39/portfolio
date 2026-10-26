@@ -4,15 +4,15 @@ import { pieceSvg } from '../piece.ts';
 import { content } from './content.ts';
 import { build, type Item } from './geometry.ts';
 import { HEIGHT, projection, WIDTH } from './layout.ts';
-import { settled } from './order.mjs';
+import { REST } from './model.ts';
+import { settledAcross } from './order.mjs';
 
 let rest: RestFigure | null = null;
 
-/** La figure au repos, calculée une fois par build (l'ordre de peinture se mesure). */
+/** La figure au repos, calculée une fois par build (l'ordre de peinture se mesure, pose par pose). */
 function renderRest(): RestFigure {
 	if (rest) return rest;
-	const { items, routes } = build();
-	const { order } = settled(items, routes, projection) as { order: Item[] };
+	const { order } = settledAcross(build, REST, projection) as { order: Item[] };
 	// Les éléments voisins d'une même pièce partagent un seul crochet.
 	const runs: { piece?: Item['piece']; svg: string[] }[] = [];
 	for (const item of order) {

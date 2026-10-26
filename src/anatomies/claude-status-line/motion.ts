@@ -210,7 +210,9 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 			}
 			if (touring) target = tourT;
 		}
+		// Le dernier vingtième de minute est rattrapé d'un coup : sinon le rendu visé tarde à s'afficher.
 		shown = follow(shown, target, dt, TIME_LAG, calm);
+		if (Math.abs(target - shown) < 0.05) shown = target;
 		const pose = poseAt(shown);
 		let settled = shown === target;
 		keys.forEach((_, index) => {

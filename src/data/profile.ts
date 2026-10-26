@@ -170,8 +170,9 @@ export interface Project {
 	/** Nom du dépôt sous le compte GitHub de `identity.github` : c'est aussi le nom affiché. */
 	repo: string;
 	/**
-	 * Segment de l'adresse de la fiche (`/projets/<slug>/`). Ni point ni tiret bas : certains
-	 * hébergeurs prennent « .nvim » pour une extension, et Google déconseille « _ » entre les mots.
+	 * Segment de l'adresse de la fiche (`/projets/<slug>/`), le même dans les deux langues. Ni point
+	 * ni tiret bas : certains hébergeurs prennent « .nvim » pour une extension, et Google déconseille
+	 * « _ » entre les mots.
 	 */
 	slug: string;
 	description: string;
@@ -180,9 +181,6 @@ export interface Project {
 	language: string;
 	year: number;
 }
-
-/** Adresse de la fiche d'un projet, slash final compris : c'est son URL canonique. */
-export const fichePath = (project: Project) => `/projets/${project.slug}/`;
 
 /** Adresse du SVG au repos autonome d'un projet (`src/pages/figures/[slug].svg.ts`). */
 export const restFigurePath = (project: Project) => `/figures/${project.slug}.svg`;

@@ -2,9 +2,11 @@
 import { Font } from 'astro:assets';
 import { identity, pageMeta, type ShareImage } from '../data/profile';
 import { person } from '../lib/structured-data';
+import { formats, home, localeOf, pathOf, type Page } from '../lib/i18n';
 
 interface Props {
 	/** Sans les paramètres suivants, la page reprend les valeurs de l'accueil. */
+	page?: Page;
 	title?: string;
 	description?: string;
 	shareImage?: ShareImage;
@@ -14,22 +16,24 @@ interface Props {
 	structuredData?: Record<string, unknown>;
 }
 
-const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const locale = localeOf(Astro.currentLocale);
 
 const {
+	page = home,
 	title = pageMeta.title,
 	description = pageMeta.description,
 	shareImage = pageMeta.shareImage,
 	ogType = 'profile',
-	structuredData = { '@context': 'https://schema.org', ...person(Astro.site) },
+	structuredData = { '@context': 'https://schema.org', ...person(Astro.site, locale) },
 } = Astro.props;
+const canonical = new URL(pathOf(page, locale), Astro.site).href;
 const shareImageUrl = new URL(shareImage.path, Astro.site).href;
 // `<` échappé : aucune valeur ne peut fermer la balise <script> avant l'heure.
 const jsonLd = JSON.stringify(structuredData).replaceAll('<', '\\u003c');
 ---
 
 <!doctype html>
-<html lang="fr">
+<html lang={formats[locale].lang}>
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -42,7 +46,7 @@ const jsonLd = JSON.stringify(structuredData).replaceAll('<', '\\u003c');
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 		<link rel="sitemap" href="/sitemap.xml" />
 		<meta property="og:type" content={ogType} />
-		<meta property="og:locale" content="fr_FR" />
+		<meta property="og:locale" content={formats[locale].ogLocale} />
 		<meta property="og:url" content={canonical} />
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />

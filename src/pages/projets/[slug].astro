@@ -11,8 +11,9 @@ import Regle from '../../components/Regle.astro';
 import GrainPatterns from '../../components/GrainPatterns.astro';
 import ProjectNav from '../../components/ProjectNav.astro';
 import StatusBar from '../../components/StatusBar.astro';
-import { fichePath, githubRepoUrl, projects, shareImageOf, type Project } from '../../data/profile';
+import { githubRepoUrl, projects, shareImageOf, type Project } from '../../data/profile';
 import { person } from '../../lib/structured-data';
+import { fiche, localeOf, pathOf } from '../../lib/i18n';
 import { anatomyOf } from '../../anatomies/registry';
 import { restSvg } from '../../anatomies/figure';
 
@@ -23,6 +24,8 @@ interface Props {
 }
 
 const { project } = Astro.props;
+const locale = localeOf(Astro.currentLocale);
+const page = fiche(project.slug);
 const anatomy = anatomyOf(project);
 const { content } = anatomy;
 const rest = anatomy.renderRest();
@@ -37,14 +40,15 @@ const sourceCode = {
 	'@type': 'SoftwareSourceCode',
 	name: project.repo,
 	description: content.seo.description,
-	url: new URL(fichePath(project), Astro.site).href,
+	url: new URL(pathOf(page, locale), Astro.site).href,
 	codeRepository: githubRepoUrl(project.repo),
 	programmingLanguage: project.language,
-	author: person(Astro.site),
+	author: person(Astro.site, locale),
 };
 ---
 
 <Layout
+	page={page}
 	title={content.seo.title}
 	description={content.seo.description}
 	shareImage={shareImageOf(project, content.machine)}

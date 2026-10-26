@@ -1,11 +1,19 @@
 // @ts-check
 import { defineConfig, fontProviders } from 'astro/config';
+import { defaultLocale, locales } from './src/lib/i18n.ts';
 
 // https://astro.build/config
 export default defineConfig({
 	// PROVISOIRE : placeholder en attendant le choix d'un domaine. Canonique, Open Graph,
 	// JSON-LD, robots.txt et sitemap.xml en dérivent : c'est le seul réglage à changer.
 	site: 'https://louis-pocheron.example',
+	// Français à la racine, anglais sous /en/ (ADR 0002). Astro n'en tire que `currentLocale` :
+	// les segments traduits passent par `pathOf` du module i18n.
+	i18n: {
+		locales: [...locales],
+		defaultLocale,
+		routing: { prefixDefaultLocale: false },
+	},
 	build: {
 		// Aucune feuille de style externe : la CSS part avec le HTML, rien ne bloque le premier rendu.
 		inlineStylesheets: 'always',

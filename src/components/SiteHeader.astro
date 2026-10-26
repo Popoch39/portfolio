@@ -1,5 +1,6 @@
 ---
 import { identity, sections, type Section } from '../data/profile';
+import { home, localeOf, pathOf } from '../lib/i18n';
 
 interface Props {
 	/** Section de l'accueil dont relève la page (une fiche relève de « projets »). */
@@ -8,18 +9,19 @@ interface Props {
 
 const { current } = Astro.props;
 // Les sections sont des ancres de l'accueil : depuis une autre page, les liens y retournent.
-const onHome = Astro.url.pathname === '/';
-const home = onHome ? '' : '/';
+const homePath = pathOf(home, localeOf(Astro.currentLocale));
+const onHome = Astro.url.pathname === homePath;
+const homeHref = onHome ? '' : homePath;
 ---
 
 <header class="site-header">
-	<a class="name" href={onHome ? '#top' : '/'}>{identity.name}</a>
+	<a class="name" href={onHome ? '#top' : homePath}>{identity.name}</a>
 	<span class="mono meta role">{identity.role}</span>
 	<span class="mono meta city">{identity.city}, {identity.country}</span>
 	<nav class="nav" aria-label="Sections">
 		{
 			sections.map((s) => (
-				<a href={`${home}#${s.id}`} aria-current={s.id === current ? 'true' : undefined}>
+				<a href={`${homeHref}#${s.id}`} aria-current={s.id === current ? 'true' : undefined}>
 					{s.label}
 				</a>
 			))

@@ -39,7 +39,8 @@ const onRing = (angle: number, r: number, z: number): Point3 => {
 	const [x, y] = dirOf(angle);
 	return [x * r, y * r, z];
 };
-const smooth = (lo: number, hi: number, x: number) => {
+/** Montée douce (smoothstep) de 0 à 1 quand `x` va de `lo` à `hi`. */
+export const smooth = (lo: number, hi: number, x: number) => {
 	const t = Math.min(1, Math.max(0, (x - lo) / (hi - lo)));
 	return t * t * (3 - 2 * t);
 };

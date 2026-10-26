@@ -8,7 +8,7 @@ import type { MountMotion } from '../contract.ts';
 import { asksForStillness, loop, spring, type Spring } from '../live.ts';
 import { cloudPoints, dotsPath, renderedPaths } from './cloud.ts';
 import { discMarks, RAIL_DIR, TRAVEL } from './disc.ts';
-import { ballAt, facingOf, mirrorAt, slitAt, teethAt, ticksAt, ventsAt, windowsAt, type Drum } from './head.ts';
+import { ballAt, facingOf, mirrorAt, slitAt, smooth, teethAt, ticksAt, ventsAt, windowsAt, type Drum } from './head.ts';
 import { AZIMUTH, beamSlot, dirOf, ELEVATION, GROUND, impactAt, LAYERS, projection as P, TILE } from './layout.ts';
 import { DRAWN, drawnIndex, INKS, LAST_ANGLE, MODES, PER_TURN, POINTS, readSpeed, releve as text } from './model.ts';
 
@@ -32,10 +32,6 @@ const SPIN_RATE = 14;
 
 type Phase = 'reset' | 'spin' | 'read' | 'write' | 'transfer' | 'anchor' | 'rendered';
 
-const smooth = (t: number) => {
-	const x = Math.min(1, Math.max(0, t));
-	return x * x * (3 - 2 * x);
-};
 /** Écart signé le plus court, dans ]−π, π]. */
 const wrap = (angle: number) => angle - TAU * Math.round(angle / TAU);
 /** Écart en avant seulement, dans [0, 2π[. */
@@ -244,7 +240,7 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 			case 'reset':
 				state.fade = calm ? 0 : Math.max(0, 1 - state.clock / 0.6);
 				state.lift = calm ? 0 : CARD_LIFT * Math.sin(Math.PI * Math.min(1, state.clock / RESET));
-				state.share = calm ? 0 : state.shareFrom * (1 - smooth(state.clock / (RESET * 0.85)));
+				state.share = calm ? 0 : state.shareFrom * (1 - smooth(0, RESET * 0.85, state.clock));
 				if (state.clock > 0.6 || calm) state.progress = 0;
 				if (state.clock >= RESET * long) {
 					state.lift = 0;
@@ -263,11 +259,11 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 				if (state.clock >= WRITE * long) enter('transfer');
 				break;
 			case 'transfer':
-				state.share = calm ? 1 : smooth(state.clock / TRANSFER);
+				state.share = calm ? 1 : smooth(0, TRANSFER, state.clock);
 				if (state.clock >= TRANSFER * long) enter('anchor');
 				break;
 			case 'anchor':
-				state.blend = calm ? 1 : smooth(state.clock / (ANCHOR * 0.7));
+				state.blend = calm ? 1 : smooth(0, ANCHOR * 0.7, state.clock);
 				state.pulse = calm ? 0 : Math.sin(Math.PI * Math.min(1, state.clock / (ANCHOR * 0.6)));
 				if (state.clock >= ANCHOR * long) {
 					state.pulse = 0;
@@ -361,7 +357,7 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 		`<path class="iso-fill" d="${shape.fill}"/>${shape.shades.map((d, k) => `<path class="iso-shade" data-shade="${k}" d="${d}"/>`).join('')}<path class="iso-top" d="${shape.mirror}"/><path class="iso-line iso-edge" data-tone="hi" d="${shape.outline}"/>`;
 
 	const drawRotor = () => {
-		const blur = smooth((Math.abs(state.rate) - CAP * 0.55) / (CAP * 0.45));
+		const blur = smooth(CAP * 0.55, CAP, Math.abs(state.rate));
 		const key = `${state.angle.toFixed(4)}|${state.spin.toFixed(2)}|${state.wheel.at.toFixed(3)}|${blur.toFixed(2)}`;
 		if (key === drawnRotor) return;
 		drawnRotor = key;

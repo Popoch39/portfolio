@@ -1,6 +1,7 @@
 ---
 // Carte de figure : Fig. n et titre en haut, la scène au milieu, la consigne et le relevé en
-// bas ; la légende dessous. Sur la fiche, la scène épouse le format de la figure, 900 px au plus.
+// bas ; la légende dessous. Sur la fiche, la scène épouse le format de la figure, 900 px de large
+// au plus, et la carte tient dans la hauteur de la fenêtre.
 // Dans l'aperçu de l'accueil, la scène a une taille fixe et la figure s'y inscrit : changer de
 // projet ne décale rien.
 import '../vendor/anatomy/iso.css';
@@ -101,6 +102,14 @@ const { fig, title, hints, readout, caption, svg, image, motion, fixed = false }
 		touch-action: pan-y;
 	}
 
+	/* Une figure en hauteur ne dépasse pas la fenêtre : la carte entière (marges, titre, consigne,
+	   ≈ 110 px à 1440) y tient, sans descendre sous un seuil lisible sur un téléphone à l'horizontale.
+	   `svh` plutôt que `dvh` : la figure ne change pas de taille quand la barre d'adresse se replie.
+	   Plafonnée en hauteur, elle reste centrée dans sa largeur (`preserveAspectRatio` par défaut). */
+	.scene > :global(svg) {
+		max-height: max(320px, 100svh - 160px);
+	}
+
 	/* Une seule consigne visible : celle du pointeur s'il sait survoler, sinon celle du toucher. */
 	.pointer {
 		display: none;
@@ -147,14 +156,16 @@ const { fig, title, hints, readout, caption, svg, image, motion, fixed = false }
 	}
 
 	/* Scène fixe : la figure s'y inscrit, image d'attente comme SVG inséré (qui ne porte pas
-	   l'attribut de portée du composant). Chaque texte tient sur une ligne, la consigne au-dessus
-	   du relevé, pour que la carte garde sa hauteur quel que soit le relevé. */
+	   l'attribut de portée du composant). La consigne, au-dessus du relevé, a deux lignes réservées ;
+	   les autres textes tiennent sur une ligne : la carte garde sa hauteur d'un projet à l'autre. */
 	.fixed {
 		margin: 0;
 	}
 
+	/* Sans `min-height: 0`, le contenu (une figure en hauteur) passerait outre le rapport 4:3. */
 	.fixed .scene {
 		max-width: none;
+		min-height: 0;
 		aspect-ratio: 4 / 3;
 	}
 
@@ -164,6 +175,7 @@ const { fig, title, hints, readout, caption, svg, image, motion, fixed = false }
 		display: block;
 		width: 100%;
 		height: 100%;
+		max-height: none;
 		object-fit: contain;
 	}
 
@@ -175,6 +187,11 @@ const { fig, title, hints, readout, caption, svg, image, motion, fixed = false }
 	.fixed .foot {
 		flex-direction: column;
 		gap: 6px;
+	}
+
+	.fixed .hint {
+		min-height: 2lh;
+		white-space: normal;
 	}
 
 	.fixed .row > *,

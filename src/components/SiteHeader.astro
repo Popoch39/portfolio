@@ -1,13 +1,29 @@
 ---
-import { identity, sections } from '../data/profile';
+import { identity, sections, type Section } from '../data/profile';
+
+interface Props {
+	/** Section de l'accueil dont relève la page (une fiche relève de « projets »). */
+	current?: Section['id'];
+}
+
+const { current } = Astro.props;
+// Les sections sont des ancres de l'accueil : depuis une autre page, les liens y retournent.
+const onHome = Astro.url.pathname === '/';
+const home = onHome ? '' : '/';
 ---
 
 <header class="site-header">
-	<a class="name" href="#top">{identity.name}</a>
+	<a class="name" href={onHome ? '#top' : '/'}>{identity.name}</a>
 	<span class="mono meta role">{identity.role}</span>
 	<span class="mono meta city">{identity.city}, {identity.country}</span>
 	<nav class="nav" aria-label="Sections">
-		{sections.map((s) => <a href={`#${s.id}`}>{s.label}</a>)}
+		{
+			sections.map((s) => (
+				<a href={`${home}#${s.id}`} aria-current={s.id === current ? 'true' : undefined}>
+					{s.label}
+				</a>
+			))
+		}
 	</nav>
 </header>
 
@@ -44,6 +60,14 @@ import { identity, sections } from '../data/profile';
 
 	.nav a {
 		text-decoration: none;
+	}
+
+	/* Section dont relève la page (une fiche relève de « Projets ») : soulignée en bleu, comme la maquette. */
+	.nav a[aria-current] {
+		text-decoration: underline;
+		text-decoration-color: var(--accent);
+		text-decoration-thickness: 2px;
+		text-underline-offset: 5px;
 	}
 
 	/* Zones tactiles ≥ 44 px tant que la navigation n'a pas sa place de la maquette. */

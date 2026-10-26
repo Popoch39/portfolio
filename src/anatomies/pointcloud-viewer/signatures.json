@@ -1,0 +1,44 @@
+{
+	"carte": [
+		[78,"  const openFile = useCallback("],
+		[79,"    (file: File) => {"],
+		[80,"      if (/\\.(bin|pcbk)$/i.test(file.name)) {"],
+		[81,"        void openBin(file)"]
+	],
+	"boitier": [
+		[13,"let wasmReady: Promise<unknown> | null = null"],
+		[15,"self.onmessage = async (event: MessageEvent<BakeRequest>) => {"],
+		[16,"  const post = (message: BakeWorkerMessage, transfer: Transferable[] = []) =>"],
+		[17,"    self.postMessage(message, transfer)"]
+	],
+	"miroir": [
+		[48,"pub fn bake_to_pcbk("],
+		[49,"    las_bytes: Vec<u8>,"],
+		[50,"    mut on_progress: impl FnMut(u64, u64),"],
+		[51,") -> Result<Vec<u8>, BakeError> {"]
+	],
+	"disque": [
+		[41,"export function parseBakedPointCloud(buffer: ArrayBuffer): BakedPointCloud {"],
+		[42,"  if (buffer.byteLength < HEADER_SIZE) {"],
+		[43,"    throw new Error('PCBK buffer is smaller than its header')"],
+		[44,"  }"]
+	],
+	"borne": [
+		[22,"export function computeAnchor(cloud: BakedPointCloud, epsg: number): Anchor {"],
+		[23,"  const { worldOffset, bboxMin, bboxMax } = cloud"],
+		[24,"  const lngLat = toWgs84(epsg, worldOffset.x, worldOffset.y)"],
+		[26,"  const mercator = maplibregl.MercatorCoordinate.fromLngLat(lngLat, 0)"]
+	],
+	"nuage": [
+		[25,"export class PointCloudLayer implements CustomLayerInterface {"],
+		[26,"  readonly id = 'pointcloud'"],
+		[27,"  readonly type = 'custom' as const"],
+		[28,"  readonly renderingMode = '3d' as const"]
+	],
+	"roue": [
+		[127,"export function createPointsMaterial("],
+		[128,"  cloud: BakedPointCloud,"],
+		[129,"  mode: ColorMode,"],
+		[130,"  pointSize: number,"]
+	]
+}

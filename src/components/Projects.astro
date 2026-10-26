@@ -1,6 +1,14 @@
 ---
 import SectionHeader from './SectionHeader.astro';
-import { githubRepoUrl, projects, publicRepoCount } from '../data/profile';
+import FigureCard from './FigureCard.astro';
+import GrainPatterns from './GrainPatterns.astro';
+import { fichePath, projects, publicRepoCount, restFigurePath } from '../data/profile';
+import { anatomyOf } from '../anatomies/registry';
+
+const numberOf = (index: number) => String(index + 1).padStart(2, '0');
+
+/** La bascule A3 : grand écran, pointeur qui survole, JavaScript actif. La CSS ci-dessous en garde une copie. */
+const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 ---
 
 <section id="projets" class="projects">
@@ -9,23 +17,75 @@ import { githubRepoUrl, projects, publicRepoCount } from '../data/profile';
 		title="Projets"
 		note={`${projects.length} sélectionnés · ${publicRepoCount} dépôts publics`}
 	/>
-	<ol class="list">
-		{
-			projects.map((p, i) => (
-				<li class="item">
-					{/* Les `{' '}` font lire le lien « 01 typomaniac … » et non « 01typomaniac… ». */}
-					<a class="grid row" href={githubRepoUrl(p.repo)}>
-						<span class="mono num">{String(i + 1).padStart(2, '0')}</span>{' '}
-						<span class="name">{p.repo}</span>{' '}
-						<span class="desc">{p.description}</span>{' '}
-						<span class="mono stack">{p.stack.join(' · ')}</span>{' '}
-						<span class="mono year">{p.year} ↗</span>
-					</a>
-				</li>
-			))
-		}
-	</ol>
+	<div class="grid layout">
+		<ol class="list">
+			{
+				projects.map((p, i) => (
+					<li class="item">
+						{/* Les `{' '}` font lire le lien « 01 typomaniac … » et non « 01typomaniac… ». */}
+						<a class="grid row" href={fichePath(p)} data-selected={i === 0 ? '' : undefined}>
+							<span class="mono num">{numberOf(i)}</span>{' '}
+							<span class="name">{p.repo}</span>{' '}
+							<span class="desc">{p.description}</span>{' '}
+							<span class="mono stack">{p.stack.join(' · ')}</span>{' '}
+							<span class="mono year">{p.year} →</span>
+						</a>
+					</li>
+				))
+			}
+		</ol>
+		{/* L'aperçu A3 : un panneau par projet, seul l'actif est visible. Sa description et sa stack
+		    doublent celles de la ligne, que les technologies d'assistance lisent déjà. */}
+		<div class="preview">
+			{
+				projects.map((p, i) => {
+					const anatomy = anatomyOf(p);
+					const { content } = anatomy;
+					const { width, height } = anatomy.renderRest();
+					return (
+						<div class="panel" data-panel={p.slug} data-active={i === 0 ? '' : undefined}>
+							<FigureCard
+								fig={numberOf(i)}
+								title={content.machine}
+								consignes={content.consignes}
+								releve={content.releve}
+								motion={anatomy.motion}
+								image={{ src: restFigurePath(p), media: A3, width, height, alt: content.label }}
+								fixed
+							/>{' '}
+							<p class="preview-desc" aria-hidden="true">{p.description}</p>{' '}
+							<div class="mono preview-foot">
+								<span aria-hidden="true">{p.stack.join(' · ')}</span>{' '}
+								<a class="open" href={fichePath(p)} aria-label={`Ouvrir la fiche ${p.repo}`}>Ouvrir la fiche →</a>
+							</div>
+						</div>
+					);
+				})
+			}
+		</div>
+	</div>
+	{/* Les panneaux insérés par l'aperçu laissent leurs trames : celles de la page servent à tous. */}
+	<GrainPatterns />
 </section>
+
+<script>
+	// L'amorce de l'aperçu A3, seul script que télécharge l'accueil hors de l'A3 : l'aperçu, et avec
+	// lui le chargeur des fiches et la mise en avant des pièces, n'est importé qu'une fois la bascule
+	// vérifiée. Elle est celle de l'image au repos des panneaux : une seule requête pour les deux.
+	const section = document.querySelector<HTMLElement>('#projets');
+	const a3 = matchMedia(section?.querySelector('[data-panel] source')?.getAttribute('media') ?? 'not all');
+	const start = (section: HTMLElement) => void import('./preview.ts').then(({ preview }) => preview(section));
+	if (section && a3.matches) start(section);
+	else if (section) {
+		// Une fenêtre élargie après coup passe en A3 : l'aperçu démarre à ce moment-là.
+		const wake = () => {
+			if (!a3.matches) return;
+			a3.removeEventListener('change', wake);
+			start(section);
+		};
+		a3.addEventListener('change', wake);
+	}
+</script>
 
 <style>
 	.projects {
@@ -90,6 +150,59 @@ import { githubRepoUrl, projects, publicRepoCount } from '../data/profile';
 		white-space: nowrap;
 	}
 
+	/* Hors de l'A3, l'aperçu n'existe pas, et la source de ses images ne vaut pas : rien n'est demandé. */
+	.preview {
+		display: none;
+	}
+
+	/* Les panneaux s'empilent dans la même case : l'aperçu prend la hauteur du plus grand, et
+	   changer de projet ne change pas sa taille. */
+	.preview {
+		grid-template: 'panel' / minmax(0, 1fr);
+	}
+
+	.panel {
+		grid-area: panel;
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.panel:not([data-active]) {
+		visibility: hidden;
+	}
+
+	.preview-desc {
+		margin: 0;
+		font-size: 17px;
+		line-height: 1.45;
+		text-wrap: pretty;
+	}
+
+	/* Collé au bas de la case commune : une description plus longue que les autres ne déplace pas
+	   « Ouvrir la fiche » d'un projet à l'autre. */
+	.preview-foot {
+		margin-top: auto;
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		align-items: center;
+		gap: 8px 20px;
+		font-size: 12px;
+		color: var(--muted);
+	}
+
+	.open {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		padding: 0 16px;
+		background: var(--ink);
+		color: var(--bg);
+		font-size: 13px;
+		text-decoration: none;
+	}
+
 	/* Tablette : numéro + nom, puis description, stack et année sous le nom. */
 	@media (min-width: 600px) {
 		.num {
@@ -130,6 +243,101 @@ import { githubRepoUrl, projects, publicRepoCount } from '../data/profile';
 
 		.year {
 			grid-column: 12 / span 1;
+		}
+	}
+
+	/* A3 : grand écran, pointeur qui survole et JavaScript actif. Copie de la requête `A3` du
+	   composant, que le script lit sur l'image au repos. Les lignes compactes à gauche,
+	   l'aperçu collant à droite. La sélection (`data-selected`, `data-active`) est posée par le
+	   script ; le projet 01 l'a dès le build. */
+	@media (min-width: 1024px) and (hover: hover) and (scripting: enabled) {
+		.layout {
+			column-gap: clamp(24px, 4vw, 56px);
+			align-items: start;
+		}
+
+		.list {
+			grid-column: 1 / span 6;
+		}
+
+		.preview {
+			display: grid;
+			grid-column: 7 / span 6;
+			position: sticky;
+			top: 24px;
+			padding-top: 24px;
+		}
+
+		.row {
+			position: relative;
+			display: flex;
+			gap: 20px;
+			padding-block: 22px;
+		}
+
+		.num {
+			flex: 0 0 48px;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			color: var(--muted);
+		}
+
+		.name {
+			flex: 1 1 0;
+			min-width: 0;
+			font-size: clamp(26px, 2.8vw, 40px);
+			color: var(--muted);
+		}
+
+		/* La description et la stack restent dans la ligne pour les lecteurs d'écran et les
+		   moteurs, masquées à l'œil : l'aperçu les montre. */
+		.desc,
+		.stack,
+		.row[data-selected] .year {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+			clip-path: inset(50%);
+			white-space: nowrap;
+		}
+
+		/* L'année et « Anatomie → » occupent la même largeur : sélectionner une ligne ne fait
+		   pas passer son nom à la ligne. */
+		.year,
+		.row[data-selected]::after {
+			flex: 0 0 10ch;
+			font-size: 12px;
+			text-align: right;
+			white-space: nowrap;
+		}
+
+		.year {
+			color: var(--muted);
+		}
+
+		.row[data-selected] .num,
+		.row[data-selected]::after {
+			color: var(--accent);
+		}
+
+		.row[data-selected] .name {
+			color: var(--ink);
+		}
+
+		.row[data-selected] .num::after {
+			content: '';
+			width: 7px;
+			height: 7px;
+			background: var(--accent);
+		}
+
+		/* Repère visuel seul : le lien se lit toujours avec son année. */
+		.row[data-selected]::after {
+			content: 'Anatomie →';
+			content: 'Anatomie →' / '';
+			font-family: var(--font-mono);
 		}
 	}
 </style>

@@ -13,6 +13,7 @@
     "check": "astro check",
     "og:capture": "node scripts/capture-og.mjs",
     "favicon:ico": "node scripts/favicon-ico.mjs",
+    "signatures": "node scripts/signatures.mjs",
     "test": "astro build && node --test \"tests/**/*.test.mjs\""
   },
   "dependencies": {

@@ -1,29 +1,31 @@
 ---
 import { Font } from 'astro:assets';
-import { identity, pageMeta } from '../data/profile';
+import { identity, pageMeta, type ShareImage } from '../data/profile';
+import { person } from '../lib/structured-data';
+
+interface Props {
+	/** Sans les paramètres suivants, la page reprend les valeurs de l'accueil. */
+	title?: string;
+	description?: string;
+	shareImage?: ShareImage;
+	/** Type Open Graph : l'accueil présente un profil, une fiche un site (`website`). */
+	ogType?: 'profile' | 'website';
+	/** Données structurées schema.org de la page (JSON-LD). */
+	structuredData?: Record<string, unknown>;
+}
 
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
-const { shareImage } = pageMeta;
-const shareImageUrl = new URL(shareImage.path, Astro.site).href;
 
-// Ni téléphone, ni adresse postale, ni date de naissance (règle de contenu du spec).
-const person = {
-	'@context': 'https://schema.org',
-	'@type': 'Person',
-	name: identity.name,
-	givenName: identity.givenName,
-	familyName: identity.familyName,
-	jobTitle: identity.roleDetail,
-	worksFor: { '@type': 'Organization', name: identity.employer.name },
-	homeLocation: { '@type': 'Place', name: `${identity.city}, ${identity.country}` },
-	url: canonical,
-	image: shareImageUrl,
-	email: `mailto:${identity.email}`,
-	sameAs: [identity.links.github],
-	knowsAbout: identity.skills,
-};
+const {
+	title = pageMeta.title,
+	description = pageMeta.description,
+	shareImage = pageMeta.shareImage,
+	ogType = 'profile',
+	structuredData = { '@context': 'https://schema.org', ...person(Astro.site) },
+} = Astro.props;
+const shareImageUrl = new URL(shareImage.path, Astro.site).href;
 // `<` échappé : aucune valeur ne peut fermer la balise <script> avant l'heure.
-const personJsonLd = JSON.stringify(person).replaceAll('<', '\\u003c');
+const jsonLd = JSON.stringify(structuredData).replaceAll('<', '\\u003c');
 ---
 
 <!doctype html>
@@ -31,29 +33,35 @@ const personJsonLd = JSON.stringify(person).replaceAll('<', '\\u003c');
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>{pageMeta.title}</title>
-		<meta name="description" content={pageMeta.description} />
+		<title>{title}</title>
+		<meta name="description" content={description} />
 		<link rel="canonical" href={canonical} />
 		<meta name="theme-color" content={pageMeta.themeColor} />
 		{/* `sizes` sur le .ico : sans lui, Chrome le préfère au SVG. */}
 		<link rel="icon" href="/favicon.ico" sizes="32x32" />
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 		<link rel="sitemap" href="/sitemap.xml" />
-		<meta property="og:type" content="profile" />
+		<meta property="og:type" content={ogType} />
 		<meta property="og:locale" content="fr_FR" />
 		<meta property="og:url" content={canonical} />
-		<meta property="og:title" content={pageMeta.title} />
-		<meta property="og:description" content={pageMeta.description} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
 		<meta property="og:image" content={shareImageUrl} />
 		<meta property="og:image:type" content="image/png" />
 		<meta property="og:image:width" content={String(shareImage.width)} />
 		<meta property="og:image:height" content={String(shareImage.height)} />
 		<meta property="og:image:alt" content={shareImage.alt} />
-		<meta property="profile:first_name" content={identity.givenName} />
-		<meta property="profile:last_name" content={identity.familyName} />
+		{
+			ogType === 'profile' && (
+				<>
+					<meta property="profile:first_name" content={identity.givenName} />
+					<meta property="profile:last_name" content={identity.familyName} />
+				</>
+			)
+		}
 		{/* X reprend titre, description et image d'Open Graph : seul le format de carte lui est propre. */}
 		<meta name="twitter:card" content="summary_large_image" />
-		<script is:inline type="application/ld+json" set:html={personJsonLd} />
+		<script is:inline type="application/ld+json" set:html={jsonLd} />
 		{/* Seule la romaine d'Archivo est préchargée : c'est elle qui dessine le héros. */}
 		<Font cssVariable="--font-archivo" preload={[{ style: 'normal', subset: 'latin' }]} />
 		<Font cssVariable="--font-mono" />
@@ -70,8 +78,13 @@ const personJsonLd = JSON.stringify(person).replaceAll('<', '\\u003c');
 		--ink: #111110;
 		--muted: #5f5f5a;
 		--rule: #d6d6d0;
+		/* Papier des cartes de figure, plus clair que le fond. */
+		--paper: #fbfbfa;
 		--accent: #2433ff;
 		--accent-light: #8e9bff;
+		/* Bleu appuyé (survol d'une commande, encre des chaînes de code) et son lavis. */
+		--accent-deep: #1b26c9;
+		--accent-wash: #e2e5ff;
 		--on-ink-muted: #bdbdb6;
 		--stack-sep: #a3a39c;
 		--status-segment: #2a2a28;

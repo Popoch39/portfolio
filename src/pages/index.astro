@@ -10,7 +10,7 @@ import Stack from '../components/Stack.astro';
 import Contact from '../components/Contact.astro';
 import StatusBar from '../components/StatusBar.astro';
 import { githubSnapshot } from '../data/github-snapshot';
-import { activityStats } from '../lib/activity';
+import { activityStats, formatNumber } from '../lib/activity';
 
 const stats = activityStats(githubSnapshot);
 ---
@@ -32,5 +32,5 @@ const stats = activityStats(githubSnapshot);
 			<Contact />
 		</div>
 	</main>
-	<StatusBar contributions={stats.total} />
+	<StatusBar secondary={`${formatNumber(stats.total)} contributions · 12 mois`} />
 </Layout>

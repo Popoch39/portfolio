@@ -1,0 +1,14 @@
+---
+// Les trames du grain pour toute la page, une seule fois : les figures dessinées ou insérées dans
+// la page les citent par `url(#…)`.
+import { grainPatterns } from '../anatomies/grain';
+---
+
+{/* Masqué par sa taille et non par `display: none` : le navigateur ne peindrait plus ses trames. */}
+<svg class="grain" width="0" height="0" aria-hidden="true" focusable="false"><defs set:html={grainPatterns} /></svg>
+
+<style>
+	.grain {
+		position: absolute;
+	}
+</style>

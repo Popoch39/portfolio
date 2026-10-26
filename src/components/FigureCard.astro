@@ -1,0 +1,286 @@
+---
+// Carte de figure : Fig. n et titre en haut, la scène au milieu, la consigne et le relevé en
+// bas ; la légende dessous. Sur la fiche, la scène épouse le format de la figure, 900 px de large
+// au plus, et la carte tient dans la hauteur de la fenêtre. Deux fentes l'y complètent : `repere`
+// au-dessus de la scène (son trait descend sur la figure), `controls` dessous.
+// Dans l'aperçu de l'accueil, la scène a une taille fixe et la figure s'y inscrit : changer de
+// projet ne décale rien.
+import '../vendor/anatomy/iso.css';
+import '../anatomies/palette.css';
+
+interface Common {
+	fig: number | string;
+	title: string;
+	consignes: { pointer: string; touch: string };
+	releve: string;
+	caption?: string;
+	/** Le dossier du module de mouvement, que le chargeur monte sur la scène. */
+	motion: string;
+	/**
+	 * Scène de taille fixe, où la figure s'inscrit (aperçu de l'accueil). Les textes de la carte y
+	 * sont un doublon visuel de la ligne du projet : les technologies d'assistance les ignorent.
+	 */
+	fixed?: boolean;
+	/** Recadrage de la figure sur téléphone (`AnatomyContent.phoneCrop`). */
+	phoneCrop?: boolean;
+	/**
+	 * Figure au moins aussi haute que large, que la hauteur de la fenêtre plafonne : sur la fiche, la
+	 * carte l'épouse au lieu de l'encadrer de deux bandes vides.
+	 */
+	portrait?: boolean;
+	/**
+	 * Figure haute : sur grand écran, le repère se range à côté d'elle plutôt qu'au-dessus, où il
+	 * pousserait la figure hors de la fenêtre.
+	 */
+	tall?: boolean;
+}
+
+type Props = Common &
+	(
+		| {
+				/** La figure au repos, en SVG intégré à la page. */
+				svg: string;
+				image?: never;
+		  }
+		| {
+				/**
+				 * L'image d'attente : le SVG au repos autonome, que le script de la page remplace par la
+				 * figure insérée. Elle n'est demandée que si `media` vaut : sans JavaScript, le
+				 * navigateur ignore `loading="lazy"` et la chargerait même masquée.
+				 */
+				image: { src: string; media: string; width: number; height: number; alt: string };
+				svg?: never;
+		  }
+	);
+
+const { fig, title, consignes, releve, caption, svg, image, motion, fixed = false, phoneCrop = false, portrait = false, tall = false } = Astro.props;
+const echo = fixed ? 'true' : undefined;
+const beside = tall && Astro.slots.has('repere');
+---
+
+<figure class:list={['figure', { fixed, crop: phoneCrop, portrait: portrait && !fixed, beside }]}>
+	<div class="card">
+		<div class="mono row" aria-hidden={echo}>
+			<span class="fig">Fig. {fig}</span>{' '}
+			<span>{title}</span>
+		</div>
+		<div class="stage">
+			<slot name="repere" />
+			{
+				image ? (
+					<div class="scene iso anatomy" data-theme="light" data-motion={motion}>
+						<picture>
+							<source media={image.media} srcset={image.src} type="image/svg+xml" width={image.width} height={image.height} />
+							<img width={image.width} height={image.height} alt={image.alt} loading="lazy" decoding="async" />
+						</picture>
+					</div>
+				) : (
+					<div class="scene iso anatomy" data-theme="light" data-motion={motion} set:html={svg} />
+				)
+			}
+		</div>
+		<slot name="controls" />
+		<div class="mono row foot" aria-hidden={echo}>
+			<span class="consigne pointer">{consignes.pointer}</span>
+			<span class="consigne touch">{consignes.touch}</span>{' '}
+			<span class="releve"><span class="dot" aria-hidden="true"></span><span data-releve>{releve}</span></span>
+		</div>
+	</div>
+	{caption && <figcaption class="caption"><span class="mono caption-fig">Fig. {fig} —</span> {caption}</figcaption>}
+</figure>
+
+<style>
+	.figure {
+		margin: 32px 0 0;
+	}
+
+	.card {
+		--card-pad: clamp(16px, 2vw, 28px);
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		padding: var(--card-pad);
+		background: var(--paper);
+		border: 1px solid var(--rule);
+	}
+
+	.row {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		gap: 8px 24px;
+		font-size: 12px;
+		color: var(--muted);
+	}
+
+	.fig {
+		color: var(--ink);
+	}
+
+	/* Repère du trait qui va de l'étiquette à la figure. */
+	.stage {
+		position: relative;
+	}
+
+	/* Figure haute sur grand écran : le repère prend une colonne à gauche de la scène (même seuil que
+	   dans `Repere.astro`), et la carte tient encore dans la hauteur de la fenêtre. */
+	@media (min-width: 960px) {
+		.beside .stage {
+			display: grid;
+			grid-template-columns: minmax(300px, 400px) minmax(0, auto);
+			column-gap: 48px;
+		}
+	}
+
+	.scene {
+		width: 100%;
+		max-width: 900px;
+		margin: 0 auto;
+		/* Le doigt agit sur la figure et fait toujours défiler la page. */
+		touch-action: pan-y;
+	}
+
+	/* Une figure en hauteur ne dépasse pas la fenêtre : la carte entière (marges, titre, consigne,
+	   ≈ 110 px à 1440) y tient, sans descendre sous un seuil lisible sur un téléphone à l'horizontale.
+	   `svh` plutôt que `dvh` : la figure ne change pas de taille quand la barre d'adresse se replie.
+	   Une figure large, plafonnée en hauteur, reste centrée dans sa largeur (`preserveAspectRatio`). */
+	.scene > :global(svg) {
+		max-height: max(320px, 100svh - 160px);
+	}
+
+	/* Figure en hauteur : elle part de sa taille naturelle (900 px de large, `restSvg`) et garde son
+	   format sous ses deux plafonds ; la carte l'épouse au lieu de l'encadrer de bandes vides. Les
+	   lignes de texte suivent la largeur de la carte sans l'élargir. */
+	.portrait .card {
+		width: fit-content;
+		max-width: 100%;
+	}
+
+	.portrait .row {
+		width: 0;
+		min-width: 100%;
+	}
+
+	.portrait .scene > :global(svg) {
+		width: auto;
+		max-width: 100%;
+	}
+
+	/* Téléphone : la scène va d'un bord à l'autre de la carte, une figure large y gagne la marge. Une
+	   figure très large grandit encore de son recadrage, et la scène coupe ce qui déborde. */
+	.figure:not(.fixed) .scene {
+		width: auto;
+		margin-inline: calc(-1 * var(--card-pad));
+		overflow: hidden;
+	}
+
+	/* La coupe prend plus à droite qu'à gauche (contrat : `AnatomyContent.phoneCrop`). */
+	.crop .scene > :global(svg) {
+		width: 110%;
+		margin-inline: -3% -7%;
+	}
+
+	@media (min-width: 600px) {
+		.figure:not(.fixed) .scene {
+			width: 100%;
+			margin-inline: auto;
+			overflow: visible;
+		}
+
+		.crop .scene > :global(svg) {
+			width: 100%;
+			margin-inline: 0;
+		}
+	}
+
+	/* Une seule consigne visible : celle du pointeur s'il sait survoler, sinon celle du toucher. */
+	.pointer {
+		display: none;
+	}
+
+	@media (hover: hover) and (pointer: fine) {
+		.pointer {
+			display: inline;
+		}
+
+		.touch {
+			display: none;
+		}
+	}
+
+	.releve {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		color: var(--ink);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.dot {
+		flex: none;
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: var(--accent);
+	}
+
+	.caption {
+		max-width: 760px;
+		margin-top: 14px;
+		font-size: 15px;
+		line-height: 1.45;
+		color: var(--muted);
+		text-wrap: pretty;
+	}
+
+	.caption-fig {
+		font-size: 12px;
+		color: var(--ink);
+	}
+
+	/* Scène fixe : la figure s'y inscrit, image d'attente comme SVG inséré (qui ne porte pas
+	   l'attribut de portée du composant). La consigne, au-dessus du relevé, a deux lignes réservées ;
+	   les autres textes tiennent sur une ligne : la carte garde sa hauteur d'un projet à l'autre. */
+	.fixed {
+		margin: 0;
+	}
+
+	/* Sans `min-height: 0`, le contenu (une figure en hauteur) passerait outre le rapport 4:3. */
+	.fixed .scene {
+		max-width: none;
+		min-height: 0;
+		aspect-ratio: 4 / 3;
+	}
+
+	.fixed .scene > picture,
+	.fixed .scene img,
+	.fixed .scene > :global(svg) {
+		display: block;
+		width: 100%;
+		height: 100%;
+		max-height: none;
+		object-fit: contain;
+	}
+
+	.fixed .row {
+		flex-wrap: nowrap;
+		white-space: nowrap;
+	}
+
+	.fixed .foot {
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.fixed .consigne {
+		min-height: 2lh;
+		white-space: normal;
+	}
+
+	.fixed .row > *,
+	.fixed [data-releve] {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+</style>

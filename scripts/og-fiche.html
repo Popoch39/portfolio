@@ -1,0 +1,179 @@
+<!doctype html>
+<!--
+	Composition de l'image de partage d'une fiche (public/og/<slug>.png, 1200×630), remplie et
+	capturée par `pnpm og:capture` pour chaque projet, puis versionnée. Hors de src/pages et de
+	public : elle n'est pas publiée. Les champs entre signes pour cent viennent du module d'identité
+	(src/data/profile.ts), et la figure du SVG au repos du build (dist/figures/<slug>.svg) ; le texte
+	alternatif de l'image décrit cette composition (shareImageOf) : les garder d'accord.
+-->
+<html lang="fr">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=1200" />
+		<title>Image de partage — %REPO%</title>
+		<!-- Polices chargées depuis Google le temps de la capture : l'axe wdth donne la condensée. -->
+		<link
+			rel="stylesheet"
+			href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Fragment+Mono&display=block"
+		/>
+		<style>
+			* {
+				box-sizing: border-box;
+			}
+
+			/* La palette des figures lit la mono du site dans cette variable. */
+			:root {
+				--font-mono: 'Fragment Mono', monospace;
+			}
+
+			html,
+			body {
+				margin: 0;
+				width: 1200px;
+				height: 630px;
+				overflow: hidden;
+				background: #f3f3ef;
+				color: #111110;
+			}
+
+			body {
+				display: flex;
+				flex-direction: column;
+				gap: 28px;
+				padding: 52px 64px 56px;
+				font-family: 'Archivo', sans-serif;
+			}
+
+			.mono {
+				font-family: 'Fragment Mono', monospace;
+			}
+
+			.topline {
+				display: flex;
+				justify-content: space-between;
+				font-size: 22px;
+				color: #5f5f5a;
+			}
+
+			.mode {
+				color: #111110;
+			}
+
+			/* Figure haute ou carrée : le nom à gauche, la figure à droite, à la largeur de ses proportions. */
+			.stage {
+				flex: 1;
+				min-height: 0;
+				display: grid;
+				grid-template-columns: minmax(0, 1fr) var(--figure-width, 470px);
+				grid-template-rows: minmax(0, 1fr);
+				gap: 40px;
+			}
+
+			/* Figure large : le nom au-dessus, la figure dessous sur toute la largeur. */
+			.wide .stage {
+				grid-template-columns: minmax(0, 1fr);
+				grid-template-rows: auto minmax(0, 1fr);
+				gap: 24px;
+			}
+
+			h1 {
+				margin: 0;
+				align-self: end;
+				font-size: 200px;
+				line-height: 0.8;
+				font-weight: 800;
+				font-stretch: 62%;
+				letter-spacing: -0.015em;
+				text-transform: uppercase;
+				/* Le nom ne passe à la ligne qu'à ses <wbr> : jamais avant le curseur. */
+				white-space: nowrap;
+			}
+
+			.cursor {
+				display: inline-block;
+				width: 0.3em;
+				height: 0.7em;
+				margin-left: 0.05em;
+				background: #2433ff;
+			}
+
+			.figure {
+				min-height: 0;
+				display: flex;
+				background: #fbfbfa;
+				border: 1px solid #d6d6d0;
+				padding: 16px;
+			}
+
+			.figure svg {
+				width: 100%;
+				height: 100%;
+			}
+
+			.subtitle {
+				display: flex;
+				justify-content: space-between;
+				align-items: baseline;
+				margin: 0;
+				padding-top: 20px;
+				border-top: 2px solid #111110;
+				font-size: 24px;
+			}
+
+			.author {
+				color: #2433ff;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="mono topline">
+			<span><span class="mode">-- NORMAL --</span> ~/projets/%REPO%.md</span>
+			<span>projet %RANK%</span>
+		</div>
+		<div class="stage">
+			<h1>%REPO_BREAKABLE%<i class="cursor"></i></h1>
+			<div class="figure">%FIGURE%</div>
+		</div>
+		<p class="mono subtitle">
+			<span>%STACK%</span>
+			<span class="author">%AUTHOR%</span>
+		</p>
+		<script>
+			// Disposition selon les proportions de la figure, puis le nom au plus grand corps qui
+			// tient dans sa case, une fois la condensée chargée.
+			const stage = document.querySelector('.stage');
+			const svg = stage.querySelector('.figure svg');
+			const title = stage.querySelector('h1');
+
+			// Recadre la figure sur son dessin : la marge de son viewBox, qui sert la carte de la
+			// fiche, la rapetisserait ici.
+			const drawing = svg.getBBox();
+			const margin = 0.03 * Math.max(drawing.width, drawing.height);
+			svg.setAttribute(
+				'viewBox',
+				[drawing.x - margin, drawing.y - margin, drawing.width + 2 * margin, drawing.height + 2 * margin].join(' '),
+			);
+			const ratio = drawing.width / drawing.height;
+			const wide = ratio > 1.5;
+			document.body.classList.toggle('wide', wide);
+			if (wide) {
+				// Sur une seule ligne, le nom laisse sa hauteur à la figure.
+				for (const opportunity of title.querySelectorAll('wbr')) opportunity.remove();
+			} else {
+				const inset = 34; // marge intérieure et filet de la carte
+				const width = ratio * (stage.clientHeight - inset) + inset;
+				stage.style.setProperty('--figure-width', `${Math.round(Math.min(620, Math.max(360, width)))}px`);
+			}
+
+			document.fonts.ready.then(() => {
+				let size = wide ? 140 : 220;
+				title.style.fontSize = `${size}px`;
+				const overflows = () => title.scrollWidth > title.clientWidth || title.offsetHeight > stage.clientHeight;
+				while (overflows() && size > 40) {
+					size -= 2;
+					title.style.fontSize = `${size}px`;
+				}
+			});
+		</script>
+	</body>
+</html>

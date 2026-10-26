@@ -1,0 +1,133 @@
+---
+// Nomenclature : les pièces numérotées, avec leur nom, leur rôle et le lien vers le code.
+// Chaque ligne porte le crochet de sa pièce (`data-piece`), comme les groupes du SVG.
+import type { Piece } from '../anatomies/contract';
+
+interface Props {
+	pieces: Piece[];
+	codeUrl: (piece: Piece) => string;
+}
+
+const { pieces, codeUrl } = Astro.props;
+---
+
+<div class="nomenclature">
+	<h3 class="title">Nomen&shy;clature</h3>
+	<ol class="list">
+		{
+			pieces.map((piece, i) => (
+				<li class="item" data-piece={piece.id} data-master={piece.master ? '' : undefined}>
+					<span class="mono num">
+						{String(i + 1).padStart(2, '0')}
+						{piece.master && <span class="master" role="img" aria-label="pièce maîtresse" />}
+					</span>{' '}
+					<span class="name">{piece.name}</span>{' '}
+					<span class="role">
+						{piece.role}{' '}
+						<a class="mono code" href={codeUrl(piece)}>
+							Code : {piece.code.path}, lignes {piece.code.lines[0]}–{piece.code.lines[1]} ↗
+						</a>
+					</span>
+				</li>
+			))
+		}
+	</ol>
+</div>
+
+<style>
+	.nomenclature {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 40px clamp(24px, 4vw, 64px);
+		margin-top: clamp(48px, 6vw, 88px);
+	}
+
+	.title {
+		flex: 1 1 260px;
+		margin: 0;
+		font-size: clamp(28px, 3vw, 44px);
+		line-height: 0.95;
+		font-weight: 800;
+		font-stretch: 62%;
+		text-transform: uppercase;
+	}
+
+	.list {
+		flex: 999 1 640px;
+		min-width: 0;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		border-top: 1px solid var(--ink);
+	}
+
+	/* Téléphone : le rôle passe sous le nom, aligné sur lui. */
+	.item {
+		display: grid;
+		grid-template-columns: 40px minmax(0, 1fr);
+		gap: 4px 24px;
+		align-items: baseline;
+		padding: 18px 0;
+		border-bottom: 1px solid var(--rule);
+	}
+
+	.num {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 13px;
+	}
+
+	.item[data-master] .num {
+		color: var(--accent);
+	}
+
+	/* La ligne de la pièce visée, dans la liste ou dans la figure (`data-on`, posé par le script
+	   de mise en avant). */
+	.item[data-on] {
+		background: var(--paper);
+	}
+
+	.item[data-on] .num,
+	.item[data-on] .name {
+		color: var(--accent);
+	}
+
+	.master {
+		width: 7px;
+		height: 7px;
+		background: var(--accent);
+	}
+
+	.name {
+		font-size: 20px;
+		font-weight: 700;
+		font-stretch: 80%;
+	}
+
+	.role {
+		grid-column: 2;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		color: var(--muted);
+	}
+
+	.code {
+		font-size: 12px;
+		color: var(--ink);
+		text-underline-offset: 3px;
+		overflow-wrap: anywhere;
+	}
+
+	/* Tablette et au-delà : numéro, nom et rôle sur une ligne, comme la maquette. */
+	@media (min-width: 600px) {
+		.item {
+			grid-template-columns: 56px minmax(0, 1fr) minmax(0, 1.3fr);
+		}
+
+		.role {
+			grid-column: auto;
+		}
+	}
+</style>

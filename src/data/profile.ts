@@ -169,53 +169,92 @@ export const marqueeWords: string[] = [
 export interface Project {
 	/** Nom du dépôt sous le compte GitHub de `identity.github` : c'est aussi le nom affiché. */
 	repo: string;
+	/**
+	 * Segment de l'adresse de la fiche (`/projets/<slug>/`). Ni point ni tiret bas : certains
+	 * hébergeurs prennent « .nvim » pour une extension, et Google déconseille « _ » entre les mots.
+	 */
+	slug: string;
 	description: string;
 	stack: string[];
+	/** Langage principal du dépôt (JSON-LD `programmingLanguage` de la fiche). */
+	language: string;
 	year: number;
 }
+
+/** Adresse de la fiche d'un projet, slash final compris : c'est son URL canonique. */
+export const fichePath = (project: Project) => `/projets/${project.slug}/`;
+
+/** Adresse du SVG au repos autonome d'un projet (`src/pages/figures/[slug].svg.ts`). */
+export const restFigurePath = (project: Project) => `/figures/${project.slug}.svg`;
+
+/** Adresse de l'image de partage d'une fiche (`public/og/<slug>.png`). */
+export const shareImagePath = (project: Project) => `/og/${project.slug}.png`;
+
+/**
+ * Image de partage d'une fiche, produite par `pnpm og:capture` à partir de
+ * `scripts/og-fiche.html`, puis versionnée. `machine` nomme sa figure (`AnatomyContent.machine`).
+ */
+export const shareImageOf = (project: Project, machine: string): ShareImage => ({
+	path: shareImagePath(project),
+	width: 1200,
+	height: 630,
+	alt: `${project.repo} en lettres capitales condensées, suivi d’un curseur bleu, avec sa figure au repos, « ${machine} », dessinée en isométrie ; en pied, la stack ${project.stack.join(' · ')} et ${identity.name}.`,
+});
 
 /** Projets mis en avant, dans l'ordre d'affichage. Certains dépôts sont volontairement absents. */
 export const projects: Project[] = [
 	{
 		repo: 'typomaniac',
+		slug: 'typomaniac',
 		description:
 			'Jeu de dactylo multijoueur : runs solo, duels classés en Bo3, MMR et classement. Serveur de duel autoritaire en WebSocket.',
 		stack: ['TypeScript', 'Elysia', 'Bun', 'React 19'],
+		language: 'TypeScript',
 		year: 2026,
 	},
 	{
 		repo: 'claude-tmux-notify.nvim',
+		slug: 'claude-tmux-notify',
 		description:
 			'Un toast Neovim quand une session Claude Code, dans une autre fenêtre tmux, vous attend.',
 		stack: ['Lua', 'Neovim', 'tmux', '★ 3'],
+		language: 'Lua',
 		year: 2026,
 	},
 	{
 		repo: 'claude-status-line',
+		slug: 'claude-status-line',
 		description:
 			'L’usage d’abonnement Claude Code dans la status line — binaire Bun multi-plateforme, installeur curl | sh.',
 		stack: ['TypeScript', 'Bun'],
+		language: 'TypeScript',
 		year: 2026,
 	},
 	{
 		repo: 'pointcloud-viewer',
+		slug: 'pointcloud-viewer',
 		description:
 			'Nuages de points LiDAR dans le navigateur — parsing en Rust compilé en WebAssembly, rendu three.js.',
 		stack: ['Rust', 'WASM', 'React', 'three.js'],
+		language: 'Rust',
 		year: 2026,
 	},
 	{
 		repo: 'trekker',
+		slug: 'trekker',
 		description:
 			'API de catalogue de randonnées — NestJS 11, Drizzle et Postgres, contrats Zod partagés en monorepo.',
 		stack: ['TypeScript', 'NestJS', 'Drizzle'],
+		language: 'TypeScript',
 		year: 2026,
 	},
 	{
 		repo: 'ma_parcelle',
+		slug: 'ma-parcelle',
 		description:
 			'Tout ce que les données publiques disent d’une parcelle, sur une carte plein écran — sans compte, sans serveur.',
 		stack: ['React 19', 'Vite', 'MapLibre'],
+		language: 'TypeScript',
 		year: 2026,
 	},
 ];

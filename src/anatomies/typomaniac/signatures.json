@@ -1,0 +1,44 @@
+{
+	"socle": [
+		[99,"  const duelQueue = new DuelQueue({"],
+		[100,"    clock: config.clock,"],
+		[101,"    store: duelStore,"],
+		[102,"    users,"]
+	],
+	"claviers": [
+		[794,"const pressed = (store: DuelStore, key: Key, now: number): Pick<DuelStore, \"state\" | \"cues\"> => {"],
+		[795,"  const { state } = store;"],
+		[797,"  if (state.phase !== \"running\") {"],
+		[798,"    return store;"]
+	],
+	"cables": [
+		[20,"export const duelModule = ({ auth, trustProxy, queue, friendsLive }: DuelModuleConfig) =>"],
+		[21,"  new Elysia({ name: \"duel\", seed: queue }).use(authentication(auth, { trustProxy })).ws(\"/duel\", {"],
+		[22,"    auth: true,"],
+		[23,"    response: DuelModel.serverMessage,"]
+	],
+	"tour": [
+		[428,"  endRound(judgedAt: number, draw: () => number): RoundEnd {"],
+		[429,"    const endedAt = this.#round.startsAt + this.#durationMs;"],
+		[430,"    const ended = this.#endRound(endedAt);"],
+		[432,"    this.#played.push(ended);"]
+	],
+	"guichet": [
+		[22,"const rejectReason = ("],
+		[23,"  acceptedRun: AcceptedRun,"],
+		[24,"  { at }: Keystroke,"],
+		[25,"  { arrivedAt, endsAt, tolerance }: ArrivalWindow,"]
+	],
+	"lampes": [
+		[22,"export const roundOutcome = (first: RoundSide, second: RoundSide): Outcome =>"],
+		[23,"  outcomeOf(first.score - second.score || first.result.accuracy - second.result.accuracy);"],
+		[27,"export const roundsWon = (rounds: readonly RoundSides[]): [number, number] => {"],
+		[28,"  const won: [number, number] = [0, 0];"]
+	],
+	"mat": [
+		[167,"export const tpDelta = ("],
+		[168,"  standing: Standing,"],
+		[169,"  mmr: number,"],
+		[170,"  opponentMmr: number,"]
+	]
+}

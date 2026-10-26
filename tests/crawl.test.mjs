@@ -2,7 +2,7 @@
 // du site (le seul réglage à changer avec le domaine).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readDist, readHome, tags, attr, elements, text } from './helpers/dist.mjs';
+import { PROJECTS, readDist, readFiche, readHome, tags, attr, elements, text } from './helpers/dist.mjs';
 
 const head = elements(readHome(), 'head')[0] ?? '';
 const linkHref = (rel) => attr(tags(head, 'link').find((t) => attr(t, 'rel') === rel) ?? '', 'href');
@@ -17,12 +17,16 @@ test('robots.txt autorise l’exploration et donne l’URL absolue du sitemap', 
 	assert.equal(new URL(sitemap).pathname, '/sitemap.xml');
 });
 
-test('sitemap.xml liste la page d’accueil à son URL canonique', () => {
+test('sitemap.xml liste l’accueil et les six fiches, à leurs URL canoniques', () => {
 	const sitemap = readDist('sitemap.xml');
 	assert.match(sitemap, /^<\?xml version="1.0" encoding="UTF-8"\?>/);
 	assert.match(sitemap, /<urlset xmlns="http:\/\/www.sitemaps.org\/schemas\/sitemap\/0.9">/);
 	const locs = elements(sitemap, 'loc').map(text);
-	assert.deepEqual(locs, [linkHref('canonical')]);
+	const ficheCanonicals = PROJECTS.map(({ slug }) => {
+		const ficheHead = elements(readFiche(slug), 'head')[0] ?? '';
+		return attr(tags(ficheHead, 'link').find((t) => attr(t, 'rel') === 'canonical') ?? '', 'href');
+	});
+	assert.deepEqual(locs, [linkHref('canonical'), ...ficheCanonicals]);
 });
 
 test('la page signale son sitemap dans le <head>', () => {

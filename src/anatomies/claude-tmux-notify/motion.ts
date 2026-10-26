@@ -4,7 +4,8 @@
 // sauf si la fiche est branchée dans le jack de cette fenêtre (elle est au premier plan). Brancher
 // la fiche dans le jack d'un volet tombé l'acquitte. Le tour rejoue le scénario de la fiche de
 // concept ; le pointeur, le doigt et le clavier de la scène font de même à la demande.
-import { dotsSvg, solidSvg, translateAlong } from '../../vendor/anatomy/iso-kit.ts';
+// `.mjs`, comme `layout.ts` : un seul exemplaire du cœur du kit avec `lathe.mjs`.
+import { dotsSvg, solidSvg, translateAlong } from '../../vendor/anatomy/iso-kit.mjs';
 import type { MountMotion } from '../contract.ts';
 import { asksForStillness, follow, loop, spring, type Spring } from '../live.ts';
 import {

@@ -2,7 +2,11 @@
 // mur (vers la gauche à l'écran), z monte. Ce module ne garde que ce que le mouvement relit : la
 // caméra, les cotes, l'extrudeur de plaques de façade et les pièces dont la forme change (volets,
 // boucle tampon, ressorts, cordon). Le reste du dessin vit dans `geometry.ts`, au build seulement.
-import { depthOf, iso, pathOf, type Flat, type Point3, type Projection, type SolidPaths } from '../../vendor/anatomy/iso-kit.ts';
+// Le cœur du kit est pris dans sa version `.mjs`, celle qu'importent `lathe.mjs` et `tube.mjs` :
+// le module de mouvement n'en embarque ainsi qu'un exemplaire. La version `.ts`, celle des autres
+// anatomies, en ajouterait un second (environ 4 Ko de plus à télécharger).
+import type { Flat, Point3, Projection, SolidPaths } from '../../vendor/anatomy/iso-kit.ts';
+import { depthOf, iso, pathOf } from '../../vendor/anatomy/iso-kit.mjs';
 import { bandOf, lightOf, viewOf } from '../../vendor/anatomy/lathe.mjs';
 import { filletOn } from './kit.mjs';
 

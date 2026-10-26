@@ -197,6 +197,10 @@ export function onCylinder([x, y]: Flat, r: number, z0: number, z1: number) {
 	return y >= top - half && y <= bottom + half;
 }
 
+/** Les arêtes où les faces de coupe rencontrent le forage, du fond du trou au dessus de la croûte. */
+export const boreEdgesAt = (z: number, top: number) =>
+	z >= top - 1e-6 ? '' : pathOf([xy([BORE, 0, z]), xy([BORE, 0, top])]) + pathOf([xy([0, BORE, z]), xy([0, BORE, top])]);
+
 export const SWIVEL_TOP = 520;
 /** Le câble de repêchage, coupé où il entre dans l'émerillon. */
 export function cableClipAt(depth: number) {

@@ -8,6 +8,7 @@ import type { MountMotion } from '../contract.ts';
 import { asksForStillness, loop, spring, type Spring } from '../live.ts';
 import {
 	boreClipAt,
+	boreEdgesAt,
 	cableClipAt,
 	CORE_SCALE,
 	couplingPaths,
@@ -60,6 +61,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 	const lostBand = svg.querySelector('[data-band="4"]');
 	const boreClip = at('bore-clip', svg)[0];
 	const floor = at('floor', svg)[0];
+	const boreEdges = at('bore-edges', svg)[0];
 	const cableClip = at('cable-clip', svg)[0];
 	const thread = at('thread', svg)[0];
 	const crank = at('crank', svg)[0];
@@ -230,6 +232,8 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 			run(dt, calm);
 		}
 		if (selected && record) record.reached = Math.max(record.reached, depth);
+		// Remonté au plateau après un sondage complet (Début ou ↑, en mouvement réduit) : il est fini.
+		if (done && !locked && depth <= 1e-9) finish();
 	};
 
 	const draw = (dt: number, calm: boolean) => {
@@ -243,6 +247,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 
 		const floorZ = Math.min(M.bitAt(record?.reached ?? 0), M.SOIL_TOP);
 		write(boreClip, 'd', boreClipAt(floorZ, M.SOIL_TOP));
+		write(boreEdges, 'd', boreEdgesAt(floorZ, M.SOIL_TOP));
 		write(floor, 'transform', translateAlong(P, [0, 0, floorZ]));
 		write(cableClip, 'd', cableClipAt(depth));
 		write(thread, 'transform', shift([0, 0, -(depth % M.THREAD)]));
@@ -318,6 +323,8 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 		if (direction > 0 && (!selected || done)) select(false, false);
 		hold = direction;
 		speed = 0;
+		// Mouvement réduit : le saut a lieu tout de suite, même si la touche est relâchée avant l'image suivante.
+		if (asksForStillness()) step(0, true);
 		motion.kick();
 	};
 	const release = () => {

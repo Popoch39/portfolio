@@ -194,8 +194,10 @@ const BORE_BANDS: [number, number, number][] = [
 	[225, 255, 2],
 	[255, 270, 3],
 ];
-function boreWall(z0: number, z1: number) {
-	return BORE_BANDS.map(([t0, t1, shade]) => {
+function boreWall(z0: number, z1: number, deep = false) {
+	// Au fond d'un trou profond, la paroi prend moins de jour : chaque bande descend d'un ton.
+	return BORE_BANDS.map(([t0, t1, lit]) => {
+		const shade = deep ? Math.max(0, lit - 1) : lit;
 		const d = pathOf([...arc(BORE, t0 * DEG, t1 * DEG, z1, 2 * DEG), ...arc(BORE, t1 * DEG, t0 * DEG, z0, 2 * DEG)], true);
 		return fill(d, shade);
 	}).join('');
@@ -969,8 +971,10 @@ function drillClip() {
 /** Carotte : six bandes vues par la fenêtre du carottier, la croûte en haut ; elle monte en se formant. */
 function coreSvg() {
 	const r = 6.2;
-	const t0 = 6 * DEG;
-	const t1 = 84 * DEG;
+	// La carotte remplit la fenêtre d'un bord à l'autre : ses traits finissent sur les bords de la lumière.
+	const spread = 45 * DEG - Math.acos((8 * Math.cos(53 * DEG)) / r);
+	const t0 = -spread;
+	const t1 = 90 * DEG + spread;
 	let top = WINDOW[1] - 4;
 	const bands = STRATA.map((stratum, index) => {
 		const z1 = top;
@@ -1011,7 +1015,8 @@ function drillItem(): Item {
 	return {
 		name: 'drill',
 		ride: true,
-		svg: `<defs>${drillClip()}</defs><g clip-path="url(#${ID}-drill)"><g data-mp="ride">${string}</g></g>`,
+		// Les arêtes où les faces de coupe bordent le forage passent devant le train, qu'elles découpent.
+		svg: `<defs>${drillClip()}</defs><g clip-path="url(#${ID}-drill)"><g data-mp="ride">${string}</g></g><path class="iso-line" data-tone="mid" data-mp="bore-edges" d=""/>`,
 		shapes: [
 			shape('disc', AXIS, CROWN[0], BARREL[0], 9.6, { name: 'drill.crown' }),
 			shape('disc', AXIS, BARREL[0], BARREL[1], 8, { name: 'drill.barrel' }),
@@ -1153,7 +1158,7 @@ function boreItem(): Item {
 		name: 'bore',
 		svg:
 			`<defs><clipPath id="${ID}-bore"><path data-mp="bore-clip" d="${boreClipAt(SOIL_TOP, SOIL_TOP)}"/></clipPath></defs>` +
-			`<g clip-path="url(#${ID}-bore)">${group(boreWall(SOIL_BOTTOM, SOIL_TOP))}${k.lineSvg(interfaces, { tone: 'lo' })}` +
+			`<g clip-path="url(#${ID}-bore)">${group(boreWall(SOIL_BOTTOM, SOIL_TOP, true))}${k.lineSvg(interfaces, { tone: 'lo' })}` +
 			`<g class="iso-solid" data-mp="floor" transform="${k.translateAlong(P, [0, 0, SOIL_TOP])}">${topFill(boreFloorAt(0))}${edge(pathOf([xy([BORE, 0, 0]), xy([0, 0, 0]), xy([0, BORE, 0])]), 'lo')}</g></g>`,
 		shapes: [],
 	};

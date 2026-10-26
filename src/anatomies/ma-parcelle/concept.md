@@ -283,3 +283,15 @@ Le flux rejoué : une parcelle choisie sur la carte, la croûte cadastrale perc�
 - **Avance** : profil trapézoïdal (rampe courte, palier à vitesse constante, arrêt net), le même pour le tour, le pointeur et le clavier ; la vis d'avance et la manivelle tournent à la même vitesse que le carottier descend. L'appui (pointeur, doigt ou touche maintenue) ne fixe pas de cible : il ouvre et ferme le palier ; `pointercancel` et la perte du focus valent un relâcher. Aucun suivi amorti : c'est le caractère de 03.
 - **Plateau** : rainures en trait seul, sans aplat ; le liseré de KJ 33 s'allume par le ton de sa rainure double, pas par un remplissage.
 - **Budget** : SVG ≤ 250 Ko brut, module de mouvement ≤ 20 Ko minifié.
+
+## 10. Écarts de la construction (#27)
+
+Ce que la géométrie a imposé, en regard des sections précédentes. Les textes, la nomenclature, les chiffres et le scénario sont ceux de la fiche.
+
+- **Proportions.** Le carottier descend de toute la hauteur de sol d'une seule course de vis : le train de tiges doit être aussi long que la colonne, et le mât (≈ 350 unités au-dessus de la colonne) est plus haut que la colonne (≈ 215). La colonne fait 112 de diamètre (140 aux brides de fond). Le viewBox reste 400 × 660.
+- **Strates jointives.** Les six strates forment un seul sol continu (6 unités par requête, 192 en tout) ; les brides de jonction entourent les viroles à chaque interface au lieu de s'intercaler entre les strates. La bride de tête est une tôle percée sous le plateau. Plateau et tubage sont coupés avec la colonne.
+- **Forage.** Le trou n'existe que jusqu'à la profondeur atteinte, et reste ouvert après la remontée jusqu'au sondage suivant. La carotte apparaît dans une fenêtre du carottier à mesure qu'elle entre (elle monte depuis la couronne, la croûte en haut) ; au fond, le treuil soulève le tube intérieur de 4 unités.
+- **Treuil et câble.** Le tambour est boulonné sur la bride de tête côté -y, pas derrière le mât : le chariot balaie tout le plan du mât, un câble y serait coupé par le bras. Le câble monte en oblique dans le plan de la poulie, que porte un nez de la traverse au-dessus de l'axe, puis descend à la verticale jusqu'à l'émerillon.
+- **Log.** Fixé en haut de la colonne de mât gauche, au-dessus de la course du chariot (dont les bagues heurteraient ses colliers plus bas), et tourné vers le lecteur.
+- **Strate perdue.** Au fond d'un tour qui perd la BDNB, le relevé dit « 6/6 · 1 strate perdue · 0 serveur » : « 32 req. » n'y serait pas vrai (la BDNB est relancée sur panne).
+- **Taille.** Le format portrait se heurte à la carte commune (hors de ce module) : sur la fiche, la scène de 900 px de large donne une figure de près de 1 500 px de haut ; dans l'aperçu, la scène 4:3 grandit jusqu'à la hauteur du SVG au lieu de l'inscrire (voir le rapport du ticket).

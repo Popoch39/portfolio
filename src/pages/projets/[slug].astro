@@ -6,6 +6,7 @@ import ProjectHero from '../../components/ProjectHero.astro';
 import SectionHeader from '../../components/SectionHeader.astro';
 import FigureCard from '../../components/FigureCard.astro';
 import Nomenclature from '../../components/Nomenclature.astro';
+import GrainPatterns from '../../components/GrainPatterns.astro';
 import ProjectNav from '../../components/ProjectNav.astro';
 import StatusBar from '../../components/StatusBar.astro';
 import { fichePath, githubRepoUrl, projects, shareImageOf, type Project } from '../../data/profile';
@@ -62,6 +63,7 @@ const sourceCode = {
 				portrait={rest.height >= rest.width}
 			/>
 			<Nomenclature pieces={content.pieces} codeUrl={anatomy.codeUrl} />
+			<GrainPatterns />
 		</section>
 		<ProjectNav project={project} />
 	</main>

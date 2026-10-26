@@ -27,7 +27,8 @@
 	--anatomy-hi: #2433ff;
 	--anatomy-mid: #5b6bff;
 	--anatomy-lo: #8e9bff;
-	--anatomy-faint: #c3c9ff;
+	/* Un cran plus soutenu que la suite de la gamme : les plis resteraient invisibles sur le grain. */
+	--anatomy-faint: #8e9bff;
 	--anatomy-top: #f1f2ff;
 	--anatomy-shade-0: #c9ceff;
 	--anatomy-shade-1: #d6daff;
@@ -47,4 +48,86 @@
 	--anatomy-shade-1: inherit;
 	--anatomy-shade-2: inherit;
 	--anatomy-shade-3: inherit;
+}
+
+/* Le grain : la pièce bleue (la maîtresse au repos, sinon la visée) se remplit d'une trame de
+   points, une par facette (`grain.ts`), qui fonce dans l'ombre. */
+:is(.iso.anatomy [data-piece][data-on], .iso.anatomy:not(:has([data-piece][data-on])) [data-piece][data-master]) :is(.iso-edge, .tb-edge) {
+	stroke-width: 1.3px;
+}
+
+/* Le joint des faces jointives dessinerait la teinte de la palette autour de chaque trame. */
+:is(.iso.anatomy [data-piece][data-on], .iso.anatomy:not(:has([data-piece][data-on])) [data-piece][data-master]) .iso-solid[data-seamless] > :is(.iso-shade, .iso-top) {
+	stroke: none;
+}
+
+:is(.iso.anatomy [data-piece][data-on], .iso.anatomy:not(:has([data-piece][data-on])) [data-piece][data-master]) :is(.iso-top, .tb-shine) {
+	fill: url(#anatomy-grain-top);
+}
+
+:is(.iso.anatomy [data-piece][data-on], .iso.anatomy:not(:has([data-piece][data-on])) [data-piece][data-master]) .iso-shade[data-shade='3'] {
+	fill: url(#anatomy-grain-3);
+}
+
+:is(.iso.anatomy [data-piece][data-on], .iso.anatomy:not(:has([data-piece][data-on])) [data-piece][data-master]) :is(.iso-shade[data-shade='2'], .tb-body) {
+	fill: url(#anatomy-grain-2);
+}
+
+:is(.iso.anatomy [data-piece][data-on], .iso.anatomy:not(:has([data-piece][data-on])) [data-piece][data-master]) .iso-shade[data-shade='1'] {
+	fill: url(#anatomy-grain-1);
+}
+
+:is(.iso.anatomy [data-piece][data-on], .iso.anatomy:not(:has([data-piece][data-on])) [data-piece][data-master]) :is(.iso-shade[data-shade='0'], .tb-shade) {
+	fill: url(#anatomy-grain-0);
+}
+
+/* Sur la pièce visée, le grain naît au coin haut gauche et gagne toute la surface en cercle. Les
+   faces sont masquées par un dégradé radial dont le rayon grandit de 0,15 à 1,4 diagonale de la
+   pièce ; sa lisière, large de 0,4 diagonale, s'éteint en courbe douce (cinq arrêts en marche
+   lissée). Le masque se cale sur la boîte de chaque face (Chromium ignore `view-box` sur un
+   élément SVG) : la mise en avant pose sur chaque face le coin et la diagonale de la pièce dans
+   son repère (`highlight.ts`). Derrière, le fond de la pièce, teinté, attend le grain. Sans mesure
+   ou sans animation, le masque tombe et le grain est là. */
+@property --anatomy-grain-t {
+	syntax: '<number>';
+	inherits: true;
+	initial-value: 1;
+}
+
+.iso.anatomy [data-piece][data-on] .iso-fill {
+	fill: #f7f8ff;
+}
+
+.iso.anatomy [data-piece][data-on] :is(.iso-shade, .iso-top) {
+	/* Le rayon part de 0,15 diagonale : dès la première image, la lisière point déjà au coin. */
+	--anatomy-grain-r: calc(var(--anatomy-grain-d) * (0.15 + 1.25 * var(--anatomy-grain-t)));
+	mask-image: radial-gradient(
+		circle at var(--anatomy-grain-cx) var(--anatomy-grain-cy),
+		#000 calc(var(--anatomy-grain-r) - var(--anatomy-grain-d) * 0.4),
+		rgb(0 0 0 / 0.84) calc(var(--anatomy-grain-r) - var(--anatomy-grain-d) * 0.3),
+		rgb(0 0 0 / 0.5) calc(var(--anatomy-grain-r) - var(--anatomy-grain-d) * 0.2),
+		rgb(0 0 0 / 0.16) calc(var(--anatomy-grain-r) - var(--anatomy-grain-d) * 0.1),
+		transparent var(--anatomy-grain-r)
+	);
+	mask-origin: fill-box;
+	mask-clip: fill-box;
+	mask-size: 100% 100%;
+	mask-repeat: no-repeat;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	/* Départ franc, longue arrivée sans palier : le grain répond tout de suite, puis sa lisière se
+	   voit gagner la pièce et s'y poser. */
+	.iso.anatomy [data-piece][data-on] {
+		animation: iso-grain 1.3s cubic-bezier(0.3, 0.15, 0.2, 1) both;
+	}
+}
+
+@keyframes iso-grain {
+	from {
+		--anatomy-grain-t: 0;
+	}
+	to {
+		--anatomy-grain-t: 1;
+	}
 }

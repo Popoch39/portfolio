@@ -9,4 +9,4 @@ Les figures des anatomies sont dessinées au build avec le kit vanilla du skill 
 
 ## Consequences
 
-Les règles « zéro JavaScript, zéro animation » de D1 sont révisées pour les figures seulement : scripts limités au JSON-LD et au chargeur ; attribut `style` toujours interdit sauf à l'intérieur des SVG de figure (le kit en émet) ; `animation` et `@keyframes` seulement dans la CSS du kit ; `transition` et `:hover` toujours absents, les états survolés passant par des attributs posés par le script.
+Les règles « zéro JavaScript, zéro animation » de D1 sont révisées pour les figures seulement : scripts limités au JSON-LD et au chargeur ; attribut `style` toujours interdit sauf à l'intérieur des SVG de figure (le kit en émet) ; `animation` et `@keyframes` seulement dans la CSS des figures (celle du kit, et la palette des figures pour le grain), sous des sélecteurs `.iso` et des noms `iso-` ; `transition` et `:hover` toujours absents, les états survolés passant par des attributs posés par le script.

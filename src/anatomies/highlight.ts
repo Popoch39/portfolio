@@ -1,8 +1,30 @@
 // Mise en avant des pièces, commune à toutes les figures : la pièce visée porte `data-on` sur
 // chacun de ses crochets (`[data-piece]`), dans la figure comme dans la nomenclature, et la CSS
-// fait le reste (palette des figures, nomenclature). Une seule pièce est visée à la fois ; tant
-// qu'il y en a une, la pièce maîtresse redevient neutre. Seul ce module écrit `data-on` : le
-// mouvement d'une figure n'y touche jamais.
+// fait le reste (palette des figures, nomenclature), grain compris, que ce module mesure. Une
+// seule pièce est visée à la fois ; tant qu'il y en a une, la pièce maîtresse redevient neutre.
+// Seul ce module écrit `data-on` : le mouvement d'une figure n'y touche jamais.
+
+/**
+ * Le grain de la pièce visée naît à son coin haut gauche et doit couvrir sa diagonale (palette des
+ * figures). Son masque se cale sur la boîte de chaque face, Chromium ignorant `view-box` sur un
+ * élément SVG : chaque face reçoit donc ce coin et cette diagonale dans son propre repère.
+ */
+function measureGrain(hooks: Element[]) {
+	const boxes = hooks.map((hook) => hook.getBoundingClientRect());
+	const left = Math.min(...boxes.map((box) => box.left));
+	const top = Math.min(...boxes.map((box) => box.top));
+	const diagonal = Math.hypot(Math.max(...boxes.map((box) => box.right)) - left, Math.max(...boxes.map((box) => box.bottom)) - top);
+	if (!(diagonal > 0)) return;
+	for (const face of hooks.flatMap((hook) => [...hook.querySelectorAll<SVGGraphicsElement>('.iso-shade, .iso-top')])) {
+		const toFace = face.getScreenCTM();
+		if (!toFace) continue;
+		const corner = new DOMPoint(left, top).matrixTransform(toFace.inverse());
+		const box = face.getBBox();
+		face.style.setProperty('--anatomy-grain-cx', `${corner.x - box.x}px`);
+		face.style.setProperty('--anatomy-grain-cy', `${corner.y - box.y}px`);
+		face.style.setProperty('--anatomy-grain-d', `${diagonal / toFace.a}px`);
+	}
+}
 
 const pieceOf = (target: EventTarget | null) =>
 	target instanceof Element ? (target.closest('[data-piece]')?.getAttribute('data-piece') ?? null) : null;
@@ -19,6 +41,7 @@ export function linkPieces(root: Element): () => void {
 		if (id === aimed) return;
 		aimed = id;
 		for (const hook of root.querySelectorAll('[data-piece]')) hook.toggleAttribute('data-on', hook.getAttribute('data-piece') === id);
+		if (id) measureGrain([...root.querySelectorAll('svg [data-piece][data-on]')]);
 	};
 
 	const wiring = new AbortController();

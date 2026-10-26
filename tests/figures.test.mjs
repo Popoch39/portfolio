@@ -2,7 +2,7 @@
 // JavaScript, la base de l'aperçu vivant et la capture de l'image de partage.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROJECTS, readDist, readFiche, tags, attr, hasAttr, css } from './helpers/dist.mjs';
+import { PROJECTS, readDist, readFiche, readHome, tags, attr, hasAttr, css } from './helpers/dist.mjs';
 
 const figures = PROJECTS.map((project) => ({ ...project, svg: readDist(`figures/${project.slug}.svg`) }));
 const hooks = (markup) => new Set(tags(markup, 'g').filter((g) => hasAttr(g, 'data-piece')).map((g) => attr(g, 'data-piece')));
@@ -25,6 +25,25 @@ test('chaque SVG est autonome : ses styles embarqués, palette comprise, et aucu
 		assert.match(styles, /#2433ff/i, `${slug} : palette des figures absente`);
 		assert.doesNotMatch(svg, /\s(?:xlink:)?href="(?!#)/, `${slug} : ressource externe`);
 		assert.doesNotMatch(svg, /@import|url\((?!#)/, `${slug} : ressource externe dans la CSS`);
+	}
+});
+
+test('chaque SVG est du XML bien formé : aucun `<` dans ses styles hors d’une section CDATA', () => {
+	// Un `<` dans la CSS (`syntax: '<number>'`) ouvrirait une balise : l'image ne s'afficherait plus.
+	for (const { slug, svg } of figures) {
+		const outsideCdata = css(svg).replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, '');
+		assert.doesNotMatch(outsideCdata, /</, `${slug} : « < » hors CDATA dans un <style>`);
+	}
+});
+
+test('les trames du grain : dans chaque SVG autonome, et une seule fois par page qui montre une figure', () => {
+	const ids = ['top', '3', '2', '1', '0'].map((shade) => `anatomy-grain-${shade}`);
+	for (const { slug, svg } of figures) {
+		for (const id of ids) assert.match(svg, new RegExp(`<pattern id="${id}"`), `${slug} : trame ${id} absente`);
+	}
+	const pages = [{ name: 'accueil', html: readHome() }, ...PROJECTS.map(({ slug }) => ({ name: `fiche ${slug}`, html: readFiche(slug) }))];
+	for (const { name, html } of pages) {
+		for (const id of ids) assert.equal(html.match(new RegExp(`\\sid="${id}"`, 'g'))?.length ?? 0, 1, `${name} : trame ${id}`);
 	}
 });
 

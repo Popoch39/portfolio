@@ -1,7 +1,8 @@
 // Les pages sont statiques et autonomes : aucune feuille de style externe.
 // Règles de D1 révisées pour les figures (ADR 0001) : pour tout script, le JSON-LD et le chargeur
 // des figures ; l'attribut `style` n'est toléré que dans les SVG de figure, `animation` et
-// `@keyframes` que dans la CSS du kit ; jamais de `transition` ni de `:hover`.
+// `@keyframes` que dans la CSS des figures (kit et palette, sélecteurs `.iso`, noms `iso-`) ;
+// jamais de `transition` ni de `:hover`.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PROJECTS, readFiche, readHome, tags, attr, elements, css } from './helpers/dist.mjs';

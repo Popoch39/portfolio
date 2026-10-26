@@ -1,8 +1,9 @@
-// Habillage de la figure au repos en `<svg>` : intégré à la page (la CSS du kit et la palette
-// viennent de la page) ou autonome (styles embarqués), pour l'image d'attente, l'aperçu et la
-// capture de l'image de partage.
+// Habillage de la figure au repos en `<svg>` : intégré à la page (la CSS du kit, la palette et les
+// trames du grain viennent de la page) ou autonome (styles et trames embarqués), pour l'image
+// d'attente, l'aperçu et la capture de l'image de partage.
 import { figureSvg } from '../vendor/anatomy/iso-kit.ts';
 import palette from './palette.css?raw';
+import { grainPatterns } from './grain.ts';
 import type { Anatomy } from './contract.ts';
 
 /**
@@ -18,7 +19,8 @@ export function restSvg({ content, renderRest }: Anatomy, { standalone = false }
 		width,
 		height,
 		label: content.label,
-		body: standalone ? [`<style>${palette}</style>`, body] : body,
+		// En CDATA : le SVG autonome est du XML, où le `<number>` d'un `@property` ouvrirait une balise.
+		body: standalone ? [`<style><![CDATA[${palette}]]></style>`, `<defs data-grain="">${grainPatterns}</defs>`, body] : body,
 		standalone: standalone ? 'light' : false,
 		className: 'anatomy',
 	});

@@ -1,6 +1,7 @@
 ---
 import SectionHeader from './SectionHeader.astro';
 import FigureCard from './FigureCard.astro';
+import GrainPatterns from './GrainPatterns.astro';
 import { fichePath, projects, publicRepoCount, restFigurePath } from '../data/profile';
 import { anatomyOf } from '../anatomies/registry';
 
@@ -63,6 +64,8 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 			}
 		</div>
 	</div>
+	{/* Les panneaux insérés par l'aperçu laissent leurs trames : celles de la page servent à tous. */}
+	<GrainPatterns />
 </section>
 
 <script>

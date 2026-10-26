@@ -34,6 +34,10 @@ _Avoid_ : partie, composant
 La seule pièce en bleu : celle qu'il faut regarder en premier.
 _Avoid_ : pièce principale, accent
 
+**Grain** :
+La trame de points bleus qui remplit la pièce en bleu ; sur la pièce visée, il naît à un coin et la gagne en entier.
+_Avoid_ : pointillé, texture, trame
+
 **Nomenclature** :
 La liste numérotée des pièces d'une machine, chacune avec son rôle et son code.
 _Avoid_ : légende, liste des pièces

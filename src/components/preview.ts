@@ -14,11 +14,14 @@ const fetchRest = async (src: string) => {
 	return response.text();
 };
 
-/** Le SVG au repos autonome, inséré dans la scène sans ses styles : la page a déjà ceux du kit et la palette. */
+/**
+ * Le SVG au repos autonome, inséré dans la scène sans ses styles ni ses trames : la page a déjà
+ * ceux du kit, la palette et les trames du grain, dont les `id` doivent rester uniques.
+ */
 const insert = (scene: HTMLElement, markup: string) => {
 	const svg = new DOMParser().parseFromString(markup, 'image/svg+xml').documentElement;
 	if (!(svg instanceof SVGSVGElement)) throw new Error('Aperçu : SVG au repos illisible');
-	for (const style of svg.querySelectorAll('style')) style.remove();
+	for (const embedded of svg.querySelectorAll('style, defs[data-grain]')) embedded.remove();
 	const inserted = document.importNode(svg, true);
 	scene.replaceChildren(inserted);
 	linkPieces(scene);

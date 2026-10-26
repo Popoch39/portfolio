@@ -76,8 +76,8 @@ const { pieces, codeUrl, signatureOf } = Astro.props;
 		display: flex;
 		gap: 14px;
 		width: min(470px, 100%);
-		translate: var(--repere-x, 0) var(--repere-y, 0);
 		visibility: hidden;
+		will-change: translate;
 	}
 
 	/* À côté d'une figure haute, sur grand écran (même seuil que dans `FigureCard.astro`) :
@@ -96,10 +96,15 @@ const { pieces, codeUrl, signatureOf } = Astro.props;
 		}
 	}
 
-	/* Le panneau de la pièce visée, sinon celui de la pièce maîtresse. */
+	/* Le panneau de la pièce visée, sinon celui de la pièce maîtresse (`data-aiming`, posé sur la
+	   section par la mise en avant tant qu'une pièce est visée). */
 	.panel[data-on],
-	.repere:not(:has(.panel[data-on])) .panel[data-master] {
+	.panel[data-master] {
 		visibility: visible;
+	}
+
+	:global([data-aiming]) .panel[data-master]:not([data-on]) {
+		visibility: hidden;
 	}
 
 	.num {
@@ -224,15 +229,18 @@ const { pieces, codeUrl, signatureOf } = Astro.props;
 		overflow-wrap: anywhere;
 	}
 
-	/* Le trait part de l'étiquette (sous elle, ou à sa droite) jusqu'à la pointe, posée sur la pièce :
-	   un segment de `--leader-w` sur `--leader-h`, dont l'un vaut 1 px. Tous deux attendent le
-	   script, qui les place, et laissent passer le pointeur vers la figure. */
+	/* Le trait part de l'étiquette (sous elle, ou à sa droite) jusqu'à la pointe, posée sur la pièce.
+	   Tous deux attendent le script, qui les place (et décale les panneaux), et laissent passer le
+	   pointeur vers la figure. */
 	.leader,
 	.tip {
 		position: absolute;
+		top: 0;
+		left: 0;
 		z-index: 1;
 		display: none;
 		pointer-events: none;
+		will-change: translate, scale;
 	}
 
 	.repere[data-placed] :is(.leader, .tip) {
@@ -240,16 +248,13 @@ const { pieces, codeUrl, signatureOf } = Astro.props;
 	}
 
 	.leader {
-		left: var(--leader-x);
-		top: var(--leader-y);
-		width: var(--leader-w);
-		height: var(--leader-h);
+		width: 1px;
+		height: 1px;
 		background: var(--ink);
+		transform-origin: 0 0;
 	}
 
 	.tip {
-		left: calc(var(--leader-x) + var(--leader-w) - 4px);
-		top: calc(var(--leader-y) + var(--leader-h) - 4px);
 		width: 7px;
 		height: 7px;
 		background: var(--accent);

@@ -135,6 +135,6 @@ export interface Stage {
  * le clavier que sur elle. Avec une règle de temps, c'est la règle qui est focalisable et le
  * mouvement qui la rend vivante : rôle de curseur, touches, bouton du tour. Il s'appuie sur les
  * outils de `live.ts` et ne touche jamais aux attributs de mise en avant des pièces (`data-piece`,
- * `data-master`, `data-on`).
+ * `data-master`, `data-on`, `data-aiming`).
  */
 export type MountMotion = (stage: Stage) => () => void;

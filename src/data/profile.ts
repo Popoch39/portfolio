@@ -215,16 +215,19 @@ export interface Project {
  */
 export const restFigurePath = (project: Project, locale: Locale = defaultLocale) => `${pathOf(home, locale)}figures/${project.slug}.svg`;
 
-/** Adresse de l'image de partage d'une fiche (`public/og/<slug>.png`). */
-export const shareImagePath = (project: Project) => `/og/${project.slug}.png`;
+/**
+ * Adresse de l'image de partage d'une fiche dans une langue (`public/og/<slug>.png`, l'anglaise en
+ * `.en.png` à côté, comme celle de l'accueil) : la française garde l'adresse d'avant l'anglais.
+ */
+export const shareImagePath = (project: Project, locale: Locale) =>
+	`/og/${project.slug}${locale === defaultLocale ? '' : `.${locale}`}.png`;
 
 /**
- * Image de partage d'une fiche, produite par `pnpm og:capture` à partir de
+ * Image de partage d'une fiche dans une langue, produite par `pnpm og:capture` à partir de
  * `scripts/og-fiche.html`, puis versionnée. `machine` nomme sa figure (`AnatomyContent.machine`).
- * La fiche anglaise reprend l'image française en attendant la sienne ; son texte alternatif est anglais.
  */
 export const shareImageOf = (project: Project, machine: string, locale: Locale): ShareImage => ({
-	path: shareImagePath(project),
+	path: shareImagePath(project, locale),
 	width: 1200,
 	height: 630,
 	alt: {

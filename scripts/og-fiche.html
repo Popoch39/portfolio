@@ -1,12 +1,14 @@
 <!doctype html>
 <!--
-	Composition de l'image de partage d'une fiche (public/og/<slug>.png, 1200×630), remplie et
-	capturée par `pnpm og:capture` pour chaque projet, puis versionnée. Hors de src/pages et de
-	public : elle n'est pas publiée. Les champs entre signes pour cent viennent du module d'identité
-	(src/data/profile.ts), et la figure du SVG au repos du build (dist/figures/<slug>.svg) ; le texte
-	alternatif de l'image décrit cette composition (shareImageOf) : les garder d'accord.
+	Composition de l'image de partage d'une fiche (public/og/<slug>.png, public/og/<slug>.en.png,
+	1200×630), remplie et capturée par `pnpm og:capture` pour chaque projet dans chaque langue, puis
+	versionnée. Hors de src/pages et de public : elle n'est pas publiée. Les champs entre signes pour
+	cent viennent du module d'identité (src/data/profile.ts) et de la copie de la fiche (ui, dans
+	src/lib/i18n.ts), et la figure du SVG au repos de la version (dist/figures/<slug>.svg,
+	dist/en/figures/<slug>.svg) ; le texte alternatif de l'image décrit cette composition
+	(shareImageOf) : les garder d'accord.
 -->
-<html lang="fr">
+<html lang="%LANG%">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=1200" />
@@ -127,8 +129,8 @@
 	</head>
 	<body>
 		<div class="mono topline">
-			<span><span class="mode">-- NORMAL --</span> ~/projets/%REPO%.md</span>
-			<span>projet %RANK%</span>
+			<span><span class="mode">-- NORMAL --</span> %FILE%</span>
+			<span>%RANK%</span>
 		</div>
 		<div class="stage">
 			<h1>%REPO_BREAKABLE%<i class="cursor"></i></h1>

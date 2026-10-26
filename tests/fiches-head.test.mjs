@@ -4,9 +4,20 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { FICHE, HOME, PROJECTS, readDist, readFiche, readHome, tags, attr, hasAttr, elements, text } from './helpers/dist.mjs';
 
+// L'image française garde l'adresse d'avant l'anglais ; l'anglaise se range à côté, comme celle de l'accueil.
 const VERSIONS = [
-	{ locale: 'fr', sections: ['projets', 'parcours', 'activite', 'stack', 'contact'] },
-	{ locale: 'en', sections: ['projects', 'career', 'activity', 'stack', 'contact'] },
+	{
+		locale: 'fr',
+		sections: ['projets', 'parcours', 'activite', 'stack', 'contact'],
+		image: (slug) => `/og/${slug}.png`,
+		alt: (repo) => `${repo} en lettres capitales condensées, suivi d’un curseur bleu, avec sa figure au repos, « `,
+	},
+	{
+		locale: 'en',
+		sections: ['projects', 'career', 'activity', 'stack', 'contact'],
+		image: (slug) => `/og/${slug}.en.png`,
+		alt: (repo) => `${repo} in condensed capitals, followed by a blue cursor, with its figure at rest, “`,
+	},
 ];
 
 const headOf = (html) => elements(html, 'head')[0] ?? '';
@@ -17,7 +28,7 @@ const jsonLd = (html) =>
 		.filter((s) => attr(tags(s, 'script')[0], 'type') === 'application/ld+json')
 		.map((s) => s.replace(/^<script\b[^>]*>|<\/script>$/g, ''));
 
-for (const { locale, sections } of VERSIONS) {
+for (const { locale, sections, image: imagePath, alt } of VERSIONS) {
 	const homePerson = JSON.parse(jsonLd(readHome(locale))[0]);
 	const fiches = PROJECTS.map((project) => ({ ...project, html: readFiche(project.slug, locale) }));
 
@@ -44,18 +55,17 @@ for (const { locale, sections } of VERSIONS) {
 		}
 	});
 
-	// La fiche anglaise reprend l'image de la française en attendant la sienne (#42).
-	test(`${locale} : chaque fiche a sa propre image de partage : PNG 1200×630 en URL absolue, avec texte alternatif`, () => {
+	test(`${locale} : chaque fiche a sa propre image de partage : PNG 1200×630 en URL absolue, avec texte alternatif de la langue`, () => {
 		for (const { slug, repo, html } of fiches) {
 			const head = headOf(html);
 			const image = meta(head, 'property', 'og:image');
 			assert.ok(image && URL.canParse(image), `${repo} : og:image absente ou non absolue : ${image}`);
 			assert.equal(new URL(image).origin, new URL(linkHref(head, 'canonical')).origin, repo);
-			assert.equal(new URL(image).pathname, `/og/${slug}.png`, `${repo} : l'image de la fiche, pas celle du site`);
+			assert.equal(new URL(image).pathname, imagePath(slug), `${repo} : l'image de la fiche dans sa langue, pas celle du site`);
 			assert.equal(meta(head, 'property', 'og:image:type'), 'image/png', repo);
 			assert.equal(meta(head, 'property', 'og:image:width'), '1200', repo);
 			assert.equal(meta(head, 'property', 'og:image:height'), '630', repo);
-			assert.ok((meta(head, 'property', 'og:image:alt') ?? '').includes(repo), `${repo} : le texte alternatif nomme le projet`);
+			assert.ok((meta(head, 'property', 'og:image:alt') ?? '').startsWith(alt(repo)), `${repo} : le texte alternatif nomme le projet dans la langue de la fiche`);
 			assert.equal(meta(head, 'name', 'twitter:card'), 'summary_large_image', `${repo} : carte Twitter grand format`);
 		}
 	});
@@ -106,6 +116,13 @@ for (const { locale, sections } of VERSIONS) {
 		}
 	});
 }
+
+test('chaque version d’une fiche a sa propre image de partage', () => {
+	const imageOf = (slug, locale) => new URL(meta(headOf(readFiche(slug, locale)), 'property', 'og:image')).pathname.slice(1);
+	for (const { slug, repo } of PROJECTS) {
+		assert.notDeepEqual(readDist(imageOf(slug, 'fr'), null), readDist(imageOf(slug, 'en'), null), repo);
+	}
+});
 
 test('la Person des fiches a le même identifiant dans les deux versions', () => {
 	const ids = VERSIONS.map(({ locale }) => JSON.parse(jsonLd(readFiche(PROJECTS[0].slug, locale))[0]).author['@id']);

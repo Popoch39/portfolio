@@ -149,3 +149,15 @@ test('le texte doublé de l’aperçu est ignoré des technologies d’assistanc
 		}
 	});
 });
+
+// Fig., machine, consigne et relevé de la carte de l'aperçu : doublon visuel, tu comme la description.
+// La scène, elle, reste lue : le mouvement lui donne son rôle et son libellé.
+test('les textes de la carte de l’aperçu sont ignorés des technologies d’assistance, pas sa scène', () => {
+	panels.forEach((panel, i) => {
+		const { slug } = PROJECTS[i];
+		const [figure] = elements(panel, 'figure');
+		const spoken = figure.replace(/<(\w+)\b[^>]*\saria-hidden="true"[^>]*>[\s\S]*?<\/\1>/g, '');
+		assert.equal(text(spoken), '', `${slug} : « ${text(spoken)} » lu depuis l’aperçu`);
+		assert.ok(tags(spoken, 'div').some((t) => attr(t, 'data-motion') !== undefined), `${slug} : scène masquée`);
+	});
+});

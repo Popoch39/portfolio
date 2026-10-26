@@ -15,7 +15,10 @@ interface Common {
 	caption?: string;
 	/** Le dossier du module de mouvement, que le chargeur monte sur la scène. */
 	motion: string;
-	/** Scène de taille fixe, où la figure s'inscrit (aperçu de l'accueil). */
+	/**
+	 * Scène de taille fixe, où la figure s'inscrit (aperçu de l'accueil). Les textes de la carte y
+	 * sont un doublon visuel de la ligne du projet : les technologies d'assistance les ignorent.
+	 */
 	fixed?: boolean;
 	/** Recadrage de la figure sur téléphone (`AnatomyContent.phoneCrop`). */
 	phoneCrop?: boolean;
@@ -40,11 +43,12 @@ type Props = Common &
 	);
 
 const { fig, title, consignes, releve, caption, svg, image, motion, fixed = false, phoneCrop = false } = Astro.props;
+const echo = fixed ? 'true' : undefined;
 ---
 
 <figure class:list={['figure', { fixed, crop: phoneCrop }]}>
 	<div class="card">
-		<div class="mono row">
+		<div class="mono row" aria-hidden={echo}>
 			<span class="fig">Fig. {fig}</span>{' '}
 			<span>{title}</span>
 		</div>
@@ -60,7 +64,7 @@ const { fig, title, consignes, releve, caption, svg, image, motion, fixed = fals
 				<div class="scene iso anatomy" data-theme="light" data-motion={motion} set:html={svg} />
 			)
 		}
-		<div class="mono row foot">
+		<div class="mono row foot" aria-hidden={echo}>
 			<span class="consigne pointer">{consignes.pointer}</span>
 			<span class="consigne touch">{consignes.touch}</span>{' '}
 			<span class="releve"><span class="dot" aria-hidden="true"></span><span data-releve>{releve}</span></span>

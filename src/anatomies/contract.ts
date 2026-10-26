@@ -61,6 +61,12 @@ export interface AnatomyContent {
 	/** 5 à 8 pièces, dans l'ordre de la nomenclature. */
 	pieces: Piece[];
 	seo: { title: string; description: string };
+	/**
+	 * Recadrage sur téléphone : une figure très large, que sa largeur rend petite, y grandit de 10 %
+	 * et la carte coupe ses bords : environ 3 % de sa largeur à gauche, 6 % à droite. Ce qui compte
+	 * doit rester hors de ces bandes.
+	 */
+	phoneCrop?: true;
 }
 
 /**

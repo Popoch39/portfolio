@@ -17,6 +17,8 @@ interface Common {
 	motion: string;
 	/** Scène de taille fixe, où la figure s'inscrit (aperçu de l'accueil). */
 	fixed?: boolean;
+	/** Recadrage de la figure sur téléphone (`AnatomyContent.phoneCrop`). */
+	phoneCrop?: boolean;
 }
 
 type Props = Common &
@@ -37,10 +39,10 @@ type Props = Common &
 		  }
 	);
 
-const { fig, title, hints, readout, caption, svg, image, motion, fixed = false } = Astro.props;
+const { fig, title, hints, readout, caption, svg, image, motion, fixed = false, phoneCrop = false } = Astro.props;
 ---
 
-<figure class:list={['figure', { fixed }]}>
+<figure class:list={['figure', { fixed, crop: phoneCrop }]}>
 	<div class="card">
 		<div class="mono row">
 			<span class="fig">Fig. {fig}</span>{' '}
@@ -73,10 +75,11 @@ const { fig, title, hints, readout, caption, svg, image, motion, fixed = false }
 	}
 
 	.card {
+		--card-pad: clamp(16px, 2vw, 28px);
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
-		padding: clamp(16px, 2vw, 28px);
+		padding: var(--card-pad);
 		background: var(--paper);
 		border: 1px solid var(--rule);
 	}
@@ -108,6 +111,33 @@ const { fig, title, hints, readout, caption, svg, image, motion, fixed = false }
 	   Plafonnée en hauteur, elle reste centrée dans sa largeur (`preserveAspectRatio` par défaut). */
 	.scene > :global(svg) {
 		max-height: max(320px, 100svh - 160px);
+	}
+
+	/* Téléphone : la scène va d'un bord à l'autre de la carte, une figure large y gagne la marge. Une
+	   figure très large grandit encore de son recadrage, et la scène coupe ce qui déborde. */
+	.figure:not(.fixed) .scene {
+		width: auto;
+		margin-inline: calc(-1 * var(--card-pad));
+		overflow: hidden;
+	}
+
+	/* La coupe prend plus à droite qu'à gauche (contrat : `AnatomyContent.phoneCrop`). */
+	.crop .scene > :global(svg) {
+		width: 110%;
+		margin-inline: -3% -7%;
+	}
+
+	@media (min-width: 600px) {
+		.figure:not(.fixed) .scene {
+			width: 100%;
+			margin-inline: auto;
+			overflow: visible;
+		}
+
+		.crop .scene > :global(svg) {
+			width: 100%;
+			margin-inline: 0;
+		}
 	}
 
 	/* Une seule consigne visible : celle du pointeur s'il sait survoler, sinon celle du toucher. */

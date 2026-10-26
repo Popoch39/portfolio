@@ -52,5 +52,4 @@ function assertContract(slug: string, content: AnatomyContent) {
 			fail(`plage de lignes invalide pour la pièce « ${id} »`);
 		}
 	}
-	if (/\s/.test(content.lede.emphasis.trim())) fail('l’accroche ne met qu’un seul mot en emphase');
-}
+	if (/\s/.test(content.lede.emphasis.trim())) fail('l’accroche ne met qu’un seul mot en emphase');}

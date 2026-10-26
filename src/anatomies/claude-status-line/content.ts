@@ -80,4 +80,7 @@ export const content: AnatomyContent = {
 		title: 'claude-status-line — l’usage Claude Code en status line',
 		description: 'Binaire Bun qui affiche l’usage d’abonnement Claude Code, fenêtre de 5 h et semaine, dans la status line. Anatomie : sources, seuils, reset.',
 	},
+	// Recadrage à 390 px voulu par la revue (#21) : la coupe ne prend que les bouts de la tablette,
+	// ni le levier de l'aiguillage ni le volant.
+	phoneCrop: true,
 };

@@ -22,6 +22,20 @@ Validé par Louis le 2026-10-25. Les renvois visent la page de revue : ressembla
 - **Décisions n° 29 à 33.** L'option de la fiche est retenue : total de 100 (fixture), dit dans la légende ; tiroir 6 vide inclus dans le tour ; session supposée valide, serrure ouverte ; survol et sélection clavier au ton `hi`, jamais en bleu. La n° 32 suit R1 (ci-dessus).
 - **Comptes.** 57 → 55 pièces dessinées ; nomenclature inchangée en nombre, 8 pièces, une seule pièce maîtresse.
 
+## Écarts de la construction (#26)
+
+Ce que le dessin a dû changer par rapport à cette fiche, et pourquoi.
+
+- **Façade à droite, tiroir vers le bas à droite.** Dans le repère du kit, à azimut 55–60°, la grande face (le flanc) est à gauche de l'écran et la façade, en raccourci, à droite : le tiroir tiré sort donc vers le bas à droite. Garder la façade à gauche demandait soit un azimut de 30–35° (celui de 01), soit de retourner le dessin, ce qui inverse la lumière du kit. La caméra validée (azimut 57°, élévation 20°) est gardée.
+- **La tige n'est dessinée que par son bouton.** Dans le tiroir, la tige et les trous de tige au pied des fiches sont toujours cachés par la joue du devant (vue à 20°) : ils ne sont pas dessinés, et la tige ne se retire pas à l'écran. Le bouton de tige reste sur chaque façade ; le presse-fiches dépasse des joues pour rester visible.
+- **Un filet par onglet.** Les fiches se recouvrent : seul leur onglet dépasse de la fiche de devant. Chaque onglet porte un filet (le nom de l'itinéraire) au lieu de trois filets sur la face ; les fiches montent en escalier (1,8 de plus par rang vers le fond) pour que chaque onglet se lise.
+- **Façades en applique.** Les façades recouvrent l'ouverture de 2 et portent contre le cadre, ce qui les tient au caisson sans dessiner les tiroirs fermés.
+- **Bac peu profond, sous la corniche.** Le bac de rejet est accroché au flanc sous la corniche, au bout d'une goulotte droite qui passe juste le bord du dessus ; il est peu profond pour que la fiche refusée reste visible au fond.
+- **Ajouts.** Une poignée de levage en laiton sur le panneau bas du flanc (une face sans pièce à 4×) ; une patte et un pied de butée pour la broche `pageSize` ; les membres fixes des glissières au fond de chaque ouverture.
+- **Le tour alterne les deux refus** des tests d'intégration (`?lat=44.93`, puis `?pageSize=500` au tour suivant), au lieu du seul `?lat=44.93`.
+- **Relevé en cours de demande** : `GET ?page=n → …` tant que la fiche passe au gabarit ; le totalisateur se remet à zéro (chaque roue avance jusqu'à son zéro) à chaque nouvelle demande.
+- **Tirer à la main** : relâché au-delà de la mi-course, le tiroir finit sa course, puis la fiche de demande passe au gabarit et les fiches montent.
+
 ## 1. La machine
 
 Un **meuble à fiches** de bibliothèque, massif, en bois, à six tiroirs, surmonté d'un **gabarit de contrôle** à broches. Une fiche de demande à encoches marginales entre par la fente à serrure du dessus, traverse le gabarit, puis un tiroir sort sur ses glissières et ses vingt fiches se soulèvent.

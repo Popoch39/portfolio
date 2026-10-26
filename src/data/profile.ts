@@ -187,6 +187,20 @@ export const fichePath = (project: Project) => `/projets/${project.slug}/`;
 /** Adresse du SVG au repos autonome d'un projet (`src/pages/figures/[slug].svg.ts`). */
 export const restFigurePath = (project: Project) => `/figures/${project.slug}.svg`;
 
+/** Adresse de l'image de partage d'une fiche (`public/og/<slug>.png`). */
+export const shareImagePath = (project: Project) => `/og/${project.slug}.png`;
+
+/**
+ * Image de partage d'une fiche, produite par `pnpm og:capture` à partir de
+ * `scripts/og-fiche.html`, puis versionnée. `machine` nomme sa figure (`AnatomyContent.machine`).
+ */
+export const shareImageOf = (project: Project, machine: string): ShareImage => ({
+	path: shareImagePath(project),
+	width: 1200,
+	height: 630,
+	alt: `${project.repo} en lettres capitales condensées, suivi d’un curseur bleu, avec sa figure au repos, « ${machine} », dessinée en isométrie ; en pied, la stack ${project.stack.join(' · ')} et ${identity.name}.`,
+});
+
 /** Projets mis en avant, dans l'ordre d'affichage. Certains dépôts sont volontairement absents. */
 export const projects: Project[] = [
 	{

@@ -28,7 +28,19 @@ import {
 	tapeHoles,
 	windowBox,
 } from './layout.ts';
-import { LEVELS, NVIM, POLL_MS, START_SIZE, WINDOWS, bytesOf, releves, toastOf, type HookEvent, type Level } from './model.ts';
+import { LEVELS, NVIM, POLL_MS, START_SIZE, WINDOWS, bytesOf, relevesOf, toastOf, type HookEvent, type Level } from './model.ts';
+
+/** Ce que la scène annonce, dans la langue du document : son aide au clavier, et la fiche branchée. */
+const T = {
+	fr: {
+		label: 'Tableau d’annonciateur : flèches ou chiffres 1 à 5 pour choisir une fenêtre tmux, Entrée pour y faire attendre Claude ou acquitter son volet tombé, F pour une fin de tour.',
+		plugged: ', fiche branchée',
+	},
+	en: {
+		label: 'Annunciator board: arrow keys or digits 1 to 5 to pick a tmux window, Enter to make Claude wait there or acknowledge its dropped flap, F to end a turn.',
+		plugged: ', plug in its jack',
+	},
+};
 
 /** Vitesse du perforateur, en rangées (octets) par seconde : une ligne de 140 o en un tiers de seconde. */
 const PUNCH_RATE = 420;
@@ -66,7 +78,9 @@ interface Line {
 const ease = (t: number) => t * t * (3 - 2 * t);
 const clamp = (t: number) => Math.min(1, Math.max(0, t));
 
-const mount: MountMotion = ({ scene, svg, releve }) => {
+const mount: MountMotion = ({ locale, scene, svg, releve }) => {
+	const releves = relevesOf(locale);
+	const spoken = T[locale];
 	const q = (name: string) => svg.querySelector<SVGGElement>(`[data-ctn="${name}"]`);
 	const all = <T>(make: (index: number) => T) => Array.from({ length: N }, (_, index) => make(index));
 	const flaps = all((index) => q(`flap-${index}`));
@@ -413,7 +427,7 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 	// --- Interaction ----------------------------------------------------------------------------
 	const describe = () => {
 		scene.setAttribute('aria-valuenow', String(chosen + 1));
-		scene.setAttribute('aria-valuetext', `${releves.hover(chosen, wins[chosen].down)}${activeJack() === chosen ? ', fiche branchée' : ''}`);
+		scene.setAttribute('aria-valuetext', `${releves.hover(chosen, wins[chosen].down)}${activeJack() === chosen ? spoken.plugged : ''}`);
 		drawFocus();
 	};
 	const pause = () => {
@@ -516,7 +530,7 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 
 	const attributes = {
 		role: 'slider',
-		'aria-label': 'Tableau d’annonciateur : flèches ou chiffres 1 à 5 pour choisir une fenêtre tmux, Entrée pour y faire attendre Claude ou acquitter son volet tombé, F pour une fin de tour.',
+		'aria-label': spoken.label,
 		'aria-valuemin': '1',
 		'aria-valuemax': String(N),
 	};

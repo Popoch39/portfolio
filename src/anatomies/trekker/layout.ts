@@ -89,8 +89,9 @@ export const OUTLET = { x0: 152, x1: 250, z0: 428, z1: 436 };
 export const CHUTE = { x0: 146, x1: 254, start: [SLOT_BOX.y + SLOT_BOX.d, OUTLET.z0] as const, end: [352, 411.5] as const };
 
 /** Bac de rejet, accroché au flanc sous la corniche. */
-export const BIN: Plan = { x: 144, y: SPAN + 2.5, w: 112, d: 62, r: 1.5 };
-export const BIN_Z = [340, 386] as const;
+export const BIN: Plan = { x: 144, y: SPAN, w: 112, d: 64, r: 1.5 };
+/** Peu profond : vue d'au-dessus du rebord, la fiche refusée reste visible au fond. */
+export const BIN_Z = [366, 386] as const;
 
 /** Fiche refusée posée à plat dans la goulotte : 96 de large (le long de x), 48 de long (le long de y). */
 export const REJECT = { x0: 152, x1: 248, length: 48, thickness: 1.2 };

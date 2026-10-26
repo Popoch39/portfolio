@@ -828,7 +828,7 @@ function flap(): Node {
 	const hinge = round([OUTLET.x0 - 4, face + 1.6, FLAP_HINGE], [1, 0, 0], 0, OUTLET.x1 - OUTLET.x0 + 8, 1.6, { tone: 'mid', crease: 'none' });
 	const spring = G.frameAlong([OUTLET.x1 + 4, face + 1.6, FLAP_HINGE], [1, 0, 0]);
 	const coil = Array.from({ length: 5 }, (_, index) => G.arcOf(spring, 1 + index * 1.6, 2.2, P, { least: -1 })).join('');
-	const svg = `<path class="iso-fill" data-flap d="${flapPath(0)}"/><path class="iso-line iso-edge" data-flap data-tone="mid" d="${flapPath(0)}"/>`;
+	const svg = `<path class="iso-fill" data-flap="" d="${flapPath(0)}"/><path class="iso-line iso-edge" data-flap="" data-tone="mid" d="${flapPath(0)}"/>`;
 	return item('bac-rejet.clapet', 'bac-rejet', [hinge, round([OUTLET.x1 + 4, face + 1.6, FLAP_HINGE], [1, 0, 0], 0, 9, 1, { tone: 'mid', crease: 'none' })], {
 		owner: 'aiguillage',
 		svg: svg + lineSvg(coil, { tone: 'lo' }),
@@ -1000,7 +1000,8 @@ export function figure(): Figure {
 
 const attrsOf = (attrs: Record<string, string>) =>
 	Object.entries(attrs)
-		.map(([key, value]) => (value === '' ? ` ${key}` : ` ${key}="${value}"`))
+		// Toujours une valeur, même vide : le SVG autonome est du XML.
+		.map(([key, value]) => ` ${key}="${value}"`)
 		.join('');
 
 export function renderNode(node: Node): string {

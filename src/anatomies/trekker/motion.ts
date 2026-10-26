@@ -481,6 +481,8 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 		(event) => {
 			const index = indexOf(event.target);
 			if (index < 0) return;
+			// Tirer une poignée ne doit pas sélectionner les chiffres du totalisateur au passage.
+			event.preventDefault();
 			pause();
 			scene.setPointerCapture(event.pointerId);
 			const at = toFigure(event);
@@ -500,9 +502,10 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 	);
 	const letGo = (event: PointerEvent) => {
 		if (!grip || event.pointerId !== grip.id) return;
-		const { index, moved } = grip;
+		const { index, moved, ready } = grip;
 		grip = null;
-		if (moved < 4) pull(index);
+		// Lâché avant que l'autre tiroir soit rentré : le geste vaut une traction entière.
+		if (moved < 4 || !ready) pull(index);
 		else if (state.drawer.x > TRAVEL / 2 && state.opening === index) {
 			// Au-delà de la mi-course, la demande part : le tiroir finit sa course, puis la fiche.
 			const req = pageRequest(index + 1);

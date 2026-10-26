@@ -2,30 +2,32 @@
 // Nomenclature : les pièces numérotées, avec leur nom, leur rôle et le lien vers le code.
 // Chaque ligne porte le crochet de sa pièce (`data-piece`), comme les groupes du SVG.
 import type { Piece } from '../anatomies/contract';
+import { localeOf, ui } from '../lib/i18n';
 
 interface Props {
-	pieces: Piece[];
-	codeUrl: (piece: Piece) => string;
+	pieces: Piece<'page'>[];
+	codeUrl: (piece: Piece<'page'>) => string;
 }
 
 const { pieces, codeUrl } = Astro.props;
+const locale = localeOf(Astro.currentLocale);
 ---
 
 <div class="nomenclature">
-	<h3 class="title">Nomen&shy;clature</h3>
+	<h3 class="title">{ui.partsList[locale]}</h3>
 	<ol class="list">
 		{
 			pieces.map((piece, i) => (
 				<li class="item" data-piece={piece.id} data-master={piece.master ? '' : undefined}>
 					<span class="mono num">
 						{String(i + 1).padStart(2, '0')}
-						{piece.master && <span class="master" role="img" aria-label="pièce maîtresse" />}
+						{piece.master && <span class="master" role="img" aria-label={ui.keyPart[locale]} />}
 					</span>{' '}
 					<span class="name">{piece.name}</span>{' '}
 					<span class="role">
 						{piece.role}{' '}
 						<a class="mono code" href={codeUrl(piece)}>
-							Code : {piece.code.path}, lignes {piece.code.lines[0]}–{piece.code.lines[1]} ↗
+							{ui.codeLink[locale](piece.code.path, ...piece.code.lines)}
 						</a>
 					</span>
 				</li>

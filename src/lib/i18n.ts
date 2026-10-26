@@ -28,12 +28,6 @@ export const home: Page = { kind: 'home' };
 
 export const fiche = (slug: string): Page => ({ kind: 'fiche', slug });
 
-/**
- * Les langues dans lesquelles une page existe. Les fiches n'ont encore que leur version française :
- * sans version anglaise, ni sélecteur, ni `hreflang`, ni alternative dans le sitemap.
- */
-export const versionsOf = (page: Page): readonly Locale[] => (page.kind === 'home' ? locales : [defaultLocale]);
-
 /** La version désignée par `x-default` : l'anglais, pour qui ne lit aucune des deux langues (ADR 0002). */
 const xDefaultLocale: Locale = 'en';
 
@@ -50,24 +44,13 @@ export function pathOf(page: Page, locale: Locale): string {
 }
 
 /**
- * L'adresse d'un lien vers une page, depuis une page en `locale` : sa version dans cette langue, ou
- * la française quand elle n'en a pas d'autre, plutôt qu'un lien cassé.
- */
-export const linkTo = (page: Page, locale: Locale): string =>
-	pathOf(page, versionsOf(page).includes(locale) ? locale : defaultLocale);
-
-/**
  * Les alternatives d'une page, pour ses `hreflang` et le sitemap : chaque version, elle-même
- * comprise, puis `x-default`. Aucune pour une page qui n'a qu'une version.
+ * comprise, puis `x-default`.
  */
-export function alternatesOf(page: Page): { hreflang: string; path: string }[] {
-	const versions = versionsOf(page);
-	if (versions.length < 2) return [];
-	return [
-		...versions.map((locale) => ({ hreflang: formats[locale].lang, path: pathOf(page, locale) })),
-		{ hreflang: 'x-default', path: pathOf(page, xDefaultLocale) },
-	];
-}
+export const alternatesOf = (page: Page): { hreflang: string; path: string }[] => [
+	...locales.map((locale) => ({ hreflang: formats[locale].lang, path: pathOf(page, locale) })),
+	{ hreflang: 'x-default', path: pathOf(page, xDefaultLocale) },
+];
 
 /** Les formats de chaque langue : `Intl`, `og:locale`, et `lang` du document comme des `hreflang`. */
 export const formats: Localized<{ intl: string; ogLocale: string; lang: string }> = {
@@ -145,4 +128,54 @@ export const ui = {
 		en: (total: string) => `${total} contributions · 12 months`,
 	},
 	statusBottom: { fr: 'Bas', en: 'Bot' },
+	// Fiche : héros, en-tête de l'anatomie, nomenclature, repère, règle de temps, autres projets et
+	// barre d'état. Les textes de l'anatomie elle-même viennent de son module.
+	ficheFile: {
+		fr: (repo: string) => `~/projets/${repo}.md`,
+		en: (repo: string) => `~/projects/${repo}.md`,
+	},
+	ficheRank: {
+		fr: (rank: string, total: string) => `projet ${rank} / ${total}`,
+		en: (rank: string, total: string) => `project ${rank} / ${total}`,
+	},
+	year: { fr: 'Année', en: 'Year' },
+	repository: { fr: 'Dépôt', en: 'Repository' },
+	anatomy: { fr: 'Anatomie', en: 'Anatomy' },
+	anatomyNote: {
+		fr: (parts: number) => `${parts} pièces · une seule les compte`,
+		en: (parts: number) => `${parts} parts · only one counts`,
+	},
+	// La césure conditionnelle coupe « Nomenclature » sur un téléphone étroit plutôt que déborder.
+	partsList: { fr: 'Nomen­clature', en: 'Parts list' },
+	keyPart: { fr: 'pièce maîtresse', en: 'key part' },
+	codeLink: {
+		fr: (path: string, first: number, last: number) => `Code : ${path}, lignes ${first}–${last} ↗`,
+		en: (path: string, first: number, last: number) => `Code: ${path}, lines ${first}–${last} ↗`,
+	},
+	calloutLines: {
+		fr: (file: string, first: number, last: number) => `${file}, lignes ${first}–${last}`,
+		en: (file: string, first: number, last: number) => `${file}, lines ${first}–${last}`,
+	},
+	calloutTotal: {
+		fr: (lines: number) => ` · ${lines} lignes en tout`,
+		en: (lines: number) => ` · ${lines} lines in total`,
+	},
+	startTour: { fr: 'Lancer le tour', en: 'Start the tour' },
+	otherProjects: { fr: 'Autres projets', en: 'Other projects' },
+	previous: {
+		fr: (rank: string) => `← précédent · ${rank}`,
+		en: (rank: string) => `← previous · ${rank}`,
+	},
+	next: {
+		fr: (rank: string) => `${rank} · suivant →`,
+		en: (rank: string) => `${rank} · next →`,
+	},
+	statusFiche: {
+		fr: (repo: string) => `~/louis/projets/${repo}.md`,
+		en: (repo: string) => `~/louis/projects/${repo}.md`,
+	},
+	statusParts: {
+		fr: (fig: number, parts: number) => `Fig. ${fig} · ${parts} pièces`,
+		en: (fig: number, parts: number) => `Fig. ${fig} · ${parts} parts`,
+	},
 } satisfies Record<string, Localized<unknown>>;

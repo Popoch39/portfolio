@@ -18,14 +18,15 @@ test('robots.txt autorise l’exploration et donne l’URL absolue du sitemap', 
 });
 
 // Les alternatives de chaque URL sont vérifiées par i18n.test.mjs.
-test('sitemap.xml liste les deux versions de l’accueil et les six fiches, à leurs URL canoniques', () => {
+test('sitemap.xml liste les 14 URL : l’accueil et les six fiches, dans les deux versions, à leurs URL canoniques', () => {
 	const sitemap = readDist('sitemap.xml');
 	assert.match(sitemap, /^<\?xml version="1.0" encoding="UTF-8"\?>/);
 	assert.match(tags(sitemap, 'urlset')[0] ?? '', /\sxmlns="http:\/\/www.sitemaps.org\/schemas\/sitemap\/0.9"/);
 	const locs = elements(sitemap, 'loc').map(text);
 	const canonicalOf = (html) => attr(tags(elements(html, 'head')[0] ?? '', 'link').find((t) => attr(t, 'rel') === 'canonical') ?? '', 'href');
-	const ficheCanonicals = PROJECTS.map(({ slug }) => canonicalOf(readFiche(slug)));
+	const ficheCanonicals = PROJECTS.flatMap(({ slug }) => [canonicalOf(readFiche(slug)), canonicalOf(readFiche(slug, 'en'))]);
 	assert.deepEqual(locs, [linkHref('canonical'), canonicalOf(readHome('en')), ...ficheCanonicals]);
+	assert.equal(locs.length, 14);
 });
 
 test('la page signale son sitemap dans le <head>', () => {

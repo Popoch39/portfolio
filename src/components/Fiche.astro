@@ -1,0 +1,113 @@
+---
+// La fiche d'un projet, rendue par la route de chaque langue (`src/pages/projets/[slug].astro`,
+// `src/pages/en/projects/[slug].astro`) : la langue vient de l'URL, par `Astro.currentLocale`.
+import Layout from '../layouts/Layout.astro';
+import SiteHeader from './SiteHeader.astro';
+import ProjectHero from './ProjectHero.astro';
+import SectionHeader from './SectionHeader.astro';
+import FigureCard from './FigureCard.astro';
+import Nomenclature from './Nomenclature.astro';
+import Repere from './Repere.astro';
+import Regle from './Regle.astro';
+import GrainPatterns from './GrainPatterns.astro';
+import ProjectNav from './ProjectNav.astro';
+import StatusBar from './StatusBar.astro';
+import { githubRepoUrl, shareImageOf, type Project } from '../data/profile';
+import { person } from '../lib/structured-data';
+import { fiche, formats, localeOf, pathOf, ui } from '../lib/i18n';
+import { anatomyOf } from '../anatomies/registry';
+import { restSvg } from '../anatomies/figure';
+
+interface Props {
+	project: Project;
+}
+
+const { project } = Astro.props;
+const locale = localeOf(Astro.currentLocale);
+const page = fiche(project.slug);
+const anatomy = anatomyOf(project, locale);
+const { content } = anatomy;
+const rest = anatomy.renderRest();
+/**
+ * Au-delà de ce rapport hauteur sur largeur, une figure est haute : son repère se range à côté
+ * d'elle. En deçà (la rampe), la carte tient dans 768 px de haut avec l'étiquette au-dessus.
+ */
+const TALL = 0.5;
+
+const sourceCode = {
+	'@context': 'https://schema.org',
+	'@type': 'SoftwareSourceCode',
+	name: project.repo,
+	description: content.seo.description,
+	inLanguage: formats[locale].lang,
+	url: new URL(pathOf(page, locale), Astro.site).href,
+	codeRepository: githubRepoUrl(project.repo),
+	programmingLanguage: project.language,
+	author: person(Astro.site, locale),
+};
+---
+
+<Layout
+	page={page}
+	title={content.seo.title}
+	description={content.seo.description}
+	shareImage={shareImageOf(project, content.machine, locale)}
+	ogType="website"
+	structuredData={sourceCode}
+>
+	<div class="container">
+		<SiteHeader page={page} current="projects" />
+	</div>
+	<main class="container">
+		<ProjectHero project={project} lede={content.lede} />
+		<section class="anatomy">
+			<SectionHeader number="A" title={ui.anatomy[locale]} note={ui.anatomyNote[locale](content.pieces.length)} />
+			<FigureCard
+				fig={1}
+				title={content.title}
+				consignes={content.timeline?.consignes ?? content.consignes}
+				releve={content.releve}
+				caption={content.caption}
+				svg={restSvg(anatomy)}
+				motion={anatomy.motion}
+				phoneCrop={content.phoneCrop}
+				portrait={rest.height >= rest.width}
+				tall={rest.height >= TALL * rest.width}
+			>
+				<Repere slot="repere" pieces={content.pieces} codeUrl={anatomy.codeUrl} signatureOf={anatomy.signatureOf} />
+				{content.timeline && <Regle slot="controls" timeline={content.timeline} />}
+			</FigureCard>
+			<Nomenclature pieces={content.pieces} codeUrl={anatomy.codeUrl} />
+			<GrainPatterns />
+		</section>
+		<ProjectNav project={project} />
+	</main>
+	<StatusBar path={ui.statusFiche[locale](project.repo)} secondary={ui.statusParts[locale](1, content.pieces.length)} position={null} />
+</Layout>
+
+<script>
+	// Le chargeur de la fiche : la figure arrive dessinée, seul son mouvement passe par ici.
+	import { mountFigure } from '../anatomies/loader.ts';
+	import { linkPieces } from '../anatomies/highlight.ts';
+	import { placeRepere } from '../anatomies/repere.ts';
+
+	const scene = document.querySelector<HTMLElement>('[data-motion]');
+	const svg = scene?.querySelector('svg');
+	const card = scene?.closest('figure');
+	const releve = card?.querySelector<HTMLElement>('[data-releve]');
+	const anatomy = scene?.closest('section');
+	if (scene?.dataset.motion && svg && releve && anatomy) {
+		const repere = card?.querySelector<HTMLElement>('[data-repere]');
+		const repereOn = repere ? placeRepere(repere, scene, svg) : null;
+		linkPieces(anatomy, { onAim: repereOn?.aim });
+		const ruler = card?.querySelector<HTMLElement>('[data-regle]');
+		const tour = card?.querySelector<HTMLButtonElement>('[data-tour]');
+		void mountFigure({ scene, svg, releve, timeline: ruler && tour ? { ruler, tour } : undefined }, scene.dataset.motion);
+	}
+</script>
+
+<style>
+	.anatomy {
+		padding-top: clamp(24px, 4vw, 56px);
+	}
+</style>

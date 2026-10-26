@@ -10,6 +10,34 @@
 //
 // Les modules s'importent avec leur extension (`./geometry.ts`) : la géométrie tourne aussi
 // sous Node, en TypeScript natif, pour l'audit du kit.
+//
+// Deux langues (spec #31). Chaque anatomie porte ses textes dans les deux langues, dans son propre
+// dossier, pour que la traduire ne touche aucun fichier commun :
+// - au build, chaque texte du contenu est un `Text` : `{ fr, en }`, ou une chaîne seule, le français
+//   d'une anatomie pas encore traduite (forme temporaire, retirée une fois les six traduites). Le
+//   registre (`anatomyOf`) est le seul à choisir la langue : les composants ne voient que des
+//   chaînes (`'page'`), et la version anglaise montre le français faute de traduction ;
+// - `renderRest(locale)` et `Timeline.reading(t, locale)` reçoivent la langue de la page, pour les
+//   textes dessinés dans la figure ou lus au-dessus de la règle ;
+// - dans le navigateur, le mouvement reçoit `Stage.locale`, la langue du document : ses textes
+//   (relevés, libellés, aide au clavier, bouton du tour) vivent dans son module en `{ fr, en }`.
+//   Un seul morceau par figure sert les deux versions.
+import type { Locale, Localized } from '../lib/i18n.ts';
+
+/**
+ * Où en est un texte d'anatomie : tel qu'écrit dans son module (`'module'`), ou résolu dans la
+ * langue de la page (`'page'`), seule forme que reçoivent les composants.
+ */
+export type Side = 'module' | 'page';
+
+/** Un texte d'anatomie : dans son module, les deux langues ou, faute de traduction, le français seul. */
+export type Text<S extends Side = 'module'> = S extends 'module' ? string | Localized<string> : string;
+
+/** Une consigne d'interaction, pour un pointeur qui survole et pour le toucher. */
+export interface Consignes<S extends Side = 'module'> {
+	pointer: Text<S>;
+	touch: Text<S>;
+}
 
 /** Plage de lignes d'un fichier du dépôt, au commit lu (`AnatomyContent.sha`). */
 export interface CodeRef {
@@ -20,15 +48,15 @@ export interface CodeRef {
 }
 
 /** Élément nommé de la machine, lié à un élément du code. Vis, pieds et graduations n'en sont pas. */
-export interface Piece {
+export interface Piece<S extends Side = 'module'> {
 	/**
 	 * Identifiant, égal au crochet de pièce du SVG (`data-piece`, posé par `pieceSvg`). Un même
 	 * identifiant peut figurer sur plusieurs groupes quand l'ordre de peinture les sépare.
 	 */
 	id: string;
-	name: string;
+	name: Text<S>;
 	/** Une phrase : ce que la pièce fait dans la machine, donc dans le code. */
-	role: string;
+	role: Text<S>;
 	code: CodeRef;
 	/** La pièce maîtresse, seule en bleu au repos : une seule par anatomie. */
 	master?: true;
@@ -44,7 +72,7 @@ export type Signature = readonly (readonly [line: number, text: string])[];
  * Règle de temps d'une figure qui a un temps : graduée sous la figure, ses événements marqués, avec
  * le bouton du tour. Le temps va de 0 à `last`, dans l'unité de la figure.
  */
-export interface Timeline {
+export interface Timeline<S extends Side = 'module'> {
 	last: number;
 	/** Le temps au repos, où le curseur est posé. */
 	rest: number;
@@ -53,41 +81,44 @@ export interface Timeline {
 	/** Pas des petites graduations. */
 	tick: number;
 	/** Grandes graduations, légendées. */
-	marks: readonly { at: number; text: string }[];
-	/** Le temps lu au-dessus du curseur (« minute 12 »). */
-	reading: (t: number) => string;
+	marks: readonly { at: number; text: Text<S> }[];
+	/**
+	 * Le temps lu au-dessus du curseur (« minute 12 »), dans la langue de la page. Dans le module, une
+	 * lecture qui ignore `locale` est française (forme temporaire, comme une chaîne seule).
+	 */
+	reading: S extends 'module' ? (t: number, locale?: Locale) => string : (t: number) => string;
 	/** Les consignes de la fiche, qui désignent la règle : l'aperçu, sans règle, garde les siennes. */
-	consignes: { pointer: string; touch: string };
+	consignes: Consignes<S>;
 }
 
 /** Accroche du héros de la fiche, avec un seul mot en emphase. */
-export interface Lede {
-	before: string;
-	emphasis: string;
-	after: string;
+export interface Lede<S extends Side = 'module'> {
+	before: Text<S>;
+	emphasis: Text<S>;
+	after: Text<S>;
 }
 
-export interface AnatomyContent {
+export interface AnatomyContent<S extends Side = 'module'> {
 	/** Slug du projet, égal au nom du dossier du module. */
 	slug: string;
 	/** Commit lu, en entier (40 caractères hexadécimaux) : tous les liens vers le code y sont figés. */
 	sha: string;
 	/** Nom de la machine (« Banc de duel »). */
-	machine: string;
-	lede: Lede;
+	machine: Text<S>;
+	lede: Lede<S>;
 	/** Titre de la figure, en haut de sa carte. */
-	title: string;
+	title: Text<S>;
 	/** Consigne d'interaction, pour un pointeur qui survole et pour le toucher. */
-	consignes: { pointer: string; touch: string };
+	consignes: Consignes<S>;
 	/** Relevé au repos, tiré du modèle de la figure. */
-	releve: string;
+	releve: Text<S>;
 	/** Légende vraie, sous la carte : ce que la machine explique, en une phrase. */
-	caption: string;
+	caption: Text<S>;
 	/** Libellé accessible de la figure : ce qu'est la machine et ce qu'elle montre. */
-	label: string;
+	label: Text<S>;
 	/** 5 à 8 pièces, dans l'ordre de la nomenclature. */
-	pieces: Piece[];
-	seo: { title: string; description: string };
+	pieces: Piece<S>[];
+	seo: { title: Text<S>; description: Text<S> };
 	/**
 	 * Recadrage sur téléphone : une figure très large, que sa largeur rend petite, y grandit de 10 %
 	 * et la carte coupe ses bords : environ 3 % de sa largeur à gauche, 6 % à droite. Ce qui compte
@@ -95,7 +126,7 @@ export interface AnatomyContent {
 	 */
 	phoneCrop?: true;
 	/** La règle de temps de la fiche, pour une figure qui a un temps. */
-	timeline?: Timeline;
+	timeline?: Timeline<S>;
 }
 
 /**
@@ -110,12 +141,17 @@ export interface RestFigure {
 
 export interface Anatomy {
 	content: AnatomyContent;
-	/** Calcule la géométrie au repos : appelé au build, jamais dans le navigateur. */
-	renderRest: () => RestFigure;
+	/**
+	 * Calcule la géométrie au repos dans la langue de la page : appelé au build, jamais dans le
+	 * navigateur. Une figure qui ne dessine aucun texte à traduire ignore `locale`.
+	 */
+	renderRest: (locale: Locale) => RestFigure;
 }
 
 /** Ce que le chargeur confie au mouvement d'une figure. */
 export interface Stage {
+	/** La langue du document (`<html lang>`) : celle de tout ce que le mouvement écrit ou annonce. */
+	locale: Locale;
 	/** La scène qui contient la figure : seule cible des écouteurs clavier, sauf règle de temps. */
 	scene: HTMLElement;
 	svg: SVGSVGElement;

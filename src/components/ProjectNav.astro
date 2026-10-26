@@ -1,7 +1,7 @@
 ---
 // « Autres projets » : la fiche précédente et la suivante, en boucle de 06 à 01.
 import { projects, type Project } from '../data/profile';
-import { fiche, localeOf, pathOf } from '../lib/i18n';
+import { fiche, localeOf, pathOf, ui } from '../lib/i18n';
 
 interface Props {
 	project: Project;
@@ -16,13 +16,13 @@ const next = projects[(at + 1) % projects.length];
 const rank = (p: Project) => String(projects.indexOf(p) + 1).padStart(2, '0');
 ---
 
-<nav class="others" aria-label="Autres projets">
+<nav class="others" aria-label={ui.otherProjects[locale]}>
 	<a class="link" href={hrefOf(previous)}>
-		<span class="mono label">← précédent · {rank(previous)}</span>{' '}
+		<span class="mono label">{ui.previous[locale](rank(previous))}</span>{' '}
 		<span class="name">{previous.repo}</span>
 	</a>
 	<a class="link next" href={hrefOf(next)}>
-		<span class="mono label">{rank(next)} · suivant →</span>{' '}
+		<span class="mono label">{ui.next[locale](rank(next))}</span>{' '}
 		<span class="name">{next.repo}</span>
 	</a>
 </nav>

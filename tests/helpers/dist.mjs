@@ -45,8 +45,14 @@ export const PROJECTS = [
 	{ slug: 'ma-parcelle', repo: 'ma_parcelle' },
 ];
 
-/** HTML de la fiche d'un projet (`/projets/<slug>/`). */
-export const readFiche = (slug) => readDist(`projets/${slug}/index.html`);
+/** Adresse de la fiche d'un projet dans chaque langue : le segment est traduit, pas le slug. */
+export const FICHE = { fr: (slug) => `/projets/${slug}/`, en: (slug) => `/en/projects/${slug}/` };
+
+/** HTML de la fiche d'un projet, en français par défaut. */
+export const readFiche = (slug, locale = 'fr') => readPage(FICHE[locale](slug));
+
+/** Adresse de la figure au repos autonome d'un projet : une par version, puisqu'elle porte un libellé. */
+export const FIGURE = { fr: (slug) => `/figures/${slug}.svg`, en: (slug) => `/en/figures/${slug}.svg` };
 
 /** Toutes les occurrences d'une balise ouvrante, attributs compris (ex. `tags(html, 'link')`). */
 export function tags(html, name) {

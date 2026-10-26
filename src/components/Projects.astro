@@ -4,11 +4,11 @@ import FigureCard from './FigureCard.astro';
 import GrainPatterns from './GrainPatterns.astro';
 import { projects, publicRepoCount, restFigurePath, sections, type Project } from '../data/profile';
 import { anatomyOf } from '../anatomies/registry';
-import { fiche, linkTo, localeOf, ui } from '../lib/i18n';
+import { fiche, localeOf, pathOf, ui } from '../lib/i18n';
 
 const locale = localeOf(Astro.currentLocale);
 const { id, label } = sections.projects;
-const hrefOf = (p: Project) => linkTo(fiche(p.slug), locale);
+const hrefOf = (p: Project) => pathOf(fiche(p.slug), locale);
 const numberOf = (index: number) => String(index + 1).padStart(2, '0');
 
 /** La bascule A3 : grand écran, pointeur qui survole, JavaScript actif. La CSS ci-dessous en garde une copie. */
@@ -39,7 +39,7 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 		<div class="preview">
 			{
 				projects.map((p, i) => {
-					const anatomy = anatomyOf(p);
+					const anatomy = anatomyOf(p, locale);
 					const { content } = anatomy;
 					const { width, height } = anatomy.renderRest();
 					return (
@@ -50,7 +50,7 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 								consignes={content.consignes}
 								releve={content.releve}
 								motion={anatomy.motion}
-								image={{ src: restFigurePath(p), media: A3, width, height, alt: content.label }}
+								image={{ src: restFigurePath(p, locale), media: A3, width, height, alt: content.label }}
 								fixed
 							/>{' '}
 							<p class="preview-desc" aria-hidden="true">{p.description[locale]}</p>{' '}

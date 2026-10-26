@@ -4,7 +4,7 @@
 import { figureSvg } from '../vendor/anatomy/iso-kit.ts';
 import palette from './palette.css?raw';
 import { grainPatterns } from './grain.ts';
-import type { Anatomy } from './contract.ts';
+import type { ProjectAnatomy } from './registry.ts';
 
 /**
  * Largeur naturelle de la figure intégrée à la page : la carte de la fiche l'affiche à ce format,
@@ -12,7 +12,7 @@ import type { Anatomy } from './contract.ts';
  */
 const PAGE_WIDTH = 900;
 
-export function restSvg({ content, renderRest }: Anatomy, { standalone = false } = {}) {
+export function restSvg({ content, renderRest }: Pick<ProjectAnatomy, 'content' | 'renderRest'>, { standalone = false } = {}) {
 	const { width, height, body } = renderRest();
 	assertHooks(content.slug, body, content.pieces.map((piece) => piece.id));
 	const svg = figureSvg({

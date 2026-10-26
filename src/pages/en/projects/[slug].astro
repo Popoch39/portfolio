@@ -1,0 +1,13 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Fiche from '../../../components/Fiche.astro';
+import { projects, type Project } from '../../../data/profile';
+
+export const getStaticPaths = (() => projects.map((project) => ({ params: { slug: project.slug }, props: { project } }))) satisfies GetStaticPaths;
+
+interface Props {
+	project: Project;
+}
+---
+
+<Fiche project={Astro.props.project} />

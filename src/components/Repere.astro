@@ -7,14 +7,16 @@
 // nomenclature : les technologies d'assistance l'ignorent, et son lien sort de l'ordre de tabulation.
 import type { Piece, Signature } from '../anatomies/contract';
 import { signatureLines } from '../anatomies/signature';
+import { localeOf, ui } from '../lib/i18n';
 
 interface Props {
-	pieces: Piece[];
-	codeUrl: (piece: Piece) => string;
-	signatureOf: (piece: Piece) => Signature;
+	pieces: Piece<'page'>[];
+	codeUrl: (piece: Piece<'page'>) => string;
+	signatureOf: (piece: Piece<'page'>) => Signature;
 }
 
 const { pieces, codeUrl, signatureOf } = Astro.props;
+const locale = localeOf(Astro.currentLocale);
 ---
 
 <div class="repere" data-repere aria-hidden="true">
@@ -29,7 +31,7 @@ const { pieces, codeUrl, signatureOf } = Astro.props;
 					<div class="body">
 						<p class="head">
 							<span class="name">{piece.name}</span>
-							{piece.master && <span class="mono tag">pièce maîtresse</span>}
+							{piece.master && <span class="mono tag">{ui.keyPart[locale]}</span>}
 						</p>
 						<p class="role">{piece.role}</p>
 						<div class="mono signature">
@@ -45,8 +47,8 @@ const { pieces, codeUrl, signatureOf } = Astro.props;
 							))}
 						</div>
 						<a class="mono ref" href={codeUrl(piece)} tabindex="-1">
-							{piece.code.path.split('/').pop()}, lignes {first}–{last}
-							{count > lines.length && ` · ${count} lignes en tout`} ↗
+							{ui.calloutLines[locale](piece.code.path.split('/').pop() ?? '', first, last)}
+							{count > lines.length && ui.calloutTotal[locale](count)} ↗
 						</a>
 					</div>
 				</article>

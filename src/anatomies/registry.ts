@@ -2,7 +2,8 @@
 // fichier commun à modifier. Chaque projet mis en avant doit avoir le sien, complet : sans figure
 // ni mouvement, sa fiche n'aurait rien à montrer, donc le build échoue.
 import { githubRepoUrl, type Project } from '../data/profile';
-import type { Anatomy, AnatomyContent, Piece, Signature } from './contract.ts';
+import type { Locale, Localized } from '../lib/i18n';
+import type { Anatomy, AnatomyContent, Consignes, Piece, RestFigure, Signature, Text } from './contract.ts';
 
 const modules = import.meta.glob<Anatomy>('./*/index.ts', { eager: true, import: 'anatomy' });
 const folderOf = (path: string) => path.split('/')[1];
@@ -19,40 +20,77 @@ const signatures = new Map(
 /** Les dossiers qui ont un module de mouvement : le chargeur les découvre par le même motif. */
 const motions = new Set(Object.keys(import.meta.glob('./*/motion.ts')).map(folderOf));
 
-export interface ProjectAnatomy extends Anatomy {
+/** L'anatomie d'un projet dans la langue d'une page : ses textes sont des chaînes. */
+export interface ProjectAnatomy {
+	content: AnatomyContent<'page'>;
+	/** La géométrie au repos, dans la langue de la page. */
+	renderRest: () => RestFigure;
 	/** Permalien GitHub de la pièce, figé sur le commit lu, avec sa plage de lignes. */
-	codeUrl: (piece: Piece) => string;
+	codeUrl: (piece: Piece<'page'>) => string;
 	/** La signature du code de la pièce, relevée au commit lu. */
-	signatureOf: (piece: Piece) => Signature;
+	signatureOf: (piece: Piece<'page'>) => Signature;
 	/** Le dossier du module de mouvement, que la scène confie au chargeur (`data-motion`). */
 	motion: string;
 }
 
-const permalink = (repo: string, sha: string) => (piece: Piece) =>
+const permalink = (repo: string, sha: string) => (piece: Piece<'page'>) =>
 	`${githubRepoUrl(repo)}/blob/${sha}/${piece.code.path}#L${piece.code.lines[0]}-L${piece.code.lines[1]}`;
 
-/** L'anatomie d'un projet, tirée de son module. */
-export function anatomyOf(project: Project): ProjectAnatomy {
+/** L'anatomie d'un projet, tirée de son module, dans la langue de la page. */
+export function anatomyOf(project: Project, locale: Locale): ProjectAnatomy {
 	const anatomy = bySlug.get(project.slug);
 	if (!anatomy) {
 		throw new Error(`Anatomie « ${project.slug} » : module manquant (src/anatomies/${project.slug}/index.ts)`);
 	}
-	assertContract(project.slug, anatomy.content);
+	const content = inLocale(anatomy.content, locale);
+	assertContract(project.slug, content);
 	if (!motions.has(project.slug)) {
 		throw new Error(`Anatomie « ${project.slug} » : module de mouvement absent (src/anatomies/${project.slug}/motion.ts)`);
 	}
 	const byPiece = signatures.get(project.slug) ?? {};
-	assertSignatures(project.slug, anatomy.content.pieces, byPiece);
+	assertSignatures(project.slug, content.pieces, byPiece);
 	return {
-		...anatomy,
-		codeUrl: permalink(project.repo, anatomy.content.sha),
+		content,
+		renderRest: () => anatomy.renderRest(locale),
+		codeUrl: permalink(project.repo, content.sha),
 		signatureOf: (piece) => byPiece[piece.id],
 		motion: project.slug,
 	};
 }
 
+const isLocalized = (text: Text): text is Localized<string> => typeof text !== 'string';
+
+/**
+ * Le contenu d'une anatomie dans une langue : le seul endroit où un texte d'anatomie choisit sa
+ * langue. Une chaîne seule est le français d'une anatomie pas encore traduite : la version anglaise
+ * l'affiche tel quel plutôt que rien.
+ */
+function inLocale(content: AnatomyContent, locale: Locale): AnatomyContent<'page'> {
+	const text = (value: Text) => (isLocalized(value) ? value[locale] : value);
+	const consignes = ({ pointer, touch }: Consignes) => ({ pointer: text(pointer), touch: text(touch) });
+	const { lede, seo, timeline } = content;
+	return {
+		...content,
+		machine: text(content.machine),
+		lede: { before: text(lede.before), emphasis: text(lede.emphasis), after: text(lede.after) },
+		title: text(content.title),
+		consignes: consignes(content.consignes),
+		releve: text(content.releve),
+		caption: text(content.caption),
+		label: text(content.label),
+		pieces: content.pieces.map((piece) => ({ ...piece, name: text(piece.name), role: text(piece.role) })),
+		seo: { title: text(seo.title), description: text(seo.description) },
+		timeline: timeline && {
+			...timeline,
+			marks: timeline.marks.map((mark) => ({ ...mark, text: text(mark.text) })),
+			reading: (t) => timeline.reading(t, locale),
+			consignes: consignes(timeline.consignes),
+		},
+	};
+}
+
 /** Chaque pièce a sa signature, relevée dans sa plage de lignes : sinon, relancer `pnpm signatures`. */
-function assertSignatures(slug: string, pieces: Piece[], byPiece: Signatures) {
+function assertSignatures(slug: string, pieces: Piece<'page'>[], byPiece: Signatures) {
 	for (const { id, code } of pieces) {
 		const lines = byPiece[id]?.map(([line]) => line) ?? [];
 		const [first, last] = code.lines;
@@ -64,7 +102,7 @@ function assertSignatures(slug: string, pieces: Piece[], byPiece: Signatures) {
 }
 
 /** Le contrat que les tests vérifient sur la sortie, vérifié dès le build pour nommer le module fautif. */
-function assertContract(slug: string, content: AnatomyContent) {
+function assertContract(slug: string, content: AnatomyContent<'page'>) {
 	const fail = (message: string) => {
 		throw new Error(`Anatomie « ${slug} » : ${message}`);
 	};

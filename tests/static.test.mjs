@@ -13,6 +13,7 @@ const pages = [
 	{ name: 'accueil', html },
 	{ name: 'accueil anglais', html: readHome('en') },
 	...PROJECTS.map(({ slug }) => ({ name: `fiche ${slug}`, html: readFiche(slug) })),
+	...PROJECTS.map(({ slug }) => ({ name: `fiche anglaise ${slug}`, html: readFiche(slug, 'en') })),
 ];
 
 /** Le HTML sans les SVG de figure (`<svg class="iso-svg …">`), où le kit émet des attributs `style`. */

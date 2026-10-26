@@ -1,7 +1,7 @@
 ---
 import LanguageSwitch from './LanguageSwitch.astro';
 import { identity, sectionKeys, sections, type SectionKey } from '../data/profile';
-import { home, localeOf, pathOf, versionsOf, type Page } from '../lib/i18n';
+import { home, localeOf, pathOf, type Page } from '../lib/i18n';
 
 interface Props {
 	/** La page affichée : l'accueil, ou une fiche dont le sélecteur de langue mène à l'autre version. */
@@ -30,7 +30,7 @@ const homeHref = onHome ? '' : homePath;
 				</a>
 			))
 		}
-		{versionsOf(page).length > 1 && <LanguageSwitch page={page} />}
+		<LanguageSwitch page={page} />
 	</nav>
 </header>
 

@@ -2,7 +2,7 @@
 // la page à jour. Règle de contenu : ni téléphone, ni adresse, ni date de naissance.
 // Chaque texte affiché a ses deux langues côte à côte (`Localized`), le français au-dessus ;
 // les faits (années, stack, dépôts, entreprises, villes, liens) restent écrits une seule fois.
-import type { Localized } from '../lib/i18n.ts';
+import { defaultLocale, home, pathOf, type Locale, type Localized } from '../lib/i18n.ts';
 
 export interface Employer {
 	name: string;
@@ -209,8 +209,11 @@ export interface Project {
 	year: number;
 }
 
-/** Adresse du SVG au repos autonome d'un projet (`src/pages/figures/[slug].svg.ts`). */
-export const restFigurePath = (project: Project) => `/figures/${project.slug}.svg`;
+/**
+ * Adresse du SVG au repos autonome d'un projet (`src/pages/figures/[slug].svg.ts`) : un par version,
+ * puisque son libellé accessible est un texte de l'anatomie.
+ */
+export const restFigurePath = (project: Project, locale: Locale = defaultLocale) => `${pathOf(home, locale)}figures/${project.slug}.svg`;
 
 /** Adresse de l'image de partage d'une fiche (`public/og/<slug>.png`). */
 export const shareImagePath = (project: Project) => `/og/${project.slug}.png`;
@@ -218,12 +221,16 @@ export const shareImagePath = (project: Project) => `/og/${project.slug}.png`;
 /**
  * Image de partage d'une fiche, produite par `pnpm og:capture` à partir de
  * `scripts/og-fiche.html`, puis versionnée. `machine` nomme sa figure (`AnatomyContent.machine`).
+ * La fiche anglaise reprend l'image française en attendant la sienne ; son texte alternatif est anglais.
  */
-export const shareImageOf = (project: Project, machine: string): ShareImage => ({
+export const shareImageOf = (project: Project, machine: string, locale: Locale): ShareImage => ({
 	path: shareImagePath(project),
 	width: 1200,
 	height: 630,
-	alt: `${project.repo} en lettres capitales condensées, suivi d’un curseur bleu, avec sa figure au repos, « ${machine} », dessinée en isométrie ; en pied, la stack ${project.stack.join(' · ')} et ${identity.name}.`,
+	alt: {
+		fr: `${project.repo} en lettres capitales condensées, suivi d’un curseur bleu, avec sa figure au repos, « ${machine} », dessinée en isométrie ; en pied, la stack ${project.stack.join(' · ')} et ${identity.name}.`,
+		en: `${project.repo} in condensed capitals, followed by a blue cursor, with its figure at rest, “${machine}”, drawn in isometric view; along the bottom, the stack ${project.stack.join(' · ')} and ${identity.name}.`,
+	}[locale],
 });
 
 /** Projets mis en avant, dans l'ordre d'affichage. Certains dépôts sont volontairement absents. */

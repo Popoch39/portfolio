@@ -2,7 +2,7 @@
 // de l'accueil. Les textes des anatomies de l'aperçu (machine, consigne, relevé) restent en français.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROJECTS, moduleGraph, readDist, readFiche, readHome, tags, attr, hasAttr, elements, text } from './helpers/dist.mjs';
+import { FIGURE, PROJECTS, moduleGraph, readDist, readFiche, readHome, tags, attr, hasAttr, elements, text } from './helpers/dist.mjs';
 
 const VERSIONS = [
 	{
@@ -22,8 +22,7 @@ const VERSIONS = [
 		id: 'projects',
 		title: 'Projects',
 		note: '6 selected · 41 public repos',
-		// Les fiches anglaises n'existent pas encore : l'accueil anglais mène aux fiches françaises.
-		ficheOf: (slug) => `/projets/${slug}/`,
+		ficheOf: (slug) => `/en/projects/${slug}/`,
 		first:
 			'01 typomaniac Multiplayer typing game: solo runs, ranked best-of-three duels, MMR and a leaderboard. Authoritative WebSocket duel server. TypeScript · Elysia · Bun · React 19 2026 →',
 		second: /^02 claude-tmux-notify\.nvim A Neovim toast .* Lua · Neovim · tmux · ★ 3 2026 →$/,
@@ -93,7 +92,8 @@ for (const version of VERSIONS) {
 			assert.ok(picture, `${slug} : image au repos absente`);
 			const sources = tags(picture, 'source');
 			assert.equal(sources.length, 1, `${slug} : une source`);
-			assert.equal(attr(sources[0], 'srcset'), `/figures/${slug}.svg`, slug);
+			// La figure de la version : son libellé est dans la langue de la page.
+			assert.equal(attr(sources[0], 'srcset'), FIGURE[locale](slug), slug);
 			const media = attr(sources[0], 'media') ?? '';
 			for (const feature of [/\(min-width:\s*1024px\)/, /\(hover:\s*hover\)/, /\(scripting:\s*enabled\)/]) assert.match(media, feature, slug);
 			assert.doesNotMatch(panel.replace(picture, ''), /\/figures\//, `${slug} : figure demandée hors de la source A3`);

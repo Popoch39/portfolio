@@ -71,6 +71,28 @@ export function preview(section: HTMLElement) {
 	list?.addEventListener('pointerover', (event) => select(rowOf(event.target)));
 	list?.addEventListener('focusin', (event) => select(rowOf(event.target)));
 
+	// Parcours clavier : chaque ligne, puis son aperçu (la scène une fois montée, puis « Ouvrir la
+	// fiche »), puis la ligne suivante ; Maj+Tab refait le chemin à l'envers. L'aperçu vient après la
+	// liste dans le document : sans ce relais, Tab traverserait toutes les lignes, donc toutes les
+	// sélections, avant de l'atteindre. Aux deux bouts du chemin, Tab sort de la section normalement.
+	const stopsOf = (index: number) => {
+		const { panel, scene } = panels[index];
+		const open = panel.querySelector<HTMLAnchorElement>('a[href]');
+		return [rows[index], ...(scene.hasAttribute('tabindex') ? [scene] : []), ...(open ? [open] : [])];
+	};
+	section.addEventListener('keydown', (event) => {
+		if (event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return;
+		const path = rows.flatMap((_, index) => stopsOf(index));
+		const at = path.findIndex((stop) => stop === event.target);
+		const next = at < 0 ? undefined : path[at + (event.shiftKey ? -1 : 1)];
+		if (!next) return;
+		event.preventDefault();
+		// Un panneau masqué ne prend pas le focus : sa sélection le rend visible d'abord.
+		const row = rows.findIndex((candidate) => candidate === next);
+		select(row >= 0 ? row : panels.findIndex(({ panel }) => panel.contains(next)));
+		next.focus();
+	});
+
 	const approach = new IntersectionObserver(
 		(entries) => {
 			if (!entries.some((entry) => entry.isIntersecting)) return;

@@ -6,7 +6,7 @@ import { axisVector, holdStill, translateAlong } from '../../vendor/anatomy/iso-
 import type { MountMotion } from '../contract.ts';
 import { asksForStillness, follow, loop, spring, type Spring } from '../live.ts';
 import { DETENTS, MODULES, BLADE_FIRST, BLADE_PITCH, PIVOT_Z, PINIONS, DIAL, WHEEL, PROBE, projection as P } from './layout.ts';
-import { bar, cacheLevel, EVENTS, LAST, poseAt, readoutOf, REST, SOURCES, type Pose } from './model.ts';
+import { bar, cacheLevel, EVENTS, LAST, poseAt, releveOf, REST, SOURCES, type Pose } from './model.ts';
 import {
 	bladeSvg,
 	crankAt,
@@ -68,7 +68,7 @@ const describe = (t: number) => {
 	return `Minute ${Math.floor(pose.t)} : source ${SOURCES[pose.lever]}, ${window('5 heures', five, 'reset dans')}, ${window('semaine', week, 'reset dans')}`;
 };
 
-const mount: MountMotion = ({ scene, svg, readout }) => {
+const mount: MountMotion = ({ scene, svg, releve }) => {
 	const at = (name: string) => svg.querySelector<SVGGElement>(`[data-csl="${name}"]`);
 	const keys = ['five', 'week'] as const;
 	const blades = keys.flatMap((key, index) =>
@@ -190,12 +190,12 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 		}
 		// Relevé : la source au cran du levier, les pourcentages là où sont les aiguilles.
 		const source = SOURCES[DETENTS.reduce((best, deg, index) => (Math.abs(deg - lever.at) < Math.abs(DETENTS[best] - lever.at) ? index : best), 0)];
-		const text = readoutOf(
+		const text = releveOf(
 			source,
 			{ pct: pose.output.five.pct == null ? null : needles[0].at, reset: pose.output.five.reset },
 			{ pct: pose.output.week.pct == null ? null : needles[1].at, reset: pose.output.week.reset },
 		);
-		if (text !== lastText) readout.textContent = lastText = text;
+		if (text !== lastText) releve.textContent = lastText = text;
 	};
 
 	const motion = loop(scene, (dt, calm) => {

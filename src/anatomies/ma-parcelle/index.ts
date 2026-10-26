@@ -1,7 +1,7 @@
 // Anatomie de ma_parcelle : la colonne de sondage (fiche de concept : `concept.md`).
 import type { Anatomy } from '../contract.ts';
 import { renderRest } from './geometry.ts';
-import { REST_READOUT, SHA } from './model.ts';
+import { REST_RELEVE, SHA } from './model.ts';
 import { pieces } from './pieces.ts';
 
 export const anatomy: Anatomy = {
@@ -15,11 +15,11 @@ export const anatomy: Anatomy = {
 			after: ' à travers six couches de données publiques, sans compte ni serveur.',
 		},
 		title: 'Carotte d’une parcelle',
-		hints: {
+		consignes: {
 			pointer: 'Maintenez le clic sur la colonne pour forer les strates · cliquez le plateau pour relancer le sondage',
 			touch: 'Gardez le doigt sur la colonne pour forer les strates · touchez le plateau pour relancer le sondage',
 		},
-		readout: REST_READOUT,
+		releve: REST_RELEVE,
 		caption:
 			'Le carottier part de la parcelle choisie sur le plan cadastral et traverse six strates, une par bloc de la fiche, dans leur ordre d’affichage. Chaque strate est aussi épaisse que le nombre de requêtes que son bloc envoie pour la parcelle 33063 KJ 33 : 32 en tout, du navigateur aux API publiques, sans serveur. Seule la croûte du cadastre conditionne les autres, qui sont interrogées ensemble ; une strate perdue manque au log sans arrêter le sondage.',
 		label:

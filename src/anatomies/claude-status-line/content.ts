@@ -1,6 +1,6 @@
 // Textes et nomenclature de la rampe à cadran, validés à la revue (#21) : voir `concept.md`.
 import type { AnatomyContent, Piece } from '../contract.ts';
-import { readout, SHA } from './model.ts';
+import { releve, SHA } from './model.ts';
 
 const code = (lines: [number, number]) => ({ path: 'statusline.ts', lines });
 
@@ -66,11 +66,11 @@ export const content: AnatomyContent = {
 		after: ' sur une seule ligne, sous la zone de saisie.',
 	},
 	title: 'Rampe à cadran — fenêtre de 5 h et semaine',
-	hints: {
+	consignes: {
 		pointer: 'Glissez vers la droite pour faire avancer le temps',
 		touch: 'Glissez le doigt vers la droite pour faire avancer le temps',
 	},
-	readout,
+	releve,
 	caption:
 		'Tant que Claude Code n’a pas encore fourni ses limites sur stdin, l’aiguillage interroge l’API (un jeton, 2,5 s au plus) ou relit le cache. Chaque pourcentage est ensuite borné à 0–100 et arrondi en dix cases : une lame se lève dès 5, 15, …, 95 %. Le cadran le juge sous 50, de 50 à 80 ou au-delà, et les tambours écrivent le délai de reset en jours, en heures-minutes ou en minutes. Les pourcentages sont un exemple, le traitement est celui du code.',
 	label:

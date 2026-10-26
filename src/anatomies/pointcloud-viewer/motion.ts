@@ -10,7 +10,7 @@ import { cloudPoints, dotsPath, renderedPaths } from './cloud.ts';
 import { discMarks, RAIL_DIR, TRAVEL } from './disc.ts';
 import { ballAt, facingOf, mirrorAt, slitAt, teethAt, ticksAt, ventsAt, windowsAt, type Drum } from './head.ts';
 import { AZIMUTH, beamSlot, dirOf, ELEVATION, GROUND, impactAt, LAYERS, projection as P, TILE } from './layout.ts';
-import { DRAWN, drawnIndex, INKS, LAST_ANGLE, MODES, PER_TURN, POINTS, readout as text, readSpeed } from './model.ts';
+import { DRAWN, drawnIndex, INKS, LAST_ANGLE, MODES, PER_TURN, POINTS, readSpeed, releve as text } from './model.ts';
 
 const TAU = Math.PI * 2;
 /** Vitesse affichée plafonnée (2,2 tours/s) : au-delà, la fente passe en flou de bougé. */
@@ -48,7 +48,7 @@ const offsetOf = (by: Point3): [number, number] => {
 	return [b[0] - a[0], b[1] - a[1]];
 };
 
-const mount: MountMotion = ({ scene, svg, readout }) => {
+const mount: MountMotion = ({ scene, svg, releve }) => {
 	const one = <T extends Element = SVGElement>(selector: string) => svg.querySelector<T>(selector);
 	const rot = (key: string) => one(`[data-rot="${key}"]`);
 	const setD = (node: Element | null, d: string) => {
@@ -454,7 +454,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 		const line = lineOf();
 		if (line !== lastLine) {
 			lastLine = line;
-			readout.textContent = line;
+			releve.textContent = line;
 		}
 		// Un geste se lit quand la tête s'arrête : les points lus ou le cliquet qui a patiné.
 		if (driver === 'user' && !state.rate && scene.getAttribute('aria-valuetext') !== line) describe();

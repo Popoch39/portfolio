@@ -46,8 +46,8 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 							<FigureCard
 								fig={numberOf(i)}
 								title={content.machine}
-								hints={content.hints}
-								readout={content.readout}
+								consignes={content.consignes}
+								releve={content.releve}
 								motion={anatomy.motion}
 								image={{ src: restFigurePath(p), media: A3, width, height, alt: content.label }}
 								fixed
@@ -96,9 +96,9 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 		const rows = [...section.querySelectorAll<HTMLAnchorElement>('ol > li > a')];
 		const panels = [...section.querySelectorAll<HTMLElement>('[data-panel]')].flatMap((panel) => {
 			const scene = panel.querySelector<HTMLElement>('[data-motion]');
-			const readout = panel.querySelector<HTMLElement>('[data-readout]');
+			const releve = panel.querySelector<HTMLElement>('[data-releve]');
 			const src = scene?.querySelector('source')?.getAttribute('srcset');
-			return scene?.dataset.motion && readout && src ? [{ panel, scene, readout, src, motion: scene.dataset.motion }] : [];
+			return scene?.dataset.motion && releve && src ? [{ panel, scene, releve, src, motion: scene.dataset.motion }] : [];
 		});
 		if (rows.length === 0 || rows.length !== panels.length) return;
 
@@ -115,13 +115,13 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 			stopShown();
 			stopShown = () => {};
 			const attempt = (pending = new AbortController());
-			const { scene, readout, motion } = panels[index];
+			const { scene, releve, motion } = panels[index];
 			const rest = rests?.[index];
 			if (!rest) return;
 			if (!inserted.has(index)) inserted.set(index, rest.then((markup) => insert(scene, markup)));
 			const svg = await inserted.get(index);
 			if (!svg || attempt.signal.aborted) return;
-			const stop = await mountFigure({ scene, svg, readout }, motion, { signal: attempt.signal });
+			const stop = await mountFigure({ scene, svg, releve }, motion, { signal: attempt.signal });
 			if (attempt.signal.aborted) stop();
 			else stopShown = stop;
 		};

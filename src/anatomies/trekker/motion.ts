@@ -31,7 +31,7 @@ import {
 	TRAVEL,
 	WHEEL_PITCH,
 } from './layout.ts';
-import { check, DRAWERS, FIELDS, notched, pageRequest, PROXIMITY, readout as atRest, readoutOf, REFUSED, REST_PAGE, rowsOf, TOTAL, type Request } from './model.ts';
+import { check, DRAWERS, FIELDS, notched, pageRequest, PROXIMITY, REFUSED, releve as atRest, releveOf, REST_PAGE, rowsOf, TOTAL, type Request } from './model.ts';
 
 /** Le tiroir : une masse menée vers un peu au-delà de sa butée, qui la frappe et s'y arrête. */
 const DRIVE = { stiffness: 14, damping: 7.5, beyond: 14 };
@@ -65,7 +65,7 @@ const pagesAt = (count: number) => {
 	return Math.floor(at) + smooth(((at % 1) - 0.95) / 0.05);
 };
 
-const mount: MountMotion = ({ scene, svg, readout }) => {
+const mount: MountMotion = ({ scene, svg, releve }) => {
 	const all = (selector: string) => [...svg.querySelectorAll<SVGElement>(selector)];
 	const one = (selector: string) => svg.querySelector<SVGElement>(selector);
 	const assembly = one('[data-drawer]');
@@ -109,7 +109,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 		counting: false,
 		lit: -1,
 		selected: REST_PAGE - 1,
-		readout: atRest,
+		releve: atRest,
 	};
 
 	// ——— Écriture du DOM ———
@@ -120,8 +120,8 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 		else if (node.getAttribute(name) !== value) node.setAttribute(name, value);
 	};
 	const say = (text: string) => {
-		state.readout = text;
-		if (readout.textContent !== text) readout.textContent = text;
+		state.releve = text;
+		if (releve.textContent !== text) releve.textContent = text;
 	};
 	const showNotches = (req: Request) => notches.forEach((node, index) => set(node, 'visibility', notched(req, FIELDS[index]) ? null : 'hidden'));
 	const light = (index: number) => {
@@ -297,7 +297,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 			state.counting = false;
 			state.countTarget = TOTAL;
 			state.liftTarget = 1;
-			say(readoutOf(pageRequest(index + 1)));
+			say(releveOf(pageRequest(index + 1)));
 		}),
 		{ done: () => state.lift > 0.98 },
 	];
@@ -337,7 +337,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 			},
 			once(() => {
 				state.flapTarget = 0;
-				say(readoutOf(req));
+				say(releveOf(req));
 			}),
 		];
 	};
@@ -575,7 +575,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 		clearTimeout(resume);
 		for (const name of Object.keys(attributes)) scene.removeAttribute(name);
 		touched.forEach((node, index) => saved[index].forEach(([name, value]) => set(node, name, value)));
-		if (readout.textContent !== atRest) readout.textContent = atRest;
+		if (releve.textContent !== atRest) releve.textContent = atRest;
 	};
 };
 

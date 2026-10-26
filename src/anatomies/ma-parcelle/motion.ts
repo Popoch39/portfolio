@@ -55,7 +55,7 @@ interface Run {
 
 const at = (selector: string, root: Element) => [...root.querySelectorAll(`[data-mp="${selector}"]`)];
 
-const mount: MountMotion = ({ scene, svg, readout }) => {
+const mount: MountMotion = ({ scene, svg, releve }) => {
 	const rides = at('ride', svg);
 	const core = at('core', svg)[0];
 	const lostBand = svg.querySelector('[data-band="4"]');
@@ -286,9 +286,9 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 			write(sliders[index], 'transform', shift([RIGHT[0] * state.at, RIGHT[1] * state.at, 0]));
 		});
 
-		const text = M.readoutOf(state);
-		if (readout.textContent !== text) {
-			readout.textContent = text;
+		const text = M.releveOf(state);
+		if (releve.textContent !== text) {
+			releve.textContent = text;
 			scene.setAttribute('aria-valuetext', text);
 		}
 		const read = String(selected && record ? M.strataThrough(record.reached) : 0);
@@ -446,7 +446,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 		'aria-valuemin': '0',
 		'aria-valuemax': String(M.STRATA.length),
 		'aria-valuenow': '0',
-		'aria-valuetext': M.REST_READOUT,
+		'aria-valuetext': M.REST_RELEVE,
 	};
 	for (const [name, value] of Object.entries(attributes)) scene.setAttribute(name, value);
 

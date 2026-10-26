@@ -160,7 +160,7 @@ export const formatCount = (value: number) => numberFormat.format(value);
 /** « 1,80 Mo » : unités de `bake-panel.tsx` L18-L23, à la virgule. */
 export const PCBK_SIZE = `${decimal(PCBK_BYTES / 1_000_000, 2)} Mo`;
 
-export const readout = {
+export const releve = {
 	rest: `${formatCount(POINTS)} pts · ${PCBK_SIZE} · EPSG:${EPSG}`,
 	reading: (read: number) => `${formatCount(read)} / ${formatCount(POINTS)} pts · tour ${Math.floor(read / PER_TURN)}`,
 	slipping: (read: number) => `${formatCount(read)} / ${formatCount(POINTS)} pts · cliquet`,

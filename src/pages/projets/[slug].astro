@@ -52,8 +52,8 @@ const sourceCode = {
 			<FigureCard
 				fig={1}
 				title={content.title}
-				hints={content.hints}
-				readout={content.readout}
+				consignes={content.consignes}
+				releve={content.releve}
 				caption={content.caption}
 				svg={restSvg(anatomy)}
 				motion={anatomy.motion}
@@ -73,11 +73,11 @@ const sourceCode = {
 
 	const scene = document.querySelector<HTMLElement>('[data-motion]');
 	const svg = scene?.querySelector('svg');
-	const readout = scene?.closest('figure')?.querySelector<HTMLElement>('[data-readout]');
+	const releve = scene?.closest('figure')?.querySelector<HTMLElement>('[data-releve]');
 	const anatomy = scene?.closest('section');
-	if (scene?.dataset.motion && svg && readout && anatomy) {
+	if (scene?.dataset.motion && svg && releve && anatomy) {
 		linkPieces(anatomy);
-		void mountFigure({ scene, svg, readout }, scene.dataset.motion);
+		void mountFigure({ scene, svg, releve }, scene.dataset.motion);
 	}
 </script>
 

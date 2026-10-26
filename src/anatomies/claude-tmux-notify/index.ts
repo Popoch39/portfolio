@@ -2,7 +2,7 @@
 // ceux de la fiche de concept validée (`concept.md`, section 8).
 import type { Anatomy } from '../contract.ts';
 import { renderRest } from './geometry.ts';
-import { pieces, readout, SHA } from './model.ts';
+import { pieces, releve, SHA } from './model.ts';
 
 export const anatomy: Anatomy = {
 	content: {
@@ -15,11 +15,11 @@ export const anatomy: Anatomy = {
 			after: ' dans une autre fenêtre tmux, un toast tombe dans Neovim.',
 		},
 		title: 'Tableau d’annonciateur à volets',
-		hints: {
+		consignes: {
 			pointer: 'Cliquez une fenêtre pour faire attendre Claude, un volet tombé pour y brancher la fiche',
 			touch: 'Touchez une fenêtre pour faire attendre Claude, un volet tombé pour y brancher la fiche',
 		},
-		readout,
+		releve,
 		caption:
 			'Le crochet Notification ou Stop de Claude Code ajoute une ligne JSON au fichier de cache ; toutes les 1000 ms, Neovim lit ce qui dépasse son décalage et lève un toast, sauf si la fenêtre tmux de Claude est déjà au premier plan.',
 		label:

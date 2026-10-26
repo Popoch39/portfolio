@@ -252,11 +252,11 @@ const THIN = ' ';
 const segment = (pct: number | null) => (pct == null ? '—' : `${bar(pct).shown}${THIN}%`);
 
 /** Relevé de la carte, au format de la fiche : `{source} · 5h {p5} % · reset {r5} · sem {p7} % · {r7}`. */
-export function readoutOf(source: Source, five: Shown, week: Shown) {
+export function releveOf(source: Source, five: Shown, week: Shown) {
 	const first = five.pct == null ? '5h —' : `5h ${segment(five.pct)}${five.reset ? ` · reset ${five.reset}` : ''}`;
 	const second = week.pct == null ? 'sem —' : `sem ${segment(week.pct)}${week.reset ? ` · ${week.reset}` : ''}`;
 	return `${source} · ${first} · ${second}`;
 }
 
 export const restPose = poseAt(REST);
-export const readout = readoutOf(SOURCES[restPose.lever], restPose.output.five, restPose.output.week);
+export const releve = releveOf(SOURCES[restPose.lever], restPose.output.five, restPose.output.week);

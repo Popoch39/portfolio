@@ -848,7 +848,7 @@ const decimal = (value: number) => value.toFixed(1).replace('.', ',');
 const formatMs = (ms: number) => String(ms).replace(/\B(?=(\d{3})+$)/g, ' ');
 
 /** Le relevé, lu sur l'état du duel à son instant. */
-export function readoutOf(duel: Duel): string {
+export function releveOf(duel: Duel): string {
 	const { clock, note, over } = duel;
 	const [a, b] = roundsWon(duel);
 	if (over) {

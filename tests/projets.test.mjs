@@ -104,7 +104,7 @@ test('chaque panneau montre la carte vivante, la description, la stack et le lie
 		assert.equal(attr(scenes[0], 'tabindex'), undefined, `${slug} : scène focalisable sans script`);
 		// Fig. 0n, la machine, la consigne et le relevé.
 		assert.match(text(figure), new RegExp(`^Fig\\. 0${i + 1} \\S.*\\S$`), slug);
-		assert.ok(tags(figure, 'span').some((t) => hasAttr(t, 'data-readout')), `${slug} : relevé absent`);
+		assert.ok(tags(figure, 'span').some((t) => hasAttr(t, 'data-releve')), `${slug} : relevé absent`);
 		assert.equal(elements(figure, 'figcaption').length, 0, `${slug} : pas de légende dans l’aperçu`);
 
 		const rest = text(panel.replace(figure, ''));

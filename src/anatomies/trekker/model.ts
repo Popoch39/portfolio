@@ -85,7 +85,7 @@ export const notched = (request: Request, field: Field) => request.params[field]
 const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? 's' : ''}`;
 
 /** Le relevé d'une requête : page servie (200) ou fiche refusée (422). */
-export function readoutOf(request: Request) {
+export function releveOf(request: Request) {
 	const verdict = check(request);
 	if (!verdict.ok) return `GET ?${request.query} → 422 · ${verdict.rule}`;
 	const pages = pagesOf(TOTAL, verdict.pageSize);
@@ -94,7 +94,7 @@ export function readoutOf(request: Request) {
 
 /** Au repos : le tiroir 1 sorti, sa page servie. */
 export const REST_PAGE = 1;
-export const readout = readoutOf(pageRequest(REST_PAGE));
+export const releve = releveOf(pageRequest(REST_PAGE));
 
 export const pieces: Piece[] = [
 	{

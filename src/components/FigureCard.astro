@@ -10,8 +10,8 @@ import '../anatomies/palette.css';
 interface Common {
 	fig: number | string;
 	title: string;
-	hints: { pointer: string; touch: string };
-	readout: string;
+	consignes: { pointer: string; touch: string };
+	releve: string;
 	caption?: string;
 	/** Le dossier du module de mouvement, que le chargeur monte sur la scène. */
 	motion: string;
@@ -39,7 +39,7 @@ type Props = Common &
 		  }
 	);
 
-const { fig, title, hints, readout, caption, svg, image, motion, fixed = false, phoneCrop = false } = Astro.props;
+const { fig, title, consignes, releve, caption, svg, image, motion, fixed = false, phoneCrop = false } = Astro.props;
 ---
 
 <figure class:list={['figure', { fixed, crop: phoneCrop }]}>
@@ -61,9 +61,9 @@ const { fig, title, hints, readout, caption, svg, image, motion, fixed = false, 
 			)
 		}
 		<div class="mono row foot">
-			<span class="hint pointer">{hints.pointer}</span>
-			<span class="hint touch">{hints.touch}</span>{' '}
-			<span class="readout"><span class="dot" aria-hidden="true"></span><span data-readout>{readout}</span></span>
+			<span class="consigne pointer">{consignes.pointer}</span>
+			<span class="consigne touch">{consignes.touch}</span>{' '}
+			<span class="releve"><span class="dot" aria-hidden="true"></span><span data-releve>{releve}</span></span>
 		</div>
 	</div>
 	{caption && <figcaption class="caption"><span class="mono caption-fig">Fig. {fig} —</span> {caption}</figcaption>}
@@ -155,7 +155,7 @@ const { fig, title, hints, readout, caption, svg, image, motion, fixed = false, 
 		}
 	}
 
-	.readout {
+	.releve {
 		display: flex;
 		align-items: center;
 		gap: 8px;
@@ -219,13 +219,13 @@ const { fig, title, hints, readout, caption, svg, image, motion, fixed = false, 
 		gap: 6px;
 	}
 
-	.fixed .hint {
+	.fixed .consigne {
 		min-height: 2lh;
 		white-space: normal;
 	}
 
 	.fixed .row > *,
-	.fixed [data-readout] {
+	.fixed [data-releve] {
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;

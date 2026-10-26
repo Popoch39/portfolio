@@ -129,14 +129,14 @@ export interface Sounding {
 	done: boolean;
 }
 
-export const REST_READOUT = `${PARCEL} · prêt · 0/6`;
-export const CACHED_READOUT = `${PARCEL} · en cache · 0 req.`;
+export const REST_RELEVE = `${PARCEL} · prêt · 0/6`;
+export const CACHED_RELEVE = `${PARCEL} · en cache · 0 req.`;
 
-export function readoutOf({ depth, selected, lost, cached, done }: Sounding) {
-	if (cached && selected) return CACHED_READOUT;
+export function releveOf({ depth, selected, lost, cached, done }: Sounding) {
+	if (cached && selected) return CACHED_RELEVE;
 	if (done) return lost ? '6/6 · 1 strate perdue · 0 serveur' : `6/6 · ${TOTAL_REQUESTS} req. · 0 serveur`;
 	const index = stratumAt(depth);
-	if (index < 0 || !selected) return REST_READOUT;
+	if (index < 0 || !selected) return REST_RELEVE;
 	const stratum = STRATA[index];
 	if (lost && index === LOST) return `${index + 1}/6 ${stratum.name} · BDNB 500 · strate perdue`;
 	return `${index + 1}/6 ${stratum.name} · ${stratum.requests} req. · ${stratum.value}`;

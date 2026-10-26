@@ -2,7 +2,7 @@
 // portent à une tour d'arbitrage qui les filtre au guichet, juge les manches et fait bouger le mât.
 import type { Anatomy, RestFigure } from '../contract.ts';
 import { renderRest } from './geometry.ts';
-import { readoutOf, restDuel } from './model.ts';
+import { releveOf, restDuel } from './model.ts';
 import { pieces, SHA } from './pieces.ts';
 import { TEXTS } from './texts.ts';
 
@@ -21,11 +21,11 @@ export const anatomy: Anatomy = {
 			after: '.',
 		},
 		title: 'Banc de duel à tour d’arbitrage',
-		hints: {
+		consignes: {
 			pointer: 'Cliquez le clavier A ou tapez une lettre : elle file vers la tour.',
 			touch: 'Touchez le clavier A : chaque appui envoie une lettre à la tour.',
 		},
-		readout: readoutOf(restDuel(TEXTS)),
+		releve: releveOf(restDuel(TEXTS)),
 		caption:
 			'Chaque frappe part datée du clavier, par lots de 50 ms. La tour la refuse si sa date précède le départ, suit son arrivée, recule, ou dépasse les 30 s de la manche (400 ms de tolérance). Elle juge la manche au score puis à la précision, et le premier à deux manches gagnées fait bouger les TP ; le MMR, lui, reste caché.',
 		label:

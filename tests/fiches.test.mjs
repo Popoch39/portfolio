@@ -69,10 +69,10 @@ test('une figure role="img" avec un libellé, dans une carte : Fig. 1, titre, co
 		const [figure] = elements(anatomyOf(html), 'figure');
 		const card = text(figure.replace(svgs[0], ''));
 		assert.match(card, /^Fig\. 1\s*\S/, `${repo} : « Fig. 1 » puis le titre`);
-		const readout = tags(figure, 'span').find((t) => hasAttr(t, 'data-readout'));
-		assert.ok(readout, `${repo} : relevé absent`);
-		const readoutText = text(figure.slice(figure.indexOf(readout)).match(/^<span[^>]*>[\s\S]*?<\/span>/)?.[0] ?? '');
-		assert.ok(readoutText.length > 0, `${repo} : relevé vide`);
+		const releve = tags(figure, 'span').find((t) => hasAttr(t, 'data-releve'));
+		assert.ok(releve, `${repo} : relevé absent`);
+		const releveText = text(figure.slice(figure.indexOf(releve)).match(/^<span[^>]*>[\s\S]*?<\/span>/)?.[0] ?? '');
+		assert.ok(releveText.length > 0, `${repo} : relevé vide`);
 	}
 });
 

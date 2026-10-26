@@ -27,7 +27,7 @@ import {
 	tapeHoles,
 	windowBox,
 } from './layout.ts';
-import { LEVELS, NVIM, POLL_MS, START_SIZE, WINDOWS, bytesOf, readouts, toastOf, type HookEvent, type Level } from './model.ts';
+import { LEVELS, NVIM, POLL_MS, START_SIZE, WINDOWS, bytesOf, releves, toastOf, type HookEvent, type Level } from './model.ts';
 
 /** Vitesse du perforateur, en rangées (octets) par seconde : une ligne de 140 o en un tiers de seconde. */
 const PUNCH_RATE = 420;
@@ -65,7 +65,7 @@ interface Line {
 const ease = (t: number) => t * t * (3 - 2 * t);
 const clamp = (t: number) => Math.min(1, Math.max(0, t));
 
-const mount: MountMotion = ({ scene, svg, readout }) => {
+const mount: MountMotion = ({ scene, svg, releve }) => {
 	const q = (name: string) => svg.querySelector<SVGGElement>(`[data-ctn="${name}"]`);
 	const all = <T>(make: (index: number) => T) => Array.from({ length: N }, (_, index) => make(index));
 	const flaps = all((index) => q(`flap-${index}`));
@@ -83,7 +83,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 	const coilPaths = [coilBack?.getAttribute('d') ?? '', coilFront?.getAttribute('d') ?? ''];
 	const tipWrap = plugTip?.parentElement;
 	const tipHome = tipWrap ? { parent: tipWrap.parentNode, next: tipWrap.nextSibling } : null;
-	const restText = readouts.rest(NVIM);
+	const restText = releves.rest(NVIM);
 	const zRest = dancerZ(0);
 	const plugZ0 = jackZ(NVIM);
 
@@ -137,7 +137,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 	/** Une ligne lue : toast, sauf si la fenêtre est au premier plan (fiche branchée dans son jack). */
 	const deliver = (line: Line, calm: boolean) => {
 		if (activeJack() === line.window) {
-			say(readouts.suppressed(line.window));
+			say(releves.suppressed(line.window));
 			return;
 		}
 		const win = wins[line.window];
@@ -165,7 +165,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 		const win = wins[plug.at];
 		if (win.down) win.down = false;
 		bell.age = 99;
-		say(plug.at === NVIM ? '' : readouts.focused(plug.at), plug.at === NVIM ? 0 : HOLD);
+		say(plug.at === NVIM ? '' : releves.focused(plug.at), plug.at === NVIM ? 0 : HOLD);
 		if (user && plug.at !== NVIM) {
 			returning = window.setTimeout(() => plugTo(NVIM), RETURN_MS);
 		}
@@ -286,7 +286,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 		}
 		setTransform(spinners.balance, balanceAngle ? spin(PIVOTS.balance, balanceAngle) : '');
 		const text = textNow();
-		if (readout.textContent !== text) readout.textContent = text;
+		if (releve.textContent !== text) releve.textContent = text;
 	};
 
 	let balanceAngle = 0;
@@ -296,11 +296,11 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 		return age < 0.3 ? 0.03 * Math.sin(Math.PI * clamp(age / 0.1)) * Math.exp(-age / 0.12) : 0;
 	};
 	const textNow = () => {
-		if (hovered !== null) return readouts.hover(hovered, wins[hovered].down);
-		if (size > offset) return readouts.unread(size - offset, (beat + 1) * POLL_MS - clock * 1000);
+		if (hovered !== null) return releves.hover(hovered, wins[hovered].down);
+		if (size > offset) return releves.unread(size - offset, (beat + 1) * POLL_MS - clock * 1000);
 		if (message && clock < messageUntil) return message;
 		const active = activeJack();
-		return readouts.rest(active < 0 ? plug.to : active);
+		return releves.rest(active < 0 ? plug.to : active);
 	};
 
 	const motion = loop(scene, (dt, calm) => {
@@ -412,7 +412,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 	// --- Interaction ----------------------------------------------------------------------------
 	const describe = () => {
 		scene.setAttribute('aria-valuenow', String(chosen + 1));
-		scene.setAttribute('aria-valuetext', `${readouts.hover(chosen, wins[chosen].down)}${activeJack() === chosen ? ', fiche branchée' : ''}`);
+		scene.setAttribute('aria-valuetext', `${releves.hover(chosen, wins[chosen].down)}${activeJack() === chosen ? ', fiche branchée' : ''}`);
 		drawFocus();
 	};
 	const pause = () => {
@@ -538,7 +538,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 			warn?.removeAttribute('visibility');
 			info?.setAttribute('visibility', 'hidden');
 		});
-		readout.textContent = restText;
+		releve.textContent = restText;
 	};
 };
 

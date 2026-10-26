@@ -2,7 +2,7 @@
 // nuage en spirale sur quatre dalles d'orthophoto. Fiche de concept : `concept.md`.
 import type { Anatomy, Piece } from '../contract.ts';
 import { renderRest, type Pieces } from './geometry.ts';
-import { readout, SHA } from './model.ts';
+import { releve, SHA } from './model.ts';
 
 const carte: Piece = {
 	id: 'carte',
@@ -61,11 +61,11 @@ export const anatomy: Anatomy = {
 			after: '.',
 		},
 		title: 'Un tour de tête, 628 points',
-		hints: {
+		consignes: {
 			pointer: 'Visez le terrain : la tête tourne vers le pointeur · clic sur la roue : couleur',
 			touch: 'Touchez le terrain : la tête tourne jusqu’au point · toucher la roue : couleur',
 		},
-		readout: readout.rest,
+		releve: releve.rest,
 		caption:
 			'Le scanner relit sample.laz, le fichier d’essai du dépôt : 100 000 points en spirale autour d’une station du 6ᵉ arrondissement, en Lambert-93. Chaque tour de tête lit 628 points. Le miroir, c’est-à-dire le bake Rust compilé en WebAssembly dans un Web Worker, recentre chaque point sur la borne d’angle, le minimum du nuage, pour qu’il reste précis en f32. Le disque reçoit alors le PCBK : 72 octets d’en-tête au moyeu, puis 18 octets par point, en quatre secteurs, un par bloc. Le bake fini, three.js pose tout le nuage d’un coup sur le fond IGN, et la roue en change les couleurs sans toucher à la géométrie. Un point dessiné en représente 40, et l’instrument n’est pas à l’échelle du terrain.',
 		label:

@@ -51,9 +51,9 @@ export interface AnatomyContent {
 	/** Titre de la figure, en haut de sa carte. */
 	title: string;
 	/** Consigne d'interaction, pour un pointeur qui survole et pour le toucher. */
-	hints: { pointer: string; touch: string };
+	consignes: { pointer: string; touch: string };
 	/** Relevé au repos, tiré du modèle de la figure. */
-	readout: string;
+	releve: string;
 	/** Légende vraie, sous la carte : ce que la machine explique, en une phrase. */
 	caption: string;
 	/** Libellé accessible de la figure : ce qu'est la machine et ce qu'elle montre. */
@@ -91,7 +91,7 @@ export interface Stage {
 	scene: HTMLElement;
 	svg: SVGSVGElement;
 	/** Le relevé de la carte, que le mouvement réécrit. */
-	readout: HTMLElement;
+	releve: HTMLElement;
 }
 
 /**

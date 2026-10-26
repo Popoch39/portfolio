@@ -2,7 +2,7 @@
 // `GET /api/v1/treks`, et la fiche de demande passe d'abord au gabarit du contrat partagé.
 import type { Anatomy } from '../contract.ts';
 import { renderRest } from './geometry.ts';
-import { pieces, readout, SHA } from './model.ts';
+import { pieces, releve, SHA } from './model.ts';
 
 export const anatomy: Anatomy = {
 	content: {
@@ -15,11 +15,11 @@ export const anatomy: Anatomy = {
 			after: ' du contrat partagé.',
 		},
 		title: 'Meuble à fiches et gabarit Zod',
-		hints: {
+		consignes: {
 			pointer: 'Tirez une poignée pour demander sa page',
 			touch: 'Faites glisser un tiroir vers vous pour demander sa page',
 		},
-		readout,
+		releve,
 		caption:
 			'Chaque tiroir est une page de 20 itinéraires sur les 100 de la fixture livrée. La fiche de demande passe d’abord au gabarit, trekListQuerySchema, le contrat Zod que partagent l’API, le web et le mobile : une proximité incomplète ou une page de plus de 100 fiches finit au bac de rejet, en 422. Les fiches tiennent sur la tige dans l’ordre name, id, que suit l’index treks_name_id_idx (0,9 ms au lieu de 130 sur 2 442 treks), et sortent sans leur tracé.',
 		label:

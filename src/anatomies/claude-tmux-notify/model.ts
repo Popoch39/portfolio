@@ -66,7 +66,7 @@ export function startOffset(size: number) {
 /** Taille du fichier à la mise en route, sous le seuil : le massicot reste ouvert. */
 export const START_SIZE = 18_406;
 
-export const readouts = {
+export const releves = {
 	rest: (active: number) => `${WINDOWS[active]} au premier plan · sondage ${POLL_MS} ms`,
 	focused: (active: number) => `${WINDOWS[active]} au premier plan`,
 	unread: (bytes: number, ms: number) => `+${bytes} o non lus · lecture dans ${Math.max(0, Math.round(ms))} ms`,
@@ -74,7 +74,7 @@ export const readouts = {
 	hover: (window: number, fallen: boolean) => `${WINDOWS[window]} · volet ${fallen ? 'tombé' : 'levé'}`,
 };
 
-export const readout = readouts.rest(NVIM);
+export const releve = releves.rest(NVIM);
 
 const code = (path: string, lines: [number, number]) => ({ path, lines }) as const;
 const LUA = 'lua/claude-tmux-notify/init.lua';

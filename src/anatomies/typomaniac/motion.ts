@@ -20,7 +20,7 @@ import {
 	mmrOf,
 	press,
 	pulsesOn,
-	readoutOf,
+	releveOf,
 	restDuel,
 	resumeTour,
 	rush,
@@ -40,7 +40,7 @@ const RESUME_MS = 5000;
 const HOVER_LIFT = 0.4;
 const KEY_TRAVEL = 1.1;
 
-const mount: MountMotion = ({ scene, svg, readout }) => {
+const mount: MountMotion = ({ scene, svg, releve }) => {
 	const all = (selector: string) => [...svg.querySelectorAll<SVGElement>(selector)];
 	const one = (selector: string) => svg.querySelector<SVGElement>(selector);
 
@@ -99,7 +99,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 	// Ce qui est déjà dessiné, pour ne réécrire un tracé que s'il change.
 	const fresh = () => ({ drum: -1, arms: [-1, -1, -1, -1], order: '' });
 	let shown = fresh();
-	const rest = readout.textContent;
+	const rest = releve.textContent;
 
 	const draw = (calm: boolean) => {
 		// Touches : frappées, ou soulevées sous le pointeur.
@@ -142,8 +142,8 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 		const turned = knob - L.KNOB_ANGLE.ranked;
 		set(pointer, 'transform', Math.abs(turned) > 1e-3 ? L.turnIn([L.KNOB.x, L.KNOB.y, L.KNOB.z + L.KNOB.h], [1, 0, 0], [0, 1, 0], turned) : null);
 		drawNiche(calm);
-		const text = readoutOf(duel);
-		if (readout.textContent !== text) readout.textContent = text;
+		const text = releveOf(duel);
+		if (releve.textContent !== text) releve.textContent = text;
 	};
 
 	const drawNiche = (calm: boolean) => {
@@ -305,7 +305,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 			typed.textContent = words[side][0];
 			pending.textContent = words[side][1];
 		});
-		readout.textContent = rest;
+		releve.textContent = rest;
 	};
 };
 

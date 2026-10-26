@@ -20,9 +20,12 @@ export const TOWER = {
 	cheekTop: 96,
 };
 /** L'embrasure de la porte sur la face avant de la caisse (x = 78), et la niche du guichet. */
-export const NICHE = { face: 78, back: 50, y0: 166, y1: 214, z0: 28, z1: 72 };
-/** Rail du guichet, de l'entrée (côté A) à la sortie (côté B). */
-export const RAIL = { x: 62, from: 214, to: 166, z: 29.4 };
+export const NICHE = { face: 78, back: 50, y0: 166, y1: 214, z0: 28, z1: 58 };
+/**
+ * Rail du guichet : l'entrée par le port de la paroi visible (côté B), la sortie derrière le
+ * montant de l'embrasure (côté A). Le refus se joue ainsi en pleine vue, contre les premiers bras.
+ */
+export const RAIL = { x: 62, from: 166, to: 214, z: 29.4 };
 export const TOKEN = { r: 2.6, h: 2.2 };
 /** Les quatre bras : pivots alternés derrière et devant le rail, pour qu'un bras ouvert n'en touche aucun autre. */
 export const ARM = { length: 9.5, width: 1.6, z: 29.8, h: 1.4 };
@@ -97,7 +100,7 @@ export const CABLE_A: Point3[] = [
 export const cableRoute = (side: number): Point3[] => (side ? CABLE_A.map(([x, y, z]) => [BENCH.w - x, BENCH.d - y, z]) : CABLE_A);
 
 /** Porte de la tour, battue de côté sur sa charnière (bord B de l'embrasure). */
-export const DOOR = { hinge: [80.2, 164.4] as Plane, width: 50, z0: 27, z1: 73, t: 1.6, angle: 100 };
+export const DOOR = { hinge: [80.2, 164.4] as Plane, width: 50, z0: 27, z1: 59, t: 1.6, angle: 100 };
 export const doorDirection = (): Plane => {
 	const a = (DOOR.angle * Math.PI) / 180;
 	return [Math.sin(a), Math.cos(a)];
@@ -127,9 +130,9 @@ export const P: Projection = { origin: [648.52, 206.19], scale: 1.2251, azimuth:
 /** Contour au sol d'un bras de barrière tourné de `opening` (0 : en travers, 1 : le long du rail). */
 export function armRing(index: number, opening: number): Plane[] {
 	const [px, py] = PIVOTS[index];
-	// Les bras de derrière pointent vers +x, ceux de devant vers −x ; ouverts, tous suivent le jeton (−y).
+	// Les bras de derrière pointent vers +x, ceux de devant vers −x ; ouverts, tous suivent le jeton (+y).
 	const closed = index % 2 ? Math.PI : 0;
-	const angle = closed + (index % 2 ? 1 : -1) * opening * (Math.PI / 2);
+	const angle = closed + (index % 2 ? -1 : 1) * opening * (Math.PI / 2);
 	const ux = Math.cos(angle);
 	const uy = Math.sin(angle);
 	const half = ARM.width / 2;
@@ -156,7 +159,7 @@ export function drumMarksSvg(t: number) {
 		const face = 0.71 * Math.cos(angle) + 0.5 * Math.sin(angle);
 		const point = (y: number): Flat => iso([DRUM.x + DRUM.r * Math.cos(angle), y, DRUM.z + DRUM.r * Math.sin(angle)], P);
 		const kind = second % 1 ? 2 : second % 5 ? 0 : 1;
-		if (face > 0.05) marks[kind].push({ d: pathOf([point(y0), point(y0 - (kind ? 7 + 2 * (kind & 1) : 4.5))]), alpha: Math.min(1, (face - 0.05) / 0.35) });
+		if (face > 0.05) marks[kind].push({ d: pathOf([point(y0), point(y0 - (kind ? 3.6 + 0.8 * (kind & 1) : 3))]), alpha: Math.min(1, (face - 0.05) / 0.35) });
 	}
 	return fadedSvg(marks[0], { tone: 'lo' }) + fadedSvg(marks[1], { tone: 'hi' }) + fadedSvg(marks[2], { tone: 'hi' });
 }
@@ -236,7 +239,7 @@ export function pulseDash(pulses: number[], total: number, s0: number, s1: numbe
 }
 
 /** Une butée par bras, du côté où il s'ouvre. */
-export const stopPoint = (index: number): Plane => [PIVOTS[index][0] + (index % 2 ? 2.2 : -2.2), PIVOTS[index][1] - 4];
+export const stopPoint = (index: number): Plane => [PIVOTS[index][0] + (index % 2 ? 2.2 : -2.2), PIVOTS[index][1] + 4];
 export const TOKENS = 4;
 
 /**
@@ -262,8 +265,8 @@ export function nicheOrder(arms: number[], tokens: (number | null)[]) {
 	return keyed.sort((a, b) => a.key - b.key).map((entry) => entry.name);
 }
 
-/** Le jeton s'efface en entrant dans la paroi B, par le port de sortie. */
-export const tokenOpacity = (at: number) => Math.min(1, Math.max(0, (RAIL_ENDS[1] - at) / 0.06));
+/** Le jeton apparaît en fondu au port d'entrée, dans la paroi B. */
+export const tokenOpacity = (at: number) => Math.min(1, Math.max(0, (at - RAIL_ENDS[0]) / 0.06));
 
 /** Index du vernier : de 0 à 100 TP le long de la face avant du curseur. */
 export function vernierNeedle(side: number, tp: number, z: number) {

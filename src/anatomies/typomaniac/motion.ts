@@ -20,7 +20,6 @@ import {
 	mmrOf,
 	press,
 	pulsesOn,
-	RAIL_ENDS,
 	readoutOf,
 	restDuel,
 	resumeTour,
@@ -217,7 +216,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 		if (asksForStillness()) {
 			// Mouvement réduit : la frappe passe tout de suite, le jeton se pose accepté au bout du rail.
 			rush(duel);
-			parked = duel.phase === RUNNING ? RAIL_ENDS[1] - 0.08 : null;
+			parked = duel.phase === RUNNING ? 0.75 : null;
 		} else {
 			wait = 0;
 			touring = false;

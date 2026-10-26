@@ -252,7 +252,14 @@ export function build(duel: Duel) {
 	const nicheBox: Shape = { kind: 'box', min: [N.back, N.y0, N.z0], max: [N.face + 0.5, N.y1, N.z1], name: 'tour.niche' };
 	slab('tour.case', 'tour', casePlan, T.baseTop, T.caseTop - T.baseTop, {
 		inner: lineSvg(sideSeam(casePlan, 23, P, 3) + sideSeam(casePlan, 79, P, 3), { tone: 'faint' }),
-	}, { steps: 3, cut: nicheBox });
+	}, {
+		steps: 3,
+		cut: nicheBox,
+		// Trappe de visite au-dessus de l'embrasure, vissée aux quatre coins.
+		extra:
+			lineSvg(flat([[N.face, 172, 63], [N.face, 208, 63], [N.face, 208, 75], [N.face, 172, 75]], true), { tone: 'lo' }) +
+			dotsSvg([[174, 65], [206, 65], [174, 73], [206, 73]].map(([y, z]) => at3([N.face, y, z])), { size: 0.5, tone: 'mid' }),
+	});
 	// Les joues portent les lampes ; celle de A porte aussi le disjoncteur.
 	for (const side of [0, 1]) {
 		const cheek = turnPlan(side, { x: 22, y: 222, w: 52, d: 10, r: 1.5 });
@@ -276,7 +283,7 @@ export function build(duel: Duel) {
 	const D = L.DOOR;
 	const [hx, hy] = D.hinge;
 	// Chaque charnière : un fût de trois nœuds, leurs joints en coutures.
-	[[31, 39], [61, 69]].forEach(([z0, z1], i) => {
+	[[30, 37], [49, 56]].forEach(([z0, z1], i) => {
 		const joints = [1, 2].map((k) => sideArc(hx, hy, 1.1, z0 + ((z1 - z0) * k) / 3, P, 8)).join('');
 		post(`tour.hinge${i}`, 'tour', hx, hy, 1.1, z0, z1 - z0, { tone: 'mid', inner: lineSvg(joints, { tone: 'lo' }) }, dotsSvg([at3([hx, hy, z1])], { size: 0.35 }), 0.5);
 	});
@@ -305,7 +312,7 @@ export function build(duel: Duel) {
 	};
 	put('tour.door', 'tour', [hx + (dx * D.width) / 2, hy + (dy * D.width) / 2, (D.z0 + D.z1) / 2], solidSvg(extrude(doorRing, D.z0, D.z1 - D.z0, P), { tone: 'mid', inner: lineSvg(flat(panel(5), true), { tone: 'lo' }) + lineSvg(flat(panel(6.4), true), { tone: 'faint' }) }), [{ kind: 'extruded', ring: doorRing, z: D.z0, h: D.z1 - D.z0, name: 'tour.door' }], { bias: 2 });
 	const latch: Plane = [hx + dx * (D.width - 4), hy + dy * (D.width - 4)];
-	slab('tour.latch', 'tour', { x: latch[0] - 1.5, y: latch[1] - 0.2, w: 3, d: 2.4, r: 0.4 }, 48, 4, {}, { steps: 2, bias: 2.1 });
+	slab('tour.latch', 'tour', { x: latch[0] - 1.5, y: latch[1] - 0.2, w: 3, d: 2.4, r: 0.4 }, 41, 4, {}, { steps: 2, bias: 2.1 });
 
 	// Niche du guichet : parois de l'embrasure dessinées, contenu découpé par l'ouverture.
 	const wall = (points: Point3[], shade: number) =>

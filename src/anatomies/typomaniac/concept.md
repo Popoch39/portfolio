@@ -40,6 +40,41 @@ incohérences I1 et I2, décisions ouvertes n° 1 à 39 (n° 1 à 7 pour cette f
 - **Comptes.** 54 → 51 pièces dessinées, comptées en pièces distinctes (I1). Nomenclature
   inchangée : 7 pièces, une seule pièce maîtresse.
 
+## Écarts de la construction (#22)
+
+Ce que le dessin et le budget ont imposé par rapport à la fiche ; le reste est construit tel quel.
+
+- **Lampes sur le dessus des joues.** La joue de B tourne le dos au lecteur : posées sur sa face,
+  ses lampes seraient invisibles. Les quatre lampes coiffent les joues, sous leur grille.
+- **Fente du contrepoids sur la face avant du mât.** Sur la face arrière, elle ne se verrait pas du
+  tout ; elle passe devant, entre les bagues, et le contrepoids y reste pâle.
+- **Témoins de liaison sur la face avant de l'embase**, au lieu de la joue de B, qui est cachée.
+- **Tirette d'abandon de B sur son flanc avant**, comme celle de A, pour rester visible.
+- **Guichet à sens unique.** Tous les jetons entrent par le port de la paroi visible (côté B) et
+  sortent derrière le montant de l'embrasure : le refus se joue en pleine vue, contre les premiers
+  bras. Les jetons entrent un par un (50 ms d'écart, attente cachée derrière le montant) et jamais
+  contre un jeton refusé qui revient ; le serveur, lui, a déjà jugé à l'arrivée. Tant que les
+  jetons se suivent, les bras restent ouverts ; le bras du motif retombe devant le jeton refusé.
+- **Pose au repos simulée.** La pose (manche 2 à 18,6 s, A mène 1–0) est l'état du duel rejoué en
+  temps réel jusque-là : plusieurs impulsions courent sur les câbles et quelques jetons passent le
+  guichet, bras ouverts, plutôt qu'un seul jeton et une seule impulsion.
+- **Délai d'arrivée.** Le serveur date l'arrivée d'un lot au bout du trajet de l'impulsion (350 ms
+  après l'envoi) : avec le lot de 50 ms, une frappe tapée à 29,999 s arrive à 30,399 s, dans la
+  tolérance de 400 ms. Le relevé ne montre toujours que la date `at`.
+- **Pilotes.** Pour que B gagne la manche 2, A y rate la deuxième lettre d'un mot sur quatre et la
+  corrige ; autour du seul refus (l'horloge de B prend 500 ms d'avance une fois, à 2,4 s de la
+  manche 2), A marque une pause de 1,9 à 3,4 s et B jusqu'à 3,3 s, pour que le guichet le montre
+  seul. Les aléas des pilotes (±25 % autour de leur Pace) viennent d'une graine fixe. Scores
+  obtenus par `computeScore` : manche 1 A 388 – 324 B, manche 2 A 127 – 282 B, manche 3 A 396 – 344 B
+  (vérifiés contre `computeScore` et `computeResult` du dépôt sur les mêmes journaux).
+- **Textes.** `generateText(seed, 'en', 2, 36)` avec les graines `0x5eed0001` à `0x5eed0003`
+  (`texts.ts`) ; le SVG au repos les porte et le mouvement les y relit.
+- **Budget du mouvement (20 Ko).** Le témoin de la boîte d'envoi ne clignote pas, le sélecteur
+  bascule d'un coup, et le secteur de 30 à 30,4 s du tambour est une bande de traits serrés. Les
+  touches ont des arêtes vives (budget du SVG).
+- **Scène focalisable** en `role="application"` : elle reçoit les lettres, l'espace et retour
+  arrière ; Tab en sort.
+
 ## 1. Ce que le code raconte
 
 typomaniac est un jeu de dactylo multijoueur. Son cœur est le **duel classé** : deux joueurs tapent

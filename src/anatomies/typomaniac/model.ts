@@ -53,7 +53,7 @@ const RAIL_RATE = 3.6;
 /** Pivotement d'un bras de barrière, d'un coup sec. */
 export const ARM_MS = 120;
 /** Place des quatre bras le long du rail (0 : entrée, 1 : sortie), un par motif de refus. */
-export const ARMS = [0.167, 0.375, 0.583, 0.792];
+export const ARMS = [0.12, 0.3, 0.48, 0.66];
 /** Le jeton refusé bute contre le bras de son motif, à cette distance avant lui. */
 const STOP = 0.075;
 /** Deux jetons se suivent d'au moins 50 ms à l'entrée du rail : plus d'un diamètre d'écart. */
@@ -579,7 +579,7 @@ function handle(duel: Duel, event: Event) {
 			const last = trip.keys[trip.keys.length - 1];
 			// Le relevé dit le verdict 1,2 s : celui de chaque frappe du visiteur, et tout refus.
 			if (trip.visitor || (trip.reason && !trip.hidden)) {
-				const verdict = trip.reason ? `refusée : ${REASON_TEXT[trip.reason]}` : `« ${last.kind === 'char' ? last.char : '⌫'} » acceptée à ${formatMs(last.at)} ms`;
+				const verdict = trip.reason ? `refusée : ${REASON_TEXT[trip.reason]}` : `« ${last.kind === 'char' ? last.char.replace(' ', '␣') : '⌫'} » acceptée à ${formatMs(last.at)} ms`;
 				duel.note = { until: event.at + 1200, text: `${head(duel)} · ${verdict}` };
 			}
 			schedule(duel, { at: event.at + CABLE_MS, kind: trip.reason ? RESYNC : RELAY, trip });

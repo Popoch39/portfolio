@@ -1,6 +1,7 @@
 // Modèle de claude-tmux-notify.nvim, au commit lu : les constantes du plugin, la ligne JSON que
 // le crochet ajoute au fichier de cache, et le sondage qui la lit. Le relevé et le mouvement en
 // découlent ; aucune API de navigateur, pour tourner aussi sous Node (audit).
+import type { Locale } from '../../lib/i18n.ts';
 import type { Piece } from '../contract.ts';
 
 /** Commit lu de Popoch39/claude-tmux-notify.nvim (branche `master`). */
@@ -66,15 +67,42 @@ export function startOffset(size: number) {
 /** Taille du fichier à la mise en route, sous le seuil : le massicot reste ouvert. */
 export const START_SIZE = 18_406;
 
-export const releves = {
-	rest: (active: number) => `${WINDOWS[active]} au premier plan · sondage ${POLL_MS} ms`,
-	focused: (active: number) => `${WINDOWS[active]} au premier plan`,
-	unread: (bytes: number, ms: number) => `+${bytes} o non lus · lecture dans ${Math.max(0, Math.round(ms))} ms`,
-	suppressed: (window: number) => `supprimé · ${WINDOWS[window]} au premier plan`,
-	hover: (window: number, fallen: boolean) => `${WINDOWS[window]} · volet ${fallen ? 'tombé' : 'levé'}`,
-};
+/**
+ * Format des nombres de chaque langue (`formats` du module i18n, recopié : l'importer l'ajouterait au
+ * morceau du chargeur, que toutes les pages téléchargent). Le français du site ne groupe les chiffres
+ * qu'à partir de 10 000 (« 1000 ms », mais « 1 048 576 o ») ; l'anglais dès 1 000 (« 1,000 ms »).
+ */
+const NUMBERS = {
+	fr: { intl: 'fr-FR', useGrouping: 'min2' },
+	en: { intl: 'en-GB', useGrouping: 'auto' },
+} as const;
 
-export const releve = releves.rest(NVIM);
+/**
+ * Les relevés dans une langue. Le formateur est créé ici, une fois par appel, et non à chaque image :
+ * le mouvement l'appelle à son montage, avec la langue du document.
+ */
+export function relevesOf(locale: Locale) {
+	const { intl, useGrouping } = NUMBERS[locale];
+	const n = new Intl.NumberFormat(intl, { useGrouping }).format;
+	const ms = (value: number) => `${n(Math.max(0, Math.round(value)))} ms`;
+	const w = (window: number) => WINDOWS[window];
+	return {
+		fr: {
+			rest: (active: number) => `${w(active)} au premier plan · sondage ${ms(POLL_MS)}`,
+			focused: (active: number) => `${w(active)} au premier plan`,
+			unread: (bytes: number, wait: number) => `+${n(bytes)} o non lus · lecture dans ${ms(wait)}`,
+			suppressed: (window: number) => `supprimé · ${w(window)} au premier plan`,
+			hover: (window: number, fallen: boolean) => `${w(window)} · volet ${fallen ? 'tombé' : 'levé'}`,
+		},
+		en: {
+			rest: (active: number) => `${w(active)} active · polling ${ms(POLL_MS)}`,
+			focused: (active: number) => `${w(active)} active`,
+			unread: (bytes: number, wait: number) => `+${n(bytes)} B unread · read in ${ms(wait)}`,
+			suppressed: (window: number) => `suppressed · ${w(window)} active`,
+			hover: (window: number, fallen: boolean) => `${w(window)} · flap ${fallen ? 'down' : 'up'}`,
+		},
+	}[locale];
+}
 
 const code = (path: string, lines: [number, number]) => ({ path, lines }) as const;
 const LUA = 'lua/claude-tmux-notify/init.lua';
@@ -82,45 +110,66 @@ const LUA = 'lua/claude-tmux-notify/init.lua';
 export const pieces: Piece[] = [
 	{
 		id: 'perforateur',
-		name: 'Perforateur',
-		role: 'Le crochet Claude Code : lit l’événement, demande à tmux sa fenêtre et perfore une ligne JSON de cinq champs au bout de la bande. Sort toujours en 0.',
+		name: { fr: 'Perforateur', en: 'Tape punch' },
+		role: {
+			fr: 'Le crochet Claude Code : lit l’événement, demande à tmux sa fenêtre et perfore une ligne JSON de cinq champs au bout de la bande. Sort toujours en 0.',
+			en: 'The Claude Code hook: reads the event, asks tmux for its window and punches a five-field JSON line at the end of the tape. Always exits with 0.',
+		},
 		code: code('scripts/tmux-notify.sh', [9, 59]),
 	},
 	{
 		id: 'bobine',
-		name: 'Bobine et massicot',
-		role: 'Le fichier de cache : à la mise en route, il est tronqué au-delà de 1 Mio, puis la lecture part de sa fin.',
+		name: { fr: 'Bobine et massicot', en: 'Reel and guillotine' },
+		role: {
+			fr: 'Le fichier de cache : à la mise en route, il est tronqué au-delà de 1 Mio, puis la lecture part de sa fin.',
+			en: 'The cache file: at start-up it is truncated beyond 1 MiB, then reading starts from its end.',
+		},
 		code: code(LUA, [149, 162]),
 	},
 	{
 		id: 'echappement',
-		name: 'Échappement à la seconde',
-		role: 'Le fs_poll de libuv, qui regarde le fichier toutes les 1000 ms.',
+		name: { fr: 'Échappement à la seconde', en: 'Seconds escapement' },
+		role: {
+			fr: 'Le fs_poll de libuv, qui regarde le fichier toutes les 1000 ms.',
+			en: 'libuv’s fs_poll, which checks the file every 1,000 ms.',
+		},
 		code: code(LUA, [164, 170]),
 	},
 	{
 		id: 'lecture',
-		name: 'Tête de lecture et boucle tampon',
-		role: 'Lit les octets au-delà du décalage, avance le décalage et décode chaque ligne JSON.',
+		name: { fr: 'Tête de lecture et boucle tampon', en: 'Read head and buffer loop' },
+		role: {
+			fr: 'Lit les octets au-delà du décalage, avance le décalage et décode chaque ligne JSON.',
+			en: 'Reads the bytes past the offset, moves the offset on and decodes each JSON line.',
+		},
 		code: code(LUA, [104, 142]),
 	},
 	{
 		id: 'cordon',
-		name: 'Fiche à cordon',
-		role: 'Demande à tmux si la fenêtre de l’événement est active ; branchée dans le jack de cette fenêtre, la fiche retient son volet.',
+		name: { fr: 'Fiche à cordon', en: 'Corded plug' },
+		role: {
+			fr: 'Demande à tmux si la fenêtre de l’événement est active ; branchée dans le jack de cette fenêtre, la fiche retient son volet.',
+			en: 'Asks tmux whether the event’s window is active; sitting in that window’s jack, the plug holds its flap up.',
+		},
 		code: code(LUA, [64, 74]),
 	},
 	{
 		id: 'volet',
-		name: 'Volet',
-		role: 'Le toast : titre Claude — <fenêtre>, message de Claude, niveau selon l’événement.',
+		name: { fr: 'Volet', en: 'Flap' },
+		role: {
+			fr: 'Le toast : titre Claude — <fenêtre>, message de Claude, niveau selon l’événement.',
+			en: 'The toast: titled Claude — <window>, with Claude’s message and a level set by the event.',
+		},
 		code: code(LUA, [86, 102]),
 		master: true,
 	},
 	{
 		id: 'sonnette',
-		name: 'Sonnette trembleuse',
-		role: 'Le notifieur : Snacks s’il est chargé, sinon vim.notify au niveau warn ou info.',
+		name: { fr: 'Sonnette trembleuse', en: 'Trembler bell' },
+		role: {
+			fr: 'Le notifieur : Snacks s’il est chargé, sinon vim.notify au niveau warn ou info.',
+			en: 'The notifier: Snacks if it is loaded, otherwise vim.notify at warn or info level.',
+		},
 		code: code(LUA, [76, 84]),
 	},
 ];

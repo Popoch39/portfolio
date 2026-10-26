@@ -522,10 +522,8 @@ export function solidSvg(paths: SolidPaths, { tone = "hi", crease = "faint", hal
   if (halo) parts.push(`<path class="iso-halo" d="${paths.fill}"/>`);
   parts.push(`<path class="iso-fill" d="${paths.fill}"/>`);
   if (!flat) {
-    paths.shades.forEach((d, shade) => {
-      if (d) parts.push(`<path class="iso-shade" data-shade="${shade}" d="${d}"/>`);
-    });
-    parts.push(`<path class="iso-top" d="${paths.top}"/>`);
+    const faces = paths.shades.map((d, shade) => (d ? `<path class="iso-shade" data-shade="${shade}" d="${d}"/>` : "")).join("");
+    parts.push(`<g class="iso-faces">${faces}<path class="iso-top" d="${paths.top}"/></g>`);
   }
   if (crease !== "none" && paths.crease) parts.push(`<path class="iso-line iso-crease" data-tone="${crease}" d="${paths.crease}"/>`);
   if (crease !== "none" && paths.bevel) parts.push(`<path class="iso-line iso-bevel" data-tone="${crease}" d="${paths.bevel}"/>`);
@@ -765,16 +763,16 @@ export const ISO_CSS = `
 .iso-shade[data-shade="2"]{fill:var(--anatomy-shade-2)}
 .iso-shade[data-shade="3"]{fill:var(--anatomy-shade-3)}
 .iso-top{fill:var(--anatomy-top)}
-.iso-solid[data-lit]>.iso-top{fill:var(--anatomy-lit-top)}
-.iso-solid[data-lit]>.iso-shade{fill:var(--anatomy-lit-shade)}
-.iso-solid[data-seamless]>.iso-shade,.iso-solid[data-seamless]>.iso-top{stroke-width:.4;stroke-linejoin:round}
-.iso-solid[data-seamless]>.iso-shade[data-shade="0"]{stroke:var(--anatomy-shade-0)}
-.iso-solid[data-seamless]>.iso-shade[data-shade="1"]{stroke:var(--anatomy-shade-1)}
-.iso-solid[data-seamless]>.iso-shade[data-shade="2"]{stroke:var(--anatomy-shade-2)}
-.iso-solid[data-seamless]>.iso-shade[data-shade="3"]{stroke:var(--anatomy-shade-3)}
-.iso-solid[data-seamless]>.iso-top{stroke:var(--anatomy-top)}
-.iso-solid[data-seamless][data-lit]>.iso-top{stroke:var(--anatomy-lit-top)}
-.iso-solid[data-seamless][data-lit]>.iso-shade{stroke:var(--anatomy-lit-shade)}
+.iso-solid[data-lit]>.iso-faces>.iso-top{fill:var(--anatomy-lit-top)}
+.iso-solid[data-lit]>.iso-faces>.iso-shade{fill:var(--anatomy-lit-shade)}
+.iso-solid[data-seamless]>.iso-faces>.iso-shade,.iso-solid[data-seamless]>.iso-faces>.iso-top{stroke-width:.4;stroke-linejoin:round}
+.iso-solid[data-seamless]>.iso-faces>.iso-shade[data-shade="0"]{stroke:var(--anatomy-shade-0)}
+.iso-solid[data-seamless]>.iso-faces>.iso-shade[data-shade="1"]{stroke:var(--anatomy-shade-1)}
+.iso-solid[data-seamless]>.iso-faces>.iso-shade[data-shade="2"]{stroke:var(--anatomy-shade-2)}
+.iso-solid[data-seamless]>.iso-faces>.iso-shade[data-shade="3"]{stroke:var(--anatomy-shade-3)}
+.iso-solid[data-seamless]>.iso-faces>.iso-top{stroke:var(--anatomy-top)}
+.iso-solid[data-seamless][data-lit]>.iso-faces>.iso-top{stroke:var(--anatomy-lit-top)}
+.iso-solid[data-seamless][data-lit]>.iso-faces>.iso-shade{stroke:var(--anatomy-lit-shade)}
 .iso-solid[data-lit]>.iso-edge{stroke:var(--anatomy-lit)}
 .iso-halo{fill:var(--anatomy-halo);stroke:none;filter:blur(9px);opacity:var(--anatomy-halo-opacity);transform:translateY(3px)}
 .iso-line{fill:none;stroke:var(--anatomy-lo);stroke-width:var(--anatomy-weight);stroke-linecap:round;stroke-linejoin:round}

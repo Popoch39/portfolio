@@ -5,10 +5,13 @@
 // `data-aiming` et la pièce maîtresse redevient neutre. Seul ce module écrit `data-on` et
 // `data-aiming` : le mouvement d'une figure n'y touche jamais.
 
+/** Les éléments que la palette masque : les faces d'un solide d'un bloc, sinon chaque face seule. */
+const MASKED = '.iso-faces, .iso-shade:not(.iso-faces > *), .iso-top:not(.iso-faces > *)';
+
 /**
  * Le grain de la pièce visée naît à son coin haut gauche et doit couvrir sa diagonale (palette des
- * figures). Son masque se cale sur la boîte de chaque face, Chromium ignorant `view-box` sur un
- * élément SVG : chaque face reçoit donc ce coin et cette diagonale dans son propre repère.
+ * figures). Son masque se cale sur la boîte de chaque élément masqué, Chromium ignorant `view-box`
+ * sur un élément SVG : chacun reçoit donc ce coin et cette diagonale dans son propre repère.
  */
 function measureGrain(hooks: Element[]) {
 	const boxes = hooks.map((hook) => hook.getBoundingClientRect());
@@ -16,7 +19,7 @@ function measureGrain(hooks: Element[]) {
 	const top = Math.min(...boxes.map((box) => box.top));
 	const diagonal = Math.hypot(Math.max(...boxes.map((box) => box.right)) - left, Math.max(...boxes.map((box) => box.bottom)) - top);
 	if (!(diagonal > 0)) return;
-	for (const face of hooks.flatMap((hook) => [...hook.querySelectorAll<SVGGraphicsElement>('.iso-shade, .iso-top')])) {
+	for (const face of hooks.flatMap((hook) => [...hook.querySelectorAll<SVGGraphicsElement>(MASKED)])) {
 		const toFace = face.getScreenCTM();
 		if (!toFace) continue;
 		const corner = new DOMPoint(left, top).matrixTransform(toFace.inverse());

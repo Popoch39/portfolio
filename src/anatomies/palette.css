@@ -58,7 +58,7 @@
 }
 
 /* Le joint des faces jointives dessinerait la teinte de la palette autour de chaque trame. */
-:is(.iso.anatomy [data-piece][data-on], .iso.anatomy:not([data-aiming]) [data-piece][data-master]) .iso-solid[data-seamless] > :is(.iso-shade, .iso-top) {
+:is(.iso.anatomy [data-piece][data-on], .iso.anatomy:not([data-aiming]) [data-piece][data-master]) .iso-solid[data-seamless] > .iso-faces > :is(.iso-shade, .iso-top) {
 	stroke: none;
 }
 
@@ -85,12 +85,14 @@
 /* Sur la pièce visée, le grain naît au coin haut gauche et gagne toute la surface en cercle. Les
    faces sont masquées par un dégradé radial dont le rayon grandit de 0,15 à 1,4 diagonale de la
    pièce ; sa lisière, large de 0,4 diagonale, s'éteint en courbe douce (cinq arrêts en marche
-   lissée). Le masque se cale sur la boîte de chaque face (Chromium ignore `view-box` sur un
-   élément SVG) : la mise en avant pose sur chaque face le coin et la diagonale de la pièce dans
-   son repère (`highlight.ts`). Derrière, le fond de la pièce, teinté, attend le grain. Sans mesure
-   ou sans animation, le masque tombe et le grain est là. */
-/* Non héritée et animée sur les faces mêmes : chaque image ne restyle que les faces masquées, pas
-   toute la pièce (arêtes, textes), et le survol reste fluide sur les grandes pièces. */
+   lissée). Le masque se cale sur la boîte de l'élément masqué (Chromium ignore `view-box` sur un
+   élément SVG) : la mise en avant pose sur chacun le coin et la diagonale de la pièce dans son
+   repère (`highlight.ts`). Derrière, le fond de la pièce, teinté, attend le grain. Sans mesure ou
+   sans animation, le masque tombe et le grain est là. */
+/* Chaque masque se redessine à chaque image : on masque les faces d'un solide d'un bloc (le groupe
+   `.iso-faces` du kit), et une face seule hors d'un tel groupe. Sur les grosses pièces, cela fait
+   trois fois moins de masques. La propriété, non héritée et animée sur les éléments masqués
+   mêmes, ne restyle qu'eux, pas toute la pièce (arêtes, textes). */
 @property --anatomy-grain-t {
 	syntax: '<number>';
 	inherits: false;
@@ -101,7 +103,9 @@
 	fill: #f7f8ff;
 }
 
-.iso.anatomy [data-piece][data-on] :is(.iso-shade, .iso-top) {
+.iso.anatomy [data-piece][data-on] .iso-faces,
+.iso.anatomy [data-piece][data-on] .iso-shade:not(.iso-faces > *),
+.iso.anatomy [data-piece][data-on] .iso-top:not(.iso-faces > *) {
 	/* Le rayon part de 0,15 diagonale : dès la première image, la lisière point déjà au coin. */
 	--anatomy-grain-r: calc(var(--anatomy-grain-d) * (0.15 + 1.25 * var(--anatomy-grain-t)));
 	mask-image: radial-gradient(
@@ -121,7 +125,9 @@
 @media (prefers-reduced-motion: no-preference) {
 	/* Départ franc, longue arrivée sans palier : le grain répond tout de suite, puis sa lisière se
 	   voit gagner la pièce et s'y poser. */
-	.iso.anatomy [data-piece][data-on] :is(.iso-shade, .iso-top) {
+	.iso.anatomy [data-piece][data-on] .iso-faces,
+	.iso.anatomy [data-piece][data-on] .iso-shade:not(.iso-faces > *),
+	.iso.anatomy [data-piece][data-on] .iso-top:not(.iso-faces > *) {
 		animation: iso-grain 1.3s cubic-bezier(0.3, 0.15, 0.2, 1) both;
 	}
 }

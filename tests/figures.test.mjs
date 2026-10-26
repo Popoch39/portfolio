@@ -47,6 +47,17 @@ test('les trames du grain : dans chaque SVG autonome, et une seule fois par page
 	}
 });
 
+test('le grain masque les faces d’un solide d’un bloc : la plupart des faces sont regroupées', () => {
+	// Un masque par face redessiné à chaque image faisait tomber le survol des grosses pièces à 20 fps.
+	for (const { slug } of PROJECTS) {
+		const html = readFiche(slug);
+		const faces = html.match(/<path class="iso-(?:shade|top)"/g)?.length ?? 0;
+		const grouped = [...html.matchAll(/<g class="iso-faces">((?:<path[^>]*\/>)*)<\/g>/g)].reduce((sum, [, inner]) => sum + (inner.match(/<path /g)?.length ?? 0), 0);
+		assert.ok(grouped >= faces / 2, `${slug} : ${grouped} faces regroupées sur ${faces}`);
+	}
+	assert.match(css(figures[0].svg), /\[data-on\][^{]*\.iso-faces[^{]*{[^}]*mask-image/, 'le masque du grain vise les groupes de faces');
+});
+
 test('le SVG autonome montre les mêmes pièces que la figure de la fiche', () => {
 	for (const { slug, svg } of figures) {
 		const fiche = readFiche(slug);

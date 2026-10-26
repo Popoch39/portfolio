@@ -22,6 +22,18 @@ Validé par Louis le 2026-10-25. Les renvois visent la page de revue : ressembla
 - **Décisions n° 14 à 19.** L'option de la fiche est retenue partout : `refreshInterval` supposé en secondes et vérifié dans la doc de Claude Code à la construction, entrées d'exemple du README dites dans la légende, format du code plutôt que du README, trois zones de ton sans nouvelle couleur, vue rasante (à 12°, voir R14), cadran à au moins 22 % de la hauteur et recadrage à 110–118 % à 390 px.
 - **Comptes.** 64 → 62 pièces dessinées ; nomenclature inchangée, 8 pièces, une seule pièce maîtresse.
 
+## Construction (#24)
+
+- **Unité de `refreshInterval` vérifiée (décision n° 14) : des secondes.** Documentation de Claude Code, page « Customize your status line », section « Manually configure a status line » (https://code.claude.com/docs/en/statusline, consultée le 2026-10-25) : « The optional `refreshInterval` field re-runs your command every N seconds in addition to the event-driven updates. The minimum is `1`. » `refreshInterval: 60` donne donc un rendu par minute : l'hypothèse de la fiche tient. La même page dit qu'une status line peut afficher plusieurs lignes ; la figure suit le code (L252), qui n'en écrit qu'une.
+- **Écarts à la fiche, imposés par le dessin ou l'audit :**
+  - Format 880 × 250 (environ 3,5 : 1) au lieu de 2,7 : 1. La figure est bornée par sa largeur : à 2,7 : 1, la rampe n'occupait que 40 % de la hauteur de la carte. Le cadran (rayon porté à 40) fait environ 34 % de la hauteur.
+  - Pas de recadrage à 110–118 % à 390 px : il demanderait une règle dans la carte commune (`FigureCard.astro`), hors du périmètre du ticket.
+  - La croix de Malte tourne sur un axe parallèle à y, derrière le hublot de sa boîte, et mène l'arbre du temps par renvoi : sur l'arbre lui-même (axe x), elle ne se verrait que de chant.
+  - La plaque « v1.0.0 » est sur la face de la boîte de la croix de Malte, qui ferme la rampe à droite : sur l'embout, vu de biais, la gravure était illisible.
+  - Le raccord stdin monte derrière la tête et tourne dans deux coudes à boule : un virage dans le plan y–z se pincerait à l'écran.
+  - La mâchoire haute des brides, cachée derrière la rampe, n'est pas dessinée ; une lame couchée, cachée par le guide avant (relevé à 4 de haut pour cela), non plus : elle se dessine en se levant.
+  - Les ressorts de rappel sont une rangée de ressorts verticaux sous la lèvre du guide avant, sur une réglette.
+
 ## Ce que fait le projet
 
 Claude Code lance la status line et lui passe un JSON sur stdin. Le binaire répond par **une seule ligne**, faite de quatre segments séparés par « · » : modèle, dossier (branche), fenêtre `5h`, fenêtre `sem`. Chaque fenêtre s'écrit comme une barre de 10 cases, un pourcentage coloré et le délai avant reset.

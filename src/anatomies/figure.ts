@@ -5,10 +5,16 @@ import { figureSvg } from '../vendor/anatomy/iso-kit.ts';
 import palette from './palette.css?raw';
 import type { Anatomy } from './contract.ts';
 
+/**
+ * Largeur naturelle de la figure intégrée à la page : la carte de la fiche l'affiche à ce format,
+ * réduite à la place disponible et à la hauteur de la fenêtre, sans jamais l'agrandir.
+ */
+const PAGE_WIDTH = 900;
+
 export function restSvg({ content, renderRest }: Anatomy, { standalone = false } = {}) {
 	const { width, height, body } = renderRest();
 	assertHooks(content.slug, body, content.pieces.map((piece) => piece.id));
-	return figureSvg({
+	const svg = figureSvg({
 		width,
 		height,
 		label: content.label,
@@ -16,6 +22,9 @@ export function restSvg({ content, renderRest }: Anatomy, { standalone = false }
 		standalone: standalone ? 'light' : false,
 		className: 'anatomy',
 	});
+	// Une taille naturelle (le kit ne pose que `viewBox`) : bornée en largeur et en hauteur, la figure
+	// garde son format, et la carte qui l'épouse prend la largeur que lui laisse la hauteur.
+	return standalone ? svg : svg.replace('<svg ', `<svg width="${PAGE_WIDTH}" height="${Math.round((PAGE_WIDTH * height) / width)}" `);
 }
 
 /** Les crochets de pièce du SVG doivent être exactement les identifiants de la nomenclature. */

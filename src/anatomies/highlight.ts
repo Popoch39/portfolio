@@ -30,18 +30,33 @@ const pieceOf = (target: EventTarget | null) =>
 	target instanceof Element ? (target.closest('[data-piece]')?.getAttribute('data-piece') ?? null) : null;
 
 /**
+ * Un pointeur qui quitte une pièce pour le vide la garde visée encore un instant : il traverse un
+ * interstice vers la pièce voisine (la maîtresse ne clignote pas entre deux) ou vers le repère, dont
+ * il peut ainsi suivre le lien.
+ */
+const LINGER = 250;
+
+/**
  * Lie les crochets de pièce contenus dans `root` (la figure, et la nomenclature quand il y en a
  * une) : survol ou focus d'un crochet = sa pièce visée ; sortie = plus rien de visé, la pièce
- * maîtresse redevient la pièce bleue. Au toucher, un appui vise la pièce touchée. Renvoie de quoi
- * tout débrancher.
+ * maîtresse redevient la pièce bleue. Au toucher, un appui vise la pièce touchée. `onAim` apprend
+ * chaque changement de pièce visée. Renvoie de quoi tout débrancher.
  */
-export function linkPieces(root: Element): () => void {
+export function linkPieces(root: Element, { onAim }: { onAim?: (id: string | null) => void } = {}): () => void {
 	let aimed: string | null = null;
+	let release = 0;
 	const aim = (id: string | null) => {
+		clearTimeout(release);
+		release = 0;
 		if (id === aimed) return;
 		aimed = id;
 		for (const hook of root.querySelectorAll('[data-piece]')) hook.toggleAttribute('data-on', hook.getAttribute('data-piece') === id);
 		if (id) measureGrain([...root.querySelectorAll('svg [data-piece][data-on]')]);
+		onAim?.(id);
+	};
+	const hover = (id: string | null) => {
+		if (id || !aimed) aim(id);
+		else if (!release) release = window.setTimeout(() => aim(null), LINGER);
 	};
 
 	const wiring = new AbortController();
@@ -49,7 +64,7 @@ export function linkPieces(root: Element): () => void {
 		root.addEventListener(type, listener as EventListener, { signal: wiring.signal });
 
 	// Un doigt ne survole pas : le survol vient de la souris ou du stylet, l'appui du doigt.
-	on('pointerover', (event) => event.pointerType !== 'touch' && aim(pieceOf(event.target)));
+	on('pointerover', (event) => event.pointerType !== 'touch' && hover(pieceOf(event.target)));
 	on('pointerleave', (event) => event.pointerType !== 'touch' && aim(null));
 	on('pointerdown', (event) => event.pointerType === 'touch' && aim(pieceOf(event.target)));
 	on('focusin', (event) => aim(pieceOf(event.target)));

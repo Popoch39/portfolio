@@ -221,21 +221,22 @@ Le modèle de la figure est une fonction pure du temps simulé *t*, en minutes d
 
 - **Pointeur** : on glisse horizontalement, sur le volant ou n'importe où dans la scène. Vers la droite, le temps avance d'environ une minute par pixel ; vers la gauche, il recule. Le volant suit avec un suivi amorti, jamais d'un saut. Le survol d'une pièce l'éclaire, par le mécanisme commun de mise en avant.
 - **Toucher** : même glisser au doigt, horizontal (`touch-action: pan-y`, pour laisser la page défiler verticalement). Un toucher bref avance d'un cran, soit une minute.
-- **Clavier**, une fois la scène focalisée (aucun écouteur global) :
+- **Règle de temps**, sur la fiche : sous la figure, une règle de 0 à 2 h 30, graduée toutes les 5 minutes, porte un triangle à chaque événement du scénario et un curseur sur la minute affichée. Un appui y pose le temps à la minute près, un glisser l'y promène. Le bouton « Lancer le tour » lance le tour, et devient « Arrêter le tour » tant qu'il court.
+- **Clavier**, une fois la règle focalisée sur la fiche, ou la scène dans l'aperçu (aucun écouteur global) :
   - `→` et `←` : un cran, soit ±1 min ;
   - `Page suivante` et `Page précédente` : un tour de volant, soit ±1 h ;
   - `Fin` : jusqu'au prochain événement (lame, seuil, changement de format, reset) ;
   - `Début` : pose au repos ;
   - `Espace` : lance ou arrête le tour.
-- **Tour au repos** : après 4 s sans action, la machine rejoue le scénario de *t* = 0 jusqu'à la boucle hors ligne. Le volant tourne seul à environ 5 min/s, ralentit près de chaque événement pour qu'on voie la lame, le seuil ou le tambour, puis reprend. Toute action le suspend.
-- **Arrêt** hors écran. En **mouvement réduit**, la figure reste immobile dans la pose au repos. Les commandes sautent directement à l'état visé, sans amortissement ni roulement des tambours.
+- **Tour** : la machine rejoue le scénario jusqu'à la boucle hors ligne. Le volant tourne seul à environ 5 min/s, ralentit près de chaque événement pour qu'on voie la lame, le seuil ou le tambour, puis reprend. Sur la fiche, il ne part que sur le bouton ou `Espace`, depuis la minute de la règle (depuis *t* = 0 au repos ou au bout), et s'arrête sur la session hors ligne. Dans l'aperçu, sans règle, il part seul de *t* = 0 après 4 s sans action, revient au repos, et toute action le suspend.
+- **Arrêt** hors écran. En **mouvement réduit**, la figure reste immobile dans la pose au repos et le tour n'est pas proposé. Les commandes sautent directement à l'état visé, sans amortissement ni roulement des tambours.
 
 ## Textes de la fiche
 
 - **Accroche** : L'usage de votre abonnement Claude Code, *mesuré* sur une seule ligne, sous la zone de saisie.
 - **Titre de la figure** : Rampe à cadran — fenêtre de 5 h et semaine
-- **Consigne au pointeur** : Glissez vers la droite pour faire avancer le temps
-- **Consigne au toucher** : Glissez le doigt vers la droite pour faire avancer le temps
+- **Consigne au pointeur** : Glissez vers la droite pour faire avancer le temps (aperçu) ; Glissez la règle ou la figure pour faire avancer le temps ; les triangles marquent les événements (fiche)
+- **Consigne au toucher** : Glissez le doigt vers la droite pour faire avancer le temps (aperçu) ; Glissez la règle ou la figure du doigt ; les triangles marquent les événements (fiche)
 - **Format du relevé** : `{source} · 5h {p5} % · reset {r5} · sem {p7} % · {r7}`
   - `source` vaut `stdin`, `API` ou `cache` ;
   - les pourcentages sont arrondis comme en L68, avec une espace fine insécable avant « % » ;

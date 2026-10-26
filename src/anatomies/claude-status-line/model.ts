@@ -6,6 +6,8 @@
 // `refreshInterval` secondes (60), donc un rendu par minute entière. Fonction pure de `t` : revenir
 // en arrière rejoue exactement le même état, comme le code, sans état en mémoire hors du cache.
 
+import type { Timeline } from '../contract.ts';
+
 export const SHA = 'f77fa09f17d4781dbdefbff2542ae951852b67d0';
 export const VERSION = '1.0.0';
 
@@ -260,3 +262,22 @@ export function releveOf(source: Source, five: Shown, week: Shown) {
 
 export const restPose = poseAt(REST);
 export const releve = releveOf(SOURCES[restPose.lever], restPose.output.five, restPose.output.week);
+
+// --- Règle de temps -------------------------------------------------------------------------------
+
+const hourLabel = (m: number) => (m === 0 ? '0' : m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60}` : ''}`);
+
+/** La règle de la fiche : la session minute par minute, graduée toutes les 5 minutes, légendée toutes les 30. */
+export const timeline: Timeline = {
+	last: LAST,
+	rest: REST,
+	events: EVENTS,
+	tick: 5,
+	marks: [0, 30, 60, 90, 120, 150].map((at) => ({ at, text: hourLabel(at) })),
+	// La minute du rendu affiché, comme le relevé.
+	reading: (t) => `minute ${Math.floor(t)}`,
+	consignes: {
+		pointer: 'Glissez la règle ou la figure pour faire avancer le temps ; les triangles marquent les événements',
+		touch: 'Glissez la règle ou la figure du doigt ; les triangles marquent les événements',
+	},
+};

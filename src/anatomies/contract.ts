@@ -3,7 +3,8 @@
 // découvre seul. Un module complet expose :
 // - `index.ts` : `export const anatomy: Anatomy` (contenu et géométrie au repos) ;
 // - `motion.ts` : `export default` un `MountMotion`, chargé à la demande dans un morceau séparé ;
-// - `concept.md` : la fiche de concept, qui relie chaque chiffre au code.
+// - `concept.md` : la fiche de concept, qui relie chaque chiffre au code ;
+// - `signatures.json` : la `Signature` de chaque pièce, relevée par `pnpm signatures`.
 // Tout ce qui est propre à une figure (modèle, géométrie, textes, mouvement) reste dans son
 // dossier : ajouter ou refaire une anatomie ne touche aucun fichier commun.
 //
@@ -31,6 +32,32 @@ export interface Piece {
 	code: CodeRef;
 	/** La pièce maîtresse, seule en bleu au repos : une seule par anatomie. */
 	master?: true;
+}
+
+/**
+ * Signature du code d'une pièce : ses premières lignes de code (1 à 4), hors lignes vides et
+ * commentaires, avec leur numéro dans le fichier. Le repère de la fiche l'affiche.
+ */
+export type Signature = readonly (readonly [line: number, text: string])[];
+
+/**
+ * Règle de temps d'une figure qui a un temps : graduée sous la figure, ses événements marqués, avec
+ * le bouton du tour. Le temps va de 0 à `last`, dans l'unité de la figure.
+ */
+export interface Timeline {
+	last: number;
+	/** Le temps au repos, où le curseur est posé. */
+	rest: number;
+	/** Les instants où il se passe quelque chose : un triangle chacun. */
+	events: readonly number[];
+	/** Pas des petites graduations. */
+	tick: number;
+	/** Grandes graduations, légendées. */
+	marks: readonly { at: number; text: string }[];
+	/** Le temps lu au-dessus du curseur (« minute 12 »). */
+	reading: (t: number) => string;
+	/** Les consignes de la fiche, qui désignent la règle : l'aperçu, sans règle, garde les siennes. */
+	consignes: { pointer: string; touch: string };
 }
 
 /** Accroche du héros de la fiche, avec un seul mot en emphase. */
@@ -67,6 +94,8 @@ export interface AnatomyContent {
 	 * doit rester hors de ces bandes.
 	 */
 	phoneCrop?: true;
+	/** La règle de temps de la fiche, pour une figure qui a un temps. */
+	timeline?: Timeline;
 }
 
 /**
@@ -87,18 +116,25 @@ export interface Anatomy {
 
 /** Ce que le chargeur confie au mouvement d'une figure. */
 export interface Stage {
-	/** La scène focalisable qui contient la figure : seule cible des écouteurs clavier. */
+	/** La scène qui contient la figure : seule cible des écouteurs clavier, sauf règle de temps. */
 	scene: HTMLElement;
 	svg: SVGSVGElement;
 	/** Le relevé de la carte, que le mouvement réécrit. */
 	releve: HTMLElement;
+	/**
+	 * La règle de temps (`AnatomyContent.timeline`) et son bouton de tour, sur la fiche seulement :
+	 * l'aperçu de l'accueil n'en a pas.
+	 */
+	timeline?: { ruler: HTMLElement; tour: HTMLButtonElement };
 }
 
 /**
  * Monte le mouvement d'une figure sur sa scène et son relevé, et renvoie de quoi tout arrêter
  * (boucle, écouteurs, observateurs) et rendre la figure au repos. Le chargeur a déjà rendu la scène
  * focalisable ; le mouvement y pose son rôle et le libellé qui explique ses touches, et n'écoute
- * le clavier que sur elle. Il s'appuie sur les outils de `live.ts` et ne touche jamais aux
- * attributs de mise en avant des pièces (`data-piece`, `data-master`, `data-on`).
+ * le clavier que sur elle. Avec une règle de temps, c'est la règle qui est focalisable et le
+ * mouvement qui la rend vivante : rôle de curseur, touches, bouton du tour. Il s'appuie sur les
+ * outils de `live.ts` et ne touche jamais aux attributs de mise en avant des pièces (`data-piece`,
+ * `data-master`, `data-on`).
  */
 export type MountMotion = (stage: Stage) => () => void;

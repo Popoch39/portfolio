@@ -1,0 +1,191 @@
+---
+// Règle de temps, sous une figure qui a un temps (`AnatomyContent.timeline`) : le bouton du tour,
+// puis la règle graduée, ses événements marqués d'un triangle et son curseur posé au repos. Tout y
+// est placé en pourcentage de la largeur : la règle suit la carte sans script. Sans script, rien
+// n'y agit (bouton désactivé, règle hors de l'ordre de tabulation) ; le mouvement de la figure la
+// rend vivante.
+import type { Timeline } from '../anatomies/contract';
+import { readingAnchor, rulerX } from '../anatomies/ruler';
+
+interface Props {
+	timeline: Timeline;
+}
+
+const { timeline } = Astro.props;
+const { last, rest, events, tick, marks, reading } = timeline;
+const at = (t: number) => rulerX(t, last);
+const ticks = Array.from({ length: Math.floor(last / tick) + 1 }, (_, i) => i * tick);
+const major = new Set(marks.map((mark) => mark.at));
+---
+
+<div class="regle">
+	<button class="mono tour" type="button" data-tour disabled>
+		<svg class="tour-icon" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1l7 4-7 4z"></path></svg>
+		<span data-tour-label>Lancer le tour</span>
+	</button>
+	<div class="ruler" data-regle>
+		<svg class="graduations" width="100%" height="78" aria-hidden="true" focusable="false">
+			<line class="base" x1="0" x2="100%" y1="34" y2="34"></line>
+			{ticks.map((t) => <line class="tick" x1={at(t)} x2={at(t)} y1={major.has(t) ? 26 : 30} y2={major.has(t) ? 35 : 34} />)}
+			{
+				marks.map((mark) => (
+					<text class="mark" x={at(mark.at)} y="58" text-anchor="middle">
+						{mark.text}
+					</text>
+				))
+			}
+			{
+				events.map((t) => (
+					<svg class="event" x={at(t)} y="36" overflow="visible">
+						<path d="M0 0l4 6h-8z" />
+					</svg>
+				))
+			}
+			<svg class="thumb" data-thumb x={at(rest)} overflow="visible">
+				<text class="reading" data-reading y="12" text-anchor={readingAnchor(rest, last)}>{reading(rest)}</text>
+				<line class="needle" x1="0" x2="0" y1="18" y2="44"></line>
+				<rect class="grip-ring" x="-18" y="41" width="36" height="28"></rect>
+				<rect class="grip" x="-15" y="44" width="30" height="22"></rect>
+				<path class="grip-lines" d="M-4.5 50v10M0.5 50v10M5.5 50v10"></path>
+			</svg>
+		</svg>
+	</div>
+</div>
+
+<style>
+	.regle {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		gap: 12px 28px;
+		margin-top: 10px;
+		padding-top: 14px;
+		border-top: 1px solid var(--rule);
+	}
+
+	.tour {
+		flex: none;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		min-width: 168px;
+		height: 44px;
+		padding: 0 14px;
+		border: 1px solid var(--ink);
+		border-radius: 0;
+		background: var(--paper);
+		color: var(--ink);
+		font-size: 12px;
+		cursor: pointer;
+	}
+
+	/* Survol posé par le script (pas de `:hover` dans la CSS livrée). */
+	.tour[data-hover] {
+		background: var(--ink);
+		color: var(--paper);
+	}
+
+	.tour[data-touring] {
+		border-color: var(--accent);
+		background: var(--accent);
+		color: #ffffff;
+	}
+
+	.tour:disabled {
+		border-color: var(--rule);
+		color: var(--muted);
+		cursor: default;
+	}
+
+	.tour-icon {
+		fill: currentColor;
+	}
+
+	/* Le tour est un mouvement continu : il n'est pas proposé à qui en demande moins. */
+	@media (prefers-reduced-motion: reduce) {
+		.tour {
+			display: none;
+		}
+	}
+
+	/* Le doigt sur la règle la fait glisser, il ne fait pas défiler la page. */
+	.ruler {
+		flex: 1 1 280px;
+		min-width: 0;
+		padding-inline: 24px;
+		touch-action: none;
+	}
+
+	.ruler[role='slider'] {
+		cursor: pointer;
+	}
+
+	.ruler:focus-visible {
+		outline: none;
+	}
+
+	.graduations {
+		display: block;
+		overflow: visible;
+		font-family: var(--font-mono);
+	}
+
+	.base,
+	.tick {
+		stroke: var(--ink);
+		stroke-width: 1;
+		shape-rendering: crispEdges;
+	}
+
+	.mark {
+		fill: var(--muted);
+		font-size: 11px;
+	}
+
+	.event {
+		fill: var(--accent);
+	}
+
+	.reading {
+		fill: var(--accent);
+		font-size: 12px;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.needle {
+		stroke: var(--accent);
+		stroke-width: 2;
+	}
+
+	.grip {
+		fill: var(--accent);
+	}
+
+	.ruler[data-hover] .grip {
+		fill: var(--accent-deep);
+	}
+
+	.grip-lines {
+		stroke: #ffffff;
+		stroke-width: 1;
+	}
+
+	.grip-ring {
+		fill: none;
+		stroke: var(--accent);
+		stroke-width: 2;
+		visibility: hidden;
+	}
+
+	.ruler:focus-visible .grip-ring {
+		visibility: visible;
+	}
+
+	/* Le bouton s'aligne sur la ligne de la règle quand ils tiennent côte à côte. */
+	@media (min-width: 720px) {
+		.tour {
+			margin-top: 12px;
+		}
+	}
+</style>

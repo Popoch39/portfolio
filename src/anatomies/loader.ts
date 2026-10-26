@@ -23,12 +23,13 @@ export const preloadMotion = async (motion: string) => {
 /**
  * Charge le mouvement `motion` (le dossier du module, porté par `data-motion` sur la scène), rend
  * la scène focalisable et le monte. Renvoie de quoi tout arrêter et rendre la scène inerte. Si
- * `signal` est annulé pendant le chargement (l'aperçu a changé de projet), rien n'est monté.
+ * `signal` est annulé pendant le chargement (l'aperçu a changé de projet), rien n'est monté. Une
+ * règle de temps prend la place de la scène au clavier : un seul arrêt de tabulation par temps.
  */
 export async function mountFigure(stage: Stage, motion: string, { signal }: { signal?: AbortSignal } = {}) {
 	const mount = await loaderOf(motion)();
 	if (signal?.aborted) return () => {};
-	stage.scene.tabIndex = 0;
+	if (!stage.timeline) stage.scene.tabIndex = 0;
 	const stop = mount(stage);
 	return () => {
 		stop();

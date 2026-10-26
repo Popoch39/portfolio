@@ -1,0 +1,44 @@
+{
+	"plateau": [
+		[10,"export function PciLayer() {"],
+		[11,"  const { line } = OVERLAY_COLORS[useColorScheme()]"],
+		[12,"  const select = useSelectionStore((state) => state.select)"],
+		[14,"  useMapLayer({"]
+	],
+	"tubage": [
+		[3,"interface SelectionState {"],
+		[5,"  idu: string | null"],
+		[10,"  reframe: boolean"],
+		[11,"  select: (idu: string, options?: { reframe?: boolean }) => void"]
+	],
+	"croute": [
+		[67,"export async function loadParcel(fetch: Fetch, idu: string, { signal }: LoadOptions = {}): Promise<Parcel> {"],
+		[68,"  const parts = parseIdu(idu)"],
+		[69,"  if (!parts) throw new ParcelError('invalid-idu', idu)"],
+		[70,"  const parcels = await findParcels(fetch, referenceParams(parts), { signal })"]
+	],
+	"carottier": [
+		[11,"export const parcelBlockQuery = <Model>(queryClient: QueryClient, block: BlockId, idu: string, load: BlockLoader<Model>) =>"],
+		[12,"  queryOptions({"],
+		[13,"    queryKey: [block, idu],"],
+		[14,"    queryFn: async ({ signal }) => load(fetch, await queryClient.fetchQuery(parcelQuery(idu)), { signal }),"]
+	],
+	"couronne": [
+		[61,"async function fetchBody<T>("],
+		[62,"  fetch: Fetch,"],
+		[63,"  url: string,"],
+		[64,"  read: (response: Response) => Promise<T>,"]
+	],
+	"viroles": [
+		[18,"export const BLOCKS = ["],
+		[19,"  { id: 'cadastre', Section: CadastreSection },"],
+		[20,"  { id: 'planning', Section: PlanningSection },"],
+		[21,"  { id: 'risks', Section: RisksSection },"]
+	],
+	"log": [
+		[63,"export function assembleSummary(blocks: readonly BlockState[]): Summary {"],
+		[64,"  return {"],
+		[65,"    facts: blocks.flatMap((block) => (block.status === 'success' ? block.data : [])),"],
+		[66,"    loading: blocks.some(({ status }) => status === 'pending'),"]
+	]
+}

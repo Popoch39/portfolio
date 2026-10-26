@@ -1,12 +1,15 @@
 // Mouvement de la rampe à cadran : on fait avancer le temps au volant (glisser, toucher, clavier) ou
-// le tour au repos le fait. Le temps affiché suit la cible sans saut ; tout le reste découle du modèle
-// pur à cet instant : rendu de la minute, croix de Malte, sonde, tampon, et les aiguilles amorties
-// (amortissement critique, environ 0,6 s) qui mènent tiges, lames, amortisseur et relevé.
+// le tour le fait. Le temps affiché suit la cible sans saut ; tout le reste découle du modèle pur à
+// cet instant : rendu de la minute, croix de Malte, sonde, tampon, et les aiguilles amorties
+// (amortissement critique, environ 0,6 s) qui mènent tiges, lames, amortisseur et relevé. Sur la
+// fiche, la règle de temps montre et règle le temps, et le tour ne part que sur son bouton ; dans
+// l'aperçu, sans règle, le tour part seul quand on laisse la figure.
 import { axisVector, holdStill, translateAlong } from '../../vendor/anatomy/iso-kit.ts';
 import type { MountMotion } from '../contract.ts';
 import { asksForStillness, follow, loop, spring, type Spring } from '../live.ts';
+import { readingAnchor, rulerX } from '../ruler.ts';
 import { DETENTS, MODULES, BLADE_FIRST, BLADE_PITCH, PIVOT_Z, PINIONS, DIAL, WHEEL, PROBE, projection as P } from './layout.ts';
-import { bar, cacheLevel, EVENTS, LAST, poseAt, releveOf, REST, SOURCES, type Pose } from './model.ts';
+import { bar, cacheLevel, EVENTS, LAST, poseAt, releveOf, REST, SOURCES, timeline as TIMELINE, type Pose } from './model.ts';
 import {
 	bladeSvg,
 	crankAt,
@@ -44,7 +47,7 @@ const LEVER = { stiffness: 900, damping: 42 };
 const DRUM_LAG = 0.06;
 /** Glisser : une minute par pixel. */
 const MINUTES_PER_PX = 1;
-/** Tour au repos : départ 4 s après la dernière action, 5 min/s, ralenti autour des événements. */
+/** Tour : départ 4 s après la dernière action (aperçu), 5 min/s, ralenti autour des événements. */
 const TOUR_DELAY = 4000;
 const TOUR_SPEED = 5;
 const TOUR_SLOW = 0.9;
@@ -68,8 +71,17 @@ const describe = (t: number) => {
 	return `Minute ${Math.floor(pose.t)} : source ${SOURCES[pose.lever]}, ${window('5 heures', five, 'reset dans')}, ${window('semaine', week, 'reset dans')}`;
 };
 
-const mount: MountMotion = ({ scene, svg, releve }) => {
+const mount: MountMotion = ({ scene, svg, releve, timeline }) => {
 	const at = (name: string) => svg.querySelector<SVGGElement>(`[data-csl="${name}"]`);
+	// La règle de la fiche prend le clavier à la scène : c'est elle, le curseur du temps.
+	const ruler = timeline?.ruler ?? null;
+	const tourButton = timeline?.tour ?? null;
+	const control = ruler ?? scene;
+	const scale = ruler?.querySelector('svg') ?? null;
+	const thumb = ruler?.querySelector('[data-thumb]') ?? null;
+	const reading = ruler?.querySelector('[data-reading]') ?? null;
+	const tourLabel = tourButton?.querySelector('[data-tour-label]') ?? null;
+	const tourIcon = tourButton?.querySelector('path') ?? null;
 	const keys = ['five', 'week'] as const;
 	const blades = keys.flatMap((key, index) =>
 		Array.from({ length: 10 }, (_, k) => ({ node: at(`blade-${key}-${k}`), window: index, k, x: MODULES[index] + BLADE_FIRST + k * BLADE_PITCH, state: { at: 0, rate: 0 } as Spring, drawn: -1 })),
@@ -196,12 +208,28 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 			{ pct: pose.output.week.pct == null ? null : needles[1].at, reset: pose.output.week.reset },
 		);
 		if (text !== lastText) releve.textContent = lastText = text;
+		// Le curseur de la règle, au temps affiché.
+		write(thumb, 'x', rulerX(pose.t, LAST));
+		write(reading, 'text-anchor', readingAnchor(pose.t, LAST));
+		const minute = TIMELINE.reading(Math.min(pose.t, LAST));
+		if (reading && reading.textContent !== minute) reading.textContent = minute;
+	};
+
+	// Le bouton du tour dit l'action qu'il fera : lancer, ou arrêter le tour en cours.
+	const setTouring = (on: boolean) => {
+		touring = on;
+		if (!tourButton) return;
+		tourButton.toggleAttribute('data-touring', on);
+		if (tourLabel) tourLabel.textContent = on ? 'Arrêter le tour' : 'Lancer le tour';
+		write(tourIcon, 'd', on ? 'M1.5 1h2.5v8H1.5zM6 1h2.5v8H6z' : 'M2 1l7 4-7 4z');
 	};
 
 	const motion = loop(scene, (dt, calm) => {
-		if (calm) touring = false;
+		if (calm && touring) setTouring(false);
 		if (touring) {
 			if (tourT < TOUR_END) tourT = Math.min(TOUR_END, tourT + tourSpeed(tourT) * dt);
+			// Sur la fiche, le tour s'arrête à son terme, la session hors ligne affichée.
+			else if (ruler) setTouring(false);
 			else if ((holdFor += dt) > TOUR_HOLD) {
 				touring = false;
 				tourT = 0;
@@ -210,6 +238,7 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 				resumeLater();
 			}
 			if (touring) target = tourT;
+			value(target);
 		}
 		// Le dernier vingtième de minute est rattrapé d'un coup : sinon le rendu visé tarde à s'afficher.
 		shown = follow(shown, target, dt, TIME_LAG, calm);
@@ -249,13 +278,15 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 
 	const startTour = () => {
 		if (asksForStillness()) return;
-		touring = true;
-		tourT = 0;
+		// Sur la fiche, le tour part d'où en est la règle ; au repos ou au bout, il part du début.
+		tourT = ruler && target > REST && target < TOUR_END ? target : 0;
 		holdFor = 0;
+		setTouring(true);
 		motion.kick();
 	};
 	const resumeLater = () => {
 		clearTimeout(idle);
+		if (ruler) return;
 		idle = window.setTimeout(() => {
 			if (asksForStillness() || hovering || scene.matches(':focus')) return;
 			startTour();
@@ -264,14 +295,23 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 	const takeOver = () => {
 		clearTimeout(idle);
 		if (touring) {
-			touring = false;
+			setTouring(false);
 			target = clampTime(shown);
 		}
 	};
+	// La valeur du curseur : la minute du rendu, comme le temps lu sur la règle. Le tour la fait
+	// avancer aussi.
+	let announced = -1;
+	const value = (t: number) => {
+		const minute = Math.floor(t);
+		if (minute === announced) return;
+		announced = minute;
+		control.setAttribute('aria-valuenow', String(minute));
+		control.setAttribute('aria-valuetext', describe(t));
+	};
 	const aim = (t: number) => {
 		target = clampTime(t);
-		scene.setAttribute('aria-valuenow', String(Math.round(target)));
-		scene.setAttribute('aria-valuetext', describe(target));
+		value(target);
 		motion.kick();
 	};
 
@@ -311,11 +351,12 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 		drag = null;
 		resumeLater();
 	};
-	// Le pointeur qui survole la figure suspend le tour ; il reprend 4 s après son départ.
+	// Aperçu : le pointeur qui survole la figure suspend le tour ; il reprend 4 s après son départ. Sur
+	// la fiche, un tour lancé au bouton continue sous le pointeur.
 	scene.addEventListener(
 		'pointerenter',
 		(event) => {
-			if (event.pointerType === 'touch') return;
+			if (event.pointerType === 'touch' || ruler) return;
 			hovering = true;
 			takeOver();
 		},
@@ -324,7 +365,7 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 	scene.addEventListener(
 		'pointerleave',
 		(event) => {
-			if (event.pointerType === 'touch') return;
+			if (event.pointerType === 'touch' || ruler) return;
 			hovering = false;
 			if (!drag) resumeLater();
 		},
@@ -334,7 +375,42 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 	scene.addEventListener('pointercancel', release, { signal });
 	scene.addEventListener('focus', takeOver, { signal });
 	scene.addEventListener('blur', resumeLater, { signal });
-	scene.addEventListener(
+
+	// La règle : un appui y pose le temps, un glisser l'y promène, à la minute près ; le bouton lance
+	// ou arrête le tour.
+	if (ruler && scale && tourButton) {
+		let sliding: number | null = null;
+		const timeAt = (event: PointerEvent) => {
+			const box = scale.getBoundingClientRect();
+			return Math.round(((event.clientX - box.left) / box.width) * LAST);
+		};
+		ruler.addEventListener(
+			'pointerdown',
+			(event) => {
+				if (event.button !== 0) return;
+				takeOver();
+				sliding = event.pointerId;
+				ruler.setPointerCapture(event.pointerId);
+				aim(timeAt(event));
+			},
+			{ signal },
+		);
+		ruler.addEventListener('pointermove', (event) => event.pointerId === sliding && aim(timeAt(event)), { signal });
+		const stopSliding = (event: PointerEvent) => {
+			if (event.pointerId === sliding) sliding = null;
+		};
+		ruler.addEventListener('pointerup', stopSliding, { signal });
+		ruler.addEventListener('pointercancel', stopSliding, { signal });
+		tourButton.addEventListener('click', () => (touring ? takeOver() : startTour()), { signal });
+		// Le survol passe par un attribut : la CSS livrée n'a pas de `:hover`.
+		for (const node of [ruler, tourButton]) {
+			node.addEventListener('pointerenter', (event) => event.pointerType !== 'touch' && node.setAttribute('data-hover', ''), { signal });
+			node.addEventListener('pointerleave', () => node.removeAttribute('data-hover'), { signal });
+		}
+		tourButton.disabled = false;
+	}
+
+	control.addEventListener(
 		'keydown',
 		(event) => {
 			const now = Math.round(touring ? shown : target);
@@ -354,25 +430,32 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 		{ signal },
 	);
 
-	const attributes = {
+	const keysHelp =
+		'Au clavier, les flèches avancent ou reculent d’une minute, Page suivante et Page précédente d’une heure, Fin va au prochain événement, Début revient à la pose au repos, Espace lance ou arrête le tour.';
+	const attributes: Record<string, string> = {
 		role: 'slider',
-		'aria-label':
-			'Rampe à cadran : glissez vers la droite pour faire avancer le temps. Au clavier, les flèches avancent ou reculent d’une minute, Page suivante et Page précédente d’une heure, Fin va au prochain événement, Début revient à la pose au repos, Espace lance ou arrête le tour.',
+		'aria-label': ruler
+			? `Temps de la rampe à cadran, en minutes de session. ${keysHelp}`
+			: `Rampe à cadran : glissez vers la droite pour faire avancer le temps. ${keysHelp}`,
 		'aria-valuemin': '0',
 		'aria-valuemax': String(LAST),
-		'aria-valuenow': String(REST),
-		'aria-valuetext': describe(REST),
+		...(ruler && { tabindex: '0' }),
 	};
-	for (const [name, value] of Object.entries(attributes)) scene.setAttribute(name, value);
+	for (const [name, text] of Object.entries(attributes)) control.setAttribute(name, text);
+	value(REST);
 	if (!asksForStillness()) resumeLater();
 
 	return () => {
 		motion.stop();
 		wiring.abort();
 		clearTimeout(idle);
-		for (const name of Object.keys(attributes)) scene.removeAttribute(name);
-		// Retour au repos exact : le panneau masqué de l'aperçu réapparaît tel quel.
-		touring = false;
+		for (const name of [...Object.keys(attributes), 'aria-valuenow', 'aria-valuetext']) control.removeAttribute(name);
+		// Retour au repos exact : le panneau masqué de l'aperçu réapparaît tel quel, la fiche retrouve sa
+		// règle inerte.
+		setTouring(false);
+		if (tourButton) tourButton.disabled = true;
+		ruler?.removeAttribute('data-hover');
+		tourButton?.removeAttribute('data-hover');
 		target = shown = REST;
 		keys.forEach((_, index) => Object.assign(needles[index], { at: bar(pctOf(restPose, index) ?? 0).clamped, rate: 0 }));
 		Object.assign(lever, { at: DETENTS[restPose.lever], rate: 0 });

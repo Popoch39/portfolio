@@ -1,0 +1,47 @@
+{
+	"fente": [
+		[15,"@ApiTags('treks')"],
+		[16,"@Controller('treks')"],
+		[17,"export class TreksController {"],
+		[18,"  constructor(private readonly treks: TreksService) {}"]
+	],
+	"gabarit": [
+		[133,"export const trekListQuerySchema = paginationQuerySchema"],
+		[134,"  .extend({"],
+		[135,"    difficulty: trekDifficultySchema.optional(),"],
+		[136,"    minDistanceMeters: blankAsUndefined("]
+	],
+	"bac-rejet": [
+		[52,"    if (exception instanceof ZodValidationException) {"],
+		[53,"      return {"],
+		[54,"        ...base,"],
+		[55,"        type: 'https://datatracker.ietf.org/doc/html/rfc9457#name-validation',"]
+	],
+	"tige": [
+		[127,"    const where = conditions.length > 0 ? and(...conditions) : undefined;"],
+		[128,"    const { limit, offset } = toLimitOffset(query);"],
+		[130,"    const [rows, total] = await Promise.all(["],
+		[131,"      this.db"]
+	],
+	"totalisateur": [
+		[154,"      this.db.$count(treks, where),"],
+		[155,"    ]);"],
+		[157,"    return {"],
+		[158,"      data: rows.map(toSummary),"]
+	],
+	"fiche-resume": [
+		[55,"export const trekSummarySchema = entityBaseSchema.extend({"],
+		[56,"  name: nonEmptyString,"],
+		[57,"  distanceMeters: z.int().min(0),"],
+		[58,"  ascentMeters: z.int().min(0).nullable(),"]
+	],
+	"glissieres": [
+		[148,"    index('treks_name_id_idx').on(table.name, table.id),"]
+	],
+	"corps": [
+		[57,"export const treks = pgTable("],
+		[58,"  'treks',"],
+		[59,"  {"],
+		[60,"    id: primaryKeyColumn(),"]
+	]
+}

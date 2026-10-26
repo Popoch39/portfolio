@@ -42,6 +42,18 @@ _Avoid_ : pointillé, texture, trame
 La liste numérotée des pièces d'une machine, chacune avec son rôle et son code.
 _Avoid_ : légende, liste des pièces
 
+**Repère** :
+Sur la fiche, l'étiquette de la pièce visée (la pièce maîtresse au repos) : son numéro, son nom, son rôle et la signature de son code, reliés à la pièce par un trait.
+_Avoid_ : tooltip, infobulle, label
+
+**Signature** :
+Les premières lignes de code d'une pièce, hors lignes vides et commentaires, relevées au commit lu.
+_Avoid_ : extrait, snippet
+
+**Règle de temps** :
+Sous une figure qui a un temps, la règle graduée qui montre et règle ce temps, avec ses événements et le bouton du tour.
+_Avoid_ : slider, timeline, frise
+
 **Aperçu** :
 La figure du projet sélectionné, à côté des projets de l'accueil.
 _Avoid_ : prévisualisation, vignette

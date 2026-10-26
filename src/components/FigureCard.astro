@@ -1,7 +1,8 @@
 ---
 // Carte de figure : Fig. n et titre en haut, la scène au milieu, la consigne et le relevé en
 // bas ; la légende dessous. Sur la fiche, la scène épouse le format de la figure, 900 px de large
-// au plus, et la carte tient dans la hauteur de la fenêtre.
+// au plus, et la carte tient dans la hauteur de la fenêtre. Deux fentes l'y complètent : `repere`
+// au-dessus de la scène (son trait descend sur la figure), `controls` dessous.
 // Dans l'aperçu de l'accueil, la scène a une taille fixe et la figure s'y inscrit : changer de
 // projet ne décale rien.
 import '../vendor/anatomy/iso.css';
@@ -27,6 +28,11 @@ interface Common {
 	 * carte l'épouse au lieu de l'encadrer de deux bandes vides.
 	 */
 	portrait?: boolean;
+	/**
+	 * Figure haute : sur grand écran, le repère se range à côté d'elle plutôt qu'au-dessus, où il
+	 * pousserait la figure hors de la fenêtre.
+	 */
+	tall?: boolean;
 }
 
 type Props = Common &
@@ -47,28 +53,33 @@ type Props = Common &
 		  }
 	);
 
-const { fig, title, consignes, releve, caption, svg, image, motion, fixed = false, phoneCrop = false, portrait = false } = Astro.props;
+const { fig, title, consignes, releve, caption, svg, image, motion, fixed = false, phoneCrop = false, portrait = false, tall = false } = Astro.props;
 const echo = fixed ? 'true' : undefined;
+const beside = tall && Astro.slots.has('repere');
 ---
 
-<figure class:list={['figure', { fixed, crop: phoneCrop, portrait: portrait && !fixed }]}>
+<figure class:list={['figure', { fixed, crop: phoneCrop, portrait: portrait && !fixed, beside }]}>
 	<div class="card">
 		<div class="mono row" aria-hidden={echo}>
 			<span class="fig">Fig. {fig}</span>{' '}
 			<span>{title}</span>
 		</div>
-		{
-			image ? (
-				<div class="scene iso anatomy" data-theme="light" data-motion={motion}>
-					<picture>
-						<source media={image.media} srcset={image.src} type="image/svg+xml" width={image.width} height={image.height} />
-						<img width={image.width} height={image.height} alt={image.alt} loading="lazy" decoding="async" />
-					</picture>
-				</div>
-			) : (
-				<div class="scene iso anatomy" data-theme="light" data-motion={motion} set:html={svg} />
-			)
-		}
+		<div class="stage">
+			<slot name="repere" />
+			{
+				image ? (
+					<div class="scene iso anatomy" data-theme="light" data-motion={motion}>
+						<picture>
+							<source media={image.media} srcset={image.src} type="image/svg+xml" width={image.width} height={image.height} />
+							<img width={image.width} height={image.height} alt={image.alt} loading="lazy" decoding="async" />
+						</picture>
+					</div>
+				) : (
+					<div class="scene iso anatomy" data-theme="light" data-motion={motion} set:html={svg} />
+				)
+			}
+		</div>
+		<slot name="controls" />
 		<div class="mono row foot" aria-hidden={echo}>
 			<span class="consigne pointer">{consignes.pointer}</span>
 			<span class="consigne touch">{consignes.touch}</span>{' '}
@@ -104,6 +115,21 @@ const echo = fixed ? 'true' : undefined;
 
 	.fig {
 		color: var(--ink);
+	}
+
+	/* Repère du trait qui va de l'étiquette à la figure. */
+	.stage {
+		position: relative;
+	}
+
+	/* Figure haute sur grand écran : le repère prend une colonne à gauche de la scène (même seuil que
+	   dans `Repere.astro`), et la carte tient encore dans la hauteur de la fenêtre. */
+	@media (min-width: 960px) {
+		.beside .stage {
+			display: grid;
+			grid-template-columns: minmax(300px, 400px) minmax(0, auto);
+			column-gap: 48px;
+		}
 	}
 
 	.scene {

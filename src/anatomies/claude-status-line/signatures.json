@@ -1,0 +1,50 @@
+{
+	"aiguillage": [
+		[214,"async function resolveRateLimits("],
+		[215,"  fromStdin?: RateLimits,"],
+		[216,"): Promise<RateLimits | undefined> {"],
+		[217,"  if (hasFreshData(fromStdin)) {"]
+	],
+	"sonde-api": [
+		[157,"const CREDENTIALS_PATH = join(homedir(), \".claude\", \".credentials.json\");"],
+		[158,"const FETCH_TIMEOUT_MS = 2500; // borne la latence ajoutée au démarrage"],
+		[160,"function readOAuthToken(): string | undefined {"],
+		[161,"  try {"]
+	],
+	"capsule-cache": [
+		[120,"const CACHE_PATH = join(homedir(), \".claude\", \".statusline-cache.json\");"],
+		[122,"type RateLimits = NonNullable<StatusInput[\"rate_limits\"]>;"],
+		[125,"function readCache(): RateLimits | undefined {"],
+		[126,"  try {"]
+	],
+	"rampe": [
+		[231,"async function render(): Promise<void> {"],
+		[232,"  const data = (await Bun.stdin.json().catch(() => ({}))) as StatusInput;"],
+		[234,"  const segments: string[] = [];"],
+		[236,"  const model = data.model?.display_name;"]
+	],
+	"peignes": [
+		[103,"function windowSegment(label: string, win?: Window): string {"],
+		[104,"  const pct = win?.used_percentage;"],
+		[105,"  if (pct == null) return `${C.dim}${label} —${C.reset}`;"],
+		[106,"  const reset = fmtReset(win?.resets_at);"]
+	],
+	"cadran": [
+		[53,"function colorFor(pct: number): string {"],
+		[54,"  if (pct > 80) return C.red;"],
+		[55,"  if (pct >= 50) return C.yellow;"],
+		[56,"  return C.green;"]
+	],
+	"tambours": [
+		[74,"function fmtReset(epochSec?: number): string {"],
+		[75,"  if (epochSec == null) return \"\";"],
+		[76,"  const delta = epochSec - Date.now() / 1000;"],
+		[77,"  if (delta <= 0) return \"0m\";"]
+	],
+	"volant": [
+		[280,"  settings.statusLine = {"],
+		[281,"    type: \"command\","],
+		[282,"    command,"],
+		[283,"    padding: 2,"]
+	]
+}

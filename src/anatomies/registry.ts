@@ -2,12 +2,19 @@
 // fichier commun à modifier. Chaque projet mis en avant doit avoir le sien, complet : sans figure
 // ni mouvement, sa fiche n'aurait rien à montrer, donc le build échoue.
 import { githubRepoUrl, type Project } from '../data/profile';
-import type { Anatomy, AnatomyContent, Piece } from './contract.ts';
+import type { Anatomy, AnatomyContent, Piece, Signature } from './contract.ts';
 
 const modules = import.meta.glob<Anatomy>('./*/index.ts', { eager: true, import: 'anatomy' });
 const folderOf = (path: string) => path.split('/')[1];
 
 const bySlug = new Map(Object.entries(modules).map(([path, anatomy]) => [folderOf(path), anatomy] as const));
+
+type Signatures = Record<string, Signature>;
+const signatures = new Map(
+	Object.entries(import.meta.glob<Signatures>('./*/signatures.json', { eager: true, import: 'default' })).map(
+		([path, byPiece]) => [folderOf(path), byPiece] as const,
+	),
+);
 
 /** Les dossiers qui ont un module de mouvement : le chargeur les découvre par le même motif. */
 const motions = new Set(Object.keys(import.meta.glob('./*/motion.ts')).map(folderOf));
@@ -15,6 +22,8 @@ const motions = new Set(Object.keys(import.meta.glob('./*/motion.ts')).map(folde
 export interface ProjectAnatomy extends Anatomy {
 	/** Permalien GitHub de la pièce, figé sur le commit lu, avec sa plage de lignes. */
 	codeUrl: (piece: Piece) => string;
+	/** La signature du code de la pièce, relevée au commit lu. */
+	signatureOf: (piece: Piece) => Signature;
 	/** Le dossier du module de mouvement, que la scène confie au chargeur (`data-motion`). */
 	motion: string;
 }
@@ -32,7 +41,26 @@ export function anatomyOf(project: Project): ProjectAnatomy {
 	if (!motions.has(project.slug)) {
 		throw new Error(`Anatomie « ${project.slug} » : module de mouvement absent (src/anatomies/${project.slug}/motion.ts)`);
 	}
-	return { ...anatomy, codeUrl: permalink(project.repo, anatomy.content.sha), motion: project.slug };
+	const byPiece = signatures.get(project.slug) ?? {};
+	assertSignatures(project.slug, anatomy.content.pieces, byPiece);
+	return {
+		...anatomy,
+		codeUrl: permalink(project.repo, anatomy.content.sha),
+		signatureOf: (piece) => byPiece[piece.id],
+		motion: project.slug,
+	};
+}
+
+/** Chaque pièce a sa signature, relevée dans sa plage de lignes : sinon, relancer `pnpm signatures`. */
+function assertSignatures(slug: string, pieces: Piece[], byPiece: Signatures) {
+	for (const { id, code } of pieces) {
+		const lines = byPiece[id]?.map(([line]) => line) ?? [];
+		const [first, last] = code.lines;
+		const inRange = lines.every((line, i) => line >= first && line <= last && (i === 0 || line > lines[i - 1]));
+		if (lines.length < 1 || lines.length > 4 || !inRange) {
+			throw new Error(`Anatomie « ${slug} » : signature absente ou hors des lignes ${first}–${last} pour la pièce « ${id} » (pnpm signatures)`);
+		}
+	}
 }
 
 /** Le contrat que les tests vérifient sur la sortie, vérifié dès le build pour nommer le module fautif. */

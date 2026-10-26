@@ -1,6 +1,6 @@
 // Textes et nomenclature de la rampe à cadran, validés à la revue (#21) : voir `concept.md`.
 import type { AnatomyContent, Piece } from '../contract.ts';
-import { releve, SHA } from './model.ts';
+import { releve, SHA, timeline } from './model.ts';
 
 const code = (lines: [number, number]) => ({ path: 'statusline.ts', lines });
 
@@ -83,4 +83,5 @@ export const content: AnatomyContent = {
 	// Recadrage à 390 px voulu par la revue (#21) : la coupe ne prend que les bouts de la tablette,
 	// ni le levier de l'aiguillage ni le volant.
 	phoneCrop: true,
+	timeline,
 };

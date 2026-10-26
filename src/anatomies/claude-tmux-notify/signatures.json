@@ -1,0 +1,44 @@
+{
+	"perforateur": [
+		[9,"CACHE_FILE=\"${CLAUDE_TMUX_NOTIFY_FILE:-${XDG_CACHE_HOME:-$HOME/.cache}/claude-tmux-notify.jsonl}\""],
+		[10,"mkdir -p \"$(dirname \"$CACHE_FILE\")\" 2>/dev/null || true"],
+		[12,"input=\"$(cat)\""],
+		[14,"if command -v jq >/dev/null 2>&1; then"]
+	],
+	"bobine": [
+		[149,"  local path = resolve_cache_file()"],
+		[150,"  pcall(vim.fn.writefile, {}, path, \"a\") -- ensure file exists (no-op append)"],
+		[155,"  local st = uv.fs_stat(path)"],
+		[156,"  if st and M.config.max_cache_size and M.config.max_cache_size > 0 and st.size > M.config.max_cache_size then"]
+	],
+	"echappement": [
+		[164,"  local poll = uv.new_fs_poll()"],
+		[165,"  state.handle = poll"],
+		[166,"  poll:start(path, M.config.poll_interval, function(err)"],
+		[167,"    if not err then"]
+	],
+	"lecture": [
+		[104,"local function handle_lines(chunk)"],
+		[105,"  for line in (chunk .. \"\\n\"):gmatch(\"(.-)\\n\") do"],
+		[106,"    line = vim.trim(line)"],
+		[107,"    if line ~= \"\" then"]
+	],
+	"cordon": [
+		[65,"local function window_is_focused(window_id)"],
+		[66,"  if not (M.config.suppress_focused and window_id and window_id ~= \"\" and vim.env.TMUX) then"],
+		[67,"    return false"],
+		[68,"  end"]
+	],
+	"volet": [
+		[86,"local function emit(event)"],
+		[87,"  if window_is_focused(event.window_id) then"],
+		[88,"    return"],
+		[89,"  end"]
+	],
+	"sonnette": [
+		[76,"local function default_notify(message, level, opts)"],
+		[77,"  local Snacks = rawget(_G, \"Snacks\")"],
+		[78,"  if Snacks and Snacks.notifier then"],
+		[79,"    Snacks.notifier.notify(message, level, opts)"]
+	]
+}

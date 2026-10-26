@@ -262,7 +262,10 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 		text-wrap: pretty;
 	}
 
+	/* Collé au bas de la case commune : une description plus longue que les autres ne déplace pas
+	   « Ouvrir la fiche » d'un projet à l'autre. */
 	.preview-foot {
+		margin-top: auto;
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: space-between;

@@ -235,7 +235,7 @@ export function pulseDash(pulses: number[], total: number, s0: number, s1: numbe
 		at = (b - s0) * scale;
 	}
 	out.push(100_000);
-	return out.map((value) => Math.round(value * 100) / 100).join(' ');
+	return out.map((value) => value.toFixed(1)).join(' ');
 }
 
 /** Une butée par bras, du côté où il s'ouvre. */

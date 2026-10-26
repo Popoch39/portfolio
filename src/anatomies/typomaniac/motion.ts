@@ -278,14 +278,6 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 		},
 		{ signal },
 	);
-	scene.addEventListener(
-		'pointerleave',
-		() => {
-			hovered = null;
-			motion.kick();
-		},
-		{ signal },
-	);
 
 	const attributes = {
 		role: 'application',

@@ -856,8 +856,8 @@ export function readoutOf(duel: Duel): string {
 		if (over.forfeit && since < 2000) return 'forfait : plus de 40 frappes en 1 s';
 		const who = over.outcome > 0 ? 'A gagne' : over.outcome < 0 ? 'B gagne' : 'égalité';
 		if (!duel.ranked) return `fin · ${who}`;
-		const [before, after] = [over.before[0], over.after[0]];
-		if (since >= 2000 && after.step !== before.step) return `${rankName(before)} → ${rankName(after)}${after.shielded ? ' · bouclier' : ''}`;
+		const after = over.after[0];
+		if (since >= 2000 && after.step !== over.before[0].step) return `${rankName(over.before[0])} → ${rankName(after)}${after.shielded ? ' · bouclier' : ''}`;
 		return `fin · ${who}${over.forfeit ? '' : ` ${a}–${b}`} · ${signed(over.delta[0])} TP`;
 	}
 	if (note && clock < note.until) return note.text;

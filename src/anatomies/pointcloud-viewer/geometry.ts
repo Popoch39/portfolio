@@ -533,7 +533,7 @@ function rotor(angle: number, boitier: Piece, miroir: Piece, roue: Piece) {
 		].join(''),
 	});
 	const drumSvg = (drum: NonNullable<typeof slit>['drum'], key: string) =>
-		`<g class="iso-solid" data-rot="${key}"><path class="iso-fill" d="${drum.fill}"/>${drum.shades.map((d, k) => `<path class="iso-shade" data-shade="${k}" d="${d}"/>`).join('')}<path class="iso-top" d="${drum.mirror}"/><path class="iso-line iso-edge" data-tone="hi" d="${drum.outline}"/></g>`;
+		`<g class="iso-solid" data-rot="${key}"><path class="iso-fill" d="${drum.fill}"/>${drum.shades.map((d, k) => `<path class="iso-shade" data-shade="${k}" d="${d}"/>`).join('')}<path class="iso-top" d="${drum.mirror}"/><path class="iso-line" data-tone="lo" d="${drum.ribs}"/><path class="iso-line iso-edge" data-tone="hi" d="${drum.outline}"/></g>`;
 	const slitSvg = [
 		`<clipPath id="pointcloud-viewer-slit"><path data-rot="clip" d="${slit?.opening ?? ''}"/></clipPath>`,
 		`<g clip-path="url(#pointcloud-viewer-slit)">`,

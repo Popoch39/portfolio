@@ -376,7 +376,7 @@ const mount: MountMotion = ({ scene, svg, readout }) => {
 		setD(rot('bearing'), sharp?.bearing ?? '');
 		setD(rot('bearing-ring'), sharp?.bearing ?? '');
 		const drum = sharp?.drum;
-		const ds = drum ? [drum.fill, ...drum.shades, drum.mirror, drum.outline] : [];
+		const ds = drum ? [drum.fill, ...drum.shades, drum.mirror, drum.ribs, drum.outline] : [];
 		drumParts.forEach((node, k) => setD(node, ds[k] ?? ''));
 		if (ghost) {
 			const markup = slit?.ghost && blur > 0.05 ? drumMarkup(slit.ghost) : '';

@@ -68,6 +68,8 @@ export interface Drum {
 	fill: string;
 	shades: string[];
 	mirror: string;
+	/** Génératrices qui tournent avec lui : vu de face, son contour est un rectangle, elles disent le cylindre. */
+	ribs: string;
 	outline: string;
 }
 
@@ -102,7 +104,12 @@ function drumAt(angle: number, spin: number): Drum {
 		const off = Math.abs(((((middle - spin) % TAU) + TAU + Math.PI) % TAU) - Math.PI);
 		if (off < 0.5) mirror += quad;
 	}
-	return { fill: outline, shades, mirror, outline };
+	let ribs = '';
+	for (let k = 0; k < 12; k++) {
+		const a = spin + (k / 12) * TAU;
+		if (dot([Math.cos(a) * dx, Math.cos(a) * dy, Math.sin(a)], VIEW) > 0) ribs += pathOf([at(ring(-1, a)), at(ring(1, a))]);
+	}
+	return { fill: outline, shades, mirror, ribs, outline };
 }
 
 export interface Slit {

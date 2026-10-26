@@ -1,6 +1,6 @@
 // Le nuage dessiné : 2 500 points, un sur 40, dans l'ordre du fichier. Chaque couche de peinture
 // (derrière le trépied, ou juste devant une jambe) tient six tons d'encre pour le nuage rendu, puis
-// les points écrits mais pas encore rendus (`lo`) et la spire courante (`mid`) pendant le bake.
+// les points écrits mais pas encore rendus (`mid`) et la spire courante (`hi`) pendant le bake.
 import { iso } from '../../vendor/anatomy/iso-kit.ts';
 import { cloudAt, cloudLayers, projection as P } from './layout.ts';
 import { DRAWN, drawnIndex, INKS, inksOf, type Mode } from './model.ts';
@@ -38,8 +38,8 @@ export const dotsPath = (screen: [number, number][], js: Iterable<number>) => {
 /** Les attributs d'un chemin de points : encre de la figure (bleue quand le nuage est visé). */
 export const DOT_STYLE = {
 	ink: 'stroke:var(--anatomy-hi);stroke-width:1.5;stroke-linecap:round;fill:none',
-	written: 'stroke:var(--anatomy-lo);stroke-width:1.5;stroke-linecap:round;fill:none',
-	current: 'stroke:var(--anatomy-mid);stroke-width:1.7;stroke-linecap:round;fill:none',
+	written: 'stroke:var(--anatomy-mid);stroke-width:2;stroke-linecap:round;fill:none',
+	current: 'stroke:var(--anatomy-hi);stroke-width:2;stroke-linecap:round;fill:none',
 };
 
 /** Les chemins du nuage rendu dans un mode, par couche puis par ton d'encre. */

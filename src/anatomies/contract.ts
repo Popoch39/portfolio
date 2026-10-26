@@ -13,10 +13,9 @@
 //
 // Deux langues (spec #31). Chaque anatomie porte ses textes dans les deux langues, dans son propre
 // dossier, pour que la traduire ne touche aucun fichier commun :
-// - au build, chaque texte du contenu est un `Text` : `{ fr, en }`, ou une chaîne seule, le français
-//   d'une anatomie pas encore traduite (forme temporaire, retirée une fois les six traduites). Le
-//   registre (`anatomyOf`) est le seul à choisir la langue : les composants ne voient que des
-//   chaînes (`'page'`), et la version anglaise montre le français faute de traduction ;
+// - au build, chaque texte du contenu est un `{ fr, en }` : il en faut les deux dès la création de
+//   l'anatomie, sinon le typecheck échoue. Le registre (`anatomyOf`) est le seul à choisir la
+//   langue : les composants ne voient que des chaînes (`'page'`) ;
 // - `renderRest(locale)` et `Timeline.reading(t, locale)` reçoivent la langue de la page, pour les
 //   textes dessinés dans la figure ou lus au-dessus de la règle ;
 // - dans le navigateur, le mouvement reçoit `Stage.locale`, la langue du document : ses textes
@@ -30,8 +29,8 @@ import type { Locale, Localized } from '../lib/i18n.ts';
  */
 export type Side = 'module' | 'page';
 
-/** Un texte d'anatomie : dans son module, les deux langues ou, faute de traduction, le français seul. */
-export type Text<S extends Side = 'module'> = S extends 'module' ? string | Localized<string> : string;
+/** Un texte d'anatomie : dans son module, ses deux langues ; dans la page, celle de la page. */
+export type Text<S extends Side = 'module'> = S extends 'module' ? Localized<string> : string;
 
 /** Une consigne d'interaction, pour un pointeur qui survole et pour le toucher. */
 export interface Consignes<S extends Side = 'module'> {
@@ -82,11 +81,8 @@ export interface Timeline<S extends Side = 'module'> {
 	tick: number;
 	/** Grandes graduations, légendées. */
 	marks: readonly { at: number; text: Text<S> }[];
-	/**
-	 * Le temps lu au-dessus du curseur (« minute 12 »), dans la langue de la page. Dans le module, une
-	 * lecture qui ignore `locale` est française (forme temporaire, comme une chaîne seule).
-	 */
-	reading: S extends 'module' ? (t: number, locale?: Locale) => string : (t: number) => string;
+	/** Le temps lu au-dessus du curseur (« minute 12 »), dans la langue de la page. */
+	reading: S extends 'module' ? (t: number, locale: Locale) => string : (t: number) => string;
 	/** Les consignes de la fiche, qui désignent la règle : l'aperçu, sans règle, garde les siennes. */
 	consignes: Consignes<S>;
 }

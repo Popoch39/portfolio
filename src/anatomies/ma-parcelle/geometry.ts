@@ -10,7 +10,8 @@
 import * as k from '../../vendor/anatomy/iso-kit.ts';
 import type { Flat, Plan, Point3, SolidPaths } from '../../vendor/anatomy/iso-kit.ts';
 import * as G from '../../vendor/anatomy/lathe.mjs';
-import { tubePieces, tubeSvg } from '../../vendor/anatomy/tube.mjs';
+import { tubeSvg } from '../../vendor/anatomy/tube.mjs';
+import { cablePieces, fadedRibs, ribLines } from './kit.mjs';
 import type { Piece, RestFigure } from '../contract.ts';
 import { pieceSvg } from '../piece.ts';
 import {
@@ -93,6 +94,13 @@ export interface Item {
 
 const up = (x = 0, y = 0) => G.frameOf([x, y, 0], [0, 0, 1], [1, 0, 0], [0, 1, 0]);
 const AXIS = up();
+/**
+ * Un cylindre sur un axe quelconque, en prisme à 24 pans (20 pour une tige fine) : sous le pixel,
+ * il se confond avec un tour, pour bien moins d'octets. Au-delà de 20° par pan, le prisme du kit
+ * tracerait une arête à chaque pan.
+ */
+const rod = (s0: number, s1: number, r: number, F: ReturnType<typeof G.frameOf>, sides = r < 1.2 ? 20 : 24) =>
+	G.prismOf(F, Array.from({ length: sides }, (_, index) => [r * Math.cos((index * TAU) / sides), r * Math.sin((index * TAU) / sides)]), s0, s1, P);
 /** Un cylindre debout du kit, facetté tous les 4 px d'écran environ (plus léger qu'un tour). */
 const cyl = (x: number, y: number, r: number, z0: number, z1: number, bevel = 0, steps = Math.max(12, Math.min(72, Math.ceil((TAU * r * G.scaleOf(P)) / 4)))) =>
 	k.cylinder(x, y, r, z0, z1 - z0, P, steps, bevel);
@@ -149,7 +157,9 @@ const faceB = (rIn: number, rOut: number, z0: number, z1: number) =>
 	pathOf([xy([0, rIn, z0]), xy([0, rOut, z0]), xy([0, rOut, z1]), xy([0, rIn, z1])], true);
 /** Tons des coupes : le sol clair, l'acier plein et plus sombre, la face +y plus éclairée que la face +x. */
 const SOIL_SHADE: [number, number] = [3, 2];
-const STEEL_SHADE: [number, number] = [1, 0];
+/** Une strate sur deux un ton plus bas, pour que les couches se lisent d'un coup d'œil. */
+const SOIL_SHADE_ALT: [number, number] = [2, 1];
+const STEEL_SHADE: [number, number] = [0, 0];
 const cutFaces = (rIn: number, rOut: number, z0: number, z1: number, [a, b]: [number, number]) =>
 	fill(faceA(rIn, rOut, z0, z1), a) + fill(faceB(rIn, rOut, z0, z1), b);
 
@@ -242,7 +252,7 @@ function texture(index: number, top: number, bottom: number) {
 		case 'cadastre': {
 			// Un grain fin et serré.
 			for (let z = bottom + 1.3; z < top - 0.6; z += 1.75)
-				for (let u = 1.4 + ((z * 7) % 2.2); u < R_SOIL - 0.8; u += 2.4) dots.push(xy([u, 0, z]), xy([0, u, z]));
+				for (let u = 1.4 + ((z * 7) % 2.8); u < R_SOIL - 0.8; u += 2.9) dots.push(xy([u, 0, z]), xy([0, u, z]));
 			break;
 		}
 		case 'urbanisme': {
@@ -278,8 +288,8 @@ function texture(index: number, top: number, bottom: number) {
 			for (let bed = 1; bed < 5; bed++) lo.push(line(across(bottom + bed * 6, bottom + bed * 6)));
 			for (let bed = 0; bed < 5; bed++)
 				for (const face of ['A', 'B'] as const)
-					for (let pebble = 0; pebble < 5; pebble++) {
-						const u = 4 + pebble * 10 + random() * 5;
+					for (let pebble = 0; pebble < 4; pebble++) {
+						const u = 5 + pebble * 12 + random() * 6;
 						const z = bottom + bed * 6 + 2.2 + random() * 1.6;
 						closed.push(ellipse(face, u, z, 1 + random() * 0.8, 0.7 + random() * 0.4, random() - 0.5));
 					}
@@ -308,7 +318,7 @@ function texture(index: number, top: number, bottom: number) {
 /** Une virole : enveloppe en deux tranches, sol et acier en coupe, textures de sa strate. */
 function viroleSvg(index: number) {
 	const [top, bottom] = BOUNDS[index];
-	const faces = cutFaces(0, R_SOIL, bottom, top, SOIL_SHADE) + cutFaces(R_SOIL, R_SHELL, bottom, top, STEEL_SHADE);
+	const faces = cutFaces(0, R_SOIL, bottom, top, index % 2 ? SOIL_SHADE_ALT : SOIL_SHADE) + cutFaces(R_SOIL, R_SHELL, bottom, top, STEEL_SHADE);
 	const seams = [
 		pathOf([xy([R_SOIL, 0, bottom]), xy([R_SOIL, 0, top])]),
 		pathOf([xy([0, R_SOIL, bottom]), xy([0, R_SOIL, top])]),
@@ -413,10 +423,8 @@ function lugSvg(t: number) {
 const DRAIN: [number, number][] = [
 	[0, 2.6],
 	[1.6, 2.6],
-	[1.6, 3.4],
-	[3, 3.9],
-	[7, 3.9],
-	[8.4, 3.4],
+	[1.6, 3.9],
+	[8.4, 3.9],
 	[8.4, 2.4],
 	[9.6, 2.4],
 ];
@@ -427,7 +435,7 @@ function drainSvg() {
 	const radial: Point3 = [Math.cos(t), Math.sin(t), 0];
 	const z = SOIL_BOTTOM / 2;
 	const F = G.frameAlong([R_BOTTOM * Math.cos(t), R_BOTTOM * Math.sin(t), z], radial);
-	const body = G.solidOf(DRAIN, F, P, { steps: 24 });
+	const body = [G.solidOf(DRAIN, F, P, { steps: 20 })];
 	const top = G.pointOf(F, 5, 0, 0);
 	const key = G.frameAlong([top[0], top[1], z + 3.9], [0, 0, 1]);
 	const stem = cyl(top[0], top[1], 1.1, z + 3.9, z + 6.1);
@@ -440,7 +448,7 @@ function drainSvg() {
 		svg:
 			k.solidSvg(spout, { tone: 'mid' }) +
 			k.solidSvg(nut, { tone: 'mid' }) +
-			k.solidSvg(body, { tone: 'mid' }) +
+			body.map((part) => k.solidSvg(part, { tone: 'mid' })).join('') +
 			k.solidSvg(stem, { tone: 'mid' }) +
 			k.solidSvg(wing, { tone: 'hi' }),
 		shapes: [
@@ -519,7 +527,7 @@ function plateauLines(z: number) {
 	const segments: [[number, number], [number, number]][] = [];
 	const far = 80;
 	// Les deux bords de la rue, le fond des parcelles côté rue et de l'autre côté.
-	for (const n of [STREET.near, STREET.far, 31, 46]) segments.push([along(-far, n), along(far, n)]);
+	for (const n of [STREET.near - 20, STREET.near, STREET.far, 31, 46]) segments.push([along(-far, n), along(far, n)]);
 	// Limites entre parcelles : de la rue au fond d'îlot.
 	for (const s of [-50, -41, -33, -24, 25, 34, 42, 51]) segments.push([along(s, STREET.far), along(s, 31)]);
 	for (const s of [-46, -36, -27, -16, -4, 8, 19, 30, 41]) segments.push([along(s, 31), along(s, 46)]);
@@ -710,21 +718,21 @@ function blockItems(cable: Item[], cap: Item): Item[] {
 		// caché par la flasque avant : seul un liseré de sa jante dépasse.
 		{
 			name: 'mast.sheave',
-			svg: k.solidSvg(G.disc(-3, -0.8, SHEAVE.rim, sheaveFrame, P, { steps: 32 }), { tone: 'mid' }),
+			svg: k.solidSvg(rod(-3, -0.8, SHEAVE.rim, sheaveFrame), { tone: 'mid' }),
 			shapes: [shape('body', sheaveFrame, [[-3, 1.6], [-3, SHEAVE.rim], [-1.2, SHEAVE.rim], [-0.8, SHEAVE.r], [-0.8, 1.6]], { name: 'mast.sheave' })],
 		},
 		cap,
 		...cable,
 		{
 			name: 'mast.sheave.front',
-			svg: k.solidSvg(G.disc(0.8, 3, SHEAVE.rim, sheaveFrame, P, { steps: 32 }), { tone: 'mid' }),
+			svg: k.solidSvg(rod(0.8, 3, SHEAVE.rim, sheaveFrame), { tone: 'mid' }),
 			shapes: [shape('body', sheaveFrame, [[0.8, 1.6], [0.8, SHEAVE.r], [1.2, SHEAVE.rim], [3, SHEAVE.rim], [3, 1.6]], { name: 'mast.sheave' })],
 		},
 		{
 			name: 'mast.block.front',
 			svg:
 				k.solidSvg(G.prismOf(front, blockOutline, 0, 1.4, P), { tone: 'mid' }) +
-				k.solidSvg(G.disc(5.6, 6.6, 2.4, axle, P), { tone: 'mid' }) +
+				k.solidSvg(rod(5.6, 6.6, 2.4, axle), { tone: 'mid' }) +
 				k.solidSvg(G.prismOf(G.frameOf([6.6, SHEAVE.y, SHEAVE.z], [1, 0, 0], [0, 1, 0], [0, 0, 1]), Array.from({ length: 6 }, (_, index) => [1.6 * Math.cos((index * Math.PI) / 3), 1.6 * Math.sin((index * Math.PI) / 3)] as [number, number]), 0, 1, P), { tone: 'hi' }) +
 				k.dotsSvg([xy([5.6, -25.5, 553.5]), xy([5.6, 1.5, 553.5]), xy([5.6, -25.5, 528.5]), xy([5.6, 1.5, 528.5])], { size: 0.5, tone: 'hi' }),
 			shapes: [
@@ -777,7 +785,7 @@ function cableItems(): Item[] {
 		[route.slice(last - 1), 40, [false, false]],
 	];
 	const svg = runs
-		.flatMap(([points, spacing, caps]) => tubePieces(points, 0.8, P, { maxLength: 400, spacing, caps }))
+		.flatMap(([points, spacing, caps]) => cablePieces(points, 0.8, P, { maxLength: 400, spacing, caps }))
 		.map((chunk: unknown) => tubeSvg(chunk, { tone: 'mid' }))
 		.join('');
 	return [
@@ -820,15 +828,15 @@ function winchItems(): Item[] {
 		{
 			name: 'drum',
 			svg:
-				k.solidSvg(G.disc(-CHEEK_X - 1.4, -CHEEK_X, 11.4, axle, P), { tone: 'mid' }) +
-				k.solidSvg(G.disc(-CHEEK_X, CHEEK_X, DRUM_R, axle, P), {
+				k.solidSvg(rod(-CHEEK_X - 1.4, -CHEEK_X, 11.4, axle), { tone: 'mid' }) +
+				k.solidSvg(rod(-CHEEK_X, CHEEK_X, DRUM_R, axle), {
 					tone: 'mid',
 					inner: k.lineSvg(
 						Array.from({ length: 9 }, (_, index) => G.arcOf(G.frameOf([-CHEEK_X + 0.9 + index * 1.9, DRUM[0], DRUM[1]], [1, 0, 0], [0, 1, 0], [0, 0, 1]), 0, DRUM_R + 0.6, P)).join(''),
 						{ tone: 'lo' },
 					),
 				}) +
-				k.solidSvg(G.disc(CHEEK_X, CHEEK_X + 1.4, 11.4, axle, P), { tone: 'mid' }) +
+				k.solidSvg(rod(CHEEK_X, CHEEK_X + 1.4, 11.4, axle), { tone: 'mid' }) +
 				`<g class="iso-dots" data-tone="hi" data-mp="drum">${marks.map(([x, y]) => `<circle cx="${tenth(x)}" cy="${tenth(y)}" r="0.6"/>`).join('')}</g>`,
 			shapes: [
 				shape('disc', axle, -CHEEK_X - 1.4, -CHEEK_X, 11.4, { name: 'drum' }),
@@ -841,9 +849,9 @@ function winchItems(): Item[] {
 			name: 'drum.flasque.front',
 			svg:
 				k.solidSvg(G.prismOf(flasque(10), plate, 0, 1.4, P), { tone: 'mid' }) +
-				k.solidSvg(G.disc(11.4, 12.6, 2.2, axle, P), { tone: 'mid' }) +
+				k.solidSvg(rod(11.4, 12.6, 2.2, axle), { tone: 'mid' }) +
 				k.dotsSvg([xy([11.4, -64, 216]), xy([11.4, -84, 216])], { size: 0.5, tone: 'hi' }) +
-				k.solidSvg(G.disc(0, 14, 0.9, lever, P), { tone: 'mid' }) +
+				k.solidSvg(rod(0, 14, 0.9, lever), { tone: 'mid' }) +
 				k.solidSvg(G.sphereOf(G.pointOf(lever, 15.4, 0, 0), 1.6, P, { steps: 20 }), { tone: 'hi' }),
 			shapes: [
 				shape('prism', flasque(10), plate, 0, 1.4, { name: 'drum.flasque' }),
@@ -915,7 +923,7 @@ function logItems(): Item[] {
 				k.dotsSvg(stops, { size: 0.55, tone: 'mid' }) +
 				k.dotsSvg([face(a0 + 1.8, zt - 1.8), face(a1 - 1.8, zt - 1.8), face(a0 + 1.8, zb + 1.8), face(a1 - 1.8, zb + 1.8)], { size: 0.5, tone: 'hi' }) +
 				sliders.join('') +
-				k.solidSvg(G.disc(0, 0.8, 2.4, lampF, P), { tone: 'mid' }) +
+				k.solidSvg(rod(0, 0.8, 2.4, lampF), { tone: 'mid' }) +
 				`<g data-mp="lamp">${k.solidSvg(G.sphereOf(G.pointOf(lampF, 1.4, 0, 0), 1.6, P, { steps: 20 }), { tone: 'mid' })}</g>`,
 			shapes: [
 				shape('extruded', plate, zb, zt - zb, { name: 'log' }),
@@ -979,9 +987,10 @@ function coreSvg() {
 }
 
 function drillItem(): Item {
-	const tube = G.disc(BARREL[0], BARREL[1], 8, AXIS, P);
+	const tube = cyl(0, 0, 8, BARREL[0], BARREL[1]);
 	const crown = cyl(0, 0, 9.6, CROWN[1], BARREL[0], 0.4);
-	const sub = G.solidOf([[BARREL[1], 8], [BARREL[1] + 2, 8], [BARREL[1] + 6, 4.6]], AXIS, P, { steps: 24 });
+	// Raccord du carottier aux tiges : un épaulement chanfreiné.
+	const sub = cyl(0, 0, 5.4, BARREL[1], BARREL[1] + 6, 0.8);
 	const windowOutline = pathOf([...arc(8, 8 * DEG, 82 * DEG, WINDOW[1], 4 * DEG), ...arc(8, 82 * DEG, 8 * DEG, WINDOW[0], 4 * DEG)], true);
 	const recess = fill(windowOutline, 0);
 	const core = `<defs><clipPath id="${ID}-window"><path d="${windowOutline}"/></clipPath></defs><g clip-path="url(#${ID}-window)">${recess}<g data-mp="core" transform="${k.translateAlong(P, [0, 0, -CORE_SCALE * TOTAL_REQUESTS])}">${coreSvg()}</g></g>`;
@@ -1006,7 +1015,7 @@ function drillItem(): Item {
 		shapes: [
 			shape('disc', AXIS, CROWN[0], BARREL[0], 9.6, { name: 'drill.crown' }),
 			shape('disc', AXIS, BARREL[0], BARREL[1], 8, { name: 'drill.barrel' }),
-			shape('solid', AXIS, [[BARREL[1], 8], [BARREL[1] + 6, 4.6]], { name: 'drill.sub' }),
+			shape('disc', AXIS, BARREL[1], BARREL[1] + 6, 5.4, { name: 'drill.sub' }),
 			...RODS.map(([z0, z1]) => shape('disc', AXIS, z0, z1, ROD_R, { name: 'drill.rod' })),
 			...COUPLINGS.map(([z0, z1]) => shape('disc', AXIS, z0, z1, COUPLING_R, { name: 'drill.coupling' })),
 		],
@@ -1044,10 +1053,10 @@ function headItems(): Item[] {
 	const nut = k.extrude(hex, 465, 7, P);
 	const windowSvg = `<defs><clipPath id="${ID}-nut"><path d="${pathOf(win, true)}"/></clipPath></defs>${fill(pathOf(win, true), 0)}<g clip-path="url(#${ID}-nut)">${k.solidSvg(nut, { tone: 'mid' })}</g>${k.lineSvg(pathOf(win, true), { tone: 'mid' })}`;
 	const lockF = G.frameAlong([-70, 11.5, 481], [1, 0, 0]);
-	const lock = k.solidSvg(G.disc(0, 2, 1.3, lockF, P), { tone: 'mid' }) + k.solidSvg(G.disc(2, 5, 2.6, lockF, P), { tone: 'mid', inner: k.fadedSvg(G.ribsOf(lockF, 2, 5, 2.6, 18, P, { fade: [0.1, 0.55] }), { tone: 'lo' }) });
+	const lock = k.solidSvg(rod(0, 2, 1.3, lockF), { tone: 'mid' }) + k.solidSvg(rod(2, 5, 2.6, lockF), { tone: 'mid', inner: k.fadedSvg(fadedRibs(lockF, 2, 5, 2.6, 18, P), { tone: 'lo' }) });
 	const chuck = [cyl(0, 0, 6, 452, 453.6), cyl(0, 0, 9, 453.6, 464, 0.5), cyl(0, 0, 7.4, 464, 466)];
 	const motor = cyl(0, 0, 11, 486, 508);
-	const fins = k.fadedSvg(G.ribsOf(AXIS, 488, 506, 11, 28, P, { fade: [0.1, 0.55], seams: true }), { tone: 'lo' });
+	const fins = k.fadedSvg(fadedRibs(AXIS, 488, 506, 11, 22, P, { seams: true }), { tone: 'lo' });
 	// Levier d'embrayage : un bossage d'équerre sur le carter, puis la tige inclinée et sa boule.
 	const boss = G.frameOf([0, 11, 476], [0, 1, 0], [1, 0, 0], [0, 0, 1]);
 	const lever = G.frameAlong([0, 12.8, 476], [0.15, 0.45, 0.88]);
@@ -1079,12 +1088,12 @@ function headItems(): Item[] {
 			ride: true,
 			svg: ride(
 				k.solidSvg(chuck[0], { tone: 'mid' }) +
-					k.solidSvg(chuck[1], { tone: 'mid', inner: k.lineSvg(G.ribsOf(AXIS, 453.6, 464, 9, 3, P, { least: 0.15, phase: 0.4 }), { tone: 'lo' }) }) +
+					k.solidSvg(chuck[1], { tone: 'mid', inner: k.lineSvg(ribLines(AXIS, 453.6, 464, 9, 3, P, { least: 0.15, phase: 0.4 }), { tone: 'lo' }) }) +
 					k.solidSvg(chuck[2], { tone: 'mid' }) +
 					k.solidSvg(k.slabOf(box, 466, 20, P, 4, 0.8), { tone: 'mid', inner: k.lineSvg(k.sideSeam(box, 474, P, 4), { tone: 'faint' }) }) +
 					k.dotsSvg(k.corners(box, 3).map(([x, y]) => xy([x, y, 486])), { size: 0.5, tone: 'hi' }) +
-					k.solidSvg(G.disc(0, 2.4, 2.2, boss, P), { tone: 'mid' }) +
-					k.solidSvg(G.disc(0, 11, 0.8, lever, P), { tone: 'mid' }) +
+					k.solidSvg(rod(0, 2.4, 2.2, boss), { tone: 'mid' }) +
+					k.solidSvg(rod(0, 11, 0.8, lever), { tone: 'mid' }) +
 					k.solidSvg(G.sphereOf(G.pointOf(lever, 12.4, 0, 0), 1.9, P, { steps: 20 }), { tone: 'hi' }) +
 					k.solidSvg(motor, { tone: 'mid', inner: fins }) +
 					k.solidSvg(cyl(0, 0, 8.6, 508, 510), { tone: 'mid' }) +
@@ -1121,7 +1130,7 @@ function crankItem(): Item {
 	const knob = (attrs: string) => {
 		const end = crankEnd(0);
 		const kf = up(end[0], end[1]);
-		return `<g data-mp="knob" ${attrs}>${k.solidSvg(cyl(end[0], end[1], 2.4, CRANK_Z[1], CRANK_Z[1] + 9.6), { tone: 'mid', inner: k.fadedSvg(G.ribsOf(kf, CRANK_Z[1] + 1.2, CRANK_Z[1] + 9.6, 2.4, 20, P, { fade: [0.1, 0.55], seams: 'first' }), { tone: 'lo' }) })}</g>`;
+		return `<g data-mp="knob" ${attrs}>${k.solidSvg(cyl(end[0], end[1], 2.4, CRANK_Z[1], CRANK_Z[1] + 9.6), { tone: 'mid', inner: k.fadedSvg(fadedRibs(kf, CRANK_Z[1] + 1.2, CRANK_Z[1] + 9.6, 2.4, 20, P, { seams: 'first' }), { tone: 'lo' }) })}</g>`;
 	};
 	return {
 		name: 'crank',
@@ -1169,7 +1178,7 @@ export function items(): Item[] {
 	// dessus avant elle, son avant après elle. On ne peint jamais ce qu'elle a de caché.
 	let band: Item | null = null;
 	for (let index = STRATA.length - 1; index >= 0; index--) {
-		const [top, bottom] = BOUNDS[index];
+		const [top] = BOUNDS[index];
 		const id = index === 0 ? 'croute' : 'viroles';
 		list.push({
 			name: `virole.${STRATA[index].id}`,

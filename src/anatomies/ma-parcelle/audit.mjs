@@ -38,6 +38,8 @@ for (const depth of POSES) {
 	const R = A.recorder(P);
 	const list = items();
 	const floor = Math.min(bitAt(depth), SOIL_TOP + 0.01);
+	// `R.solid` revient à ceci ; l'appeler ainsi évite une remarque de typage sur l'enregistreur.
+	const record = (shape) => (R.solids.push(shape), shape);
 	list.forEach((item, key) => {
 		const offset = item.ride ? [0, 0, -depth] : [0, 0, 0];
 		const shapes = item.shapes.map((description) => {
@@ -45,7 +47,7 @@ for (const depth of POSES) {
 			if (item.ride && depth) shape = A.moved(shape, offset);
 			if (item.name === 'drill') shape = withCut(shape, behindCuts);
 			if (item.bored && floor < SOIL_TOP) shape = withCut(shape, [A.disc(AXIS, floor, SOIL_TOP + 1, BORE, { name: 'bore' })]);
-			return R.solid(shape);
+			return record(shape);
 		});
 		const svg = item.ride && depth ? `<g transform="${translateAlong(P, offset)}">${item.svg}</g>` : item.svg;
 		// Le câble naît dans l'enroulement du tambour : ce bout-là se fond dans le corps (`ends`).
@@ -54,8 +56,8 @@ for (const depth of POSES) {
 		if (item.name === 'bore') {
 			const notch = A.box([0, 0, floor - 2], [200, 200, SOIL_TOP + 2]);
 			// Découpée comme le dessin : seule la bande entre les arêtes de coupe en est visible.
-			if (floor < SOIL_TOP) shapes.push(R.solid(A.ring(AXIS, floor, SOIL_TOP, BORE, BORE + 0.4, { name: 'bore.wall', owner: 'bore', cut: [notch, ...behindCuts] })));
-			shapes.push(R.solid(A.disc(AXIS, floor - 0.4, floor, BORE, { name: 'bore.floor', owner: 'bore', cut: [notch, ...behindCuts] })));
+			if (floor < SOIL_TOP) shapes.push(record(A.ring(AXIS, floor, SOIL_TOP, BORE, BORE + 0.4, { name: 'bore.wall', owner: 'bore', cut: [notch, ...behindCuts] })));
+			shapes.push(record(A.disc(AXIS, floor - 0.4, floor, BORE, { name: 'bore.floor', owner: 'bore', cut: [notch, ...behindCuts] })));
 		}
 		R.put({ name: item.name, key, svg, shapes });
 	});

@@ -22,6 +22,7 @@ interface Props {
 const { project } = Astro.props;
 const anatomy = anatomyOf(project);
 const { content } = anatomy;
+const rest = anatomy.renderRest();
 
 const sourceCode = {
 	'@context': 'https://schema.org',
@@ -58,6 +59,7 @@ const sourceCode = {
 				svg={restSvg(anatomy)}
 				motion={anatomy.motion}
 				phoneCrop={content.phoneCrop}
+				portrait={rest.height >= rest.width}
 			/>
 			<Nomenclature pieces={content.pieces} codeUrl={anatomy.codeUrl} />
 		</section>

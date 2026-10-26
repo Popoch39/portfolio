@@ -22,6 +22,11 @@ interface Common {
 	fixed?: boolean;
 	/** Recadrage de la figure sur téléphone (`AnatomyContent.phoneCrop`). */
 	phoneCrop?: boolean;
+	/**
+	 * Figure au moins aussi haute que large, que la hauteur de la fenêtre plafonne : sur la fiche, la
+	 * carte l'épouse au lieu de l'encadrer de deux bandes vides.
+	 */
+	portrait?: boolean;
 }
 
 type Props = Common &
@@ -42,11 +47,11 @@ type Props = Common &
 		  }
 	);
 
-const { fig, title, consignes, releve, caption, svg, image, motion, fixed = false, phoneCrop = false } = Astro.props;
+const { fig, title, consignes, releve, caption, svg, image, motion, fixed = false, phoneCrop = false, portrait = false } = Astro.props;
 const echo = fixed ? 'true' : undefined;
 ---
 
-<figure class:list={['figure', { fixed, crop: phoneCrop }]}>
+<figure class:list={['figure', { fixed, crop: phoneCrop, portrait: portrait && !fixed }]}>
 	<div class="card">
 		<div class="mono row" aria-hidden={echo}>
 			<span class="fig">Fig. {fig}</span>{' '}
@@ -111,26 +116,26 @@ const echo = fixed ? 'true' : undefined;
 
 	/* Une figure en hauteur ne dépasse pas la fenêtre : la carte entière (marges, titre, consigne,
 	   ≈ 110 px à 1440) y tient, sans descendre sous un seuil lisible sur un téléphone à l'horizontale.
-	   `svh` plutôt que `dvh` : la figure ne change pas de taille quand la barre d'adresse se replie. */
+	   `svh` plutôt que `dvh` : la figure ne change pas de taille quand la barre d'adresse se replie.
+	   Une figure large, plafonnée en hauteur, reste centrée dans sa largeur (`preserveAspectRatio`). */
 	.scene > :global(svg) {
 		max-height: max(320px, 100svh - 160px);
 	}
 
-	/* Fiche : la figure part de sa taille naturelle (900 px de large, `restSvg`) et garde son format
-	   sous ses deux plafonds ; la carte l'épouse. Une figure en hauteur, plafonnée par la fenêtre,
-	   rétrécit donc sa carte au lieu de flotter entre deux bandes vides. Les lignes de texte suivent
-	   la largeur de la carte sans l'élargir. */
-	.figure:not(.fixed) .card {
+	/* Figure en hauteur : elle part de sa taille naturelle (900 px de large, `restSvg`) et garde son
+	   format sous ses deux plafonds ; la carte l'épouse au lieu de l'encadrer de bandes vides. Les
+	   lignes de texte suivent la largeur de la carte sans l'élargir. */
+	.portrait .card {
 		width: fit-content;
 		max-width: 100%;
 	}
 
-	.figure:not(.fixed) .row {
+	.portrait .row {
 		width: 0;
 		min-width: 100%;
 	}
 
-	.figure:not(.fixed) .scene > :global(svg) {
+	.portrait .scene > :global(svg) {
 		width: auto;
 		max-width: 100%;
 	}
@@ -144,21 +149,20 @@ const echo = fixed ? 'true' : undefined;
 	}
 
 	/* La coupe prend plus à droite qu'à gauche (contrat : `AnatomyContent.phoneCrop`). */
-	.figure.crop .scene > :global(svg) {
+	.crop .scene > :global(svg) {
 		width: 110%;
-		max-width: none;
 		margin-inline: -3% -7%;
 	}
 
 	@media (min-width: 600px) {
 		.figure:not(.fixed) .scene {
-			margin-inline: 0;
+			width: 100%;
+			margin-inline: auto;
 			overflow: visible;
 		}
 
-		.figure.crop .scene > :global(svg) {
-			width: auto;
-			max-width: 100%;
+		.crop .scene > :global(svg) {
+			width: 100%;
 			margin-inline: 0;
 		}
 	}

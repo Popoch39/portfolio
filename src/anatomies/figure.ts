@@ -22,9 +22,9 @@ export function restSvg({ content, renderRest }: Anatomy, { standalone = false }
 		standalone: standalone ? 'light' : false,
 		className: 'anatomy',
 	});
-	// Une taille naturelle (le kit ne pose que `viewBox`) : bornée en largeur et en hauteur, la figure
-	// garde son format, et la carte qui l'épouse prend la largeur que lui laisse la hauteur.
-	return standalone ? svg : svg.replace('<svg ', `<svg width="${PAGE_WIDTH}" height="${Math.round((PAGE_WIDTH * height) / width)}" `);
+	// Une taille naturelle (le kit ne pose que `viewBox`) : bornée en largeur et en hauteur, une figure
+	// en hauteur garde son format, et la carte qui l'épouse prend la largeur que lui laisse la hauteur.
+	return standalone ? svg : svg.replace('<svg ', `<svg width="${PAGE_WIDTH}" height="${(PAGE_WIDTH * height) / width}" `);
 }
 
 /** Les crochets de pièce du SVG doivent être exactement les identifiants de la nomenclature. */

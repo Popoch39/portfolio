@@ -21,6 +21,21 @@ Validé par Louis le 2026-10-25. Les renvois visent la page de revue : ressembla
 - **Décisions n° 20 à 28.** L'option de la fiche est retenue : instrument hors d'échelle dit dans la légende, un point dessiné sur 40, modes de couleur en tons d'encre calculés avec les formules du dépôt, bake rejoué au ralenti sans durée affichée, « 1,80 Mo » à la virgule, vitesse affichée plafonnée avec flou de bougé, plongée (à 58–60° plutôt que 50°, voir ci-dessous), format tranché par I2. La n° 26 (poses précalculées ou petit projeteur pour la tête) reste ouverte : elle se tranche à la construction, selon le budget.
 - **Comptes.** 66 → 65 pièces dessinées (volant d'orientation retiré) ; nomenclature inchangée en nombre, 7 pièces, une seule pièce maîtresse.
 
+## Construction (#25) : décision n° 26 et écarts
+
+Construit le 2026-10-26. Ces points priment sur la suite de la fiche là où elle diffère.
+
+- **N° 26 tranchée : un petit projeteur.** Les pièces qui tournent avec la tête (fente et ses parois, tambour et sa face de miroir, paliers, fentes d'aération, dents de la couronne, traits du cercle, fenêtres de la roue, bille) sont reprojetées à chaque angle par `head.ts`, partagé par le build (pose au repos) et le mouvement. Une pose de ces pièces pèse environ 6 Ko ; viser à n'importe quel angle en demanderait des dizaines (72 poses au pas de 5° : environ 430 Ko), bien au-delà des 250 Ko du SVG, et la tête sauterait d'une pose à l'autre. Le projeteur tient dans le module de mouvement (19 Ko minifié, nuage et machine d'états compris).
+- **Repère.** Le kit dessine un monde gaucher : le terrain est posé nord sur x, est sur y, pour que la spirale tourne dans son vrai sens (anti-horaire vue d'en haut). Le dernier point (55° depuis l'est) est alors au **nord-est**, côté lecteur : au repos la fente et le tambour bleu font face au lecteur.
+- **Jambes.** Aucune n'est dans l'axe de la vue (angles du kit −110°, 130°, 10°) : vue à 59°, une jambe qui fuit droit vers l'arrière se réduirait à un moignon. Le support de carnet est sur la jambe gauche (130°), et le faisceau au repos passe entre les deux autres.
+- **Carte, bouton et voyant sur le dock**, la partie fixe qui porte aussi la gravure du disque, et non sur le boîtier tournant : ils restent visibles et cliquables quand la tête tourne, et les faces verticales sont trop écrasées à 59° pour les porter. La carte est debout dans sa fente ; elle ressort de 6 unités vers le haut.
+- **Socle fixe plus large que la couronne** (rayon 18,8 contre 17,2) : son rebord porte le cliquet et l'index, en vue ; couronne et cercle gradué ont le même rayon, leurs flancs se lisent l'un sous l'autre.
+- **Câble spiralé fixe** : du socle au berceau du support de carnet, sous le rail, avec ses deux coquilles. Le chariot glisse au-dessus ; un câble qui suivrait le chariot devrait être retracé à chaque image avec le kit des tubes, trop lourd pour le module de mouvement. Audit passé disque au dock et au support.
+- **Dalles de 52 m** (104 unités) au lieu des 50,3 m d'une tuile de zoom 19 : la borne et le jalon, posés aux coins de la bbox, tiennent sur les dalles. Aucun chiffre affiché n'en dépend.
+- **Point dessiné.** Le point dessiné `j` représente le point `40 j + (j mod 6)` de son lot de 40 : avec `40 j`, `i mod 6` ne parcourrait que trois classes sur six. Les tons de chaque mode sont étirés sur l'étendue du mode (six tons d'encre), sans changer l'ordre des couleurs.
+- **Rythme du bake** : vitesse de lecture `ω = ω₀ e^(t/τ)` avec ω₀ = 3 rad/s et τ = 2,4 s, plafonnée pour que les 159 tours prennent 14 s. La tête est un moteur qui rattrape le point courant ; sa vitesse affichée est plafonnée à 2,2 tours/s, au-delà la fente traîne un flou et un fantôme du tambour, et les dents, traits et aérations s'estompent. Le relevé compte le vrai indice.
+- **Nouveau bake** : la tête revient au trait 0 par le plus court (le cliquet patine si c'est en arrière) et la roue revient au RGB en avant, comme les réglages remis à zéro de l'app.
+
 ## 1. La machine
 
 **Un scanner laser sur trépied**, mince et haut, planté au-dessus d'un carré de terrain fait de quatre dalles d'orthophoto. Sa tête tourne sans arrêt et son miroir dépose un nuage de points en spirale sur le terrain. Une borne marque un angle du nuage, et un disque gravé, qui glisse jusqu'à un support serré à une jambe, reçoit le fichier cuit.

@@ -1,6 +1,7 @@
 // Modèle du meuble à fiches : les vrais chiffres de trekker au commit lu, et le contrôle de la
 // fiche de demande par le gabarit. Le relevé, la course des tiroirs et les encoches de la fiche
 // en découlent ; il tourne au build, sous Node (audit) et dans le navigateur (mouvement).
+import type { Locale, Localized } from '../../lib/i18n.ts';
 import type { Piece } from '../contract.ts';
 
 /** Commit lu de Popoch39/trekker : tous les liens vers le code y sont figés. */
@@ -54,20 +55,23 @@ export interface Request {
 
 export type Verdict =
 	| { ok: true; page: number; pageSize: number }
-	| { ok: false; rule: string; /** La broche qui bute. */ stuck: Field };
+	| { ok: false; rule: Localized<string>; /** La broche qui bute. */ stuck: Field };
+
+/** Une règle écrite en code, que les deux langues lisent telle quelle. */
+const verbatim = (rule: string): Localized<string> => ({ fr: rule, en: rule });
 
 /** Le gabarit : les bornes et les trois `refine` de `trekListQuerySchema` (`treks.ts` L126-185). */
 export function check({ params }: Request): Verdict {
 	const page = params.page ?? 1;
 	const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE;
-	if (pageSize > MAX_PAGE_SIZE) return { ok: false, rule: `pageSize ≤ ${MAX_PAGE_SIZE}`, stuck: 'pageSize' };
+	if (pageSize > MAX_PAGE_SIZE) return { ok: false, rule: verbatim(`pageSize ≤ ${MAX_PAGE_SIZE}`), stuck: 'pageSize' };
 	const present = PROXIMITY.filter((field) => params[field] !== undefined);
-	if (params.bbox !== undefined && present.length) return { ok: false, rule: 'bbox ou proximité', stuck: 'bbox' };
+	if (params.bbox !== undefined && present.length) return { ok: false, rule: { fr: 'bbox ou proximité', en: 'bbox or proximity' }, stuck: 'bbox' };
 	if (present.length && present.length < PROXIMITY.length) {
-		return { ok: false, rule: 'lat, lon et radiusKm ensemble', stuck: present[0] };
+		return { ok: false, rule: { fr: 'lat, lon et radiusKm ensemble', en: 'lat, lon and radiusKm together' }, stuck: present[0] };
 	}
 	const { minDistanceMeters: min, maxDistanceMeters: max } = params;
-	if (min !== undefined && max !== undefined && min > max) return { ok: false, rule: 'min ≤ max', stuck: 'minDistanceMeters' };
+	if (min !== undefined && max !== undefined && min > max) return { ok: false, rule: verbatim('min ≤ max'), stuck: 'minDistanceMeters' };
 	return { ok: true, page, pageSize };
 }
 
@@ -82,68 +86,81 @@ export const REFUSED: readonly Request[] = [
 
 export const notched = (request: Request, field: Field) => request.params[field] !== undefined;
 
-const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? 's' : ''}`;
+/** Les fiches d'une page : le français met le singulier jusqu'à 1, l'anglais seulement à 1 (« 0 cards »). */
+const cards: Localized<(count: number) => string> = {
+	fr: (count) => `${count} fiche${count > 1 ? 's' : ''}`,
+	en: (count) => `${count} card${count === 1 ? '' : 's'}`,
+};
 
-/** Le relevé d'une requête : page servie (200) ou fiche refusée (422). */
-export function releveOf(request: Request) {
+/** Le relevé d'une requête dans une langue : page servie (200) ou fiche refusée (422). */
+export function releveOf(request: Request, locale: Locale) {
 	const verdict = check(request);
-	if (!verdict.ok) return `GET ?${request.query} → 422 · ${verdict.rule}`;
+	if (!verdict.ok) return `GET ?${request.query} → 422 · ${verdict.rule[locale]}`;
 	const pages = pagesOf(TOTAL, verdict.pageSize);
-	return `GET ?${request.query} → 200 · ${plural(rowsOf(verdict.page, verdict.pageSize), 'fiche')} · p. ${verdict.page}/${pages} · total ${TOTAL}`;
+	return `GET ?${request.query} → 200 · ${cards[locale](rowsOf(verdict.page, verdict.pageSize))} · p. ${verdict.page}/${pages} · total ${TOTAL}`;
 }
 
 /** Au repos : le tiroir 1 sorti, sa page servie. */
 export const REST_PAGE = 1;
-export const releve = releveOf(pageRequest(REST_PAGE));
+export const releve: Localized<string> = { fr: releveOf(pageRequest(REST_PAGE), 'fr'), en: releveOf(pageRequest(REST_PAGE), 'en') };
 
 export const pieces: Piece[] = [
 	{
 		id: 'fente',
-		name: 'Fente à serrure',
-		role: 'Reçoit la fiche de demande ; la serrure exige une session.',
+		name: { fr: 'Fente à serrure', en: 'Lock slot' },
+		role: { fr: 'Reçoit la fiche de demande ; la serrure exige une session.', en: 'Takes in the request card; the lock demands a session.' },
 		code: { path: 'apps/api/src/modules/treks/treks.controller.ts', lines: [8, 24] },
 	},
 	{
 		id: 'gabarit',
-		name: 'Gabarit à broches',
-		role: 'Vérifie chaque champ de la fiche de demande et ses verrous avant de la laisser passer.',
+		name: { fr: 'Gabarit à broches', en: 'Pin gauge' },
+		role: {
+			fr: 'Vérifie chaque champ de la fiche de demande et ses verrous avant de la laisser passer.',
+			en: 'Checks every field of the request card, and its interlocks, before letting it through.',
+		},
 		code: { path: 'packages/contracts/src/treks.ts', lines: [126, 185] },
 		master: true,
 	},
 	{
 		id: 'bac-rejet',
-		name: 'Bac de rejet',
-		role: 'Recueille la fiche refusée, avec le détail des champs fautifs.',
+		name: { fr: 'Bac de rejet', en: 'Reject tray' },
+		role: { fr: 'Recueille la fiche refusée, avec le détail des champs fautifs.', en: 'Catches the refused card, with the details of the faulty fields.' },
 		code: { path: 'apps/api/src/common/filters/problem-details.filter.ts', lines: [52, 61] },
 	},
 	{
 		id: 'tige',
-		name: 'Tige et presse-fiches',
-		role: 'Tient les fiches dans l’ordre name, id ; le presse-fiches en isole vingt, après celles des tiroirs précédents.',
+		name: { fr: 'Tige et presse-fiches', en: 'Rod and follower' },
+		role: {
+			fr: 'Tient les fiches dans l’ordre name, id ; le presse-fiches en isole vingt, après celles des tiroirs précédents.',
+			en: 'Holds the cards in name, id order; the follower sets twenty apart, after those of the earlier drawers.',
+		},
 		code: { path: 'apps/api/src/modules/treks/treks.service.ts', lines: [127, 151] },
 	},
 	{
 		id: 'totalisateur',
-		name: 'Totalisateur',
-		role: 'Compte toutes les fiches qui répondent, pendant que le tiroir sort, et en déduit le nombre de pages.',
+		name: { fr: 'Totalisateur', en: 'Totaliser' },
+		role: {
+			fr: 'Compte toutes les fiches qui répondent, pendant que le tiroir sort, et en déduit le nombre de pages.',
+			en: 'Counts every matching card while the drawer slides out, and works out the number of pages.',
+		},
 		code: { path: 'apps/api/src/modules/treks/treks.service.ts', lines: [152, 160] },
 	},
 	{
 		id: 'fiche-resume',
-		name: 'Fiche résumé',
-		role: 'Ce qui sort du tiroir : la fiche sans son tracé, qui reste au fond.',
+		name: { fr: 'Fiche résumé', en: 'Summary card' },
+		role: { fr: 'Ce qui sort du tiroir : la fiche sans son tracé, qui reste au fond.', en: 'What comes out of the drawer: the card without its track, which stays at the bottom.' },
 		code: { path: 'packages/contracts/src/treks.ts', lines: [49, 74] },
 	},
 	{
 		id: 'glissieres',
-		name: 'Glissières à billes',
-		role: 'Font sortir le tiroir sans qu’on trie le meuble.',
+		name: { fr: 'Glissières à billes', en: 'Ball-bearing runners' },
+		role: { fr: 'Font sortir le tiroir sans qu’on trie le meuble.', en: 'Bring the drawer out without sorting the whole cabinet.' },
 		code: { path: 'packages/db/src/schema/treks.ts', lines: [142, 148] },
 	},
 	{
 		id: 'corps',
-		name: 'Corps à tiroirs',
-		role: 'Le meuble lui-même : chaque fiche y est rangée une fois.',
+		name: { fr: 'Corps à tiroirs', en: 'Cabinet body' },
+		role: { fr: 'Le meuble lui-même : chaque fiche y est rangée une fois.', en: 'The cabinet itself: each card is filed in it once.' },
 		code: { path: 'packages/db/src/schema/treks.ts', lines: [57, 91] },
 	},
 ];

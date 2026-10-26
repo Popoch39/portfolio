@@ -48,6 +48,8 @@ function shapeOf(spec, offset, meta, cut, floor) {
 	return A.prism({ o: add(spec.o, offset), a: spec.a, u: spec.u, v: spec.v }, spec.poly, spec.s0, spec.s1, meta);
 }
 
+// L'enregistreur reçoit `solid` après sa création : son type le déclare.
+/** @type {ReturnType<typeof A.recorder> & { solid: (shape: object) => object }} */
 const R = A.recorder(P, { order: [LIFT] });
 const items = [];
 const clipped = [];
@@ -83,11 +85,7 @@ function walk(node, ctx) {
 			svg,
 			move: lifted ? ctx.move : [0, 0, 0],
 			ride: lifted ? LIFT : node.piece ?? 'fiche',
-			// `R.solids` directement : l'enregistreur ajoute `solid` après coup, TypeScript ne le voit pas.
-			shapes: shapes.map((shape) => {
-				R.solids.push(shape);
-				return shape;
-			}),
+			shapes: shapes.map(R.solid),
 		}),
 	);
 }

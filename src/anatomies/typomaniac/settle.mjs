@@ -25,10 +25,12 @@ export function shapeOf(spec) {
 
 /** Enregistre les items, dans l'ordre donné, avec leurs formes vraies. */
 export function record(items, P) {
+	// L'enregistreur reçoit `solid` et `route` après sa création : son type les déclare.
+	/** @type {ReturnType<typeof A.recorder> & { solid: (shape: object) => object, route: (name: string, points: number[][], radius: number, options: object) => object[] }} */
 	const R = A.recorder(P);
 	items.forEach((item, index) => {
 		const shapes = item.shapes.map(shapeOf);
-		for (const shape of shapes) if (shape.kind !== 'tube') R.solids.push(shape);
+		for (const shape of shapes) if (shape.kind !== 'tube') R.solid(shape);
 		R.put({ name: item.name, piece: item.piece, key: index, svg: item.svg, shapes, route: item.route, chunk: item.chunk });
 	});
 	return R;

@@ -34,6 +34,8 @@ const shapeOf = (shape) => {
 
 function run(home) {
 	const { list, route } = scene(PIECES, { home });
+	// L'enregistreur reçoit `solid` et `route` après sa création : son type les déclare.
+	/** @type {ReturnType<typeof A.recorder> & { solid: (shape: object) => object, route: (name: string, points: number[][], radius: number, options: object) => object[] }} */
 	const R = A.recorder(P);
 	let key = 0;
 	for (const entry of list) {
@@ -45,12 +47,10 @@ function run(home) {
 			continue;
 		}
 		const shapes = entry.shapes.map(shapeOf);
-		R.solids.push(...shapes);
+		for (const shape of shapes) R.solid(shape);
 		if (shapes.length) R.put({ name: entry.name, piece: entry.piece ?? '', key, svg: entry.svg, shapes });
 	}
-	// `route` est ajouté à l'enregistreur après sa création : lu par crochets, il n'est pas pris par
-	// l'inférence du kit pour une faute de frappe sur `routes` (indice TS2568).
-	R['route'](route.name, route.points, route.r, { gaps: route.gaps, limp: true, rims: [0.95, 0.95] });
+	R.route(route.name, route.points, route.r, { gaps: route.gaps, limp: true, rims: [0.95, 0.95] });
 	const overlaps = A.overlapsOf(R.items, P, { states: [0], skip: A.sameRun });
 	R.settled = { items: R.items, overlaps, solved: { keys: R.items.map((item) => item.key), rules: 0, dropped: [] }, states: [0] };
 	console.log(`— disque ${home ? 'au dock' : 'au support'}`);

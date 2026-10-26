@@ -21,6 +21,16 @@ Validé par Louis le 2026-10-25. Les renvois visent la page de revue : ressembla
 - **Comptes en pièces distinctes (I1).** Une ligne par pièce, quantités groupées, comme les autres fiches : 74 (quantités comprises) → 50 entrées numérotées, après R9 et R15.
 - **Décisions n° 8 à 13.** L'option de la fiche est retenue partout : licence du volet tombé jusqu'à l'acquittement, retour automatique sur `1:nvim` deux secondes après (c'est désormais la fiche qui revient dans son jack), vue de face hors de la plage conseillée par le skill, exemples de fenêtres et longueurs de lignes, niveau `warn` / `info` écrit dans le relevé à la place des icônes, bornier des deux crochets dessiné hors nomenclature.
 
+## Écarts de la construction (#23)
+
+Ce que le code a imposé par rapport à cette fiche :
+
+- **Bras danseur sur glissière.** La poulie lestée descend de 68 unités pour une boucle pleine (0,26 par octet) : un bras pivotant n'a pas cette course dans les 74 de large de la colonne. Elle est portée par un chariot qui coulisse sur une barre carrée verticale, ressort de rappel autour de la barre, coupé en moitiés avant et arrière.
+- **Cordon dessiné sans `kit/tube.mjs`.** Le cordon est redessiné à chaque image du trajet de la fiche ; `tubePieces` pèse à lui seul 9 Ko minifiés et le module de mouvement passait à 28 Ko. Il est tracé par un rendu de corde compact (`ropeSvg`, dans `layout.ts`) : mêmes classes, mêmes bandes claire et d'ombre, anneaux de tresse qui suivent la section, au repos comme en mouvement. Son tracé reste arrondi par `fillet` du kit et enregistré dans l'audit du kit (à zéro). Le câble de la rosace et les fils, fixes, restent des tubes du kit.
+- **Marteau sous le timbre.** L'armature bascule dans le plan de la façade : la boule frappe le bord du timbre par en dessous (timbre surélevé sur son pilier).
+- **Index de lecture sur la roue d'entraînement.** L'index qui marque le décalage est une aiguille sur la roue d'entraînement, qui tourne quand la tête avale la boucle.
+- **Bobine réceptrice ouverte.** Seule la débitrice a son flasque avant ajouré ; la réceptrice n'a qu'un flasque arrière, pour que le galet du palpeur repose sur la galette.
+
 ## 1. Le vrai flux
 
 1. Claude Code, dans une autre fenêtre tmux, déclenche son crochet `Notification` (il attend une réponse) ou `Stop` (il a fini son tour).

@@ -152,6 +152,8 @@ export const readSpeed = (angle: number) => Math.min(READ_TOP, READ_START + angl
 export const EPSG = 2154;
 export const ANCHOR = { lat: 48.8468, lng: 2.3384 };
 
+// Pas le `formatNumber` du site (`src/lib/activity.ts`) : ses formats de date, construits à
+// l'import, suivraient dans le module de mouvement et le feraient passer au-dessus de 20 Ko.
 const numberFormat = new Intl.NumberFormat('fr-FR');
 const decimal = (value: number, digits: number) =>
 	new Intl.NumberFormat('fr-FR', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);

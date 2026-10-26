@@ -4,6 +4,7 @@
 // `isDuelDecided`, `tpDelta`, `applyTp`, `isFlooding`. Le relevé, la géométrie au repos et le
 // mouvement lisent tous ce module ; il tourne au build, sous Node pour l'audit et dans le
 // navigateur, sans DOM.
+import type { Locale, Localized } from '../../lib/i18n.ts';
 
 // --- Constantes du code (apps/api, apps/frontend, packages/typing-engine, packages/ranked) ---
 
@@ -37,9 +38,8 @@ const MMR_PER_DIVISION = 50;
 const CATCH_UP = 0.1;
 const ELO_K = 32;
 const ELO_SCALE = 400;
-/** 6 Tiers de 4 Divisions, puis Maniac au 24ᵉ cran (`MANIAC_STEP`). */
+/** 6 Tiers de 4 Divisions (`WORDS.tiers`), puis Maniac au 24ᵉ cran (`MANIAC_STEP`). */
 export const MANIAC_STEP = 24;
-const TIERS = ['Fer', 'Bronze', 'Argent', 'Or', 'Platine', 'Diamant'];
 const ROMAN = ['I', 'II', 'III', 'IV'];
 
 // --- Choix de la figure (pas des chiffres du code) ---
@@ -175,14 +175,8 @@ export const roundOutcome = (a: Score, b: Score) => Math.sign(a.score - b.score 
 // --- Contrôles du guichet (acceptance.ts) et cadence (running-duel.ts) ---
 
 export type Reason = 'before-start' | 'after-arrival' | 'out-of-order' | 'after-end';
-/** Les motifs dans l'ordre des contrôles, qui est celui des bras du guichet. */
-export const REASON_TEXT: Record<Reason, string> = {
-	'before-start': 'avant le départ',
-	'after-arrival': 'datée après son arrivée',
-	'out-of-order': 'hors d’ordre',
-	'after-end': 'après la fin',
-};
-export const REASONS = Object.keys(REASON_TEXT) as Reason[];
+/** Les motifs dans l'ordre des contrôles, qui est celui des bras du guichet (et de `WORDS.reasons`). */
+export const REASONS: Reason[] = ['before-start', 'after-arrival', 'out-of-order', 'after-end'];
 
 /** `rejectReason` : pourquoi l'horloge du client n'est pas crue, ou `null`. */
 export function rejectReason(accepted: readonly Keystroke[], { at }: Keystroke, arrivedAt: number): Reason | null {
@@ -209,8 +203,8 @@ export interface Standing {
 	shielded: boolean;
 }
 
-export const rankName = ({ step }: Standing) =>
-	step >= MANIAC_STEP ? 'Maniac' : `${TIERS[Math.floor(step / 4)]} ${ROMAN[3 - (step % 4)]}`;
+export const rankName = ({ step }: Standing, { tiers }: Words) =>
+	step >= MANIAC_STEP ? 'Maniac' : `${tiers[Math.floor(step / 4)]} ${ROMAN[3 - (step % 4)]}`;
 
 const expectedScore = (mmr: number, other: number) => 1 / (1 + 10 ** ((other - mmr) / ELO_SCALE));
 
@@ -342,6 +336,8 @@ export interface Duel {
 	/** Le tour pilote A et fait le saut ; le visiteur le reprend à la main. */
 	tour: boolean;
 	texts: Texts;
+	/** La langue du relevé et des verdicts. */
+	locale: Locale;
 }
 
 // Les pilotes ont leurs aléas, fixés par une graine (Park et Miller) : le tour se rejoue à l'identique.
@@ -364,9 +360,10 @@ const newSide = (index: number, mmr: number): Side => ({
 	mmr,
 });
 
-export function createDuel(texts: Texts, ranked = true, standings: readonly Standing[] = START): Duel {
+export function createDuel(texts: Texts, ranked = true, standings: readonly Standing[] = START, locale: Locale = 'fr'): Duel {
 	const duel: Duel = {
 		texts,
+		locale,
 		ranked,
 		clock: 0,
 		phase: COUNTDOWN,
@@ -579,7 +576,10 @@ function handle(duel: Duel, event: Event) {
 			const last = trip.keys[trip.keys.length - 1];
 			// Le relevé dit le verdict 1,2 s : celui de chaque frappe du visiteur, et tout refus.
 			if (trip.visitor || (trip.reason && !trip.hidden)) {
-				const verdict = trip.reason ? `refusée : ${REASON_TEXT[trip.reason]}` : `« ${last.kind === 'char' ? last.char.replace(' ', '␣') : '⌫'} » acceptée à ${formatMs(last.at)} ms`;
+				const words = WORDS[duel.locale];
+				const verdict = trip.reason
+					? words.rejected + words.reasons[REASONS.indexOf(trip.reason)]
+					: `${words.accepted[0]}${last.kind === 'char' ? last.char.replace(' ', '␣') : '⌫'}${words.accepted[1]}${formatMs(last.at, words)} ms`;
 				duel.note = { until: event.at + 1200, text: `${head(duel)} · ${verdict}` };
 			}
 			schedule(duel, { at: event.at + CABLE_MS, kind: trip.reason ? RESYNC : RELAY, trip });
@@ -600,7 +600,8 @@ function handle(duel: Duel, event: Event) {
 			const text = textOf(duel);
 			const scores = sides.map((side, index) => computeScore(text, side.accepted, PACE[index])) as [Score, Score];
 			duel.judged.push({ at: event.at, scores, outcome: roundOutcome(...scores) });
-			duel.note = { until: event.at + 2000, text: `manche ${duel.round + 1} jugée · A ${scores[0].score} pts – ${scores[1].score} pts B` };
+			const { round, judged } = WORDS[duel.locale];
+			duel.note = { until: event.at + 2000, text: `${round}${duel.round + 1}${judged} · A ${scores[0].score} pts – ${scores[1].score} pts B` };
 			if (isDecided(duel)) {
 				const won = roundsWon(duel);
 				finish(duel, Math.sign(won[0] - won[1] || totalScore(duel)), false);
@@ -844,33 +845,83 @@ export function mmrOf(duel: Duel) {
 
 // --- Relevé ---
 
-const decimal = (value: number) => value.toFixed(1).replace('.', ',');
-const formatMs = (ms: number) => String(ms).replace(/\B(?=(\d{3})+$)/g, ' ');
+// Le mouvement sert les deux versions : le relevé porte ses deux langues, et leurs nombres
+// (« 18,6 s » et « 1 234 ms » en français, « 18.6 s » et « 1,234 ms » en anglais britannique).
+const FR = {
+	reasons: ['avant le départ', 'datée après son arrivée', 'hors d’ordre', 'après la fin'],
+	tiers: ['Fer', 'Bronze', 'Argent', 'Or', 'Platine', 'Diamant'],
+	round: 'manche ',
+	judged: ' jugée',
+	challenge: 'défi',
+	faceOff: 'face-à-face',
+	start: ' · départ dans ',
+	pause: 'pause · reprise dans ',
+	rejected: 'refusée : ',
+	accepted: ['« ', ' » acceptée à '],
+	forfeit: 'forfait : plus de 40 frappes en 1 s',
+	/** Par issue du duel, de −1 (B gagne) à 1 (A gagne). */
+	outcomes: ['B gagne', 'égalité', 'A gagne'],
+	end: 'fin',
+	shield: ' · bouclier',
+	point: ',',
+	/** Espace fine insécable, comme `Intl` en français. */
+	thousands: ' ',
+};
+type Words = typeof FR;
+const WORDS: Localized<Words> = {
+	fr: FR,
+	en: {
+		reasons: ['before the start', 'timestamped after arrival', 'out of order', 'after the end'],
+		tiers: ['Iron', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'],
+		round: 'round ',
+		judged: ' judged',
+		challenge: 'challenge',
+		faceOff: 'face-off',
+		start: ' · starts in ',
+		pause: 'break · resumes in ',
+		rejected: 'rejected: ',
+		accepted: ['“', '” accepted at '],
+		forfeit: 'forfeit: over 40 keystrokes in 1 s',
+		outcomes: ['B wins', 'draw', 'A wins'],
+		end: 'end',
+		shield: ' · shield',
+		point: '.',
+		thousands: ',',
+	},
+};
 
-/** Le relevé, lu sur l'état du duel à son instant. */
+const decimal = (value: number, { point }: Words) => value.toFixed(1).replace('.', point);
+const formatMs = (ms: number, { thousands }: Words) => String(ms).replace(/\B(?=(\d{3})+$)/g, thousands);
+
+/** Le relevé, lu sur l'état du duel à son instant, dans sa langue. */
 export function releveOf(duel: Duel): string {
 	const { clock, note, over } = duel;
+	const words = WORDS[duel.locale];
 	const [a, b] = roundsWon(duel);
 	if (over) {
 		const since = clock - over.at;
-		if (over.forfeit && since < 2000) return 'forfait : plus de 40 frappes en 1 s';
-		const who = over.outcome > 0 ? 'A gagne' : over.outcome < 0 ? 'B gagne' : 'égalité';
-		if (!duel.ranked) return `fin · ${who}`;
+		if (over.forfeit && since < 2000) return words.forfeit;
+		const who = words.outcomes[over.outcome + 1];
+		if (!duel.ranked) return `${words.end} · ${who}`;
 		const after = over.after[0];
-		if (since >= 2000 && after.step !== over.before[0].step) return `${rankName(over.before[0])} → ${rankName(after)}${after.shielded ? ' · bouclier' : ''}`;
-		return `fin · ${who}${over.forfeit ? '' : ` ${a}–${b}`} · ${signed(over.delta[0])} TP`;
+		if (since >= 2000 && after.step !== over.before[0].step)
+			return `${rankName(over.before[0], words)} → ${rankName(after, words)}${after.shielded ? words.shield : ''}`;
+		return `${words.end} · ${who}${over.forfeit ? '' : ` ${a}–${b}`} · ${signed(over.delta[0])} TP`;
 	}
 	if (note && clock < note.until) return note.text;
 	if (duel.phase === COUNTDOWN) {
 		const left = Math.ceil((COUNTDOWN_MS - clock) / 1000);
-		return clock < FACE_OFF_MS ? `face-à-face · ${head(duel)}` : `${head(duel)} · départ dans ${Math.min(left, 3)} s`;
+		return clock < FACE_OFF_MS ? `${words.faceOff} · ${head(duel)}` : `${head(duel)}${words.start}${Math.min(left, 3)} s`;
 	}
-	if (duel.phase === PAUSE) return `pause · reprise dans ${Math.max(1, Math.ceil((duel.phaseAt + BREAK_MS - clock) / 1000))} s`;
+	if (duel.phase === PAUSE) return `${words.pause}${Math.max(1, Math.ceil((duel.phaseAt + BREAK_MS - clock) / 1000))} s`;
 	const t = Math.min(Math.max(roundTime(duel), 0), ROUND_MS + TOLERANCE_MS) / 1000;
-	return `${head(duel)} · ${decimal(t)} s · A ${a}–${b} B`;
+	return `${head(duel)} · ${decimal(t, words)} s · A ${a}–${b} B`;
 }
 
-const head = (duel: Duel) => (duel.ranked ? `manche ${duel.round + 1}/${maxRounds(duel)}` : 'défi');
+const head = (duel: Duel) => {
+	const { round, challenge } = WORDS[duel.locale];
+	return duel.ranked ? `${round}${duel.round + 1}/${maxRounds(duel)}` : challenge;
+};
 const signed = (value: number) => (value > 0 ? `+${value}` : value < 0 ? `−${-value}` : '0');
 
 // --- Pose au repos ---
@@ -878,9 +929,12 @@ const signed = (value: number) => (value > 0 ? `+${value}` : value < 0 ? `−${-
 /** Manche 2 à 18,6 s, A mène 1–0 : la pose du SVG au repos, et le départ du mouvement. */
 const REST_MS = 18_600;
 
-/** Le duel du tour mené en temps réel jusqu'à la pose au repos : même chemin au build et au montage. */
-export function restDuel(texts: Texts): Duel {
-	const duel = createDuel(texts);
+/**
+ * Le duel du tour mené en temps réel jusqu'à la pose au repos : même chemin au build et au montage.
+ * La pose ne dépend pas de la langue, seul le relevé la lit.
+ */
+export function restDuel(texts: Texts, locale: Locale = 'fr'): Duel {
+	const duel = createDuel(texts, true, START, locale);
 	duel.tour = false;
 	for (;;) {
 		const left = duel.round === 1 && duel.phase === RUNNING ? REST_MS - roundTime(duel) : Infinity;

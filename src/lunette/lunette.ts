@@ -126,7 +126,11 @@ const hint = (key: string, label: string | Node) => {
 keys.append(hint('↵', enterLabel), hint('⌃n ⌃p', say('move')), hint('⇥', say('complete')), hint('↑', say('history')), hint(say('escape'), say('close')));
 
 win.append(results, prompt, pane, keys);
-dialog.append(win);
+// Sous la modale, la région d'écho de la barre d'état est inerte : la Lunette a la sienne, pour le
+// compte des résultats, que le prompt ne montre qu'à l'œil.
+const status = el('p', 'sr-only');
+attrs(status, { role: 'status', 'aria-live': 'polite' });
+dialog.append(win, status);
 
 /** La commande dont on tape l'argument (`e `), montrée en titre du prompt plutôt que dans la saisie. */
 let command = '';
@@ -205,6 +209,20 @@ function select(index: number) {
 	show(listing.entries[index]?.pane);
 }
 
+const countOf = (shown: number, total: number) =>
+	({ fr: `${shown} résultat${shown > 1 ? 's' : ''} sur ${total}`, en: `${shown} of ${total} results` })[locale];
+
+let announcing: ReturnType<typeof setTimeout> | undefined;
+
+/**
+ * Dit `message` une fois la frappe posée, pas à chaque touche. Un nouveau nœud à chaque fois : le même
+ * compte, après une autre frappe, est dit de nouveau.
+ */
+function announce(message: string) {
+	clearTimeout(announcing);
+	announcing = setTimeout(() => status.replaceChildren(message), 600);
+}
+
 /** La ligne a changé : nouvelle liste, meilleur résultat sélectionné d'office. */
 function update() {
 	// Le Volet montré par une commande (`:help`) cède à la frappe suivante.
@@ -220,6 +238,7 @@ function update() {
 	promptTitle.textContent = current;
 	enterLabel.textContent = enter;
 	count.textContent = `${entries.length} / ${total}`;
+	announce(countOf(entries.length, total));
 	listbox.replaceChildren(...entries.map(option));
 	input.setAttribute('aria-expanded', String(entries.length > 0));
 	if (showcmd) showcmd.textContent = `:${line()}`;
@@ -429,6 +448,8 @@ dialog.addEventListener('close', () => {
 	closed();
 	bar?.removeAttribute('data-mode');
 	if (showcmd) showcmd.textContent = '';
+	clearTimeout(announcing);
+	status.replaceChildren();
 });
 
 /** Ouvre la Lunette, avec la frappe déjà tapée ; déjà ouverte, lui rend le focus. */
@@ -444,6 +465,8 @@ export function open(typed = '') {
 	echo();
 	history = past();
 	write(typed);
+	// À l'ouverture, le lecteur d'écran dit la Lunette et son champ : le compte n'attend que la frappe.
+	if (!typed) clearTimeout(announcing);
 	bar?.setAttribute('data-mode', 'command');
 	// Modale : la page est inerte, Échap ferme, et le focus revient où il était.
 	dialog.showModal();

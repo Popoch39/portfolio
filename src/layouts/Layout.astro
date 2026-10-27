@@ -72,8 +72,8 @@ const jsonLd = JSON.stringify(structuredData).replaceAll('<', '\\u003c');
 		{/* X reprend titre, description et image d'Open Graph : seul le format de carte lui est propre. */}
 		<meta name="twitter:card" content="summary_large_image" />
 		<script is:inline type="application/ld+json" set:html={jsonLd} />
-		{/* Seule la romaine d'Archivo est préchargée : c'est elle qui dessine le héros. */}
-		<Font cssVariable="--font-archivo" preload={[{ style: 'normal', subset: 'latin' }]} />
+		{/* Romaine et italique d'Archivo préchargées : elles dessinent l'accroche, élément LCP de chaque page. */}
+		<Font cssVariable="--font-archivo" preload={[{ style: 'normal' }, { style: 'italic' }]} />
 		<Font cssVariable="--font-mono" />
 		<LetterTransition page={page} />
 	</head>

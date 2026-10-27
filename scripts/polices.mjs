@@ -1,6 +1,6 @@
 // Réduit les polices à ce que le site affiche (ADR 0005) : relève dans le build les caractères dont
 // chaque police a besoin, coupe les sources de src/vendor/fonts/ avec subset-font (harfbuzz) et écrit
-// les woff2 servis par le site → src/fonts/, avec le relevé qui les explique (src/fonts/releve.json).
+// les woff2 servis par le site → src/fonts/, avec les caractères qui les expliquent (src/fonts/caracteres.json).
 // Lancé à la main (`pnpm build && pnpm polices`) quand un texte gagne un caractère : `pnpm test`
 // échoue tant qu'un caractère du build manque à la police qui le dessine. Relancé sans changement,
 // il réécrit les mêmes octets.
@@ -70,7 +70,7 @@ function distFiles(dir = new URL('dist/', root)) {
 	);
 }
 
-/** Un ensemble de caractères en chaîne triée : le relevé ne bouge que si un caractère change. */
+/** Un ensemble de caractères en chaîne triée : le fichier ne bouge que si un caractère change. */
 const sorted = (chars) => [...chars].sort((a, b) => a.codePointAt(0) - b.codePointAt(0)).join('');
 
 async function main() {
@@ -78,22 +78,22 @@ async function main() {
 	const files = distFiles();
 	const contents = files.map((file) => readFileSync(file, 'utf8'));
 	const pages = contents.filter((_, i) => files[i].pathname.endsWith('.html'));
-	const releve = { romaine: sorted(upright(contents)), italique: sorted(italic(pages)) };
-	releve.mono = releve.romaine;
+	const caracteres = { romaine: sorted(upright(contents)), italique: sorted(italic(pages)) };
+	caracteres.mono = caracteres.romaine;
 	for (const [name, { source, output, axes, features }] of Object.entries(FONTS)) {
-		const font = await subsetFont(readFileSync(new URL(`src/vendor/fonts/${source}`, root)), releve[name], {
+		const font = await subsetFont(readFileSync(new URL(`src/vendor/fonts/${source}`, root)), caracteres[name], {
 			targetFormat: 'woff2',
 			keepFeatures: features,
 			noHinting: true,
 			...(axes && { variationAxes: axes }),
 		});
 		writeFileSync(new URL(`src/fonts/${output}`, root), font);
-		console.log(`Police écrite : src/fonts/${output} (${font.length} o, ${[...releve[name]].length} caractères)`);
+		console.log(`Police écrite : src/fonts/${output} (${font.length} o, ${[...caracteres[name]].length} caractères)`);
 	}
-	// Un relevé par ligne : le diff dit quels caractères ont fait changer quelle police.
-	const lines = Object.entries(releve).map(([name, chars]) => `\t${JSON.stringify(name)}: ${JSON.stringify(chars)}`);
-	writeFileSync(new URL('src/fonts/releve.json', root), `{\n${lines.join(',\n')}\n}\n`);
-	console.log('Relevé écrit : src/fonts/releve.json');
+	// Une police par ligne : le diff dit quels caractères ont fait changer quelle police.
+	const lines = Object.entries(caracteres).map(([name, chars]) => `\t${JSON.stringify(name)}: ${JSON.stringify(chars)}`);
+	writeFileSync(new URL('src/fonts/caracteres.json', root), `{\n${lines.join(',\n')}\n}\n`);
+	console.log('Caractères écrits : src/fonts/caracteres.json');
 }
 
 main().catch((error) => {

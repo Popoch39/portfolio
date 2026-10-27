@@ -3,23 +3,41 @@
 // afficher, meilleur résultat en tête, et l'action que la ligne résout. Chaque commande déclare son nom,
 // ses alias, sa portée, son aide et son argument : en ajouter une ne touche ni au filtre ni à la Lunette.
 import { projects, sectionKeys, sections, type SectionKey } from '../data/profile.ts';
-import { fiche, home, locales, pathOf, type Locale, type Localized, type Page } from '../lib/i18n.ts';
+import { fiche, home, locales, pathOf, ui, type Locale, type Localized, type Page } from '../lib/i18n.ts';
 
-/** Ce que la page offre aux commandes. Les tickets suivants y ajoutent la figure (temps, pièces). */
+/** Une pièce de la figure, lue dans la page : son crochet, son nom et sa note en clair. */
+export interface FigurePiece {
+	id: string;
+	name: string;
+	note: { title: string; text: string };
+}
+
+/** Ce que la page offre aux commandes. */
 export interface Context {
 	page: Page;
 	locale: Locale;
+	/** La figure d'une fiche : ses pièces dans l'ordre de la nomenclature, et si elle a une règle de temps. */
+	figure?: { pieces: FigurePiece[]; timeline: boolean };
 }
 
-/** Ce que fait une commande : la Lunette l'exécute. `show` garde la Lunette ouverte sur ce Volet. */
-export type Action = { kind: 'go'; path: string } | { kind: 'show'; pane: Pane };
+/**
+ * Ce que fait une commande : la Lunette l'exécute. `show` garde la Lunette ouverte sur ce Volet ; `aim`
+ * vise une pièce, `lecture` coche la lecture des notes, `tour` lance ou arrête le tour de la règle.
+ */
+export type Action =
+	| { kind: 'go'; path: string }
+	| { kind: 'show'; pane: Pane }
+	| { kind: 'aim'; piece: string }
+	| { kind: 'lecture'; value: 'clair' | 'code' }
+	| { kind: 'tour'; play: boolean };
 
 /**
- * Ce que montre le Volet pour un résultat : l'Aperçu d'un projet, ou l'aide d'une commande ; celle de
- * `:help` seul liste en plus les commandes de la page.
+ * Ce que montre le Volet pour un résultat : l'Aperçu d'un projet, la note d'une pièce, ou l'aide d'une
+ * commande ; celle de `:help` seul liste en plus les commandes de la page.
  */
 export type Pane =
 	| { kind: 'project'; slug: string }
+	| { kind: 'note'; name: string; title: string; text: string }
 	| { kind: 'help'; name: string; text: string; commands?: { name: string; text: string }[] };
 
 /** Une valeur proposée à l'argument d'une commande (un projet pour `:e`). */
@@ -104,6 +122,32 @@ const neighbour =
 		const at = projects.findIndex((p) => page.kind === 'fiche' && p.slug === page.slug);
 		return go(pathOf(fiche(projects[(at + step + projects.length) % projects.length].slug), locale));
 	};
+
+const withFigure = ({ figure }: Context) => figure !== undefined;
+
+const withTimeline = ({ figure }: Context) => figure?.timeline === true;
+
+const lectureHelp = {
+	clair: { fr: 'Lit les notes de la figure en clair : ce que fait chaque pièce.', en: 'Reads the figure notes in plain words: what each part does.' },
+	code: { fr: 'Lit les notes de la figure en code : le symbole et la signature de chaque pièce.', en: 'Reads the figure notes as code: the symbol and signature of each part.' },
+} satisfies Record<string, Localized<string>>;
+
+/**
+ * La lecture des notes, réglée comme la ligne de commande de la carte : `lecture=clair` sur une page
+ * française, `view=plain` sur une page anglaise, le nom de l'autre langue accepté aussi.
+ */
+const lectures = ({ figure, locale }: Context): Choice[] =>
+	figure
+		? (['clair', 'code'] as const).map((value) => {
+				const labelOf = (lang: Locale) => `${ui.viewOption[lang]}=${(value === 'clair' ? ui.viewPlain : ui.viewCode)[lang]}`;
+				return {
+					label: labelOf(locale),
+					others: locales.filter((other) => other !== locale).map(labelOf),
+					pane: { kind: 'help', name: labelOf(locale), text: lectureHelp[value][locale] },
+					action: { kind: 'lecture', value },
+				};
+			})
+		: [];
 
 const setHelp: Localized<string> = {
 	fr: 'Change une option : :set lang=en ouvre cette page en anglais.',
@@ -193,16 +237,54 @@ const commands: Command[] = [
 			title: { fr: 'Options', en: 'Options' },
 			enter: { fr: 'appliquer', en: 'apply' },
 			// L'autre version d'abord, sélectionnée d'office : c'est la seule qui change quelque chose.
-			choices: (context) =>
-				[...locales]
+			choices: (context) => [
+				...[...locales]
 					.sort((a, b) => Number(a === context.locale) - Number(b === context.locale))
-					.map((locale) => ({
-						label: `lang=${locale}`,
-						pane: { kind: 'help', name: 'set', text: setHelp[context.locale] },
-						action: go(pathOf(context.page, locale)),
-					})),
+					.map(
+						(locale): Choice => ({
+							label: `lang=${locale}`,
+							pane: { kind: 'help', name: 'set', text: setHelp[context.locale] },
+							action: go(pathOf(context.page, locale)),
+						}),
+					),
+				...lectures(context),
+			],
 			unknown: (value) => `E474: Invalid argument: ${value}`,
 		},
+	},
+	{
+		name: 'pieces',
+		scope: withFigure,
+		help: {
+			fr: 'Liste les pièces de la figure ; Entrée vise la pièce choisie, avec son viseur et sa note.',
+			en: 'Lists the parts of the figure; Enter aims at the chosen part, with its viewfinder and note.',
+		},
+		argument: {
+			title: { fr: 'Pièces', en: 'Parts' },
+			enter: { fr: 'viser la pièce', en: 'aim at the part' },
+			// Numérotées comme la nomenclature, et visables par ce numéro tapé en entier (`:pieces 03`).
+			choices: ({ figure }) =>
+				(figure?.pieces ?? []).map(({ id, name, note }, i) => ({
+					label: name,
+					aliases: [rank(i), id],
+					detail: rank(i),
+					pane: { kind: 'note', name, ...note },
+					action: { kind: 'aim', piece: id },
+				})),
+			unknown: (value) => `E426: Tag not found: ${value}`,
+		},
+	},
+	{
+		name: 'play',
+		scope: withTimeline,
+		help: { fr: 'Lance le tour de la règle de temps.', en: 'Starts the tour of the time ruler.' },
+		run: () => ({ kind: 'tour', play: true }),
+	},
+	{
+		name: 'pause',
+		scope: withTimeline,
+		help: { fr: 'Arrête le tour de la règle de temps.', en: 'Stops the tour of the time ruler.' },
+		run: () => ({ kind: 'tour', play: false }),
 	},
 	{
 		name: 'help',

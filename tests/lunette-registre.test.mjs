@@ -224,6 +224,32 @@ test(':pieces filtre les pièces par leur nom, et vise une pièce tapée par son
 	assert.deepEqual(run('pieces zzz', ficheFigure), { error: 'E426: Tag not found: zzz' });
 });
 
+test(':set lecture=code règle la lecture des notes ; :set view=plain aussi, en anglais comme en français', () => {
+	assert.deepEqual(run(':set lecture=code', ficheFigure), { kind: 'lecture', value: 'code' });
+	assert.deepEqual(run('set lecture=clair', ficheFigure), { kind: 'lecture', value: 'clair' });
+	assert.deepEqual(run('set view=plain', ficheEn), { kind: 'lecture', value: 'clair' });
+	assert.deepEqual(run('set view=code', ficheEn), { kind: 'lecture', value: 'code' });
+	// Le nom de l'autre langue est accepté.
+	assert.deepEqual(run('set view=plain', ficheFigure), { kind: 'lecture', value: 'clair' });
+	assert.deepEqual(run('set lecture=code', ficheEn), { kind: 'lecture', value: 'code' });
+	assert.deepEqual(run('set lecture=gras', ficheFigure), { error: 'E474: Invalid argument: lecture=gras' });
+	// Proposées dans la langue de la page, après la version.
+	const labels = (context) => list('set ', context).entries.map((entry) => entry.label);
+	assert.deepEqual(labels(ficheFigure).slice(-2), ['lecture=clair', 'lecture=code']);
+	assert.deepEqual(labels(ficheEn).slice(-2), ['view=plain', 'view=code']);
+	// Le filtre montre le nom trouvé.
+	assert.deepEqual(
+		list('set view=p', ficheFigure).entries.map((entry) => entry.label),
+		['view=plain'],
+	);
+});
+
+test(':play lance le tour de la règle de temps, :pause l’arrête', () => {
+	assert.deepEqual(run(':play', ficheTemps), { kind: 'tour', play: true });
+	assert.deepEqual(run('pause', ficheTemps), { kind: 'tour', play: false });
+	assert.deepEqual(list('', ficheTemps).entries.find((entry) => entry.label === 'play').action, { kind: 'tour', play: true });
+});
+
 test(':set lang=en ouvre la même page dans l’autre version, et l’inverse', () => {
 	assert.deepEqual(run(':set lang=en', ficheTrekker), { kind: 'go', path: '/en/projects/trekker/' });
 	assert.deepEqual(run('set lang=fr', { page: { kind: 'fiche', slug: 'trekker' }, locale: 'en' }), { kind: 'go', path: '/projets/trekker/' });

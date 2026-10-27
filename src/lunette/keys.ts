@@ -43,21 +43,16 @@ const typing = (target: EventTarget | null) =>
 addEventListener('keydown', (event) => {
 	const { key } = event;
 	if (event.defaultPrevented || event.isComposing) return;
-	// Le raccourci des palettes de commandes, avant celui du navigateur (sa barre de recherche).
-	if ((event.ctrlKey || event.metaKey) && !event.altKey && key.toLowerCase() === 'k') {
+	// Le raccourci qu'ouvrent d'autres éditeurs sur leur liste de commandes, avant celui du navigateur (sa
+	// barre de recherche). Maj+K ou Verr. Maj donnent `K`.
+	if ((event.ctrlKey || event.metaKey) && !event.altKey && /^k$/i.test(key)) {
 		event.preventDefault();
 		return open();
 	}
 	if (modified(event) || typing(event.target)) return;
-	if (typed !== undefined) {
-		if (key.length === 1) {
-			event.preventDefault();
-			typed += key;
-		}
-		return;
-	}
-	// Maj seule ne compte pas : c'est elle qui tape `:` sur un clavier QWERTY.
-	if (key !== 'Shift' && press(key)) event.preventDefault();
+	// Une touche du mode normal, ou un caractère gardé pour la Lunette qui charge, n'atteint pas le
+	// navigateur. Maj seule ne compte pas : c'est elle qui tape `:` sur un clavier QWERTY.
+	if (typed === undefined ? key !== 'Shift' && press(key) : key.length === 1 && (typed += key)) event.preventDefault();
 });
 
 for (const button of document.querySelectorAll('[data-lunette]')) button.addEventListener('click', open);

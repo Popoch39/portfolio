@@ -42,6 +42,25 @@ test('une autre touche interrompt la séquence : le showcmd s’efface et elle e
 	assert.deepEqual(ran, []);
 });
 
+test('une touche qui ne prolonge pas la séquence en attente repart seule, comme dans Vim', () => {
+	const { press, ran, shown } = machine(['gg', 'gd', 'G', ':', ']]']);
+	// `g` puis `:` : `g:` n'est rien, `:` ouvre quand même la Lunette.
+	press('g');
+	assert.equal(press(':'), true);
+	assert.deepEqual(ran, [':']);
+	assert.equal(shown.text, '');
+	// `g` puis `G` : descend en bas.
+	press('g');
+	assert.equal(press('G'), true);
+	assert.deepEqual(ran, [':', 'G']);
+	// `g` puis `]` : la touche seule commence une autre séquence, qui attend à son tour.
+	press('g');
+	assert.equal(press(']'), true);
+	assert.equal(shown.text, ']');
+	press(']');
+	assert.deepEqual(ran, [':', 'G', ']]']);
+});
+
 test('une touche hors de toute séquence est laissée au navigateur', () => {
 	const { press, ran } = machine(['gg', 'G']);
 	assert.equal(press('j'), false);

@@ -19,13 +19,15 @@ export function normalMode(sequences: Sequences, show: (keys: string) => void) {
 		// Le `timeoutlen` de Vim : une séquence laissée en plan s'efface.
 		if (keys) timer = setTimeout(wait, 1000, '');
 	};
+	const begins = (keys: string) => Object.keys(sequences).some((sequence) => sequence.startsWith(keys));
 	return (key: string) => {
-		const keys = pending + key;
+		// Comme dans Vim, une touche qui ne prolonge pas la séquence en attente repart seule (`g` puis `:`).
+		const keys = begins(pending + key) ? pending + key : key;
 		const run = sequences[keys];
-		const begins = !run && Object.keys(sequences).some((sequence) => sequence.startsWith(keys));
-		wait(begins ? keys : '');
+		const waits = !run && begins(keys);
+		wait(waits ? keys : '');
 		run?.();
-		return !!run || begins;
+		return !!run || waits;
 	};
 }
 

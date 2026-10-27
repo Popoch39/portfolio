@@ -1,6 +1,7 @@
 // La Lunette dans la sortie du build (ADR 0007) : ses déclencheurs dans la barre d'état de chaque page,
 // et la Lunette elle-même dans un morceau à part, importé à la première ouverture par le module qui
 // existe déjà sur la page. Ni son HTML, ni sa CSS, ni son script ne partent avec la page.
+import { readdirSync } from 'node:fs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { FICHE, HOME, PROJECTS, attr, css, hasAttr, elements, moduleGraph, readDist, readPage, tags, text } from './helpers/dist.mjs';
@@ -90,6 +91,40 @@ for (const version of versions) {
 		}
 	});
 }
+
+// La Lunette lit la figure dans la page (spec #47, « Données ») : les pièces dans l'ordre de la
+// nomenclature, la note et le lien de code de chacune, et la règle de temps qui ouvre `:play`.
+test('chaque fiche donne à la Lunette ses pièces, leur note et leur code, et sa règle de temps s’il y en a une', () => {
+	for (const locale of ['fr', 'en']) {
+		for (const { slug } of PROJECTS) {
+			const html = readPage(FICHE[locale](slug));
+			const items = tags(html, 'li').filter((t) => /\bclass="item"/.test(t));
+			const notes = tags(html, 'li').filter((t) => /\bclass="note\b/.test(t));
+			assert.ok(items.length > 0, `${slug} : nomenclature vide`);
+			assert.deepEqual(
+				notes.map((t) => attr(t, 'data-piece')),
+				items.map((t) => attr(t, 'data-piece')),
+				`${slug} : notes et nomenclature`,
+			);
+			const refs = tags(html, 'a').filter((t) => /\bclass="ref"/.test(t));
+			assert.equal(refs.length, notes.length, `${slug} : une note sans lien de code`);
+			for (const ref of refs) assert.match(attr(ref, 'href') ?? '', /^https:\/\/github\.com\/Popoch39\/[\w.-]+\/blob\/[0-9a-f]{40}\//, slug);
+			const tours = tags(html, 'button').filter((t) => hasAttr(t, 'data-tour'));
+			assert.equal(tours.length, slug === 'claude-status-line' ? 1 : 0, `${slug} : bouton du tour`);
+		}
+	}
+});
+
+// Viser une pièce passe par le module de mise en avant (ADR 0003), la Lunette comprise : aucun autre
+// code livré n'écrit l'état de visée.
+test('seul le module de mise en avant écrit data-on et data-aiming', () => {
+	const writes = /(?:set|toggle|remove)Attribute\(\s*["'`]data-(?:on|aiming)["'`]|\.dataset\.(?:on|aiming)\b/;
+	const writers = readdirSync(new URL('../dist/_astro/', import.meta.url)).filter((name) => name.endsWith('.js') && writes.test(readDist(`_astro/${name}`)));
+	assert.deepEqual(
+		writers.map((name) => name.split('.')[0]),
+		['highlight'],
+	);
+});
 
 // La Lunette porte sa CSS, injectée à l'ouverture : les règles de l'ADR 0001 valent pour elle aussi.
 test('la CSS de la Lunette, dans son morceau : ni :hover, ni transition, ni animation', () => {

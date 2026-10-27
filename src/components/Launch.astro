@@ -50,7 +50,8 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 		addEventListener('animationend', end, true);
 	})();
 </script>
-<div class="launch" aria-hidden="true">
+{/* Google rend la page avec le lancement affiché : `data-nosnippet` écarte le terminal des extraits. */}
+<div class="launch" aria-hidden="true" data-nosnippet>
 	<div class="term mono">
 		<div class="lines">
 			<div><span class="prompt">$ </span><span class="typed">{command}</span></div>

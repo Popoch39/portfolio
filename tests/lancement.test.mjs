@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { PROJECTS, attr, css, launchGate, readFiche, readHome, tags, text, withoutBlocks } from './helpers/dist.mjs';
+import { PROJECTS, attr, css, hasAttr, launchGate, readFiche, readHome, tags, text, withoutBlocks } from './helpers/dist.mjs';
 
 const ORIGIN = 'https://louis.example';
 
@@ -51,6 +51,8 @@ for (const [locale, version] of Object.entries(VERSIONS)) {
 	test(`${locale} : l’écran du lancement, caché aux lecteurs d’écran, tape \`nvim portfolio.md\` et charge chaque section`, () => {
 		assert.ok(screen, 'écran absent');
 		assert.equal(attr(tags(screen, 'div')[0], 'aria-hidden'), 'true');
+		// Google rend la page avec le lancement : son texte ne doit pas servir d'extrait de recherche.
+		assert.ok(hasAttr(tags(screen, 'div')[0], 'data-nosnippet'), 'data-nosnippet absent');
 		// Une ligne par `<div>` sans `<div>` dedans : le terminal, puis les deux côtés de sa barre.
 		const lines = [...screen.matchAll(/<div\b[^>]*>((?:(?!<div\b)[\s\S])*?)<\/div>/g)].map((m) => text(m[1])).filter(Boolean);
 		assert.deepEqual(lines.slice(0, 2), ['$ nvim portfolio.md', '"portfolio.md" — 6 sections']);

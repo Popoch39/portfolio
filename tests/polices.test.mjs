@@ -64,6 +64,32 @@ function uncovered(font, chars) {
 	];
 }
 
+/** Les classes du code des notes, dessinées en mono : le navigateur penche la mono, l'italique d'Archivo n'y sert pas. */
+const MONO_ITALICS = ['k-num', 'k-type', 'k-com'];
+
+/**
+ * Les sélecteurs d'une feuille CSS qui mettent de l'Archivo en italique ailleurs que sur un `<em>`
+ * ou un `<i>` : `pnpm polices` ne relève pour l'italique que le texte de ces éléments, un caractère
+ * penché ailleurs pourrait manquer à la police servie. Le sujet du sélecteur (sa dernière partie)
+ * suffit : une règle ne met en italique que les éléments qu'elle cible, le reste hérite.
+ */
+function italicOutsideEmphasis(style) {
+	const rules = style.replace(/\/\*[\s\S]*?\*\//g, '').replace(/@font-face\s*{[^}]*}/gi, '').matchAll(/([^{}]+){([^{}]*)}/g);
+	const emphasis = (subject) => /^(em|i)(?![\w-])/i.test(subject) || MONO_ITALICS.some((name) => new RegExp(`\\.${name}(?![\\w-])`).test(subject));
+	return [...rules].flatMap(([, selectors, declarations]) =>
+		/(?:^|;)\s*font(?:-style)?\s*:[^;]*\b(?:italic|oblique)\b/i.test(declarations)
+			? selectors
+					.split(/,(?![^(]*\))/)
+					.map((selector) => selector.trim())
+					.filter((selector) => !emphasis(selector.replace(/\[[^\]]*\]/g, '').split(/[\s>+~]+/).at(-1)))
+					.map(
+						(selector) =>
+							`« ${selector} » met de l’Archivo en italique hors d’un <em> ou d’un <i> : étendre le relevé de l’italique dans scripts/polices.mjs, ou, si l’élément est en mono, ajouter sa classe à MONO_ITALICS dans tests/polices.test.mjs`,
+					)
+			: [],
+	);
+}
+
 test('chaque caractère de chaque page, en français et en anglais, est dans la romaine et dans la mono', () => {
 	for (const page of pages) {
 		const chars = drawn(page.html);
@@ -89,6 +115,19 @@ test('chaque caractère en italique (emphase de l’accroche, diplômes de l’a
 		assert.ok(italics.length > 0, `${page.name} : aucune emphase`);
 		assert.deepEqual(uncovered('italique', drawn(italics, { capitals: false })), [], page.name);
 	}
+});
+
+test('aucune règle CSS ne met de l’Archivo en italique hors des `<em>` et des `<i>`, dont l’italique relève le texte', () => {
+	for (const page of pages) assert.deepEqual(italicOutsideEmphasis(css(page.html)), [], page.name);
+});
+
+test('une italique posée en CSS sur de l’Archivo fait échouer la couverture, avec ce qu’il faut faire', () => {
+	const style = '.lede em{font-style:italic}.k-num,.k-com{font-style:italic}@media (min-width:40em){.titre[data-astro-cid-x],.cl i{font:italic 700 1rem/1 serif}}.note{font-style:oblique 10deg}';
+	const messages = italicOutsideEmphasis(style);
+	assert.equal(messages.length, 2);
+	assert.match(messages[0], /« \.titre\[data-astro-cid-x\] » met de l’Archivo en italique/);
+	assert.match(messages[1], /« \.note »/);
+	assert.match(messages[0], /tests\/polices\.test\.mjs/);
 });
 
 test('un caractère ajouté hors des polices fait échouer la couverture, avec la commande qui les régénère', () => {

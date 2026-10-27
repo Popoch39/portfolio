@@ -6,6 +6,7 @@ import { echo } from './echo.ts';
 import { closed, health, opened } from './health.ts';
 import { version } from './version.ts';
 import { draw, drawn, quit } from './oeufs.ts';
+import { recall } from './recall.ts';
 import { contextAt, list, run, type Action, type Context, type Entry, type Listing, type Pane } from './registry.ts';
 import { projects, restFigurePath } from '../data/profile.ts';
 import { defaultLocale, home, locales, type Localized } from '../lib/i18n.ts';
@@ -262,14 +263,6 @@ function write(text: string) {
 	update();
 }
 
-/** ↑ (`step` 1) remonte vers les plus anciennes, ↓ revient ; après la plus récente, la ligne vide. */
-function recall(step: number) {
-	const at = (recalled ?? history.length) - step;
-	if (at < 0) return;
-	write(history[at] ?? '');
-	if (at < history.length) recalled = at;
-}
-
 /**
  * Le presse-papiers manque hors contexte sécurisé, et refuse sans geste récent du visiteur ou sans
  * permission : l'écho d'erreur donne alors l'adresse à copier à la main.
@@ -351,10 +344,13 @@ input.addEventListener('input', () => {
 input.addEventListener('keydown', (event) => {
 	const { key, ctrlKey } = event;
 	const arrow = key === 'ArrowUp' ? 1 : key === 'ArrowDown' ? -1 : 0;
-	// Dans une Lunette vide, ↑ et ↓ parcourent l'historique ; ⌃p et ⌃n déplacent toujours la sélection.
-	if (arrow && (recalled !== undefined || (!line() && history.length))) {
+	// ↑ dans une Lunette vide remonte l'historique, ↓ en redescend ; ⌃p et ⌃n déplacent toujours la sélection.
+	const rewind = arrow ? recall(history, recalled, line(), arrow) : undefined;
+	if (rewind) {
 		event.preventDefault();
-		return recall(arrow);
+		write(rewind.line);
+		recalled = rewind.at;
+		return;
 	}
 	// Le meilleur résultat est en bas : ↑ remonte vers les moins bons.
 	const move = arrow || (ctrlKey && key === 'p' ? 1 : ctrlKey && key === 'n' ? -1 : 0);

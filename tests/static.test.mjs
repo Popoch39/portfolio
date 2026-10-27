@@ -9,6 +9,8 @@
 // (ADR 0007) n'ajoute aucun script : le module de la page importe son écouteur, et elle-même n'arrive
 // qu'à la première commande. Le lancement (ADR 0008) ajoute à l'accueil sa porte en ligne, ses
 // `@keyframes` `launch-` et ses animations, toutes sous `:root[data-launch]` (vérifié par lancement.test.mjs).
+// La Plongée (ADR 0009) ajoute à l'accueil seulement ses `@keyframes` `dive-` et ses animations, sur ses
+// éléments `.dive…`, toutes en mouvement non réduit et sous `@supports` (vérifié par plongee.test.mjs).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PROJECTS, readFiche, readHome, tags, attr, elements, css, launchGate, withoutBlocks } from './helpers/dist.mjs';
@@ -77,20 +79,24 @@ test('la CSS livrée n’a ni :hover ni transition hors des notes de la figure, 
 		assert.doesNotMatch(pageStyles, /(?<!\(\s*hover\s*):hover\b/i, page.name);
 		const keyframes = [...pageStyles.matchAll(/@keyframes\s+([\w-]+)/gi)].map((m) => m[1]);
 		assert.deepEqual(
-			keyframes.filter((name) => !name.startsWith('iso-') && !name.startsWith('vt-') && !(page.home && name.startsWith('launch-'))),
+			keyframes.filter(
+				(name) => !name.startsWith('iso-') && !name.startsWith('vt-') && !(page.home && (name.startsWith('launch-') || name.startsWith('dive-'))),
+			),
 			[],
-			`${page.name} : @keyframes hors du kit, de la transition et du lancement`,
+			`${page.name} : @keyframes hors du kit, de la transition, du lancement et de la Plongée`,
 		);
-		// Les étapes des `@keyframes vt-…` et `launch-…` portent `animation-timing-function`.
-		const animated = [...withoutBlocks(pageStyles, /@keyframes\s+(vt|launch)-/).matchAll(/([^{}]+)\{[^{}]*\banimation(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap((m) =>
-			m[1].split(/,(?![^(]*\))/),
+		// Les étapes des `@keyframes vt-…`, `launch-…` et `dive-…` portent `animation-timing-function`.
+		const animated = [...withoutBlocks(pageStyles, /@keyframes\s+(vt|launch|dive)-/).matchAll(/([^{}]+)\{[^{}]*\banimation(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap(
+			(m) => m[1].split(/,(?![^(]*\))/),
 		);
 		const allowed = (selector) =>
-			selector.startsWith('.iso') || selector.startsWith('::view-transition-') || (page.home && selector.startsWith(':root[data-launch]'));
+			selector.startsWith('.iso') ||
+			selector.startsWith('::view-transition-') ||
+			(page.home && (selector.startsWith(':root[data-launch]') || selector.startsWith('.dive')));
 		assert.deepEqual(
 			animated.map((selector) => selector.trim()).filter((selector) => !allowed(selector)),
 			[],
-			`${page.name} : animation hors de la CSS du kit, de la transition et du lancement`,
+			`${page.name} : animation hors de la CSS du kit, de la transition, du lancement et de la Plongée`,
 		);
 	}
 });

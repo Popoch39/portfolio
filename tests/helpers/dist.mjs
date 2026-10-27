@@ -122,6 +122,35 @@ export function moduleGraph(src) {
 	return { paths: [...seen.keys()], code: [...seen.values()].join('\n') };
 }
 
+/**
+ * L'élément complet qui s'ouvre à la position `at` du HTML, de sa balise ouvrante à sa balise fermante,
+ * éléments du même nom imbriqués compris (ce que `elements` ne sait pas faire), ou `undefined`.
+ */
+export function elementAt(html, at) {
+	const name = at >= 0 ? html.slice(at).match(/^<([a-z][\w-]*)/i)?.[1] : undefined;
+	if (!name) return undefined;
+	const tag = new RegExp(`<(/?)${name}\\b[^>]*>`, 'gi');
+	tag.lastIndex = at;
+	for (let depth = 0, m = tag.exec(html); m; m = tag.exec(html)) {
+		depth += m[1] ? -1 : 1;
+		if (depth === 0) return html.slice(at, tag.lastIndex);
+	}
+	return undefined;
+}
+
+/** Les blocs de la CSS dont l'en-tête répond à `opening` (ex. `/@keyframes\s+dive-/`), en-tête et contenu compris. */
+export function blocks(styles, opening) {
+	const found = [];
+	const pattern = new RegExp(opening.source, opening.flags.replace('g', '') + 'g');
+	for (let m = pattern.exec(styles); m; m = pattern.exec(styles)) {
+		let end = styles.indexOf('{', m.index);
+		for (let depth = 1; depth > 0; ) depth += styles[++end] === '{' ? 1 : styles[end] === '}' ? -1 : 0;
+		found.push(styles.slice(m.index, end + 1));
+		pattern.lastIndex = end + 1;
+	}
+	return found;
+}
+
 /** La CSS sans les blocs dont l'en-tête répond à `opening` (ex. `/@keyframes\s+vt-/`), contenu compris. */
 export function withoutBlocks(styles, opening) {
 	let rest = styles;

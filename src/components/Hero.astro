@@ -14,9 +14,10 @@ const lede = ui.heroLede[locale];
 	</div>
 	<h1 class="title">
 		{/* L'espace explicite garde « Louis Pocheron » lisible malgré les lignes en bloc. Au lancement
-		    (ADR 0008), chaque `.rise` monte dans sa ligne. */}
+		    (ADR 0008), chaque `.rise` monte dans sa ligne ; à la Plongée (ADR 0009), le nom (`.word`)
+		    s'estompe pendant que le curseur grandit. */}
 		<span class="line"><span class="rise">{identity.givenName}</span></span>{' '}<span class="line last"
-			><span class="rise">{identity.familyName}<span class="cursor" aria-hidden="true"></span></span></span
+			><span class="rise"><span class="word">{identity.familyName}</span><span class="cursor" aria-hidden="true"></span></span></span
 		>
 	</h1>
 	<div class="grid body">

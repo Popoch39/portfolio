@@ -1,0 +1,286 @@
+---
+// La Plongée (planche 16 · Plongée dans le curseur, ADR 0009), entre le héros et Projets sur l'accueil :
+// en défilant depuis le haut, la scène (l'en-tête du site et le héros) s'épingle, le texte s'efface, le
+// curseur du nom grandit jusqu'à couvrir l'écran, puis le bleu se replie dans le carré de « 01 » de
+// Projets, qui suit la scène dans le flux. Tout est en CSS pilotée par le défilement ; en mouvement réduit
+// ou dans un navigateur qui ne sait pas la jouer, ces enveloppes ne changent rien à la page.
+---
+
+<div class="dive">
+	<div class="dive-scene">
+		<span class="dive-track" aria-hidden="true"></span>
+		<div class="dive-stage">
+			<slot name="head" />
+			<div class="dive-hero"><slot name="hero" /></div>
+			<div class="dive-blue" aria-hidden="true"></div>
+		</div>
+	</div>
+	<div class="dive-next"><slot /></div>
+</div>
+
+<style>
+	.dive-track,
+	.dive-blue {
+		display: none;
+	}
+
+	/* La chronologie de la planche, en part de la scène (1,9 écran de défilement) :
+	   4–17 %      le texte d'accroche, les informations et les actions s'effacent en descendant ;
+	   5–34 %      le curseur grandit jusqu'à couvrir l'écran, l'en-tête compris ;
+	   9–30 %      « Louis » et « Pocheron » enflent et s'estompent ;
+	   33,6–34 %   l'aplat bleu prend le relais du curseur ; sous lui, le héros s'efface et Projets paraît ;
+	   58–88 %     le bleu se replie dans le carré de « 01 », Projets se pose d'un léger zoom en arrière ;
+	   88–100 %    le bleu s'efface sur le vrai carré ; Projets reste tenu jusqu'à la fin de la scène.
+	   Chaque raccourci `animation` porte la durée `auto`, comme la planche : sans elle, le minifieur
+	   replie `animation-timeline` dans le raccourci, que Chrome refuse alors en entier. */
+	@media (prefers-reduced-motion: no-preference) {
+		@supports (animation-timeline: view()) and (animation-range: entry) and (timeline-scope: --dive) {
+			.dive {
+				/* 1,9 écran, comme les 1 500 px de la planche pour 800 de haut. */
+				--dive-length: 190svh;
+				timeline-scope: --dive;
+			}
+
+			/* L'épingle. Dans le flux, la scène ne compte que l'en-tête et sa course : le héros est posé sous
+			   l'en-tête, hors du flux. Projets, qui la suit, arrive ainsi sous l'en-tête à la fin de la scène,
+			   à sa place. */
+			.dive-scene {
+				position: relative;
+			}
+
+			/* La course de l'épingle : une cale dans le flux, l'élément collant ne sortant pas de la boîte de
+			   contenu de son parent (une marge interne n'y compte pas). */
+			.dive-scene::after {
+				content: '';
+				display: block;
+				height: var(--dive-length);
+			}
+
+			/* La ligne de temps : un repère haut de la scène et d'un écran, dont la plage `contain` est
+			   exactement le temps où la scène reste collée. Les plages de la planche s'y lisent telles quelles.
+			   Sans retrait : par défaut, l'écran se compte sans la marge de défilement de la barre d'état. */
+			.dive-track {
+				display: block;
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 1px;
+				height: calc(var(--dive-length) + 100dvh);
+				view-timeline: --dive block;
+				view-timeline-inset: 0;
+			}
+
+			/* Au-dessus de Projets, que le défilement fait passer dessous. Le curseur et le bleu débordent de
+			   l'écran : rien ne doit faire défiler la page en largeur. */
+			.dive-stage {
+				position: sticky;
+				top: 0;
+				z-index: 1;
+				overflow-x: clip;
+			}
+
+			/* La barre d'état reste au-dessus du bleu, comme sur la planche, et sous le Lancement (10). */
+			:global(.status) {
+				z-index: 2;
+			}
+
+			.dive-hero {
+				position: absolute;
+				top: 100%;
+				left: 0;
+				right: 0;
+				/* Couvert, il quitte la tabulation : la bascule de `visibility` est une animation à part, pour
+				   que le fondu reste au compositeur. */
+				animation:
+					auto dive-out linear both,
+					auto dive-cover linear both;
+				animation-timeline: --dive;
+				animation-range: contain 33.8% contain 34%;
+			}
+
+			/* Le lien du nom (`#top`) ramène au début de la scène, et non au héros, collé avec elle. */
+			.dive-hero :global(.hero) {
+				scroll-margin-top: calc(var(--dive-length) + 100dvh);
+			}
+
+			/* Les enveloppes du texte, pas le texte : le Lancement anime l'accroche, les informations et les
+			   actions, et une liste `animation` remplace l'autre au lieu de s'y ajouter. */
+			.dive-hero :global(.topline > *),
+			.dive-hero :global(.body) {
+				animation: auto dive-away cubic-bezier(0.5, 0, 0.9, 0.5) both;
+				animation-timeline: --dive;
+				animation-range: contain 4% contain 17%;
+			}
+
+			.dive-hero :global(.line:first-child) {
+				transform-origin: 85% 100%;
+			}
+
+			.dive-hero :global(.word) {
+				display: inline-block;
+				transform-origin: 100% 60%;
+			}
+
+			.dive-hero :global(.line:first-child),
+			.dive-hero :global(.word) {
+				animation: auto dive-pass cubic-bezier(0.4, 0, 0.8, 0.4) both;
+				animation-timeline: --dive;
+				animation-range: contain 9% contain 30%;
+			}
+
+			/* Le curseur grandit autour de son centre jusqu'à couvrir l'écran où qu'il soit : deux fois sa
+			   largeur et sa hauteur, rapportées à sa taille (0,3 × 0,7 em du titre). `tan(atan2(a, b))` donne
+			   le rapport a / b. Sélecteur moins spécifique que celui du Lancement, qui l'emporte tant qu'il joue. */
+			.dive-hero :global(.cursor) {
+				--grow-x: tan(atan2(200vw, 0.3em));
+				--grow-y: tan(atan2(200dvh, 0.7em));
+				pointer-events: none;
+				animation: auto dive-grow cubic-bezier(0.7, 0, 0.85, 0.15) both;
+				animation-timeline: --dive;
+				animation-range: contain 5% contain 34%;
+			}
+
+			/* Le bleu est un aplat de la taille de l'écran, ramené par `scale` au carré de « 01 » (jamais un
+			   `clip-path`, que le compositeur ne joue pas). Sa boîte est celle de la scène dans le flux, haute
+			   de l'en-tête : la translation de 100 % qui l'amène sous l'en-tête vaut cette hauteur, quelle
+			   qu'elle soit, et x est le bord gauche du contenu. Ses deux translations ont la même courbe et la
+			   même plage, et s'ajoutent comme une seule. */
+			.dive-blue {
+				/* Le haut du carré dans Projets : la marge haute de la section, puis le carré de 9 px centré
+				   dans la ligne du numéro (13 px × 1,5), qui vient en premier sous 1024 px et s'aligne sur le
+				   bas du titre (0,84 em) au-delà. Relevé sur Projects, SectionHeader et SectionNumber. */
+				--dot-top: calc(clamp(56px, 7vw, 108px) + 5.25px);
+				display: block;
+				position: absolute;
+				inset: 0;
+				pointer-events: none;
+				animation:
+					auto dive-in linear backwards,
+					auto dive-fold cubic-bezier(0.7, 0, 0.2, 1) both;
+				animation-timeline: --dive;
+				animation-range:
+					contain 33.6% contain 34%,
+					contain 58% contain 88%;
+			}
+
+			@media (min-width: 1024px) {
+				.dive-blue {
+					--dot-top: calc(clamp(56px, 7vw, 108px) + 0.84 * clamp(52px, 8vw, 120px) - 14.25px);
+				}
+			}
+
+			.dive-blue::before {
+				content: '';
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100vw;
+				height: 100dvh;
+				background: var(--accent);
+				transform-origin: 0 0;
+				/* Une propriété par animation et par élément : deux fondus sur le même élément ne seraient
+				   plus joués par le compositeur. Le fondu de sortie est donc ici, celui d'entrée sur le parent. */
+				animation:
+					auto dive-shrink cubic-bezier(0.7, 0, 0.2, 1) both,
+					auto dive-out linear forwards;
+				animation-timeline: --dive;
+				animation-range:
+					contain 58% contain 88%,
+					contain 88% contain 100%;
+			}
+
+			/* Projets, juste après la scène : il paraît sous le bleu, et une translation qui compense le
+			   défilement le tient à sa place de fin de scène, sous l'en-tête ; elle s'annule avec la scène,
+			   sans rien laisser derrière elle (ni contexte d'empilement, ni bloc conteneur). Zoomé, il déborde
+			   de l'écran : rogné en largeur, il ne fait pas défiler la page de côté. */
+			.dive-next {
+				overflow-x: clip;
+				animation:
+					auto dive-in linear backwards,
+					auto dive-hold linear;
+				animation-timeline: --dive;
+				animation-range:
+					contain 33.8% contain 34%,
+					contain 33.8% contain 100%;
+			}
+
+			/* Tenu à son départ dès qu'il paraît, puis posé de 58 à 88 % (voir `dive-settle`). Une seule
+			   animation, que le compositeur joue, et sans remplissage : avant la scène, l'ancre `#projets` vise
+			   sa boîte, qu'un zoom fausserait. */
+			.dive-next :global(.projects) {
+				transform-origin: 5% 20%;
+				animation: auto dive-settle linear;
+				animation-timeline: --dive;
+				animation-range: contain 33.8% contain 88%;
+			}
+
+			@keyframes dive-in {
+				from {
+					opacity: 0;
+				}
+			}
+
+			@keyframes dive-out {
+				to {
+					opacity: 0;
+				}
+			}
+
+			@keyframes dive-cover {
+				to {
+					visibility: hidden;
+				}
+			}
+
+			@keyframes dive-away {
+				to {
+					opacity: 0;
+					translate: 0 24px;
+				}
+			}
+
+			@keyframes dive-pass {
+				to {
+					opacity: 0;
+					scale: 1.14;
+				}
+			}
+
+			@keyframes dive-grow {
+				to {
+					scale: var(--grow-x) var(--grow-y);
+				}
+			}
+
+			@keyframes dive-fold {
+				to {
+					translate: calc(max(0px, (100% - var(--container)) / 2) + var(--page-margin)) 100%;
+				}
+			}
+
+			@keyframes dive-shrink {
+				to {
+					translate: 0 var(--dot-top);
+					scale: tan(atan2(9px, 100vw)) tan(atan2(9px, 100dvh));
+				}
+			}
+
+			/* Du début du bleu à la fin de la scène, 66,2 % de sa longueur. */
+			@keyframes dive-hold {
+				from {
+					translate: 0 calc(-0.662 * var(--dive-length));
+				}
+			}
+
+			/* Sur la plage 33,8–88 % de la scène, 58 % tombe à 44,65 %. */
+			@keyframes dive-settle {
+				from,
+				44.65% {
+					opacity: 0.5;
+					scale: 1.06;
+					animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1);
+				}
+			}
+		}
+	}
+</style>

@@ -13,6 +13,22 @@ const PLAYED = /@keyframes\s+dive-|\banimation[\w-]*\s*:[^;{}]*\bdive-|\b(?:anim
 /** Les seules propriétés que le compositeur anime seul. */
 const COMPOSITED = new Set(['transform', 'translate', 'scale', 'opacity']);
 
+/**
+ * Les animations `dive-` de chaque règle, avec leur plage sur la scène en pourcentage `[début, fin]` :
+ * la n-ième plage de `animation-range` va à la n-ième animation du raccourci (la liste se répète
+ * si elle est plus courte), et le minifieur
+ * écrit `contain 0%` sans son pourcentage.
+ */
+const animations = (styles) =>
+	[...styles.matchAll(/([^{}]+)\{([^{}]*\banimation\s*:[^;{}]*\bdive-[^{}]*)\}/g)].map(([, selector, body]) => {
+		const names = body.match(/\banimation\s*:([^;}]*)/)[1].split(',').map((one) => one.match(/\bdive-[\w-]+/)?.[0]);
+		const ranges = (body.match(/\banimation-range\s*:([^;}]*)/)?.[1] ?? '').split(',').map((one) => {
+			const m = one.trim().match(/^contain(?:\s+([\d.]+)%)?\s+contain\s+([\d.]+)%$/);
+			return m ? [Number(m[1] ?? 0), Number(m[2])] : [0, 100];
+		});
+		return { selector, played: names.map((name, i) => ({ name, range: ranges[i % ranges.length] })).filter(({ name }) => name) };
+	});
+
 /** L'élément de la scène : celui qui s'épingle, l'en-tête et le héros dedans. */
 const sceneOf = (html) => elementAt(html, html.search(/<div class="dive-scene\b/));
 
@@ -72,6 +88,22 @@ for (const { locale, projects } of [
 		assert.ok(hiding.length > 0, 'aucune @keyframes ne cache le héros');
 		const users = [...styles.matchAll(/([^{}]+)\{[^{}]*\banimation(?:-name)?\s*:([^;{}]*)/g)].filter(([, , list]) => hiding.some((name) => list.includes(name)));
 		assert.ok(users.some(([, selector]) => /\.dive-hero\b/.test(selector)), 'le héros n’est jamais caché');
+	});
+
+	// Plus haut que l'écran (téléphone, portable de moins de ~1 000 px de haut), le héros remonte d'abord
+	// jusqu'à montrer son bas : d'après sa propre hauteur et le plus petit écran, sans script, et jamais
+	// vers le bas, si bien qu'un héros qui tient ne bouge pas.
+	test(`${locale} : le héros plus haut que l’écran remonte jusqu’à son bas avant que le texte ne s’efface`, () => {
+		const keyframes = new Map(blocks(styles, /@keyframes\s+dive-[\w-]+/).map((block) => [block.match(/@keyframes\s+([\w-]+)/)[1], block]));
+		const rising = [...keyframes].filter(([, block]) => /\btranslate:\s*0(?:px)?\s+min\(0(?:px)?,[^;}]*\b100svh\b[^;}]*\b100%/.test(block)).map(([name]) => name);
+		assert.ok(rising.length > 0, 'aucune @keyframes ne remonte le héros d’après sa hauteur');
+		const rules = animations(styles).filter(({ selector }) => /\.dive-hero\b/.test(selector));
+		const rise = rules.flatMap((rule) => rule.played.filter(({ name }) => rising.includes(name)).map((played) => ({ ...played, selector: rule.selector })));
+		assert.ok(rise.length > 0, 'le héros ne remonte pas');
+		const end = Math.max(...rise.map(({ range }) => range[1]));
+		const fades = rules.flatMap(({ selector, played }) => played.filter(({ name }) => /\bopacity:/.test(keyframes.get(name) ?? '')).map((p) => ({ ...p, selector })));
+		assert.ok(fades.length > 0, 'aucun effacement du héros');
+		for (const { selector, name, range } of fades) assert.ok(range[0] >= end, `${selector.trim()} : ${name} commence à ${range[0]} %, avant la fin de la remontée (${end} %)`);
 	});
 
 	// Le minifieur sait replier la ligne de temps dans le raccourci, ou écrire une durée nulle : Chrome

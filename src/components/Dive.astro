@@ -25,6 +25,7 @@
 	}
 
 	/* La chronologie de la planche, en part de la scène (1,9 écran de défilement) :
+	   0–4 %       le héros plus haut que l'écran remonte jusqu'à montrer son bas (la planche s'y arrête) ;
 	   4–17 %      le texte d'accroche, les informations et les actions s'effacent en descendant ;
 	   5–34 %      le curseur grandit jusqu'à couvrir l'écran, l'en-tête compris ;
 	   9–30 %      « Louis » et « Pocheron » enflent et s'estompent ;
@@ -84,11 +85,15 @@
 				z-index: 2;
 			}
 
+			/* Haute comme l'en-tête et conteneur de taille : l'enveloppe du héros y lit cette hauteur
+			   (`100cqh`), que la CSS ne lui donne pas autrement, et déborde de la couche. */
 			.dive-hero {
 				position: absolute;
 				top: 100%;
 				left: 0;
 				right: 0;
+				height: 100%;
+				container-type: size;
 				/* Couvert, il quitte la tabulation : la bascule de `visibility` est une animation à part, pour
 				   que le fondu reste au compositeur. */
 				animation:
@@ -101,6 +106,27 @@
 			/* Le lien du nom (`#top`) ramène au début de la scène, et non au héros, collé avec elle. */
 			.dive-hero :global(.hero) {
 				scroll-margin-top: calc(var(--dive-length) + 100dvh);
+			}
+
+			/* Plus haut que l'écran, le héros remonte d'abord jusqu'à montrer son bas, pendant que la planche
+			   ne fait rien, avant que le texte ne s'efface ; s'il tient, il ne bouge pas. Son enveloppe
+			   s'étend sous l'en-tête, si bien que `100 %` de sa translation vaut l'en-tête et le héros : une
+			   hauteur en `cqh` dans les @keyframes resterait figée au compositeur quand l'en-tête change de
+			   hauteur (polices chargées). Sur l'en-tête, elle laisse passer le pointeur. */
+			.dive-hero > :global(*) {
+				margin-top: -100cqh;
+				padding-top: 100cqh;
+				pointer-events: none;
+				animation: auto dive-rise linear both;
+				animation-timeline: --dive;
+				animation-range: contain 0% contain 4%;
+			}
+
+			/* Le héros glisse sur l'en-tête, resté collé, et le couvre de son fond : l'en-tête ne connaît pas
+			   la hauteur du héros pour remonter avec lui. */
+			.dive-hero :global(.hero) {
+				background: var(--bg);
+				pointer-events: auto;
 			}
 
 			/* Les enveloppes du texte, pas le texte : le Lancement anime l'accroche, les informations et les
@@ -229,6 +255,13 @@
 			@keyframes dive-cover {
 				to {
 					visibility: hidden;
+				}
+			}
+
+			/* Le bas du héros au bas du plus petit écran, celui où la barre d'adresse est affichée. */
+			@keyframes dive-rise {
+				to {
+					translate: 0 min(0px, 100svh - 100%);
 				}
 			}
 

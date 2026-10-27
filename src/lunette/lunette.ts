@@ -228,6 +228,19 @@ function recall(step: number) {
 	if (at < history.length) recalled = at;
 }
 
+/**
+ * Le presse-papiers manque hors contexte sécurisé, et refuse sans geste récent du visiteur ou sans
+ * permission : l'écho d'erreur donne alors l'adresse à copier à la main.
+ */
+async function copy({ text, copied, failed }: Extract<Action, { kind: 'yank' }>) {
+	try {
+		await navigator.clipboard.writeText(text);
+		echo(copied);
+	} catch {
+		echo(failed, 'error');
+	}
+}
+
 function act(action: Action) {
 	if (action.kind === 'show') {
 		show(action.pane);
@@ -236,6 +249,9 @@ function act(action: Action) {
 		return;
 	}
 	dialog.close();
+	if (action.kind === 'yank') return void copy(action);
+	// Sans `opener`, l'onglet ouvert ne peut pas toucher à celui du site.
+	if (action.kind === 'open') return void window.open(action.url, '_blank', 'noopener');
 	// Un simple changement d'adresse : la transition lettre à lettre (ADR 0004) joue d'elle-même.
 	location.assign(action.path);
 }
@@ -249,7 +265,10 @@ function enter() {
 	const entry = listing.entries[selected];
 	if (entry && !entry.action) return write(entry.line);
 	remember((entry?.line ?? line()).trim());
-	const result = entry?.action ?? run(line(), context);
+	perform(entry?.action ?? run(line(), context));
+}
+
+function perform(result: Action | { error: string }) {
 	if ('kind' in result) return act(result);
 	dialog.close();
 	echo(result.error, 'error');
@@ -337,3 +356,6 @@ export function open(typed = '') {
 	// Modale : la page est inerte, Échap ferme, et le focus revient où il était.
 	dialog.showModal();
 }
+
+/** Le `yy` du mode normal : `:yank mail`, sans ouvrir la Lunette ni entrer dans son historique. */
+export const yank = () => perform(run('yank mail', context));

@@ -29,6 +29,14 @@ export function normalMode(sequences: Sequences, show: (keys: string) => void) {
 	};
 }
 
+/**
+ * Une frappe que son modificateur laisse au navigateur. Sur un clavier AZERTY, `]` et `[` demandent AltGr
+ * (Ctrl+Alt sous Windows) ou Option (Alt sur Mac) : Ctrl et Alt passent pour elles, que le navigateur
+ * n'emploie pas ; Cmd jamais (Cmd+[ recule dans l'historique).
+ */
+export const modified = (event: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey'>) =>
+	event.metaKey || ((event.ctrlKey || event.altKey) && !'[]'.includes(event.key));
+
 /** Défile jusqu'à `top`, en douceur, sauf en mouvement réduit (la forme courte de la requête le teste). */
 const scroll = (top: number) => scrollTo({ top, behavior: matchMedia('(prefers-reduced-motion)').matches ? 'instant' : 'smooth' });
 

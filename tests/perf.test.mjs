@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 import { FICHE, HOME, PROJECTS, readDist } from './helpers/dist.mjs';
 import { pagesOf, shortfalls } from '../scripts/perf.mjs';
 
-const perfect = { performance: 100, accessibility: 100, 'best-practices': 100, seo: 100 };
+// Seuils (décision de Louis, spec #46) : 100 partout, sauf la performance des fiches, acceptée à 99.
+const perfect ={ performance: 100, accessibility: 100, 'best-practices': 100, seo: 100 };
 
 test('les pages mesurées sont celles du sitemap du build : les deux accueils et les six fiches dans chaque langue', () => {
 	assert.deepEqual(pagesOf(readDist('sitemap.xml')), [
@@ -15,19 +16,30 @@ test('les pages mesurées sont celles du sitemap du build : les deux accueils et
 	]);
 });
 
-test('la mesure ne passe que si les quatre catégories sont à 100 sur toutes les pages', () => {
-	assert.deepEqual(shortfalls([{ page: '/', scores: perfect }, { page: '/en/', scores: perfect }]), []);
+test('la mesure passe avec les quatre catégories à 100 sur les accueils, et la performance à 99 sur les fiches', () => {
+	const fiche = { ...perfect, performance: 99 };
+	assert.deepEqual(
+		shortfalls([
+			{ page: '/', scores: perfect },
+			{ page: '/en/', scores: perfect },
+			{ page: '/projets/trekker/', scores: fiche },
+			{ page: '/en/projects/une-fiche-ajoutee/', scores: fiche },
+		]),
+		[],
+	);
 });
 
-test('chaque catégorie sous 100 est signalée avec sa page, une catégorie sans score comprise', () => {
+test('chaque catégorie sous son seuil est signalée avec sa page et le seuil, une catégorie sans score comprise', () => {
 	const results = [
-		{ page: '/', scores: { ...perfect, performance: 98 } },
-		{ page: '/projets/trekker/', scores: perfect },
-		{ page: '/en/projects/trekker/', scores: { ...perfect, accessibility: 96, seo: null } },
+		{ page: '/', scores: { ...perfect, performance: 99 } },
+		{ page: '/en/', scores: perfect },
+		{ page: '/projets/trekker/', scores: { ...perfect, performance: 98 } },
+		{ page: '/en/projects/trekker/', scores: { ...perfect, performance: 99, accessibility: 99, seo: null } },
 	];
 	assert.deepEqual(shortfalls(results), [
-		{ page: '/', category: 'performance', score: 98 },
-		{ page: '/en/projects/trekker/', category: 'accessibilité', score: 96 },
-		{ page: '/en/projects/trekker/', category: 'SEO', score: null },
+		{ page: '/', category: 'performance', score: 99, floor: 100 },
+		{ page: '/projets/trekker/', category: 'performance', score: 98, floor: 99 },
+		{ page: '/en/projects/trekker/', category: 'accessibilité', score: 99, floor: 100 },
+		{ page: '/en/projects/trekker/', category: 'SEO', score: null, floor: 100 },
 	]);
 });

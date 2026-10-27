@@ -21,6 +21,11 @@ _Avoid_ : page projet, détail
 _EN_ : Launch
 _Avoid_ : loader, intro, splash, écran de chargement
 
+**Plongée** :
+Sur l'accueil, entre le héros et les projets, le défilement où la page s'arrête : le curseur du nom grandit jusqu'à remplir l'écran, puis se range dans le carré de la section Projets. Elle se rejoue à l'envers en remontant.
+_EN_ : Dive
+_Avoid_ : animation au scroll, transition, scroll épinglé
+
 ## Langues
 
 **Version** :

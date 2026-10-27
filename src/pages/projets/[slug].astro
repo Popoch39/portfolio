@@ -6,7 +6,7 @@ import ProjectHero from '../../components/ProjectHero.astro';
 import SectionHeader from '../../components/SectionHeader.astro';
 import FigureCard from '../../components/FigureCard.astro';
 import Nomenclature from '../../components/Nomenclature.astro';
-import Repere from '../../components/Repere.astro';
+import Notes from '../../components/Notes.astro';
 import Regle from '../../components/Regle.astro';
 import GrainPatterns from '../../components/GrainPatterns.astro';
 import ProjectNav from '../../components/ProjectNav.astro';
@@ -15,6 +15,7 @@ import { fichePath, githubRepoUrl, projects, shareImageOf, type Project } from '
 import { person } from '../../lib/structured-data';
 import { anatomyOf } from '../../anatomies/registry';
 import { restSvg } from '../../anatomies/figure';
+import { annotate } from '../../anatomies/annotations';
 
 export const getStaticPaths = (() => projects.map((project) => ({ params: { slug: project.slug }, props: { project } }))) satisfies GetStaticPaths;
 
@@ -25,12 +26,7 @@ interface Props {
 const { project } = Astro.props;
 const anatomy = anatomyOf(project);
 const { content } = anatomy;
-const rest = anatomy.renderRest();
-/**
- * Au-delà de ce rapport hauteur sur largeur, une figure est haute : son repère se range à côté
- * d'elle. En deçà (la rampe), la carte tient dans 768 px de haut avec l'étiquette au-dessus.
- */
-const TALL = 0.5;
+const notes = annotate(content, anatomy.renderRest().body, anatomy.anchors);
 
 const sourceCode = {
 	'@context': 'https://schema.org',
@@ -58,20 +54,20 @@ const sourceCode = {
 		<ProjectHero project={project} lede={content.lede} />
 		<section class="anatomy">
 			<SectionHeader number="A" title="Anatomie" note={`${content.pieces.length} pièces · une seule les compte`} />
-			<FigureCard
-				fig={1}
-				title={content.title}
-				consignes={content.timeline?.consignes ?? content.consignes}
-				releve={content.releve}
-				caption={content.caption}
-				svg={restSvg(anatomy)}
-				motion={anatomy.motion}
-				phoneCrop={content.phoneCrop}
-				portrait={rest.height >= rest.width}
-				tall={rest.height >= TALL * rest.width}
-			>
-				<Repere slot="repere" pieces={content.pieces} codeUrl={anatomy.codeUrl} signatureOf={anatomy.signatureOf} />
-				{content.timeline && <Regle slot="controls" timeline={content.timeline} />}
+			<FigureCard fig={1} title={content.title} caption={content.caption}>
+				<Notes
+					slot="stage"
+					layout={notes}
+					svg={restSvg(anatomy)}
+					motion={anatomy.motion}
+					phoneCrop={content.phoneCrop}
+					codeUrl={anatomy.codeUrl}
+					signatureOf={anatomy.signatureOf}
+					consignes={content.timeline?.consignes ?? content.consignes}
+					releve={content.releve}
+				>
+					{content.timeline && <Regle timeline={content.timeline} />}
+				</Notes>
 			</FigureCard>
 			<Nomenclature pieces={content.pieces} codeUrl={anatomy.codeUrl} />
 			<GrainPatterns />
@@ -85,7 +81,6 @@ const sourceCode = {
 	// Le chargeur de la fiche : la figure arrive dessinée, seul son mouvement passe par ici.
 	import { mountFigure } from '../../anatomies/loader.ts';
 	import { linkPieces } from '../../anatomies/highlight.ts';
-	import { placeRepere } from '../../anatomies/repere.ts';
 
 	const scene = document.querySelector<HTMLElement>('[data-motion]');
 	const svg = scene?.querySelector('svg');
@@ -93,9 +88,7 @@ const sourceCode = {
 	const releve = card?.querySelector<HTMLElement>('[data-releve]');
 	const anatomy = scene?.closest('section');
 	if (scene?.dataset.motion && svg && releve && anatomy) {
-		const repere = card?.querySelector<HTMLElement>('[data-repere]');
-		const repereOn = repere ? placeRepere(repere, scene, svg) : null;
-		linkPieces(anatomy, { onAim: repereOn?.aim });
+		linkPieces(anatomy);
 		const ruler = card?.querySelector<HTMLElement>('[data-regle]');
 		const tour = card?.querySelector<HTMLButtonElement>('[data-tour]');
 		void mountFigure({ scene, svg, releve, timeline: ruler && tour ? { ruler, tour } : undefined }, scene.dataset.motion);

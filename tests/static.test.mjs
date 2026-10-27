@@ -2,7 +2,7 @@
 // Règles de D1 révisées pour les figures (ADR 0001) : pour tout script, le JSON-LD et le chargeur
 // des figures ; l'attribut `style` n'est toléré que dans les SVG de figure, `animation` et
 // `@keyframes` que dans la CSS des figures (kit et palette, sélecteurs `.iso`, noms `iso-`) ;
-// jamais de `transition` ni de `:hover`.
+// jamais de `:hover`, et `transition` seulement dans la CSS des notes de la figure (ADR 0003).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PROJECTS, readFiche, readHome, tags, attr, elements, css } from './helpers/dist.mjs';
@@ -43,11 +43,17 @@ test('aucun attribut style inline hors des SVG de figure', () => {
 	}
 });
 
-test('la CSS livrée ne contient ni transition ni :hover, et ses animations sont celles du kit', () => {
+test('la CSS livrée n’a ni :hover ni transition hors des notes de la figure, et ses animations sont celles du kit', () => {
 	for (const page of pages) {
 		const pageStyles = css(page.html);
 		assert.ok(pageStyles.length > 0, `${page.name} : aucune CSS trouvée`);
-		assert.doesNotMatch(pageStyles, /\btransition(-[a-z-]+)?\s*:/i, page.name);
+		// ADR 0003 : les transitions ne vivent que dans la CSS des notes, sous `.annot`.
+		const transitioned = [...pageStyles.matchAll(/([^{}]+)\{[^{}]*\btransition(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap((m) => m[1].split(/,(?![^(]*\))/));
+		assert.deepEqual(
+			transitioned.map((selector) => selector.trim()).filter((selector) => !selector.startsWith('.annot')),
+			[],
+			`${page.name} : transition hors des notes`,
+		);
 		// La pseudo-classe, pas la requête média `(hover: hover)`, qui teste ce que sait le pointeur.
 		assert.doesNotMatch(pageStyles, /(?<!\(\s*hover\s*):hover\b/i, page.name);
 		const keyframes = [...pageStyles.matchAll(/@keyframes\s+([\w-]+)/gi)].map((m) => m[1]);

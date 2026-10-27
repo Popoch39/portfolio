@@ -150,9 +150,10 @@ for (const version of VERSIONS) {
 		const home = moduleGraph(attr(scripts[0], 'src') ?? '');
 		assert.ok(!home.code.includes('/motion.ts'), `le chargeur arrive avec la page : ${home.paths.join(', ')}`);
 		assert.ok(!home.code.includes('data-piece'), `la mise en avant des pièces arrive avec la page : ${home.paths.join(', ')}`);
-		// L'amorce et l'assistant d'import à la demande de Vite : 5,8 Ko avec le chargeur et l'aperçu.
+		// L'amorce, l'écouteur de la Lunette (ADR 0007, qui relève le plafond de 2 500 à 4 000 octets) et
+		// l'assistant d'import à la demande de Vite ; le chargeur, l'aperçu et la Lunette n'en sont pas.
 		const weight = home.paths.reduce((sum, path) => sum + readDist(path.slice(1)).length, 0);
-		assert.ok(weight <= 2500, `script d’amorce de ${weight} o`);
+		assert.ok(weight <= 4000, `script d’amorce de ${weight} o`);
 
 		const preview = onDemand(home.code).map(moduleGraph);
 		assert.ok(preview.length > 0, 'aucun morceau chargé à la demande');

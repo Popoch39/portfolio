@@ -2,7 +2,7 @@
 // lettre du nom du projet passe de la ligne de l'accueil au titre de la fiche, et retour.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { FICHE, HOME, PROJECTS, attr, css, elements, hasAttr, headOf, readFiche, readHome, tags, text } from './helpers/dist.mjs';
+import { FICHE, HOME, PROJECTS, attr, css, elements, hasAttr, headOf, readFiche, readHome, tags, text, withoutBlocks } from './helpers/dist.mjs';
 
 const LOCALES = ['fr', 'en'];
 const longest = Math.max(...PROJECTS.map(({ repo }) => repo.length));
@@ -19,6 +19,20 @@ const pages = LOCALES.flatMap((locale) => [
 test('chaque page s’inscrit aux view transitions entre documents, sauf mouvement réduit', () => {
 	for (const { name, html } of pages) {
 		assert.match(css(html), /@media \(prefers-reduced-motion:\s*no-preference\)\s*\{\s*@view-transition\s*\{\s*navigation:\s*auto;?\s*\}/, name);
+	}
+});
+
+test('en mouvement réduit, rien de la transition ne s’anime : ses animations vivent sous la requête', () => {
+	for (const { name, html } of pages) {
+		const outside = withoutBlocks(css(html), /@media \(prefers-reduced-motion:\s*no-preference\)/);
+		assert.doesNotMatch(outside, /@keyframes\s+vt-/, `${name} : @keyframes vt- hors de la requête`);
+		// Seuls les délais par rang restent dehors : sans transition, ils ne s'appliquent à rien.
+		const animated = [...outside.matchAll(/(::view-transition-[^{}]+)\{([^{}]*)\}/g)].filter(([, , body]) => /\banimation(?!-delay)/.test(body));
+		assert.deepEqual(
+			animated.map(([, selector]) => selector),
+			[],
+			`${name} : animation de la transition hors de la requête`,
+		);
 	}
 });
 

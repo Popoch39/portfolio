@@ -121,16 +121,12 @@ const sourceCode = {
 		::view-transition-old(root),
 		::view-transition-old(projects-head),
 		::view-transition-old(preview) {
-			--vt-shift: 0 48px;
 			animation: vt-leave 480ms cubic-bezier(0.5, 0, 0.2, 1) both;
 		}
 
-		::view-transition-old(projects-head) {
-			--vt-shift: 0 -32px;
-		}
-
-		::view-transition-old(preview) {
-			--vt-shift: 32px 0;
+		/* Le reste de l'accueil : les autres lignes, qui descendent. */
+		::view-transition-old(root) {
+			--vt-shift: 0 48px;
 		}
 
 		::view-transition-old(word-frame) {
@@ -143,12 +139,10 @@ const sourceCode = {
 		}
 
 		::view-transition-new(hero-body) {
-			--vt-shift: 0 28px;
 			animation: vt-arrive 720ms cubic-bezier(0.16, 1, 0.3, 1) 640ms both;
 		}
 
 		::view-transition-new(anatomy) {
-			--vt-shift: 0 48px;
 			animation: vt-arrive 800ms cubic-bezier(0.16, 1, 0.3, 1) 800ms both;
 		}
 
@@ -162,12 +156,12 @@ const sourceCode = {
 		}
 
 		::view-transition-old(*.letter) {
-			animation-name: vt-arc, vt-lowercase-out;
+			animation-name: vt-arc-to-fiche, vt-lowercase-out;
 			animation-duration: 960ms, 480ms;
 		}
 
 		::view-transition-new(*.letter) {
-			animation-name: vt-arc, vt-capital-in;
+			animation-name: vt-arc-to-fiche, vt-capital-in;
 			animation-duration: 960ms, 560ms;
 		}
 

@@ -7,7 +7,7 @@
 // animations de pseudo-éléments `::view-transition-*`.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROJECTS, readFiche, readHome, tags, attr, elements, css } from './helpers/dist.mjs';
+import { PROJECTS, readFiche, readHome, tags, attr, elements, css, withoutBlocks } from './helpers/dist.mjs';
 
 const html = readHome();
 const styles = css(html);
@@ -21,17 +21,6 @@ const pages = [
 /** Le HTML sans les SVG de figure (`<svg class="iso-svg …">`), où le kit émet des attributs `style`. */
 const withoutFigures = (page) =>
 	elements(page, 'svg').reduce((rest, svg) => (/\bclass="[^"]*\biso-svg\b/.test(tags(svg, 'svg')[0]) ? rest.replace(svg, '') : rest), page);
-
-/** La CSS sans ses blocs `@keyframes vt-…` : leurs étapes portent `animation-timing-function`. */
-const withoutTransitionKeyframes = (styles) => {
-	let rest = styles;
-	for (let at = rest.search(/@keyframes\s+vt-/); at >= 0; at = rest.search(/@keyframes\s+vt-/)) {
-		let end = rest.indexOf('{', at);
-		for (let depth = 1; depth > 0; ) depth += rest[++end] === '{' ? 1 : rest[end] === '}' ? -1 : 0;
-		rest = rest.slice(0, at) + rest.slice(end + 1);
-	}
-	return rest;
-};
 
 test('scripts limités au JSON-LD, au chargeur (au plus un module, servi par le site) et à la view transition', () => {
 	for (const page of pages) {
@@ -68,7 +57,7 @@ test('la CSS livrée n’a ni :hover ni transition hors des notes de la figure, 
 		assert.ok(pageStyles.length > 0, `${page.name} : aucune CSS trouvée`);
 		// ADR 0003 : les transitions ne vivent que dans la CSS des notes, sous `.annot`
 		// (`view-transition-name` n'en est pas une).
-		const transitioned = [...pageStyles.matchAll(/([^{}]+)\{[^{}]*(?<![\w-])transition(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap((m) => m[1].split(/,(?![^(]*\))/));
+		const transitioned = [...pageStyles.matchAll(/([^{}]+)\{[^{}]*(?<!view-)\btransition(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap((m) => m[1].split(/,(?![^(]*\))/));
 		assert.deepEqual(
 			transitioned.map((selector) => selector.trim()).filter((selector) => !selector.startsWith('.annot')),
 			[],
@@ -82,7 +71,8 @@ test('la CSS livrée n’a ni :hover ni transition hors des notes de la figure, 
 			[],
 			`${page.name} : @keyframes hors du kit et de la transition`,
 		);
-		const animated = [...withoutTransitionKeyframes(pageStyles).matchAll(/([^{}]+)\{[^{}]*\banimation(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap((m) =>
+		// Les étapes des `@keyframes vt-…` portent `animation-timing-function`.
+		const animated = [...withoutBlocks(pageStyles, /@keyframes\s+vt-/).matchAll(/([^{}]+)\{[^{}]*\banimation(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap((m) =>
 			m[1].split(/,(?![^(]*\))/),
 		);
 		assert.deepEqual(

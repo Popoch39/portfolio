@@ -3,7 +3,7 @@ import { Font } from 'astro:assets';
 import { identity, pageMeta, themeColor, type ShareImage } from '../data/profile';
 import { person } from '../lib/structured-data';
 import { alternatesOf, formats, home, localeOf, locales, pathOf, type Page } from '../lib/i18n';
-import { letterDelays, projectsEndId } from '../lib/transition';
+import LetterTransition from '../components/LetterTransition.astro';
 
 interface Props {
 	/** Sans les paramètres suivants, la page reprend les valeurs de l'accueil. */
@@ -75,38 +75,7 @@ const jsonLd = JSON.stringify(structuredData).replaceAll('<', '\\u003c');
 		{/* Seule la romaine d'Archivo est préchargée : c'est elle qui dessine le héros. */}
 		<Font cssVariable="--font-archivo" preload={[{ style: 'normal', subset: 'latin' }]} />
 		<Font cssVariable="--font-mono" />
-		{page.kind === 'home' && <link rel="expect" href={`#${projectsEndId}`} blocking="render" />}
-		<style is:inline set:html={letterDelays} />
-		{/* Lettre à lettre (ADR 0004). Classique et dans le <head> : `pagereveal` part avant le premier
-		    rendu, avant tout module. Le nom à faire passer est celui dont `data-word` est l'adresse de
-		    l'autre page ; sans lui (autre langue, autre fiche), pas de transition. Ses lettres ne sont des
-		    éléments que le temps de la transition : au repos, le nom reste un seul texte. */}
-		<script is:inline>
-			(() => {
-				const share = (transition, url) => {
-					if (!transition) return;
-					const word = url && document.querySelector(`[data-word="${new URL(url).pathname}"]`);
-					if (!word) return transition.skipTransition();
-					const { top, bottom } = word.getBoundingClientRect();
-					// Hors de l'écran, ce nom ne vole pas : celui de l'autre page apparaît ou s'efface sur place.
-					if (bottom < 0 || top > innerHeight) return;
-					const name = word.textContent;
-					const letters = Array.from(name, (c) => Object.assign(document.createElement('span'), { textContent: c }));
-					word.replaceChildren(...letters);
-					const named = [...letters, word.parentElement.querySelector('[data-word-cursor]')];
-					named.forEach((el, i) => el && Object.assign(el.style, { viewTransitionName: `letter-${i}`, viewTransitionClass: 'letter' }));
-					const frame = word.closest('[data-word-frame]');
-					if (frame) frame.style.viewTransitionName = 'word-frame';
-					transition.finished.finally(() => {
-						word.textContent = name;
-						for (const el of [...named, frame]) el?.style.removeProperty('view-transition-name');
-						named.at(-1)?.style.removeProperty('view-transition-class');
-					});
-				};
-				addEventListener('pageswap', (e) => share(e.viewTransition, e.activation?.entry.url));
-				addEventListener('pagereveal', (e) => share(e.viewTransition, self.navigation?.activation?.from?.url));
-			})();
-		</script>
+		<LetterTransition page={page} />
 	</head>
 	<body>
 		<slot />
@@ -197,81 +166,5 @@ const jsonLd = JSON.stringify(structuredData).replaceAll('<', '\\u003c');
 
 	.grid > * {
 		grid-column: 1 / -1;
-	}
-
-	/* Lettre à lettre (ADR 0004) : la view transition entre l'accueil et une fiche. La page d'arrivée
-	   dessine les pseudo-éléments : la fiche règle l'aller, l'accueil le retour, ce gabarit le commun. */
-	@media (prefers-reduced-motion: no-preference) {
-		@view-transition {
-			navigation: auto;
-		}
-
-		/* Les groupes s'empilent dans l'ordre de la page de départ, ceux de l'arrivée par-dessus : un bloc
-		   qui arrive couvrirait la barre d'état, et l'en-tête de l'accueil les lettres. */
-		::view-transition-group(status) {
-			z-index: 1;
-		}
-
-		/* Une lettre qui part décrit un arc, au-dessus de la droite que suit son groupe. */
-		::view-transition-group(*.letter) {
-			z-index: 2;
-			animation-timing-function: cubic-bezier(0.65, 0, 0.15, 1);
-			animation-fill-mode: both;
-		}
-
-		::view-transition-old(*.letter),
-		::view-transition-new(*.letter) {
-			--arc: clamp(16px, 3vw, 40px);
-			animation-timing-function: linear, ease;
-			animation-fill-mode: both;
-		}
-
-		/* Sans lettre en face (le curseur, un nom hors de l'écran) : elle se pose à son tour, ou s'efface
-		   aussitôt, sur place. */
-		::view-transition-new(*.letter):only-child {
-			animation: vt-land 960ms cubic-bezier(0.16, 1, 0.3, 1) both;
-			animation-delay: inherit;
-		}
-
-		::view-transition-old(*.letter):only-child {
-			animation: vt-leave 240ms ease both;
-		}
-
-		@keyframes vt-arc {
-			from {
-				translate: 0 0;
-				animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1);
-			}
-			46% {
-				translate: 0 calc(-1 * var(--arc));
-				animation-timing-function: cubic-bezier(0.55, 0, 0.35, 1);
-			}
-			to {
-				translate: 0 0;
-			}
-		}
-
-		@keyframes vt-land {
-			from,
-			60% {
-				opacity: 0;
-				scale: 0.4;
-			}
-		}
-
-		/* Les blocs qui ne sont pas des lettres glissent de `--vt-shift` en s'effaçant ou en apparaissant. */
-		@keyframes vt-leave {
-			to {
-				opacity: 0;
-				translate: var(--vt-shift, 0 0);
-			}
-		}
-
-		@keyframes vt-arrive {
-			from {
-				opacity: 0;
-				translate: var(--vt-shift, 0 0);
-			}
-		}
 	}
 </style>

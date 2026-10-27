@@ -16,7 +16,7 @@ export const letterDelays = Array.from(
 ).join('');
 
 /**
- * L'élément qui suit la liste des projets de l'accueil. L'accueil n'est pas rendu avant son analyse :
+ * L'aperçu des projets de l'accueil, qui suit leur liste. L'accueil n'est pas rendu avant son analyse :
  * au retour d'une fiche, la ligne qui reçoit les lettres existe déjà.
  */
-export const projectsEndId = 'preview';
+export const projectsPreviewId = 'projects-preview';

@@ -110,6 +110,17 @@ export function moduleGraph(src) {
 	return { paths: [...seen.keys()], code: [...seen.values()].join('\n') };
 }
 
+/** La CSS sans les blocs dont l'en-tête répond à `opening` (ex. `/@keyframes\s+vt-/`), contenu compris. */
+export function withoutBlocks(styles, opening) {
+	let rest = styles;
+	for (let at = rest.search(opening); at >= 0; at = rest.search(opening)) {
+		let end = rest.indexOf('{', at);
+		for (let depth = 1; depth > 0; ) depth += rest[++end] === '{' ? 1 : rest[end] === '}' ? -1 : 0;
+		rest = rest.slice(0, at) + rest.slice(end + 1);
+	}
+	return rest;
+}
+
 /** Toute la CSS livrée dans la page (contenu des balises `<style>`). */
 export function css(html) {
 	return elements(html, 'style')

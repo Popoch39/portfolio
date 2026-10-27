@@ -5,7 +5,7 @@ import GrainPatterns from './GrainPatterns.astro';
 import { projects, publicRepoCount, restFigurePath, sections, type Project } from '../data/profile';
 import { anatomyOf } from '../anatomies/registry';
 import { fiche, localeOf, pathOf, ui } from '../lib/i18n';
-import { projectsEndId } from '../lib/transition';
+import { projectsPreviewId } from '../lib/transition';
 
 const locale = localeOf(Astro.currentLocale);
 const { id, label } = sections.projects;
@@ -37,7 +37,7 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 		</ol>
 		{/* L'aperçu A3 : un panneau par projet, seul l'actif est visible. Sa description et sa stack
 		    doublent celles de la ligne, que les technologies d'assistance lisent déjà. */}
-		<div id={projectsEndId} class="preview">
+		<div id={projectsPreviewId} class="preview">
 			{
 				projects.map((p, i) => {
 					const anatomy = anatomyOf(p, locale);

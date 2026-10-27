@@ -1,0 +1,169 @@
+---
+// Lettre à lettre (ADR 0004) : la view transition entre l'accueil et une fiche, rendue dans le <head>
+// de chaque page. La page d'arrivée dessine les pseudo-éléments : la fiche règle l'aller, l'accueil le
+// retour, ce composant ce qu'ils ont en commun.
+import type { Page } from '../lib/i18n';
+import { letterDelays, projectsPreviewId } from '../lib/transition';
+
+interface Props {
+	page: Page;
+}
+
+const { page } = Astro.props;
+---
+
+{page.kind === 'home' && <link rel="expect" href={`#${projectsPreviewId}`} blocking="render" />}
+<style is:inline set:html={letterDelays} />
+{/* Classique et dans le <head> : `pagereveal` part avant le premier rendu, avant tout module. Le nom
+    qui vole est celui dont `data-word` est l'adresse de l'autre page ; sans lui (autre langue, autre
+    fiche), pas de transition. Ses lettres ne sont des éléments que le temps de la transition : au
+    repos, le nom reste un seul texte (le rendre efface lettres et repère : seuls le curseur et la ligne
+    gardent un nom à retirer). Le curseur vole après la dernière lettre ; l'accueil n'en a pas,
+    un repère au bout du nom lui sert de départ et d'arrivée (une espace sans chasse : vide, le repère
+    n'aurait pas de boîte et ne serait pas capturé). Hors de l'écran, le nom ne vole pas :
+    celui de l'autre page se pose ou s'efface sur place. Les commentaires restent ici : ceux du script
+    partiraient avec chaque page. */}
+<script is:inline>
+	(() => {
+		const flyName = (transition, url) => {
+			if (!transition) return;
+			const word = url && document.querySelector(`[data-word="${new URL(url).pathname}"]`);
+			if (!word) return transition.skipTransition();
+			const { top, bottom } = word.getBoundingClientRect();
+			if (bottom < 0 || top > innerHeight) return;
+			const name = word.textContent;
+			word.replaceChildren(...Array.from(name, (c) => Object.assign(document.createElement('span'), { textContent: c })));
+			const letters = [...word.children];
+			const cursor =
+				word.parentElement.querySelector('[data-word-cursor]') ?? word.appendChild(Object.assign(document.createElement('span'), { textContent: '​' }));
+			[...letters, cursor].forEach((el, i) => Object.assign(el.style, { viewTransitionName: `letter-${i}`, viewTransitionClass: 'letter' }));
+			const frame = word.closest('[data-word-frame]');
+			if (frame) frame.style.viewTransitionName = 'word-frame';
+			transition.finished.finally(() => {
+				word.textContent = name;
+				cursor.style.removeProperty('view-transition-name');
+				cursor.style.removeProperty('view-transition-class');
+				frame?.style.removeProperty('view-transition-name');
+			});
+		};
+		addEventListener('pageswap', (e) => flyName(e.viewTransition, e.activation?.entry.url));
+		addEventListener('pagereveal', (e) => flyName(e.viewTransition, self.navigation?.activation?.from?.url));
+	})();
+</script>
+
+<style is:global>
+	@media (prefers-reduced-motion: no-preference) {
+		@view-transition {
+			navigation: auto;
+		}
+
+		/* Les groupes s'empilent dans l'ordre de la page de départ, ceux de l'arrivée par-dessus : l'en-tête
+		   de l'accueil couvrirait les lettres, l'anatomie ou l'aperçu la barre d'état. Comme dans la
+		   maquette, la barre reste au-dessus de tout, lettres comprises. */
+		::view-transition-group(*.letter) {
+			z-index: 1;
+		}
+
+		::view-transition-group(status) {
+			z-index: 2;
+		}
+
+		/* Chaque bloc glisse toujours du même côté, qu'il parte ou qu'il arrive. */
+		::view-transition-old(projects-head),
+		::view-transition-new(projects-head) {
+			--vt-shift: 0 -32px;
+		}
+
+		::view-transition-old(preview),
+		::view-transition-new(preview) {
+			--vt-shift: 32px 0;
+		}
+
+		::view-transition-old(hero-body),
+		::view-transition-new(hero-body) {
+			--vt-shift: 0 28px;
+		}
+
+		::view-transition-old(anatomy),
+		::view-transition-new(anatomy) {
+			--vt-shift: 0 48px;
+		}
+
+		/* Une lettre décrit un arc au-dessus de la droite que suit son groupe, et passe de la casse d'une
+		   page à celle de l'autre en fondu. */
+		::view-transition-group(*.letter) {
+			animation-timing-function: cubic-bezier(0.65, 0, 0.15, 1);
+			animation-fill-mode: both;
+		}
+
+		::view-transition-old(*.letter),
+		::view-transition-new(*.letter) {
+			--arc: clamp(16px, 3vw, 40px);
+			animation-timing-function: linear, ease;
+			animation-fill-mode: both;
+		}
+
+		/* Sans lettre en face (un nom hors de l'écran) : elle se pose ou s'efface sur place, à son rang. */
+		::view-transition-new(*.letter):only-child {
+			animation: vt-land 960ms cubic-bezier(0.16, 1, 0.3, 1) both;
+			animation-delay: inherit;
+		}
+
+		::view-transition-old(*.letter):only-child {
+			animation: vt-leave 240ms ease both;
+			animation-delay: inherit;
+		}
+
+		/* Le sommet de l'arc, à l'aller et au retour : celui de la maquette dans chaque sens. */
+		@keyframes vt-arc-to-fiche {
+			from {
+				translate: 0 0;
+				animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1);
+			}
+			46% {
+				translate: 0 calc(-1 * var(--arc));
+				animation-timing-function: cubic-bezier(0.55, 0, 0.35, 1);
+			}
+			to {
+				translate: 0 0;
+			}
+		}
+
+		@keyframes vt-arc-to-home {
+			from {
+				translate: 0 0;
+				animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1);
+			}
+			50% {
+				translate: 0 calc(-1 * var(--arc));
+				animation-timing-function: cubic-bezier(0.55, 0, 0.35, 1);
+			}
+			to {
+				translate: 0 0;
+			}
+		}
+
+		@keyframes vt-land {
+			from,
+			60% {
+				opacity: 0;
+				scale: 0.4;
+			}
+		}
+
+		/* Les blocs qui ne sont pas des lettres glissent de `--vt-shift` en s'effaçant ou en apparaissant. */
+		@keyframes vt-leave {
+			to {
+				opacity: 0;
+				translate: var(--vt-shift, 0 0);
+			}
+		}
+
+		@keyframes vt-arrive {
+			from {
+				opacity: 0;
+				translate: var(--vt-shift, 0 0);
+			}
+		}
+	}
+</style>

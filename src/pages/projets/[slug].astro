@@ -1,13 +1,8 @@
 ---
-import type { GetStaticPaths } from 'astro';
 import Fiche from '../../components/Fiche.astro';
-import { projects, type Project } from '../../data/profile';
+import type { Props } from './_routes.ts';
 
-export const getStaticPaths = (() => projects.map((project) => ({ params: { slug: project.slug }, props: { project } }))) satisfies GetStaticPaths;
-
-interface Props {
-	project: Project;
-}
+export { getStaticPaths } from './_routes.ts';
 ---
 
 <Fiche project={Astro.props.project} />

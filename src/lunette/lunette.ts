@@ -429,12 +429,13 @@ export function open(typed = '') {
 export const yank = () => perform(run('yank mail', context));
 
 /**
- * Le `gd` du mode normal : le code de la pièce visée, à l'adresse de sa note en code ; sans pièce visée,
- * la liste des pièces. Sans figure, la réponse de Vim à un `gd` sans rien sous le curseur.
+ * Le `gd` du mode normal : le code de la pièce visée, à l'adresse de sa note en code, sur GitHub, donc
+ * dans un nouvel onglet comme `:!github` ; sans pièce visée, la liste des pièces. Sans figure, la
+ * réponse de Vim à un `gd` sans rien sous le curseur.
  */
 export function gd() {
 	const code = document.querySelector<HTMLAnchorElement>('.note[data-on] a.ref');
-	if (code) act({ kind: 'go', path: code.href });
+	if (code) act({ kind: 'open', url: code.href });
 	else if (context.figure) open('pieces ');
 	else echo('E349: No identifier under cursor', 'error');
 }

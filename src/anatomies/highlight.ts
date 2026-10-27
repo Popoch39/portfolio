@@ -40,6 +40,9 @@ const pieceOf = (target: EventTarget | null) =>
  */
 const LINGER = 250;
 
+/** La visée de chaque racine liée, pour qu'`aimPiece` vise de l'extérieur sans écrire l'état elle-même. */
+const aims = new WeakMap<Element, (id: string | null) => void>();
+
 /**
  * Lie les crochets de pièce contenus dans `root` (la figure, et la nomenclature quand il y en a
  * une) : survol ou focus d'un crochet = sa pièce visée ; sortie = plus rien de visé, la pièce
@@ -77,8 +80,23 @@ export function linkPieces(root: Element, { onAim }: { onAim?: (id: string | nul
 		if (!(event.relatedTarget instanceof Node && root.contains(event.relatedTarget))) aim(null);
 	});
 
+	aims.set(root, aim);
+
 	return () => {
 		wiring.abort();
+		aims.delete(root);
 		aim(null);
 	};
+}
+
+/**
+ * Vise la pièce de ce crochet (`[data-piece]`), comme un survol, sous la racine liée qui le contient :
+ * la visée de la Lunette (`:pieces`) passe par ici, sans connaître la racine. Hors de toute racine
+ * liée, rien.
+ */
+export function aimPiece(hook: Element) {
+	for (let node: Element | null = hook; node; node = node.parentElement) {
+		const aim = aims.get(node);
+		if (aim) return aim(hook.getAttribute('data-piece'));
+	}
 }

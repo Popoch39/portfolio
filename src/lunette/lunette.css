@@ -330,6 +330,12 @@
 	line-height: 1.45;
 }
 
+/* La note d'une pièce : son titre sur sa propre ligne, au-dessus de ce que fait la pièce. */
+.lunette .help strong {
+	display: block;
+	margin-bottom: 4px;
+}
+
 .lunette .stack {
 	font-size: 12px;
 }

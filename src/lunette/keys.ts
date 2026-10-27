@@ -8,12 +8,13 @@ let lunette: Promise<typeof import('./lunette.ts')> | undefined;
 /** La frappe tapée pendant le premier chargement de la Lunette (`:e t` d'un trait), qu'elle reprend. */
 let typed: string | undefined;
 
-function open() {
+/** Ouvre la Lunette ; avec une séquence du mode normal (`gd`), la lui passe pour qu'elle la joue. */
+function open(sequence?: string) {
 	if (typed !== undefined) return;
 	typed = '';
 	void (lunette ??= import('./lunette.ts'))
 		.then(
-			({ open }) => open(typed),
+			({ open }) => open(typed, sequence),
 			// Hors ligne, par exemple : la prochaine ouverture retentera l'import.
 			() => (lunette = undefined),
 		)
@@ -21,7 +22,7 @@ function open() {
 }
 
 /** Les séquences du mode normal : une séquence s'ajoute ici, sans toucher à l'écouteur. */
-const sequences: Sequences = { ':': open, ...motions };
+const sequences: Sequences = { ':': open, gd: () => open('gd'), ...motions };
 
 const showcmd = document.querySelector('[data-showcmd]');
 
@@ -54,4 +55,5 @@ addEventListener('keydown', (event) => {
 	if (key !== 'Shift' && press(key)) event.preventDefault();
 });
 
-for (const button of document.querySelectorAll('[data-lunette]')) button.addEventListener('click', open);
+// Sans l'événement du clic, qui passerait pour une séquence.
+for (const button of document.querySelectorAll('[data-lunette]')) button.addEventListener('click', () => open());

@@ -3,16 +3,38 @@
 // tapée et la page, le registre lui donne la liste et l'action ; elle les montre et les exécute.
 import css from './lunette.css?inline';
 import { echo } from './echo.ts';
-import { contextAt, list, run, type Action, type Entry, type Listing, type Pane } from './registry.ts';
+import { contextAt, list, run, type Action, type Context, type Entry, type Listing, type Pane } from './registry.ts';
 import { projects, restFigurePath } from '../data/profile.ts';
 import { defaultLocale, home, locales, type Localized } from '../lib/i18n.ts';
 import type { Text } from '../anatomies/contract.ts';
 
 const machines = import.meta.glob<Text>('../anatomies/*/machine.ts', { eager: true, import: 'machine' });
 
-const context = contextAt(location.pathname) ?? {
-	page: home,
-	locale: locales.find((locale) => locale === document.documentElement.lang) ?? defaultLocale,
+/** La note d'une pièce, sur la figure de la fiche. */
+const noteOf = (id: string) => document.querySelector(`.note[data-piece="${CSS.escape(id)}"]`);
+
+/**
+ * La figure de la fiche, lue dans la page : les pièces dans l'ordre de la nomenclature, la note en clair
+ * de chacune, et la règle de temps si la figure en a une. Hors d'une fiche, rien.
+ */
+function figureOf(): Context['figure'] {
+	const items = [...document.querySelectorAll<HTMLElement>('.nomenclature [data-piece]')];
+	if (!items.length) return undefined;
+	const read = (node: Element | null, selector: string) => node?.querySelector(selector)?.textContent?.trim() ?? '';
+	const pieces = items.map((item) => {
+		const id = item.dataset.piece ?? '';
+		const note = noteOf(id);
+		return { id, name: read(item, '.name'), note: { title: read(note, '.plain .t'), text: read(note, '.text') } };
+	});
+	return { pieces, timeline: document.querySelector('[data-tour]') !== null };
+}
+
+const context: Context = {
+	...(contextAt(location.pathname) ?? {
+		page: home,
+		locale: locales.find((locale) => locale === document.documentElement.lang) ?? defaultLocale,
+	}),
+	figure: figureOf(),
 };
 const { locale } = context;
 
@@ -21,6 +43,7 @@ const words = {
 	command: { fr: 'Commande', en: 'Command' },
 	preview: { fr: 'Aperçu', en: 'Preview' },
 	help: { fr: 'Aide', en: 'Help' },
+	note: { fr: 'Note', en: 'Note' },
 	move: { fr: 'déplacer', en: 'move' },
 	complete: { fr: 'compléter', en: 'complete' },
 	history: { fr: 'historique', en: 'history' },
@@ -128,16 +151,20 @@ function option({ label, hits, detail }: Entry, index: number) {
 	return li;
 }
 
-/** Le Volet du résultat sélectionné : l'Aperçu d'un projet, ou l'aide d'une commande. */
+/** Le Volet du résultat sélectionné : l'Aperçu d'un projet, la note d'une pièce, ou l'aide d'une commande. */
 function show(content?: Pane) {
 	const project = content?.kind === 'project' ? projects.find((p) => p.slug === content.slug) : undefined;
-	help.hidden = content?.kind !== 'help';
+	help.hidden = content?.kind !== 'help' && content?.kind !== 'note';
 	helpIndex.hidden = !(content?.kind === 'help' && content.commands);
 	figure.hidden = about.hidden = !project;
 	if (content?.kind === 'help') {
 		paneTitle.textContent = `${say('help')} — ${content.name}`;
 		help.textContent = content.text;
 		helpIndex.replaceChildren(...(content.commands ?? []).flatMap(({ name, text }) => [el('dt', '', `:${name}`), el('dd', '', text)]));
+	} else if (content?.kind === 'note') {
+		// La note en clair, comme sur la figure : son titre, puis ce que fait la pièce.
+		paneTitle.textContent = `${say('note')} — ${content.name}`;
+		help.replaceChildren(el('strong', '', content.title), content.text);
 	} else if (project) {
 		paneTitle.textContent = `${say('preview')} — ${project.repo}`;
 		// La figure au repos, déjà servie par le site : demandée à la sélection de son projet seulement.
@@ -235,10 +262,47 @@ function act(action: Action) {
 		dialog.dataset.pane = '';
 		return;
 	}
+	// Fermée d'abord : le focus qu'elle rend à la page déviserait une pièce visée avant lui.
 	dialog.close();
 	// Un simple changement d'adresse : la transition lettre à lettre (ADR 0004) joue d'elle-même.
-	location.assign(action.path);
+	if (action.kind === 'go') location.assign(action.path);
+	else if (action.kind === 'aim') aim(action.piece);
+	// Les contrôles de la carte, tels quels : la bascule B4 et le tour jouent comme à la souris.
+	else if (action.kind === 'lecture') document.querySelector<HTMLInputElement>(`input[name^="lecture-"][value="${action.value}"]`)?.click();
+	else if (action.kind === 'tour') {
+		const button = document.querySelector<HTMLButtonElement>('[data-tour]');
+		// Le bouton bascule : il ne sert que s'il ne fait pas déjà ce qu'on demande.
+		if (button && action.play !== button.hasAttribute('data-touring')) button.click();
+	}
 }
+
+/**
+ * Vise une pièce : un événement `aim` sur sa note, que le module de la fiche passe à la mise en avant
+ * (`aimPiece`), seule à écrire l'état de visée. Importée d'ici, elle couperait en deux le morceau du
+ * chargeur et alourdirait l'écouteur de l'accueil au-delà de son budget (ADR 0007). Puis la figure
+ * vient à l'écran, si elle n'y est pas.
+ */
+function aim(piece: string) {
+	const note = noteOf(piece);
+	if (!note) return;
+	note.dispatchEvent(new Event('aim', { bubbles: true }));
+	note
+		.closest('figure')
+		?.querySelector('[data-motion]')
+		?.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion)').matches ? 'instant' : 'smooth' });
+}
+
+/** Les séquences du mode normal que l'écouteur laisse à la Lunette, pour ne rien peser avant elle. */
+const sequences: Record<string, () => void> = {
+	// Le code de la pièce visée, à l'adresse de sa note en code ; sans pièce visée, la liste des pièces.
+	// Sans figure, la réponse de Vim à un `gd` sans rien sous le curseur.
+	gd: () => {
+		const code = document.querySelector<HTMLAnchorElement>('.note[data-on] a.ref');
+		if (code) act({ kind: 'go', path: code.href });
+		else if (context.figure) open('pieces ');
+		else echo('E349: No identifier under cursor', 'error');
+	},
+};
 
 /**
  * Entrée : la commande qui attend son argument y passe ; sinon le résultat sélectionné, ou la ligne
@@ -322,8 +386,12 @@ dialog.addEventListener('close', () => {
 	if (showcmd) showcmd.textContent = '';
 });
 
-/** Ouvre la Lunette, avec la frappe déjà tapée ; déjà ouverte, lui rend le focus. */
-export function open(typed = '') {
+/**
+ * Ouvre la Lunette, avec la frappe déjà tapée ; déjà ouverte, lui rend le focus. Avec une séquence du
+ * mode normal (`gd`), la joue à la place.
+ */
+export function open(typed = '', sequence?: string) {
+	if (sequence) return sequences[sequence]?.();
 	if (dialog.open) return input.focus();
 	if (!dialog.isConnected) {
 		document.head.append(el('style', '', css));

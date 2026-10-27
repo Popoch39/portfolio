@@ -1,0 +1,443 @@
+---
+// Le lancement (maquette 2 · Buffer, ADR 0008), rendu en tête de l'accueil : à la première arrivée de
+// la session, `nvim portfolio.md` se tape dans un terminal qui charge chaque section, le curseur bloc
+// inonde l'écran, Échap, et le bleu se range dans le segment NORMAL de la barre d'état pendant que
+// l'accueil entre. Écran et CSS sont rendus au build ; sans l'attribut `data-launch` du document,
+// l'écran n'est pas affiché et rien ne s'anime.
+import { sectionKeys, sections } from '../data/profile';
+import { localeOf, ui } from '../lib/i18n';
+
+const locale = localeOf(Astro.currentLocale);
+const file = 'portfolio.md';
+const command = `nvim ${file}`;
+const loaded = [ui.launchHero[locale], ...sectionKeys.map((key) => sections[key].label[locale].toLowerCase())];
+// Les points de conduite alignent les `ok` sur une même colonne.
+const leaders = (name: string) => '.'.repeat(Math.max(3, 23 - name.length));
+---
+
+{/* La porte : classique et avant l'écran, elle pose `data-launch` avant le premier rendu. Elle ne joue
+    qu'à la première arrivée de la session sur l'accueil, venue d'ailleurs que du site (un retour de
+    fiche garde sa view transition), sans ancre et sans mouvement réduit ; sans stockage de session,
+    jamais. Une touche, un clic, la molette, un défilement ou le départ de la page le terminent
+    sur-le-champ ; sinon, la fin de `launch-done`, la plus longue de ses animations. Les commentaires
+    restent ici : ceux du script partiraient avec chaque accueil. */}
+<script is:inline>
+	(() => {
+		const root = document.documentElement;
+		try {
+			if (sessionStorage.launch || location.hash || document.referrer.startsWith(location.origin + '/') || !matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
+			sessionStorage.launch = 1;
+		} catch {
+			return;
+		}
+		root.dataset.launch = '';
+		const types = ['keydown', 'click', 'wheel', 'scroll', 'pagehide', 'animationend'];
+		const end = (e) => {
+			if (e.type === 'animationend' && e.animationName !== 'launch-done') return;
+			delete root.dataset.launch;
+			for (const type of types) removeEventListener(type, end, true);
+		};
+		for (const type of types) addEventListener(type, end, { capture: true, passive: true });
+	})();
+</script>
+<div class="launch" aria-hidden="true">
+	<div class="term mono">
+		<div class="lines">
+			<div><span class="prompt">$ </span><span class="typed">{command}</span></div>
+			<div class="out">"{file}" — {loaded.length} sections</div>
+			{
+				loaded.map((name) => (
+					<div class="out section">
+						{name} {leaders(name)} <span class="ok">ok</span>
+					</div>
+				))
+			}
+		</div>
+		<div class="bar">
+			<div class="fill"></div>
+			<div class="side"><span class="seg insert">-- INSERT --</span><span class="seg">{file}</span></div>
+			<div class="side"><span class="seg muted utf">utf-8</span><span class="seg muted pct"></span></div>
+		</div>
+	</div>
+	<div class="caret"><div class="block"></div></div>
+	<div class="key mono"><span class="cap">{ui.launchEscape[locale]}</span><small>INSERT → NORMAL</small></div>
+</div>
+
+<style>
+	/* Le compteur de la barre, de 0 à 100 % : un entier animé. */
+	@property --launch-n {
+		syntax: '<integer>';
+		inherits: false;
+		initial-value: 0;
+	}
+
+	.launch {
+		display: none;
+	}
+
+	/* La chronologie, en ms depuis le premier rendu :
+	   250–1100     `nvim portfolio.md` se tape, une colonne toutes les 50 ms ;
+	   1150–2500    la barre se remplit ; de 1200, une ligne de sortie toutes les 170 ms ;
+	   2450–3050    le curseur bloc inonde l'écran ;
+	   2950–3650    la touche Échap, enfoncée à 3330 ;
+	   3100         sous le bleu, l'accueil prend sa pose de départ ;
+	   3450–4250    le bleu se range dans le segment NORMAL, le titre monte ;
+	   3650–4600    le reste de l'accueil entre, le curseur du titre s'étire, le bleu s'efface. */
+	@media (prefers-reduced-motion: no-preference) {
+		:global(:root[data-launch]) .launch {
+			/* Bord gauche du contenu de la page et ligne de la commande : le terminal s'y cale, et le
+			   bloc curseur aussi, qui se mesure en colonnes du terminal. */
+			--left: calc(max(0px, (100vw - var(--container)) / 2) + var(--page-margin));
+			--top: 32dvh;
+			display: block;
+			position: fixed;
+			inset: 0;
+			z-index: 10;
+			animation: launch-done 4600ms linear forwards;
+		}
+
+		.term {
+			position: absolute;
+			inset: 0;
+			background: var(--ink);
+			color: var(--bg);
+			font-size: 16px;
+			line-height: 28px;
+		}
+
+		.lines {
+			position: absolute;
+			left: var(--left);
+			top: var(--top);
+			white-space: pre;
+		}
+
+		.prompt {
+			color: var(--accent-light);
+		}
+
+		/* La frappe : un cache couleur du terminal recule d'une colonne à la fois, au pas du curseur. */
+		.typed {
+			position: relative;
+		}
+
+		:global(:root[data-launch]) .typed::after {
+			content: '';
+			position: absolute;
+			inset: 0 auto 0 0;
+			width: 18ch;
+			background: var(--ink);
+			animation: launch-type 850ms steps(17, end) 250ms both;
+		}
+
+		/* Une ligne de sortie toutes les 170 ms, la première à 1200. */
+		:global(:root[data-launch]) .out {
+			color: var(--on-ink-muted);
+			animation: launch-line 260ms cubic-bezier(0.16, 1, 0.3, 1) calc(1200ms + var(--rank, 0) * 170ms) both;
+		}
+
+		.out:nth-child(3) {
+			--rank: 1;
+		}
+
+		.out:nth-child(4) {
+			--rank: 2;
+		}
+
+		.out:nth-child(5) {
+			--rank: 3;
+		}
+
+		.out:nth-child(6) {
+			--rank: 4;
+		}
+
+		.out:nth-child(7) {
+			--rank: 5;
+		}
+
+		.out:nth-child(8) {
+			--rank: 6;
+		}
+
+		.section {
+			padding-left: 2ch;
+		}
+
+		.ok {
+			color: var(--accent-light);
+		}
+
+		.bar {
+			position: absolute;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			display: flex;
+			justify-content: space-between;
+			height: var(--status-height);
+			background: #1c1c1b;
+			font-size: 12px;
+			line-height: var(--status-height);
+		}
+
+		:global(:root[data-launch]) .fill {
+			position: absolute;
+			inset: 0;
+			background: var(--status-segment);
+			transform-origin: left;
+			animation: launch-fill 1350ms cubic-bezier(0.55, 0, 0.15, 1) 1150ms both;
+		}
+
+		.side {
+			position: relative;
+			display: flex;
+		}
+
+		.seg {
+			padding: 0 14px;
+			white-space: nowrap;
+		}
+
+		.insert {
+			background: var(--accent);
+			color: #ffffff;
+			font-weight: 700;
+		}
+
+		.muted {
+			color: var(--on-ink-muted);
+		}
+
+		:global(:root[data-launch]) .pct {
+			min-width: calc(4ch + 28px);
+			text-align: right;
+			counter-reset: n var(--launch-n);
+			animation: launch-count 1350ms cubic-bezier(0.55, 0, 0.15, 1) 1150ms both;
+		}
+
+		.pct::after {
+			content: counter(n) '%';
+		}
+
+		/* Le bloc curseur est un aplat de la taille de l'écran, ramené par `scale` au rectangle voulu :
+		   une cellule du terminal, tout l'écran, puis le segment NORMAL de la barre d'état (`NORMAL` en
+		   12 px, soit 4,5 colonnes de 16 px, plus ses marges). Que du `transform` : le compositeur le
+		   joue seul, même quand la page charge ses figures. `tan(atan2(a, b))` donne le rapport a / b. */
+		:global(:root[data-launch]) .caret {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100vw;
+			height: 100dvh;
+			font: 16px var(--font-mono);
+			visibility: visible;
+			pointer-events: none;
+			animation: launch-type 850ms steps(17, end) 250ms both;
+		}
+
+		:global(:root[data-launch]) .block {
+			--cell-x: tan(atan2(1ch, 100vw));
+			--cell-y: tan(atan2(20px, 100dvh));
+			--segment-x: tan(atan2(4.5ch + 28px, 100vw));
+			--segment-y: tan(atan2(var(--status-height), 100dvh));
+			position: absolute;
+			inset: 0;
+			background: var(--accent);
+			transform-origin: 0 0;
+			animation:
+				launch-flood 1800ms 2450ms both,
+				launch-out 120ms linear 4250ms forwards;
+		}
+
+		:global(:root[data-launch]) .key {
+			position: absolute;
+			left: 50%;
+			top: 50%;
+			translate: -50% -50%;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 18px;
+			color: #ffffff;
+			visibility: visible;
+			pointer-events: none;
+			animation: launch-key 700ms 2950ms both;
+		}
+
+		.cap {
+			padding: 18px 30px;
+			border: 1.5px solid rgb(255 255 255 / 0.7);
+			border-radius: 12px;
+			box-shadow: 0 5px 0 rgb(255 255 255 / 0.35);
+			font-size: 24px;
+		}
+
+		.key small {
+			font-size: 13px;
+			color: var(--accent-wash);
+		}
+
+		@media (width < 400px) {
+			.utf {
+				display: none;
+			}
+		}
+
+		/* L'accueil, peint dès le premier rendu sous l'écran (son titre est le LCP) : il ne prend sa
+		   pose de départ qu'à 3100 ms, sous le bleu. D'où `forwards`, jamais `both`. */
+		:global(:root[data-launch] .hero .line) {
+			clip-path: inset(-25% -5% 0 -5%);
+		}
+
+		:global(:root[data-launch] .hero .rise) {
+			animation: launch-rise 1150ms 3100ms forwards;
+		}
+
+		:global(:root[data-launch] .hero .last .rise) {
+			animation-delay: 3160ms;
+		}
+
+		:global(:root[data-launch] .hero .cursor) {
+			transform-origin: left;
+			animation: launch-cursor 1400ms 3100ms forwards;
+		}
+
+		:global(:root[data-launch] .site-header),
+		:global(:root[data-launch] .hero .topline) {
+			animation: launch-enter 1350ms 3100ms forwards;
+		}
+
+		:global(:root[data-launch] .hero .lede) {
+			animation: launch-enter 1350ms 3140ms forwards;
+		}
+
+		:global(:root[data-launch] .hero .facts) {
+			animation: launch-enter 1350ms 3190ms forwards;
+		}
+
+		:global(:root[data-launch] .hero .actions) {
+			animation: launch-enter 1350ms 3250ms forwards;
+		}
+
+		/* L'écran s'efface à 3450 ms, le bleu couvrant tout : le bloc et la touche restent. */
+		@keyframes launch-done {
+			0%,
+			74.99% {
+				visibility: visible;
+			}
+			75%,
+			100% {
+				visibility: hidden;
+			}
+		}
+
+		@keyframes launch-type {
+			to {
+				transform: translateX(17ch);
+			}
+		}
+
+		@keyframes launch-line {
+			from {
+				opacity: 0;
+				transform: translateX(-6px);
+			}
+		}
+
+		@keyframes launch-fill {
+			from {
+				transform: scaleX(0);
+			}
+		}
+
+		@keyframes launch-count {
+			to {
+				--launch-n: 100;
+			}
+		}
+
+		/* Relatif au curseur, décalé de 17 colonnes à la fin de la frappe. 600 ms pour inonder, 400 de
+		   plein écran, 800 pour se ranger. */
+		@keyframes launch-flood {
+			from {
+				transform: translate(calc(var(--left) + 2ch), calc(var(--top) + 4px)) scale(var(--cell-x), var(--cell-y));
+				animation-timing-function: cubic-bezier(0.83, 0, 0.17, 1);
+			}
+			33.333%,
+			55.556% {
+				transform: translate(-17ch, 0) scale(1, 1);
+				animation-timing-function: cubic-bezier(0.83, 0, 0.17, 1);
+			}
+			to {
+				transform: translate(-17ch, calc(100dvh - var(--status-height))) scale(var(--segment-x), var(--segment-y));
+			}
+		}
+
+		@keyframes launch-out {
+			to {
+				opacity: 0;
+			}
+		}
+
+		@keyframes launch-key {
+			0% {
+				opacity: 0;
+				transform: translateY(10px) scale(0.92);
+				animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+			}
+			28.571%,
+			54.286% {
+				opacity: 1;
+				transform: none;
+			}
+			60% {
+				transform: translateY(5px) scale(0.98);
+			}
+			64.286% {
+				opacity: 1;
+				transform: none;
+				animation-timing-function: cubic-bezier(0.7, 0, 0.84, 0);
+			}
+			100% {
+				opacity: 0;
+				transform: scale(0.96);
+			}
+		}
+
+		@keyframes launch-rise {
+			0%,
+			30.435% {
+				transform: translateY(108%);
+				animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+			}
+			100% {
+				transform: none;
+			}
+		}
+
+		@keyframes launch-enter {
+			0%,
+			40.741% {
+				opacity: 0;
+				transform: translateY(20px);
+				animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+			}
+			100% {
+				opacity: 1;
+				transform: none;
+			}
+		}
+
+		@keyframes launch-cursor {
+			0%,
+			78.571% {
+				transform: scaleX(0);
+				animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+			}
+			100% {
+				transform: none;
+			}
+		}
+	}
+</style>

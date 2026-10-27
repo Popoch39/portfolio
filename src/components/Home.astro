@@ -2,6 +2,7 @@
 // L'accueil, rendu par la route de chaque langue (`src/pages/index.astro`, `src/pages/en/index.astro`) :
 // la langue vient de l'URL, par `Astro.currentLocale`.
 import Layout from '../layouts/Layout.astro';
+import Launch from './Launch.astro';
 import SiteHeader from './SiteHeader.astro';
 import Hero from './Hero.astro';
 import Marquee from './Marquee.astro';
@@ -20,6 +21,7 @@ const stats = activityStats(githubSnapshot);
 ---
 
 <Layout page={home}>
+	<Launch />
 	<div class="container">
 		<SiteHeader page={home} />
 	</div>

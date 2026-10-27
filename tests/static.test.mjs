@@ -5,7 +5,9 @@
 // jamais de `:hover`, et `transition` seulement dans la CSS des notes de la figure (ADR 0003). La view
 // transition lettre à lettre (ADR 0004) ajoute son script en ligne, ses `@keyframes` `vt-` et ses
 // animations de pseudo-éléments `::view-transition-*`. La Lunette (ADR 0007) n'ajoute aucun script :
-// le module de la page importe son écouteur, et elle-même n'arrive qu'à la première commande.
+// le module de la page importe son écouteur, et elle-même n'arrive qu'à la première commande. Le
+// lancement (ADR 0008) ajoute à l'accueil sa porte en ligne, ses `@keyframes` `launch-` et ses
+// animations, toutes sous `:root[data-launch]` (vérifié par lancement.test.mjs).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PROJECTS, readFiche, readHome, tags, attr, elements, css, withoutBlocks } from './helpers/dist.mjs';
@@ -13,8 +15,8 @@ import { PROJECTS, readFiche, readHome, tags, attr, elements, css, withoutBlocks
 const html = readHome();
 const styles = css(html);
 const pages = [
-	{ name: 'accueil', html },
-	{ name: 'accueil anglais', html: readHome('en') },
+	{ name: 'accueil', html, home: true },
+	{ name: 'accueil anglais', html: readHome('en'), home: true },
 	...PROJECTS.map(({ slug }) => ({ name: `fiche ${slug}`, html: readFiche(slug) })),
 	...PROJECTS.map(({ slug }) => ({ name: `fiche anglaise ${slug}`, html: readFiche(slug, 'en') })),
 ];
@@ -23,13 +25,17 @@ const pages = [
 const withoutFigures = (page) =>
 	elements(page, 'svg').reduce((rest, svg) => (/\bclass="[^"]*\biso-svg\b/.test(tags(svg, 'svg')[0]) ? rest.replace(svg, '') : rest), page);
 
-test('scripts limités au JSON-LD, au chargeur (au plus un module, servi par le site) et à la view transition', () => {
+test('scripts limités au JSON-LD, au chargeur (au plus un module, servi par le site), à la view transition et à la porte du lancement', () => {
 	for (const page of pages) {
 		const all = elements(page.html, 'script').filter((s) => attr(tags(s, 'script')[0], 'type') !== 'application/ld+json');
-		// Le script de la transition, vérifié par transition.test.mjs : le seul en ligne.
-		const transition = all.filter((s) => !attr(tags(s, 'script')[0], 'src') && /pagereveal/.test(s));
+		// Les scripts en ligne, vérifiés par transition.test.mjs et lancement.test.mjs : la transition
+		// partout, la porte du lancement à l'accueil seulement.
+		const inline = (pattern) => all.filter((s) => !attr(tags(s, 'script')[0], 'src') && pattern.test(s));
+		const transition = inline(/pagereveal/);
+		const launch = inline(/data-launch|dataset\.launch/);
 		assert.equal(transition.length, 1, `${page.name} : script de la transition`);
-		const scripts = all.filter((s) => !transition.includes(s)).map((s) => tags(s, 'script')[0]);
+		assert.equal(launch.length, page.home ? 1 : 0, `${page.name} : porte du lancement`);
+		const scripts = all.filter((s) => !transition.includes(s) && !launch.includes(s)).map((s) => tags(s, 'script')[0]);
 		assert.ok(scripts.length <= 1, `${page.name} : ${scripts.length} scripts hors JSON-LD et transition`);
 		for (const script of scripts) {
 			assert.equal(attr(script, 'type'), 'module', page.name);
@@ -68,18 +74,20 @@ test('la CSS livrée n’a ni :hover ni transition hors des notes de la figure, 
 		assert.doesNotMatch(pageStyles, /(?<!\(\s*hover\s*):hover\b/i, page.name);
 		const keyframes = [...pageStyles.matchAll(/@keyframes\s+([\w-]+)/gi)].map((m) => m[1]);
 		assert.deepEqual(
-			keyframes.filter((name) => !name.startsWith('iso-') && !name.startsWith('vt-')),
+			keyframes.filter((name) => !name.startsWith('iso-') && !name.startsWith('vt-') && !(page.home && name.startsWith('launch-'))),
 			[],
-			`${page.name} : @keyframes hors du kit et de la transition`,
+			`${page.name} : @keyframes hors du kit, de la transition et du lancement`,
 		);
-		// Les étapes des `@keyframes vt-…` portent `animation-timing-function`.
-		const animated = [...withoutBlocks(pageStyles, /@keyframes\s+vt-/).matchAll(/([^{}]+)\{[^{}]*\banimation(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap((m) =>
+		// Les étapes des `@keyframes vt-…` et `launch-…` portent `animation-timing-function`.
+		const animated = [...withoutBlocks(pageStyles, /@keyframes\s+(vt|launch)-/).matchAll(/([^{}]+)\{[^{}]*\banimation(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap((m) =>
 			m[1].split(/,(?![^(]*\))/),
 		);
+		const allowed = (selector) =>
+			selector.startsWith('.iso') || selector.startsWith('::view-transition-') || (page.home && selector.startsWith(':root[data-launch]'));
 		assert.deepEqual(
-			animated.map((selector) => selector.trim()).filter((selector) => !selector.startsWith('.iso') && !selector.startsWith('::view-transition-')),
+			animated.map((selector) => selector.trim()).filter((selector) => !allowed(selector)),
 			[],
-			`${page.name} : animation hors de la CSS du kit et de la transition`,
+			`${page.name} : animation hors de la CSS du kit, de la transition et du lancement`,
 		);
 	}
 });

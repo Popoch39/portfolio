@@ -13,8 +13,11 @@ const lede = ui.heroLede[locale];
 		<span>portfolio · 2026</span>
 	</div>
 	<h1 class="title">
-		{/* L'espace explicite garde « Louis Pocheron » lisible malgré les lignes en bloc. */}
-		<span class="line">{identity.givenName}</span>{' '}<span class="line last">{identity.familyName}<span class="cursor" aria-hidden="true"></span></span>
+		{/* L'espace explicite garde « Louis Pocheron » lisible malgré les lignes en bloc. Au lancement
+		    (ADR 0008), chaque `.rise` monte dans sa ligne. */}
+		<span class="line"><span class="rise">{identity.givenName}</span></span>{' '}<span class="line last"
+			><span class="rise">{identity.familyName}<span class="cursor" aria-hidden="true"></span></span></span
+		>
 	</h1>
 	<div class="grid body">
 		<p class="lede">{lede.before}<em>{lede.emphasis}</em>{lede.after}</p>
@@ -72,7 +75,8 @@ const lede = ui.heroLede[locale];
 		text-transform: uppercase;
 	}
 
-	.line {
+	.line,
+	.rise {
 		display: block;
 	}
 

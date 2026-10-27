@@ -11,11 +11,16 @@ export interface Context {
 	locale: Locale;
 }
 
-/** Ce que fait une commande : la Lunette l'exécute. */
-export type Action = { kind: 'go'; path: string };
+/** Ce que fait une commande : la Lunette l'exécute. `show` garde la Lunette ouverte sur ce Volet. */
+export type Action = { kind: 'go'; path: string } | { kind: 'show'; pane: Pane };
 
-/** Ce que montre le Volet pour un résultat : l'Aperçu d'un projet, ou l'aide d'une commande. */
-export type Pane = { kind: 'project'; slug: string } | { kind: 'help'; name: string; text: string };
+/**
+ * Ce que montre le Volet pour un résultat : l'Aperçu d'un projet, ou l'aide d'une commande ; celle de
+ * `:help` seul liste en plus les commandes de la page.
+ */
+export type Pane =
+	| { kind: 'project'; slug: string }
+	| { kind: 'help'; name: string; text: string; commands?: { name: string; text: string }[] };
 
 /** Une valeur proposée à l'argument d'une commande (un projet pour `:e`). */
 interface Choice {
@@ -36,8 +41,17 @@ interface Command {
 	/** Où la commande a un sens ; absente, partout. Hors de sa portée, elle n'existe pas. */
 	scope?: (context: Context) => boolean;
 	help: Localized<string>;
-	/** Une liste à choisir : Entrée sur la commande y passe, au lieu de l'exécuter. */
-	argument?: { title: Localized<string>; enter: Localized<string>; choices: (context: Context) => Choice[] };
+	/**
+	 * Une liste à choisir : Tab sur la commande y passe, Entrée aussi si la commande ne se lance pas
+	 * seule. `unknown` est l'erreur d'une valeur qui ne répond à aucun choix (E492 de la ligne sinon).
+	 */
+	argument?: {
+		title: Localized<string>;
+		enter: Localized<string>;
+		choices: (context: Context) => Choice[];
+		unknown?: (value: string) => string;
+	};
+	/** Sans argument. Absente, la commande en exige un. */
 	run?: (context: Context) => Action;
 }
 
@@ -72,6 +86,23 @@ const go = (path: string): Action => ({ kind: 'go', path });
 
 const rank = (index: number) => String(index + 1).padStart(2, '0');
 
+const commandsTitle: Localized<string> = { fr: 'Commandes', en: 'Commands' };
+
+const indexText: Localized<string> = {
+	fr: 'Les commandes de cette page. :help <commande> en explique une.',
+	en: 'The commands of this page. :help <command> explains one.',
+};
+
+const onFiche = ({ page }: Context) => page.kind === 'fiche';
+
+/** La fiche voisine de la page, dans la boucle de « Autres projets » : après la sixième, la première. */
+const neighbour =
+	(step: number) =>
+	({ page, locale }: Context): Action => {
+		const at = projects.findIndex((p) => page.kind === 'fiche' && p.slug === page.slug);
+		return go(pathOf(fiche(projects[(at + step + projects.length) % projects.length].slug), locale));
+	};
+
 const commands: Command[] = [
 	{
 		name: 'e',
@@ -90,18 +121,63 @@ const commands: Command[] = [
 				})),
 		},
 	},
+	{
+		name: 'bn',
+		aliases: ['bnext'],
+		scope: onFiche,
+		help: { fr: 'Passe au projet suivant, dans la boucle des autres projets.', en: 'Goes to the next project, looping like Other projects.' },
+		run: neighbour(1),
+	},
+	{
+		name: 'bp',
+		aliases: ['bprevious'],
+		scope: onFiche,
+		help: { fr: 'Revient au projet précédent, dans la boucle des autres projets.', en: 'Goes back to the previous project, looping like Other projects.' },
+		run: neighbour(-1),
+	},
+	{
+		name: 'help',
+		aliases: ['h'],
+		help: {
+			fr: 'Liste les commandes de la page, ou explique l’une d’elles : :help e.',
+			en: 'Lists the commands of this page, or explains one: :help e.',
+		},
+		argument: {
+			title: commandsTitle,
+			enter: { fr: 'lire l’aide', en: 'read the help' },
+			// Les commandes de la page seulement : une commande hors de portée n'existe pas, son aide non plus.
+			choices: (context) =>
+				inScope(context).map((command) => {
+					const pane = helpOf(command, context.locale);
+					return { label: pane.name, aliases: namesOf(command), pane, action: { kind: 'show', pane } };
+				}),
+			unknown: (value) => `E149: Sorry, no help for ${value}`,
+		},
+		run: (context) => ({
+			kind: 'show',
+			pane: {
+				kind: 'help',
+				name: 'help',
+				text: indexText[context.locale],
+				commands: inScope(context).map((command) => helpOf(command, context.locale)),
+			},
+		}),
+	},
 ];
 
-const commandsTitle: Localized<string> = { fr: 'Commandes', en: 'Commands' };
 const runLabel: Localized<string> = { fr: 'lancer', en: 'run' };
 
 const nameOf = (command: Command, locale: Locale) => (typeof command.name === 'string' ? command.name : command.name[locale]);
 
+/** Tous les noms qu'accepte une commande tapée en entier : les deux langues et les alias. */
+const namesOf = (command: Command) => [...locales.map((locale) => nameOf(command, locale)), ...(command.aliases ?? [])];
+
+const helpOf = (command: Command, locale: Locale) => ({ kind: 'help' as const, name: nameOf(command, locale), text: command.help[locale] });
+
 const inScope = (context: Context) => commands.filter((command) => command.scope?.(context) ?? true);
 
 /** La commande d'un nom tapé en entier, dans l'une ou l'autre langue, si la page la permet. */
-const find = (name: string, context: Context) =>
-	inScope(context).find((command) => [...locales.map((locale) => nameOf(command, locale)), ...(command.aliases ?? [])].includes(name));
+const find = (name: string, context: Context) => inScope(context).find((command) => namesOf(command).includes(name));
 
 /** La ligne sans le `:` que tape un vimiste par réflexe. */
 const clean = (line: string) => line.replace(/^\s*:*/, '').trimEnd();
@@ -213,9 +289,9 @@ export function list(line: string, context: Context): Listing {
 		entries: (argument === undefined ? filter(available, clean(line)) : []).map(({ command, label, hits }) => ({
 			label,
 			hits,
-			pane: { kind: 'help', name: label, text: command.help[locale] },
+			pane: helpOf(command, locale),
 			line: command.argument ? `${label} ` : label,
-			action: command.argument ? undefined : command.run?.(context),
+			action: command.run?.(context),
 		})),
 		total: available.length,
 	};
@@ -228,11 +304,15 @@ export function run(line: string, context: Context): Action | { error: string } 
 	const command = find(name, context);
 	if (!command) return unknown;
 	if (!command.argument) return command.run?.(context) ?? unknown;
-	const wanted = argument?.trim().toLowerCase();
-	if (!wanted) return { error: 'E471: Argument required' };
+	const value = argument?.trim() ?? '';
+	if (!value) return command.run?.(context) ?? { error: 'E471: Argument required' };
+	const wanted = value.toLowerCase();
 	const choices = command.argument.choices(context);
-	const exact = choices.find((choice) => [choice.label, ...(choice.aliases ?? [])].some((value) => value.toLowerCase() === wanted));
-	return (exact ?? filter(choices, wanted)[0])?.action ?? unknown;
+	const exact = choices.find((choice) => [choice.label, ...(choice.aliases ?? [])].some((alias) => alias.toLowerCase() === wanted));
+	const action = (exact ?? filter(choices, wanted)[0])?.action;
+	if (action) return action;
+	const { unknown: missing } = command.argument;
+	return missing ? { error: missing(value) } : unknown;
 }
 
 /** Le contexte d'une page d'après son adresse, ou rien hors des pages du site. */

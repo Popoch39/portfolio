@@ -429,6 +429,12 @@
 	color: var(--paper);
 }
 
+/* La section où mène une commande (`:parcours`) prend le focus comme point de départ du clavier, pas
+   comme un contrôle : sans contour autour de toute la section. */
+section[tabindex='-1']:focus {
+	outline: none;
+}
+
 /* Après les `display` ci-dessus : ce que le Volet ne montre pas pour ce résultat. */
 .lunette [hidden] {
 	display: none;

@@ -288,12 +288,15 @@ function act(action: Action) {
 	if (action.kind === 'yank') return void copy(action);
 	// Sans `opener`, l'onglet ouvert ne peut pas toucher à celui du site.
 	if (action.kind === 'open') return void window.open(action.url, '_blank', 'noopener');
-	// Un simple changement d'adresse : la transition lettre à lettre (ADR 0004) joue d'elle-même.
-	if (action.kind === 'go') location.assign(action.path);
+	if (action.kind === 'go') go(action.path);
 	else if (action.kind === 'aim') aim(action.piece);
-	// Les contrôles de la carte, tels quels : la bascule B4 et le tour jouent comme à la souris.
-	else if (action.kind === 'lecture') document.querySelector<HTMLInputElement>(`input[name^="lecture-"][value="${action.value}"]`)?.click();
-	else if (action.kind === 'tour') {
+	// Les contrôles de la carte, tels quels : la bascule B4 et le tour jouent comme à la souris. La
+	// bascule garde le focus comme un clic : sur la lecture cochée, d'où le mode de la carte se lit.
+	else if (action.kind === 'lecture') {
+		const radio = document.querySelector<HTMLInputElement>(`input[name^="lecture-"][value="${action.value}"]`);
+		radio?.click();
+		radio?.focus();
+	} else if (action.kind === 'tour') {
 		const button = document.querySelector<HTMLButtonElement>('[data-tour]');
 		// Le bouton bascule : il ne sert que s'il ne fait pas déjà ce qu'on demande.
 		if (button && action.play !== button.hasAttribute('data-touring')) button.click();
@@ -303,10 +306,28 @@ function act(action: Action) {
 }
 
 /**
+ * Un simple changement d'adresse : la transition lettre à lettre (ADR 0004) joue d'elle-même. Vers une
+ * section de la page même, le navigateur défile sans rien focaliser : la section prend le focus, pour
+ * que le clavier et le lecteur d'écran repartent de là, focalisable le temps de l'avoir seulement.
+ */
+function go(path: string) {
+	const { pathname, hash } = new URL(path, location.href);
+	location.assign(path);
+	const section = pathname === location.pathname && hash ? document.getElementById(hash.slice(1)) : null;
+	if (!section) return;
+	if (!section.hasAttribute('tabindex')) {
+		section.tabIndex = -1;
+		section.addEventListener('blur', () => section.removeAttribute('tabindex'), { once: true });
+	}
+	section.focus({ preventScroll: true });
+}
+
+/**
  * Vise une pièce : un événement `aim` sur sa note, que le module de la fiche passe à la mise en avant
  * (`aimPiece`), seule à écrire l'état de visée. Importée d'ici, elle couperait en deux le morceau du
  * chargeur et alourdirait l'écouteur de l'accueil au-delà de son budget (ADR 0007). Puis la figure
- * vient à l'écran, si elle n'y est pas.
+ * vient à l'écran, si elle n'y est pas, et le focus va au lien de la pièce qu'on voit : celui de sa note
+ * lue en code, sinon celui de la nomenclature. Son `focusin` vise la même pièce : la visée tient.
  */
 function aim(piece: string) {
 	const note = noteOf(piece);
@@ -316,6 +337,9 @@ function aim(piece: string) {
 		.closest('figure')
 		?.querySelector('[data-motion]')
 		?.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion)').matches ? 'instant' : 'smooth' });
+	[...document.querySelectorAll<HTMLElement>(`[data-piece="${CSS.escape(piece)}"] a`)]
+		.find((link) => link.checkVisibility({ visibilityProperty: true }))
+		?.focus({ preventScroll: true });
 }
 
 /**

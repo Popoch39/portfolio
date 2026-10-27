@@ -4,7 +4,7 @@
 // réduit, dans un navigateur qui sait la jouer, sur le compositeur.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROJECTS, attr, blocks, css, elementAt, readFiche, readHome, tags, text, withoutBlocks } from './helpers/dist.mjs';
+import { PROJECTS, attr, blocks, css, elementAt, elements, readFiche, readHome, tags, text, withoutBlocks } from './helpers/dist.mjs';
 
 const MOTION = /@media \(prefers-reduced-motion:\s*no-preference\)/;
 const SUPPORTED = /@supports [^{]*\(animation-timeline:\s*view\(\)\)/;
@@ -15,6 +15,9 @@ const COMPOSITED = new Set(['transform', 'translate', 'scale', 'opacity']);
 
 /** L'élément de la scène : celui qui s'épingle, l'en-tête et le héros dedans. */
 const sceneOf = (html) => elementAt(html, html.search(/<div class="dive-scene\b/));
+
+/** Le segment de mode de la barre d'état : le premier segment, dont la Lunette fait COMMAND. */
+const modeOf = (footer) => elementAt(footer, footer.search(/<span class="seg mode state\b/));
 
 for (const { locale, projects } of [
 	{ locale: 'fr', projects: 'projets' },
@@ -74,6 +77,21 @@ for (const { locale, projects } of [
 		assert.ok(users.some(([, selector]) => /\.dive-hero\b/.test(selector)), 'le héros n’est jamais caché');
 	});
 
+	// Le passage NORMAL → INSERT est décoratif (spec #68) : rien ne l'annonce, et un lecteur d'écran lit
+	// le mode tel qu'il est hors de la scène.
+	test(`${locale} : le segment de mode de la barre porte NORMAL, INSERT et COMMAND, sans région live`, () => {
+		const [footer] = elements(html, 'footer');
+		const segment = modeOf(footer ?? '');
+		assert.ok(segment, 'segment de mode absent');
+		for (const mode of ['NORMAL', 'INSERT', 'COMMAND']) assert.ok(text(segment).includes(mode), `${mode} absent`);
+		for (const tag of tags(segment, 'span')) {
+			assert.equal(attr(tag, 'aria-live'), undefined, tag);
+			assert.equal(attr(tag, 'role'), undefined, tag);
+		}
+		const insert = tags(segment, 'span').find((tag) => text(elementAt(segment, segment.indexOf(tag))) === 'INSERT');
+		assert.equal(attr(insert ?? '', 'aria-hidden'), 'true', 'INSERT lu par les lecteurs d’écran');
+	});
+
 	// Le minifieur sait replier la ligne de temps dans le raccourci, ou écrire une durée nulle : Chrome
 	// refuse le premier en entier, et la seconde jouerait l'animation d'un coup.
 	test(`${locale} : chaque animation de la Plongée suit la scène, sous une forme que Chrome accepte`, () => {
@@ -92,6 +110,8 @@ test('les fiches restent sans Plongée', () => {
 		for (const { slug } of PROJECTS) {
 			const html = readFiche(slug, locale);
 			assert.equal(sceneOf(html), undefined, `${locale} ${slug} : scène`);
+			const [footer] = elements(html, 'footer');
+			assert.doesNotMatch(text(modeOf(footer ?? '') ?? ''), /INSERT/, `${locale} ${slug} : INSERT dans la barre`);
 			assert.doesNotMatch(css(html), PLAYED, `${locale} ${slug} : CSS de la Plongée`);
 		}
 	}

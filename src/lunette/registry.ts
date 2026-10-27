@@ -2,7 +2,7 @@
 // sous Node. La Lunette lui passe la ligne tapée et le contexte de la page ; il lui rend la liste à
 // afficher, meilleur résultat en tête, et l'action que la ligne résout. Chaque commande déclare son nom,
 // ses alias, sa portée, son aide et son argument : en ajouter une ne touche ni au filtre ni à la Lunette.
-import { identity, projects, sections } from '../data/profile.ts';
+import { identity, projects, sectionKeys, sections, type SectionKey } from '../data/profile.ts';
 import { fiche, home, locales, pathOf, type Locale, type Localized, type Page } from '../lib/i18n.ts';
 
 /** Ce que la page offre aux commandes. Les tickets suivants y ajoutent la figure (temps, pièces). */
@@ -35,6 +35,8 @@ interface Choice {
 	label: string;
 	/** Acceptés tapés en entier, sans être affichés (le slug d'un projet). */
 	aliases?: string[];
+	/** Le libellé dans l'autre langue : le filtre l'accepte aussi, et le montre s'il le trouve. */
+	others?: string[];
 	/** À droite de la ligne, en gris : le rang d'un projet. */
 	detail?: string;
 	pane?: Pane;
@@ -132,6 +134,26 @@ const yankMail = ({ locale }: Context): Action => {
 	};
 };
 
+const setHelp: Localized<string> = {
+	fr: 'Change une option : :set lang=en ouvre cette page en anglais.',
+	en: 'Sets an option: :set lang=fr opens this page in French.',
+};
+
+/** L'ancre d'une section dans l'accueil de la page : depuis une fiche, on y revient. */
+const sectionPath = (key: SectionKey, locale: Locale) => `${pathOf(home, locale)}#${sections[key].id[locale]}`;
+
+/** Une commande par section de l'accueil, nommée comme son ancre : `:parcours`, `:career`. */
+const sectionCommands = sectionKeys.map(
+	(key): Command => ({
+		name: sections[key].id,
+		help: {
+			fr: `Va à la section ${sections[key].label.fr} de l’accueil.`,
+			en: `Goes to the ${sections[key].label.en} section of the home page.`,
+		},
+		run: ({ locale }) => go(sectionPath(key, locale)),
+	}),
+);
+
 const commands: Command[] = [
 	{
 		name: 'e',
@@ -147,6 +169,24 @@ const commands: Command[] = [
 					detail: rank(i),
 					pane: { kind: 'project', slug: p.slug },
 					action: go(pathOf(fiche(p.slug), locale)),
+				})),
+		},
+	},
+	...sectionCommands,
+	{
+		name: 'marks',
+		help: { fr: 'Liste les sections de l’accueil, pour aller à l’une d’elles.', en: 'Lists the sections of the home page, to go to one.' },
+		argument: {
+			title: { fr: 'Sections', en: 'Sections' },
+			enter: { fr: 'aller à la section', en: 'go to the section' },
+			choices: ({ locale }) =>
+				sectionKeys.map((key, i) => ({
+					label: sections[key].label[locale],
+					others: locales.filter((other) => other !== locale).map((other) => sections[key].label[other]),
+					aliases: namesOf(sectionCommands[i]),
+					detail: `:${sections[key].id[locale]}`,
+					pane: helpOf(sectionCommands[i], locale),
+					action: go(sectionPath(key, locale)),
 				})),
 		},
 	},
@@ -208,7 +248,36 @@ const commands: Command[] = [
 			fr: 'Écrire, puis partir : descend jusqu’au contact, ou y ramène depuis une fiche. :x aussi.',
 			en: 'Write, then quit: scrolls down to the contact, or takes you back there from a project page. :x too.',
 		},
-		run: ({ locale }) => go(`${pathOf(home, locale)}#${sections.contact.id[locale]}`),
+		run: ({ locale }) => go(sectionPath('contact', locale)),
+	},
+	{
+		name: 'q',
+		aliases: ['quit'],
+		// Sur l'accueil, `:q` n'a nulle part où revenir : sa réponse y est un easter egg (E37), pas un
+		// retour. D'ici là, il n'y existe pas.
+		scope: onFiche,
+		help: { fr: 'Revient à l’accueil.', en: 'Goes back to the home page.' },
+		// Un simple changement d'adresse : le nom de la fiche vole jusqu'à sa ligne de l'accueil (ADR 0004).
+		run: ({ locale }) => go(pathOf(home, locale)),
+	},
+	{
+		name: 'set',
+		aliases: ['se'],
+		help: setHelp,
+		argument: {
+			title: { fr: 'Options', en: 'Options' },
+			enter: { fr: 'appliquer', en: 'apply' },
+			// L'autre version d'abord, sélectionnée d'office : c'est la seule qui change quelque chose.
+			choices: (context) =>
+				[...locales]
+					.sort((a, b) => Number(a === context.locale) - Number(b === context.locale))
+					.map((locale) => ({
+						label: `lang=${locale}`,
+						pane: { kind: 'help', name: 'set', text: setHelp[context.locale] },
+						action: go(pathOf(context.page, locale)),
+					})),
+			unknown: (value) => `E474: Invalid argument: ${value}`,
+		},
 	},
 	{
 		name: 'help',
@@ -224,7 +293,7 @@ const commands: Command[] = [
 			choices: (context) =>
 				inScope(context).map((command) => {
 					const pane = helpOf(command, context.locale);
-					return { label: pane.name, aliases: namesOf(command), pane, action: { kind: 'show', pane } };
+					return { label: pane.name, others: othersOf(command, context.locale), aliases: namesOf(command), pane, action: { kind: 'show', pane } };
 				}),
 			unknown: (value) => `E149: Sorry, no help for ${value}`,
 		},
@@ -246,6 +315,9 @@ const nameOf = (command: Command, locale: Locale) => (typeof command.name === 's
 
 /** Tous les noms qu'accepte une commande tapée en entier : les deux langues et les alias. */
 const namesOf = (command: Command) => [...locales.map((locale) => nameOf(command, locale)), ...(command.aliases ?? [])];
+
+/** Ses noms dans les autres langues, que le filtre accepte aussi (`career` sur une page française). */
+const othersOf = (command: Command, locale: Locale) => locales.filter((other) => other !== locale).map((other) => nameOf(command, other));
 
 const helpOf = (command: Command, locale: Locale) => ({ kind: 'help' as const, name: nameOf(command, locale), text: command.help[locale] });
 
@@ -319,12 +391,16 @@ const wordGap = (text: string, at: number) => {
 
 /**
  * Les éléments qui répondent à `query`, le meilleur en tête : le score, puis la première lettre la plus
- * près de son début de mot, puis le texte le plus court. Sans saisie, l'ordre d'origine.
+ * près de son début de mot, puis le texte le plus court. Sans saisie, l'ordre d'origine. Un élément que
+ * son libellé ne trouve pas répond par ses noms dans l'autre langue (`others`), et prend celui trouvé.
  */
-function filter<T extends { label: string }>(items: T[], query: string): (T & { hits: number[] })[] {
+function filter<T extends { label: string; others?: string[] }>(items: T[], query: string): (T & { hits: number[] })[] {
 	const found = items.flatMap((item, index) => {
-		const match = fuzzy(query, item.label);
-		return match ? [{ item, index, ...match }] : [];
+		for (const label of [item.label, ...(item.others ?? [])]) {
+			const match = fuzzy(query, label);
+			if (match) return [{ item: { ...item, label }, index, ...match }];
+		}
+		return [];
 	});
 	if (query) {
 		found.sort(
@@ -356,7 +432,7 @@ export function list(line: string, context: Context): Listing {
 			total: choices.length,
 		};
 	}
-	const available = inScope(context).map((command) => ({ command, label: nameOf(command, locale) }));
+	const available = inScope(context).map((command) => ({ command, label: nameOf(command, locale), others: othersOf(command, locale) }));
 	return {
 		title: commandsTitle[locale],
 		prompt: argument === undefined ? ':' : `:${name}`,

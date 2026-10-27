@@ -21,7 +21,7 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
     d'une page du site : l'arrivée d'une fiche garde sa view transition. Le référent survit à un
     rechargement, d'où le type de navigation lu en premier. Ni vers une ancre, ni en mouvement réduit.
     Une touche, un clic, la molette ou un défilement le terminent sur-le-champ tant que le bleu
-    couvre l'écran ; une fois qu'il se range (5500 ms), couper ferait sauter l'accueil à sa place :
+    couvre l'écran ; une fois qu'il se range (4400 ms), couper ferait sauter l'accueil à sa place :
     la suite se joue six fois plus vite. Le départ de la page coupe toujours. Sinon, il finit avec
     `launch-done`, la plus longue de ses animations. Les commentaires restent ici : ceux du script
     partiraient avec chaque accueil. */}
@@ -43,7 +43,7 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 		const skip = (e) => {
 			quiet();
 			const launch = document.getAnimations().filter((a) => a.animationName?.startsWith('launch-'));
-			if (e.type !== 'pagehide' && launch.find((a) => a.animationName === 'launch-done')?.currentTime > 5500) launch.forEach((a) => a.updatePlaybackRate(6));
+			if (e.type !== 'pagehide' && launch.find((a) => a.animationName === 'launch-done')?.currentTime > 4400) launch.forEach((a) => a.updatePlaybackRate(6));
 			else end({ animationName: 'launch-done' });
 		};
 		for (const type of inputs) addEventListener(type, skip, { capture: true, passive: true });
@@ -85,14 +85,14 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 		display: none;
 	}
 
-	/* La chronologie de la maquette, en ms depuis le premier rendu :
-	   400–1600     `nvim portfolio.md` se tape, une colonne toutes les 70 ms ;
-	   1700–4600    la barre se remplit ; de 1800, une ligne de sortie toutes les 360 ms ;
-	   4100–5000    le curseur bloc inonde l'écran ;
-	   4800–5900    la touche Échap, enfoncée à 5460 ;
-	   5100         sous le bleu, l'accueil prend sa pose de départ ;
-	   5500–6700    le bleu se range dans le segment NORMAL, le titre monte (5600–7000) ;
-	   6100–7520    le reste de l'accueil entre, le curseur du titre s'étire, le bleu s'efface. */
+	/* La chronologie de la maquette au tempo ×0,8, en ms depuis le premier rendu :
+	   320–1280     `nvim portfolio.md` se tape, une colonne toutes les 56 ms ;
+	   1360–3680    la barre se remplit ; de 1440, une ligne de sortie toutes les 288 ms ;
+	   3280–4000    le curseur bloc inonde l'écran ;
+	   3840–4720    la touche Échap, enfoncée à 4370 ;
+	   4080         sous le bleu, l'accueil prend sa pose de départ ;
+	   4400–5360    le bleu se range dans le segment NORMAL, le titre monte (4480–5600) ;
+	   4880–6016    le reste de l'accueil entre, le curseur du titre s'étire, le bleu s'efface. */
 	@media (prefers-reduced-motion: no-preference) {
 		:global(:root[data-launch]) .launch {
 			/* Bord gauche du contenu de la page et ligne de la commande : le terminal s'y cale, et le
@@ -103,7 +103,7 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 			position: fixed;
 			inset: 0;
 			z-index: 10;
-			animation: launch-done 7520ms linear forwards;
+			animation: launch-done 6016ms linear forwards;
 		}
 
 		.term {
@@ -137,13 +137,13 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 			inset: 0 auto 0 0;
 			width: 18ch;
 			background: var(--ink);
-			animation: launch-type 1200ms steps(17, end) 400ms both;
+			animation: launch-type 960ms steps(17, end) 320ms both;
 		}
 
-		/* Une ligne de sortie toutes les 360 ms, la première à 1800. */
+		/* Une ligne de sortie toutes les 288 ms, la première à 1440. */
 		:global(:root[data-launch]) .out {
 			color: var(--on-ink-muted);
-			animation: launch-line 200ms cubic-bezier(0.16, 1, 0.3, 1) calc(1800ms + var(--rank, 0) * 360ms) both;
+			animation: launch-line 160ms cubic-bezier(0.16, 1, 0.3, 1) calc(1440ms + var(--rank, 0) * 288ms) both;
 		}
 
 		.out:nth-child(3) {
@@ -196,7 +196,7 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 			inset: 0;
 			background: var(--status-segment);
 			transform-origin: left;
-			animation: launch-fill 2900ms cubic-bezier(0.55, 0, 0.15, 1) 1700ms both;
+			animation: launch-fill 2320ms cubic-bezier(0.55, 0, 0.15, 1) 1360ms both;
 		}
 
 		.side {
@@ -223,7 +223,7 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 			min-width: calc(4ch + 28px);
 			text-align: right;
 			counter-reset: n var(--launch-n);
-			animation: launch-count 2900ms cubic-bezier(0.55, 0, 0.15, 1) 1700ms both;
+			animation: launch-count 2320ms cubic-bezier(0.55, 0, 0.15, 1) 1360ms both;
 		}
 
 		.pct::after {
@@ -243,7 +243,7 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 			font: 16px var(--font-mono);
 			visibility: visible;
 			pointer-events: none;
-			animation: launch-type 1200ms steps(17, end) 400ms both;
+			animation: launch-type 960ms steps(17, end) 320ms both;
 		}
 
 		:global(:root[data-launch]) .block {
@@ -256,8 +256,8 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 			background: var(--accent);
 			transform-origin: 0 0;
 			animation:
-				launch-flood 2600ms 4100ms both,
-				launch-out 50ms linear 6700ms forwards;
+				launch-flood 2080ms 3280ms both,
+				launch-out 40ms linear 5360ms forwards;
 		}
 
 		:global(:root[data-launch]) .key {
@@ -272,7 +272,7 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 			color: #ffffff;
 			visibility: visible;
 			pointer-events: none;
-			animation: launch-key 1100ms 4800ms both;
+			animation: launch-key 880ms 3840ms both;
 		}
 
 		.cap {
@@ -295,42 +295,42 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 		}
 
 		/* L'accueil, peint dès le premier rendu sous l'écran (son titre est le LCP) : il ne prend sa
-		   pose de départ qu'à 5100 ms, sous le bleu. D'où `forwards`, jamais `both`. */
+		   pose de départ qu'à 4080 ms, sous le bleu. D'où `forwards`, jamais `both`. */
 		:global(:root[data-launch] .hero .line) {
 			clip-path: inset(-25% -5% 0 -5%);
 		}
 
 		:global(:root[data-launch] .hero .rise) {
-			animation: launch-rise 1900ms 5100ms forwards;
+			animation: launch-rise 1520ms 4080ms forwards;
 		}
 
 		:global(:root[data-launch] .hero .last .rise) {
-			animation-delay: 5190ms;
+			animation-delay: 4152ms;
 		}
 
 		:global(:root[data-launch] .hero .cursor) {
 			transform-origin: left;
-			animation: launch-cursor 2000ms 5100ms forwards;
+			animation: launch-cursor 1600ms 4080ms forwards;
 		}
 
 		:global(:root[data-launch] .site-header),
 		:global(:root[data-launch] .hero .topline) {
-			animation: launch-enter 2200ms 5100ms forwards;
+			animation: launch-enter 1760ms 4080ms forwards;
 		}
 
 		:global(:root[data-launch] .hero .lede) {
-			animation: launch-enter 2200ms 5160ms forwards;
+			animation: launch-enter 1760ms 4128ms forwards;
 		}
 
 		:global(:root[data-launch] .hero .facts) {
-			animation: launch-enter 2200ms 5240ms forwards;
+			animation: launch-enter 1760ms 4192ms forwards;
 		}
 
 		:global(:root[data-launch] .hero .actions) {
-			animation: launch-enter 2200ms 5320ms forwards;
+			animation: launch-enter 1760ms 4256ms forwards;
 		}
 
-		/* L'écran s'efface à 5500 ms (73,14 % de 7520), le bleu couvrant tout : le bloc et la touche
+		/* L'écran s'efface à 4400 ms (73,14 % de 6016), le bleu couvrant tout : le bloc et la touche
 		   restent. */
 		@keyframes launch-done {
 			0%,
@@ -368,8 +368,8 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 			}
 		}
 
-		/* Relatif au curseur, décalé de 17 colonnes à la fin de la frappe. 900 ms pour inonder, 500 de
-		   plein écran, 1200 pour se ranger. */
+		/* Relatif au curseur, décalé de 17 colonnes à la fin de la frappe. 720 ms pour inonder, 400 de
+		   plein écran, 960 pour se ranger. */
 		@keyframes launch-flood {
 			from {
 				transform: translate(calc(var(--left) + 2ch), calc(var(--top) + 4px)) scale(var(--cell-x), var(--cell-y));

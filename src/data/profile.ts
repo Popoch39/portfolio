@@ -175,7 +175,7 @@ export const sections: Record<SectionKey, Section> = {
 	contact: { id: { fr: 'contact', en: 'contact' }, label: { fr: 'Contact', en: 'Contact' } },
 };
 
-/** Mots du bandeau noir sous le héros, dans l'ordre d'affichage. */
+/** Mots du bandeau noir entre Projets et Parcours, dans l'ordre d'affichage. */
 export const marqueeWords: string[] = [
 	'TypeScript',
 	'React',

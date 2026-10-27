@@ -15,7 +15,9 @@ import { marqueeWords } from '../data/profile';
 		   la bande, on les répartit. Quand ils débordent, l'espace libre est négatif et
 		   `space-between` revient à un alignement au début. */
 		justify-content: space-between;
-		margin: 0;
+		/* Les sections ne s'espacent que par le haut : sans cette marge, le bandeau collerait à la
+		   dernière ligne de Projets. Même rythme que l'écart entre deux sections. */
+		margin: clamp(64px, 8vw, 120px) 0 0;
 		padding: 0;
 		overflow: hidden;
 		list-style: none;

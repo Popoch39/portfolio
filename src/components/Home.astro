@@ -28,10 +28,11 @@ const stats = activityStats(githubSnapshot);
 	<main>
 		<div class="container">
 			<Hero />
+			<Projects />
 		</div>
+		{/* Après Projets et non sous le héros : la Plongée relie le héros à Projets (spec #68). */}
 		<Marquee />
 		<div class="container">
-			<Projects />
 			<Career />
 			<Activity stats={stats} />
 			<Stack />

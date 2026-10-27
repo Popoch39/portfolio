@@ -2,7 +2,7 @@
 // sous Node. La Lunette lui passe la ligne tapée et le contexte de la page ; il lui rend la liste à
 // afficher, meilleur résultat en tête, et l'action que la ligne résout. Chaque commande déclare son nom,
 // ses alias, sa portée, son aide et son argument : en ajouter une ne touche ni au filtre ni à la Lunette.
-import { projects, sections } from '../data/profile.ts';
+import { identity, projects, sections } from '../data/profile.ts';
 import { fiche, home, locales, pathOf, type Locale, type Localized, type Page } from '../lib/i18n.ts';
 
 /** Ce que la page offre aux commandes. Les tickets suivants y ajoutent la figure (temps, pièces). */
@@ -11,8 +11,16 @@ export interface Context {
 	locale: Locale;
 }
 
-/** Ce que fait une commande : la Lunette l'exécute. `show` garde la Lunette ouverte sur ce Volet. */
-export type Action = { kind: 'go'; path: string } | { kind: 'show'; pane: Pane };
+/**
+ * Ce que fait une commande : la Lunette l'exécute. `show` garde la Lunette ouverte sur ce Volet. `yank`
+ * copie `text` dans le presse-papiers, puis fait écho de la copie (`copied`) ou de son échec (`failed`).
+ */
+export type Action =
+	| { kind: 'go'; path: string }
+	| { kind: 'show'; pane: Pane }
+	| { kind: 'yank'; text: string; copied: string; failed: string }
+	/** Une adresse hors du site, ouverte dans un nouvel onglet. */
+	| { kind: 'open'; url: string };
 
 /**
  * Ce que montre le Volet pour un résultat : l'Aperçu d'un projet, ou l'aide d'une commande ; celle de
@@ -103,6 +111,27 @@ const neighbour =
 		return go(pathOf(fiche(projects[(at + step + projects.length) % projects.length].slug), locale));
 	};
 
+const yankHelp: Localized<string> = {
+	fr: 'Copie l’adresse mail de Louis dans le presse-papiers, comme yy : :yank mail.',
+	en: 'Copies Louis’s email address to the clipboard, like yy: :yank mail.',
+};
+
+const shellHelp: Localized<string> = {
+	fr: 'Ouvre le profil GitHub ou la config Neovim de Louis, dans un nouvel onglet : :!github, :!nvim.',
+	en: 'Opens Louis’s GitHub profile or Neovim config, in a new tab: :!github, :!nvim.',
+};
+
+/** La copie de l'adresse, et ses deux échos : l'échec la donne en clair, pour la copier à la main. */
+const yankMail = ({ locale }: Context): Action => {
+	const { email } = identity;
+	return {
+		kind: 'yank',
+		text: email,
+		copied: { fr: `"${email}" copiée dans le presse-papiers`, en: `"${email}" copied to the clipboard` }[locale],
+		failed: { fr: `Copie impossible, l’adresse à la main : ${email}`, en: `Couldn’t copy, the address by hand: ${email}` }[locale],
+	};
+};
+
 const commands: Command[] = [
 	{
 		name: 'e',
@@ -134,6 +163,52 @@ const commands: Command[] = [
 		scope: onFiche,
 		help: { fr: 'Revient au projet précédent, dans la boucle des autres projets.', en: 'Goes back to the previous project, looping like Other projects.' },
 		run: neighbour(-1),
+	},
+	{
+		name: 'yank',
+		aliases: ['y'],
+		help: yankHelp,
+		argument: {
+			title: { fr: 'À copier', en: 'To copy' },
+			enter: { fr: 'copier', en: 'copy' },
+			choices: (context) => [
+				{
+					label: 'mail',
+					aliases: ['email'],
+					detail: identity.email,
+					pane: { kind: 'help', name: 'yank', text: yankHelp[context.locale] },
+					action: yankMail(context),
+				},
+			],
+		},
+		// Le `:yank` de Vim copie la ligne courante ; ici, il n'y a que l'adresse à copier.
+		run: yankMail,
+	},
+	{
+		// Le `:!` de Vim lance une commande du shell ; ici, il ouvre les liens de Louis.
+		name: '!',
+		help: shellHelp,
+		argument: {
+			title: { fr: 'Liens', en: 'Links' },
+			enter: { fr: 'ouvrir dans un onglet', en: 'open in a tab' },
+			choices: ({ locale }) =>
+				Object.entries({ github: identity.links.github, nvim: identity.links.nvimConfig }).map(([label, url]) => ({
+					label,
+					detail: url.replace(/^https:\/\//, ''),
+					pane: { kind: 'help', name: '!', text: shellHelp[locale] },
+					action: { kind: 'open', url },
+				})),
+		},
+	},
+	{
+		// « Écrire, puis partir » : le `:wq` de la section contact, que celui de la barre d'état annonce.
+		name: 'wq',
+		aliases: ['x', 'xit'],
+		help: {
+			fr: 'Écrire, puis partir : descend jusqu’au contact, ou y ramène depuis une fiche. :x aussi.',
+			en: 'Write, then quit: scrolls down to the contact, or takes you back there from a project page. :x too.',
+		},
+		run: ({ locale }) => go(`${pathOf(home, locale)}#${sections.contact.id[locale]}`),
 	},
 	{
 		name: 'help',
@@ -270,7 +345,8 @@ export function list(line: string, context: Context): Listing {
 	const command = argument === undefined ? undefined : find(name, context);
 	if (command?.argument && argument !== undefined) {
 		const choices = command.argument.choices(context);
-		const prefix = `${nameOf(command, locale)} `;
+		// Derrière un nom fait d'un signe, l'argument suit sans espace, comme dans Vim (`:!github`).
+		const prefix = nameOf(command, locale).replace(/[A-Za-z]$/, '$& ');
 		return {
 			title: command.argument.title[locale],
 			prompt: `:${nameOf(command, locale)}`,

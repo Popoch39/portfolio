@@ -7,10 +7,12 @@ const fiches = PROJECTS.map((project) => ({ ...project, html: readFiche(project.
 
 /** La section anatomie : celle dont le h2 est « Anatomie ». */
 const anatomyOf = (html) => elements(html, 'section').find((s) => elements(s, 'h2').map(text).includes('Anatomie')) ?? '';
-/** Le SVG de la figure : le seul `<svg role="img">` de la section. */
-const figureSvgOf = (html) => elements(anatomyOf(html), 'svg').filter((svg) => attr(tags(svg, 'svg')[0], 'role') === 'img');
-/** Lignes de la nomenclature : les `<li>` qui portent un crochet de pièce. */
-const piecesOf = (html) => elements(anatomyOf(html), 'li').filter((li) => attr(tags(li, 'li')[0], 'data-piece') !== undefined);
+/** Le SVG de la figure : le seul `<svg class="iso-svg" role="img">` de la section (les logos des notes sont aussi des images). */
+const figureSvgOf = (html) =>
+	elements(anatomyOf(html), 'svg').filter((svg) => attr(tags(svg, 'svg')[0], 'role') === 'img' && /\biso-svg\b/.test(attr(tags(svg, 'svg')[0], 'class') ?? ''));
+/** Lignes de la nomenclature : ses `<li class="item">`, qui portent un crochet de pièce comme les notes de la figure. */
+const piecesOf = (html) =>
+	elements(anatomyOf(html), 'li').filter((li) => attr(tags(li, 'li')[0], 'data-piece') !== undefined && /^item\b/.test(attr(tags(li, 'li')[0], 'class') ?? ''));
 const hooksOf = (svg) => tags(svg, 'g').filter((g) => attr(g, 'data-piece') !== undefined);
 
 test('six fiches, chacune avec un seul h1 : le nom exact du dépôt', () => {

@@ -42,9 +42,17 @@ _Avoid_ : pointillé, texture, trame
 La liste numérotée des pièces d'une machine, chacune avec son rôle et son code.
 _Avoid_ : légende, liste des pièces
 
-**Repère** :
-Sur la fiche, l'étiquette de la pièce visée (la pièce maîtresse au repos) : son numéro, son nom, son rôle et la signature de son code, reliés à la pièce par un trait.
-_Avoid_ : tooltip, infobulle, label
+**Note** :
+Sur la fiche, autour de la figure, le texte d'une pièce relié à elle par un trait : en clair, ce qu'elle fait sans la machine (un verbe, une phrase, ses technologies) ; en code, son symbole et sa signature.
+_Avoid_ : tooltip, étiquette, repère
+
+**Lecture** :
+La façon dont toutes les notes se lisent à la fois, en clair ou en code, choisie par la ligne de commande de la carte (`:set lecture=clair|code`).
+_Avoid_ : mode, vue, onglet
+
+**Viseur** :
+Les quatre équerres qui se referment sur la pièce visée, avec l'indice technique de sa note tapé au-dessus.
+_Avoid_ : cadre, sélection, focus
 
 **Signature** :
 Les premières lignes de code d'une pièce, hors lignes vides et commentaires, relevées au commit lu.

@@ -1,0 +1,1370 @@
+---
+// Notes de la figure, sur la fiche : autour de la figure, une note par pièce, reliée à elle par un
+// trait, puis la barre d'état et la ligne de commande de la carte, façon Neovim. Une note se lit en
+// clair (ce que fait la pièce, ses technologies) ou en code (son symbole, sa signature, son lien) :
+// `:set lecture=clair|code` bascule toutes les notes, chacune réécrite comme une édition Vim
+// (sélection ligne à ligne, puis frappe). Viser une pièce (mise en avant, `data-on`) allume sa note,
+// trace son trait et referme un viseur sur elle.
+//
+// Tout est HTML et CSS : la mise en page (`annotate`, au build) arrive en propriétés personnalisées
+// dans la feuille de la page, la bascule est un groupe de boutons radio lu par `:has()`, et chaque
+// mouvement est une transition de `translate`, `scale` ou `opacity`. Trois dispositions selon la
+// largeur de la carte : la liste sous la figure (pastilles numérotées sur les pièces), les bandes
+// au-dessus et au-dessous, ou, pour une figure haute, les colonnes de part et d'autre.
+import type { Piece, Signature } from '../anatomies/contract';
+import type { AnnotationLayout } from '../anatomies/annotations';
+import { signatureLines } from '../anatomies/signature';
+import { logoOf } from '../anatomies/tech';
+
+interface Props {
+	layout: AnnotationLayout;
+	/** La figure au repos, en SVG intégré à la page. */
+	svg: string;
+	/** Le dossier du module de mouvement, que le chargeur monte sur la scène. */
+	motion: string;
+	/** Recadrage de la figure sur téléphone (`AnatomyContent.phoneCrop`). */
+	phoneCrop?: boolean;
+	codeUrl: (piece: Piece) => string;
+	signatureOf: (piece: Piece) => Signature;
+	consignes: { pointer: string; touch: string };
+	releve: string;
+}
+
+const { layout, svg, motion, phoneCrop = false, codeUrl, signatureOf, consignes, releve } = Astro.props;
+const { notes, tall } = layout;
+/** Lignes de signature d'une note en code : trois, la hauteur d'une note en clair. */
+const SIGNATURE_LINES = 3;
+const fileOf = (piece: Piece) => piece.code.path.split('/').pop();
+const master = notes.find(({ piece }) => piece.master)?.piece;
+const techs = [...new Set(notes.flatMap(({ piece }) => piece.note.tech))];
+const substitutions = `${notes.length} substitutions sur ${notes.length} lignes`;
+
+// La géométrie de la page : celle de la scène, puis de chaque note, marque et viseur.
+const geometry = [
+	`.annot .stage{${layout.style}}`,
+	...notes.map(({ piece, style }) => `.note[data-piece="${piece.id}"]{${style}}`),
+	...notes.map(({ piece, pinStyle }) => `.pin[data-piece="${piece.id}"]{${pinStyle}}`),
+	...notes.flatMap(({ piece, finders }) => finders.map((finder, k) => `.finder[data-piece="${piece.id}"][data-at="${k}"]{${finder}}`)),
+].join('\n');
+---
+
+<style is:inline set:html={geometry}></style>
+<svg class="sprite" aria-hidden="true" focusable="false">
+	{
+		techs.map((tech) => (
+			<symbol id={`tech-${tech}`} viewBox="0 0 24 24">
+				<path d={logoOf(tech).path} />
+			</symbol>
+		))
+	}
+</svg>
+<div class:list={['annot', { crop: phoneCrop }]}>
+	<div class:list={['stage', { tall }]}>
+		<div class="plate">
+			<div class="scene iso anatomy" data-theme="light" data-motion={motion} set:html={svg} />
+			<div class="marks" aria-hidden="true">
+				{
+					notes.map(({ piece, number, finders }) => (
+						<>
+							{finders.map((_, k) => (
+								<span class="finder" data-piece={piece.id} data-at={k}>
+									<span class="scan" />
+									{k === 0 && (
+										<span class="tag">
+											<span class="in">
+												<span class="tag-plain">
+													{number} · {piece.note.clue}
+												</span>
+												<span class="tag-code">
+													{number} · {fileOf(piece)}:{piece.code.lines[0]}
+												</span>
+											</span>
+										</span>
+									)}
+								</span>
+							))}
+							<span class="pin" data-piece={piece.id}>
+								{number}
+							</span>
+						</>
+					))
+				}
+			</div>
+		</div>
+		<ol class="notes" aria-label="Notes de la figure">
+			{
+				notes.map(({ piece, number, classes }) => {
+					const [first, last] = piece.code.lines;
+					const lines = signatureLines(signatureOf(piece), piece.code.path).slice(0, SIGNATURE_LINES);
+					return (
+						<li class:list={['note', classes]} data-piece={piece.id} data-master={piece.master ? '' : undefined}>
+							<div class="meta">
+								<span class="num">{number}</span>
+								<span class="faces">
+									<span class="face plain">
+										<span class="ty">
+											<span class="in">
+												{piece.note.tech.map((tech) => (
+													<svg class="logo" role="img" aria-label={logoOf(tech).name} viewBox="0 0 24 24">
+														<use href={`#tech-${tech}`} />
+													</svg>
+												))}
+												<span>{piece.note.clue}</span>
+											</span>
+										</span>
+									</span>
+									<span class="face code">
+										<span class="ty">
+											<span class="in">
+												<a class="ref" href={codeUrl(piece)} aria-label={`Code : ${piece.code.path}, lignes ${first} à ${last}`}>
+													L{first}–{last} ↗
+												</a>
+											</span>
+										</span>
+									</span>
+								</span>
+							</div>
+							<div class="faces body">
+								<div class="face plain">
+									<p class="ty">
+										<span class="in">
+											<span class="t">{piece.note.title}</span>
+										</span>
+									</p>
+									<p class="ty last">
+										<span class="in text">{piece.note.text}</span>
+									</p>
+								</div>
+								<div class="face code">
+									<p class="ty">
+										<span class="in">
+											<code class="t fn">{piece.note.symbol}</code>
+										</span>
+									</p>
+									{lines.map(({ line, tokens }, k) => (
+										<p class:list={['ty', 'cl', { last: k === lines.length - 1 }]}>
+											<span class="in">
+												<span class="ln">{line}</span>
+												<code>
+													{tokens.map((token) => (
+														<span class={`k-${token.kind}`}>{token.text}</span>
+													))}
+												</code>
+											</span>
+										</p>
+									))}
+								</div>
+							</div>
+							<span class="leader" aria-hidden="true">
+								<i class="seg s1" />
+								<i class="seg s2" />
+								<i class="seg s3" />
+							</span>
+						</li>
+					);
+				})
+			}
+		</ol>
+	</div>
+	<slot />
+	<div class="mono statusline">
+		<span class="mode" aria-hidden="true">
+			<span class="m normal">NORMAL</span>
+			<span class="m vline a">V-LINE</span>
+			<span class="m insert a">INSERT</span>
+			<span class="m vline b">V-LINE</span>
+			<span class="m insert b">INSERT</span>
+		</span>
+		<span class="seg-sl file" aria-hidden="true">{master && fileOf(master)}</span>
+		<span class="seg-sl reading" aria-hidden="true">lecture=<span class="values"><span class="v plain">clair</span><span class="v code">code</span></span></span>
+		<span class="fill"></span>
+		<span class="seg-sl releve"><span class="dot" aria-hidden="true"></span><span data-releve>{releve}</span></span>
+		<span class="seg-sl count" aria-hidden="true">{notes.length} notes</span>
+	</div>
+	<div class="mono cmd">
+		<fieldset class="lecture">
+			<legend class="sr-only">Lecture des notes</legend>
+			<span class="prompt" aria-hidden="true">:set lecture=</span>
+			<label class="option">
+				<input type="radio" name={`lecture-${motion}`} value="clair" autocomplete="off" checked />
+				<span>clair</span>
+			</label>
+			<span class="bar" aria-hidden="true">|</span>
+			<label class="option">
+				<input type="radio" name={`lecture-${motion}`} value="code" autocomplete="off" />
+				<span>code</span>
+			</label>
+		</fieldset>
+		<p class="echo">
+			<span class="consigne pointer">{consignes.pointer}</span>
+			<span class="consigne touch">{consignes.touch}</span>
+			<span class="msg a" aria-hidden="true">{substitutions}</span>
+			<span class="msg b" aria-hidden="true">{substitutions}</span>
+		</p>
+	</div>
+</div>
+
+<style>
+	/* ——— La carte et ses trois dispositions ——— */
+
+	.annot {
+		container-type: inline-size;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.sprite {
+		position: absolute;
+		width: 0;
+		height: 0;
+		overflow: hidden;
+	}
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	/* Liste (téléphone, tablette) : la figure d'un bord à l'autre de la carte, une pastille numérotée
+	   sur chaque pièce, puis les notes. Une figure haute ne dépasse pas la fenêtre. */
+	.stage {
+		display: flex;
+		flex-direction: column;
+		gap: 28px;
+	}
+
+	.plate {
+		position: relative;
+		align-self: center;
+		width: min(100% + 2 * var(--card-pad), (100svh - 120px) * var(--wh));
+		overflow: hidden;
+	}
+
+	/* Le doigt agit sur la figure et fait toujours défiler la page. */
+	.scene {
+		touch-action: pan-y;
+	}
+
+	.scene > :global(svg) {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+
+	.marks {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+	}
+
+	/* Une figure très large grandit de 10 % sur téléphone et la carte coupe ses bords (contrat :
+	   `AnatomyContent.phoneCrop`) ; ses marques la suivent. */
+	.crop .scene > :global(svg) {
+		width: 110%;
+		margin-inline: -3% -7%;
+	}
+
+	.crop .marks {
+		inset: 0 -7% 0 -3%;
+	}
+
+	@container (width >= 560px) {
+		.plate {
+			width: min(100%, (100svh - 120px) * var(--wh));
+			overflow: visible;
+		}
+
+		.crop .scene > :global(svg) {
+			width: 100%;
+			margin-inline: 0;
+		}
+
+		.crop .marks {
+			inset: 0;
+		}
+	}
+
+	.notes {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 232px), 1fr));
+		gap: 24px 32px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	/* Les traits passent sur la figure : ils laissent le pointeur à ses pièces. */
+	.leader {
+		display: none;
+		pointer-events: none;
+	}
+
+	.pin {
+		position: absolute;
+		left: calc(var(--cx) * 100%);
+		top: calc(var(--cy) * 100%);
+		display: grid;
+		place-items: center;
+		width: 22px;
+		height: 22px;
+		margin: -11px 0 0 -11px;
+		border: 1px solid var(--ink);
+		border-radius: 50%;
+		background: var(--paper);
+		font-family: var(--font-mono);
+		font-size: 10px;
+		line-height: 1;
+	}
+
+	.pin::after {
+		content: '';
+		position: absolute;
+		inset: -1px;
+		border-radius: inherit;
+		background: var(--accent);
+		opacity: 0;
+	}
+
+	/* Bandes : une rangée de notes au-dessus de la figure, une au-dessous, en colonnes. Le trait part
+	   du numéro de la note, descend à son niveau dans la gouttière, la longe et plonge sur la pièce. */
+	@container (width >= 880px) {
+		.stage {
+			--fig-w: min(100cqw, 1100px, (100svh - 200px) * var(--wh));
+			--fig-h: calc(var(--fig-w) / var(--wh));
+			--fig-x: calc((100cqw - var(--fig-w)) / 2);
+			display: grid;
+			grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+			grid-template-rows: auto var(--band-g) auto var(--band-g) auto;
+			gap: 0 var(--col-gap);
+		}
+
+		.plate {
+			grid-area: 3 / 1 / 4 / -1;
+			justify-self: center;
+			width: var(--fig-w);
+		}
+
+		/* Les notes se rangent dans la grille de la scène, par-dessus la figure qu'elles laissent
+		   au pointeur. */
+		.notes {
+			grid-area: 1 / 1 / -1 / -1;
+			grid-template-columns: subgrid;
+			grid-template-rows: subgrid;
+			gap: inherit;
+			pointer-events: none;
+		}
+
+		.note {
+			position: relative;
+			grid-column: var(--col);
+			pointer-events: auto;
+			--e: calc(var(--lvl-0) + var(--lvl) * var(--lvl-step));
+			--colx: calc((var(--col) - 1) * (100cqw + var(--col-gap)) / var(--cols));
+			--px: calc(var(--fig-x) + var(--bx) * var(--fig-w) - var(--colx));
+		}
+
+		.b-up {
+			grid-row: 1;
+			align-self: end;
+		}
+
+		.b-down {
+			grid-row: 5;
+			align-self: start;
+		}
+
+		.leader {
+			display: block;
+		}
+
+		.seg {
+			position: absolute;
+			display: block;
+			background: color-mix(in srgb, var(--ink) 55%, transparent);
+		}
+
+		.seg::after {
+			content: '';
+			position: absolute;
+			inset: -0.5px;
+			background: var(--accent);
+		}
+
+		.s1,
+		.s3 {
+			width: 1px;
+		}
+
+		.s2 {
+			height: 1px;
+			left: min(var(--num-c), var(--px));
+			width: calc(max(var(--num-c), var(--px)) - min(var(--num-c), var(--px)) + 1px);
+		}
+
+		.s1::after,
+		.s3::after {
+			scale: 1 0;
+		}
+
+		.s2::after {
+			scale: 0 1;
+		}
+
+		.b-up .s1 {
+			left: var(--num-c);
+			top: 100%;
+			height: var(--e);
+		}
+
+		.b-up .s2 {
+			top: calc(100% + var(--e));
+		}
+
+		.b-up .s3 {
+			left: var(--px);
+			top: calc(100% + var(--e));
+			height: calc(var(--band-g) - var(--e) + var(--by) * var(--fig-h));
+		}
+
+		.b-down .s1 {
+			left: var(--num-c);
+			bottom: 100%;
+			height: var(--e);
+		}
+
+		.b-down .s2 {
+			top: calc(-1 * var(--e));
+		}
+
+		.b-down .s3 {
+			left: var(--px);
+			bottom: calc(100% + var(--e));
+			height: calc(var(--band-g) - var(--e) + (1 - var(--by)) * var(--fig-h));
+		}
+
+		/* Le trait se trace de la note vers la pièce. */
+		.b-up :is(.s1, .s3)::after {
+			transform-origin: top;
+		}
+
+		.b-down :is(.s1, .s3)::after {
+			transform-origin: bottom;
+		}
+
+		.b-right .s2::after {
+			transform-origin: left;
+		}
+
+		.b-left .s2::after {
+			transform-origin: right;
+		}
+
+		/* Sur la figure, la marque devient la pointe du trait. */
+		.pin {
+			left: calc(var(--bx) * 100%);
+			top: calc(var(--by) * 100%);
+			width: 7px;
+			height: 7px;
+			margin: -3.5px 0 0 -3.5px;
+			border: 0;
+			border-radius: 0;
+			background: var(--ink);
+			box-shadow: 0 0 0 2px var(--paper);
+			font-size: 0;
+		}
+
+		.pin::after {
+			inset: 0;
+		}
+	}
+
+	/* À côté : pour une figure haute, une colonne de notes de chaque côté, chaque note à la hauteur
+	   de sa pièce si sa voisine le permet (la chaîne `--sl…`, `--sr…` d'`annotate`). Le trait part à
+	   l'horizontale du numéro, longe la gouttière à son niveau et rejoint la pièce. */
+	@container (width >= 1000px) {
+		.stage.tall {
+			--fig-w: min(100cqw - 2 * (var(--note-w) + var(--side-g)), (100svh - 220px) * var(--wh), 900px);
+			--ox: calc((100cqw - 2 * (var(--note-w) + var(--side-g)) - var(--fig-w)) / 2);
+			display: block;
+			position: relative;
+			height: max(var(--fig-h), var(--slend), var(--srend));
+		}
+
+		.tall .plate {
+			position: absolute;
+			top: 0;
+			left: calc(var(--ox) + var(--note-w) + var(--side-g));
+		}
+
+		.tall .notes {
+			display: block;
+		}
+
+		.tall .note {
+			position: absolute;
+			top: var(--top);
+			width: var(--note-w);
+			--e: calc(var(--lvl-0) + var(--slvl) * var(--lvl-step));
+			--py: calc(var(--sy) * var(--fig-h) - var(--top));
+		}
+
+		.tall .s-left {
+			left: var(--ox);
+			--xe: calc(var(--note-w) + var(--e));
+			--px: calc(var(--note-w) + var(--side-g) + var(--sx) * var(--fig-w));
+		}
+
+		.tall .s-right {
+			left: calc(var(--ox) + var(--note-w) + 2 * var(--side-g) + var(--fig-w));
+			--xe: calc(-1 * var(--e));
+			--px: calc(-1 * var(--side-g) - (1 - var(--sx)) * var(--fig-w));
+		}
+
+		.tall .seg {
+			inset: auto;
+		}
+
+		.tall :is(.s1, .s3) {
+			width: auto;
+			height: 1px;
+		}
+
+		.tall .s1 {
+			top: var(--num-c);
+		}
+
+		.tall .s-left .s1 {
+			left: var(--note-w);
+			width: var(--e);
+		}
+
+		.tall .s-right .s1 {
+			left: var(--xe);
+			width: var(--e);
+		}
+
+		.tall .s2 {
+			left: var(--xe);
+			top: min(var(--num-c), var(--py));
+			width: 1px;
+			height: calc(max(var(--num-c), var(--py)) - min(var(--num-c), var(--py)) + 1px);
+		}
+
+		.tall .s3 {
+			top: var(--py);
+		}
+
+		.tall .s-left .s3 {
+			left: var(--xe);
+			width: calc(var(--px) - var(--xe));
+		}
+
+		.tall .s-right .s3 {
+			left: var(--px);
+			width: calc(var(--xe) - var(--px));
+		}
+
+		.tall :is(.s1, .s3)::after {
+			scale: 0 1;
+		}
+
+		.tall .s2::after {
+			scale: 1 0;
+		}
+
+		.tall .s-left :is(.s1, .s3)::after {
+			transform-origin: left;
+		}
+
+		.tall .s-right :is(.s1, .s3)::after {
+			transform-origin: right;
+		}
+
+		.tall .s-down .s2::after {
+			transform-origin: top;
+		}
+
+		.tall .s-up .s2::after {
+			transform-origin: bottom;
+		}
+
+		.tall .pin {
+			left: calc(var(--sx) * 100%);
+			top: calc(var(--sy) * 100%);
+		}
+
+		/* La colonne de gauche se lit vers la figure : numéro à droite, texte aligné sur lui. */
+		.tall .s-left,
+		.tall .s-left .body .face {
+			align-items: flex-end;
+			text-align: end;
+		}
+
+		.tall .s-left :is(.meta, .meta .in) {
+			flex-direction: row-reverse;
+		}
+
+		/* Une ligne de code garde toute la largeur de la note, pour s'effacer en points de suspension. */
+		.tall .s-left .cl {
+			align-self: stretch;
+		}
+
+		.tall .s-left .cl .in {
+			justify-content: flex-end;
+		}
+
+		.tall .s-left .t::after {
+			transform-origin: right;
+		}
+	}
+
+	/* ——— La note ——— */
+
+	/* `--o` : rang de la note dans la bascule, celui de la disposition affichée (`annotate`). */
+	.note {
+		--o: var(--i);
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		min-width: 0;
+	}
+
+	@container (width >= 880px) {
+		.note {
+			--o: var(--ob);
+		}
+	}
+
+	@container (width >= 1000px) {
+		.tall .note {
+			--o: var(--os);
+		}
+	}
+
+	.meta {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-height: 24px;
+	}
+
+	.num {
+		position: relative;
+		isolation: isolate;
+		flex: none;
+		display: grid;
+		place-items: center;
+		width: 24px;
+		height: 24px;
+		border: 1px solid var(--ink);
+		border-radius: 50%;
+		background: var(--paper);
+		font-family: var(--font-mono);
+		font-size: 10.5px;
+		line-height: 1;
+	}
+
+	.num::before {
+		content: '';
+		position: absolute;
+		z-index: -1;
+		inset: -1px;
+		border-radius: 50%;
+		background: var(--accent);
+		opacity: 0;
+	}
+
+	.faces {
+		display: grid;
+		min-width: 0;
+	}
+
+	.face {
+		grid-area: 1 / 1;
+		min-width: 0;
+	}
+
+	.body .face {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.meta .in {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-family: var(--font-mono);
+		font-size: 10.5px;
+		line-height: 16px;
+		color: var(--muted);
+		white-space: nowrap;
+	}
+
+	.logo {
+		flex: none;
+		width: 16px;
+		height: 16px;
+		fill: var(--ink);
+	}
+
+	.ref {
+		color: var(--ink);
+		text-underline-offset: 3px;
+	}
+
+	/* Une ligne de note : sa boîte coupe ce qui déborde, pour que la frappe la dévoile. */
+	.ty {
+		position: relative;
+		isolation: isolate;
+		display: block;
+		margin: 0;
+		overflow: clip;
+	}
+
+	.in {
+		display: block;
+	}
+
+	.t {
+		position: relative;
+		display: inline-block;
+		padding-bottom: 3px;
+		font-size: 18px;
+		line-height: 1.15;
+		font-weight: 700;
+		font-stretch: 85%;
+	}
+
+	.t::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 2px;
+		background: var(--accent);
+		scale: 0 1;
+		transform-origin: left;
+	}
+
+	.fn {
+		font-family: var(--font-mono);
+		font-size: 14px;
+		font-weight: 400;
+		font-stretch: 100%;
+	}
+
+	.text {
+		font-size: 14px;
+		line-height: 1.45;
+		color: var(--muted);
+		text-wrap: pretty;
+	}
+
+	/* Le code tel qu'il est écrit : `>=` reste `>=`. Trop longue, une ligne s'efface en points de
+	   suspension, sans jamais passer à la ligne. */
+	.cl .in {
+		display: flex;
+		gap: 8px;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		line-height: 17px;
+		white-space: pre;
+		font-variant-ligatures: none;
+	}
+
+	.ln {
+		flex: none;
+		min-width: 3ch;
+		text-align: right;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.cl code {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		font: inherit;
+		tab-size: 2;
+	}
+
+	.k-kw,
+	.k-num {
+		color: var(--accent);
+	}
+
+	.k-num,
+	.k-type,
+	.k-com {
+		font-style: italic;
+	}
+
+	.k-fn {
+		text-decoration: underline 1.5px var(--accent-light);
+		text-underline-offset: 3px;
+	}
+
+	.k-str {
+		color: var(--accent-deep);
+		background: var(--accent-wash);
+		border-radius: 2px;
+	}
+
+	.k-pun,
+	.k-com {
+		color: var(--muted);
+	}
+
+	/* ——— La pièce visée : sa note s'allume, son trait se trace, le viseur se referme sur elle ——— */
+
+	:global([data-aiming]) .note:not([data-on]) {
+		opacity: 0.28;
+	}
+
+	:global([data-aiming]) .note:not([data-on]) .leader {
+		opacity: 0.45;
+	}
+
+	.note[data-on] .num {
+		color: #ffffff;
+	}
+
+	.note[data-on] .num::before {
+		opacity: 1;
+	}
+
+	.note[data-on] .t {
+		color: var(--accent);
+	}
+
+	.note[data-on] .t::after,
+	.note[data-on] .seg::after {
+		scale: 1 1;
+	}
+
+	.pin[data-on]::after {
+		opacity: 1;
+	}
+
+	@container (width >= 880px) {
+		:global([data-aiming]) .pin:not([data-on]) {
+			opacity: 0;
+		}
+	}
+
+	.finder {
+		--c: var(--accent);
+		position: absolute;
+		left: calc(var(--fx) * 100% - 8px);
+		top: calc(var(--fy) * 100% - 8px);
+		width: calc(var(--fw) * 100% + 16px);
+		height: calc(var(--fh) * 100% + 16px);
+		/* Quatre équerres de 14 px, aux coins. */
+		background:
+			linear-gradient(var(--c), var(--c)) top left / 14px 2px,
+			linear-gradient(var(--c), var(--c)) top left / 2px 14px,
+			linear-gradient(var(--c), var(--c)) top right / 14px 2px,
+			linear-gradient(var(--c), var(--c)) top right / 2px 14px,
+			linear-gradient(var(--c), var(--c)) bottom left / 14px 2px,
+			linear-gradient(var(--c), var(--c)) bottom left / 2px 14px,
+			linear-gradient(var(--c), var(--c)) bottom right / 14px 2px,
+			linear-gradient(var(--c), var(--c)) bottom right / 2px 14px;
+		background-repeat: no-repeat;
+		opacity: 0;
+		scale: 1.35;
+	}
+
+	.finder[data-on] {
+		opacity: 1;
+		scale: 1;
+	}
+
+	.scan {
+		position: absolute;
+		inset: 4px;
+		overflow: clip;
+	}
+
+	.scan::before {
+		content: '';
+		position: absolute;
+		inset: 0 auto 0 0;
+		width: 45%;
+		background: linear-gradient(90deg, transparent, rgb(36 51 255 / 0.2), transparent);
+		translate: -100% 0;
+	}
+
+	.finder[data-on] .scan::before {
+		translate: 225% 0;
+	}
+
+	.tag {
+		position: absolute;
+		left: 0;
+		bottom: 100%;
+		margin-bottom: 6px;
+		overflow: clip;
+		font-family: var(--font-mono);
+		font-size: 10.5px;
+		line-height: 14px;
+		color: var(--accent);
+		white-space: nowrap;
+		translate: -100% 0;
+	}
+
+	.tag .in {
+		display: grid;
+		translate: 100% 0;
+	}
+
+	.tag .in > * {
+		grid-area: 1 / 1;
+	}
+
+	.finder[data-on] :is(.tag, .tag .in) {
+		translate: 0 0;
+	}
+
+	/* ——— Les deux lectures ——— */
+
+	/* La face de la lecture choisie est là ; l'autre, cachée, attend d'être tapée : chaque ligne
+	   décalée d'une largeur dans sa boîte, que la frappe ramène d'un bloc. */
+	.face.code,
+	.annot:has(input[value='code']:checked) .face.plain,
+	.tag-code,
+	.annot:has(input[value='code']:checked) .tag-plain,
+	.v.code,
+	.annot:has(input[value='code']:checked) .v.plain {
+		visibility: hidden;
+		opacity: 0;
+	}
+
+	.annot:has(input[value='code']:checked) :is(.face.code, .tag-code, .v.code) {
+		visibility: visible;
+		opacity: 1;
+	}
+
+	.face.code .ty,
+	.annot:has(input[value='code']:checked) .face.plain .ty {
+		translate: -100% 0;
+	}
+
+	.face.code .ty > .in,
+	.annot:has(input[value='code']:checked) .face.plain .ty > .in {
+		translate: 100% 0;
+	}
+
+	.annot:has(input[value='code']:checked) .face.code :is(.ty, .ty > .in) {
+		translate: 0 0;
+	}
+
+	/* La sélection ligne à ligne de la face qui part (V), puis le curseur de la face qui arrive :
+	   barre pendant la frappe, bloc à Échap. */
+	.ty::before {
+		content: '';
+		position: absolute;
+		z-index: -1;
+		inset: 0;
+		background: rgb(142 155 255 / 0.42);
+		opacity: 0;
+	}
+
+	.face.code .ty::before,
+	.annot:has(input[value='code']:checked) .face.plain .ty::before {
+		opacity: 1;
+	}
+
+	.annot:has(input[value='code']:checked) .face.code .ty::before {
+		opacity: 0;
+	}
+
+	.last > .in::after {
+		content: '';
+		display: inline-block;
+		flex: none;
+		width: 7px;
+		height: 13px;
+		margin-left: 2px;
+		vertical-align: -2px;
+		background: var(--accent);
+		transform-origin: left center;
+		visibility: hidden;
+	}
+
+	.face.code .last > .in::after,
+	.annot:has(input[value='code']:checked) .face.plain .last > .in::after {
+		visibility: visible;
+		opacity: 0;
+		scale: 0.28 1;
+	}
+
+	.annot:has(input[value='code']:checked) .face.code .last > .in::after {
+		visibility: hidden;
+		opacity: 1;
+		scale: 1 1;
+	}
+
+	/* ——— Barre d'état et ligne de commande ——— */
+
+	.statusline {
+		display: flex;
+		align-items: stretch;
+		margin: 24px calc(-1 * var(--card-pad)) 0;
+		border-top: 1px solid var(--rule);
+		background: color-mix(in srgb, var(--rule) 40%, var(--paper));
+		font-size: 11.5px;
+		line-height: 26px;
+		color: var(--ink);
+		white-space: nowrap;
+	}
+
+	.mode {
+		display: grid;
+		flex: none;
+		min-width: 78px;
+		text-align: center;
+		letter-spacing: 0.06em;
+	}
+
+	.m {
+		grid-area: 1 / 1;
+		padding: 0 12px;
+	}
+
+	.normal {
+		background: var(--ink);
+		color: var(--paper);
+	}
+
+	.vline {
+		background: var(--accent-light);
+		color: var(--ink);
+	}
+
+	.insert {
+		background: var(--accent);
+		color: #ffffff;
+	}
+
+	/* Les modes de la réécriture ne passent qu'un instant : `a` vers le code, `b` vers le clair. */
+	.vline,
+	.insert {
+		opacity: 0;
+	}
+
+	.annot:has(input[value='code']:checked) :is(.vline.a, .insert.a),
+	.annot:has(input[value='clair']:checked) :is(.vline.b, .insert.b) {
+		visibility: hidden;
+		opacity: 1;
+	}
+
+	.seg-sl {
+		padding: 0 12px;
+		border-right: 1px solid var(--rule);
+	}
+
+	.values {
+		display: inline-grid;
+	}
+
+	.v {
+		grid-area: 1 / 1;
+	}
+
+	.fill {
+		flex: 1;
+	}
+
+	.releve {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-width: 0;
+		border-right: 0;
+		border-left: 1px solid var(--rule);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.releve [data-releve] {
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.dot {
+		flex: none;
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: var(--accent);
+	}
+
+	.count {
+		border-right: 0;
+		border-left: 1px solid var(--rule);
+	}
+
+	/* Sur téléphone, la barre ne garde que le mode et le relevé. */
+	@container (width < 720px) {
+		.file,
+		.reading,
+		.count {
+			display: none;
+		}
+	}
+
+	.cmd {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0 24px;
+		margin-inline: calc(-1 * var(--card-pad));
+		padding: 0 var(--card-pad) 0 calc(var(--card-pad) - 4px);
+		margin-bottom: calc(-1 * var(--card-pad));
+		font-size: 13px;
+		color: var(--muted);
+	}
+
+	.lecture {
+		display: flex;
+		align-items: center;
+		min-height: 44px;
+		margin: 0;
+		padding: 0;
+		border: 0;
+	}
+
+	.prompt {
+		color: var(--ink);
+		padding-left: 4px;
+	}
+
+	.bar {
+		padding: 0 2px;
+		color: var(--rule);
+	}
+
+	/* Le bouton radio couvre toute son étiquette (44 px de haut) ; seul le mot se voit. */
+	.option {
+		position: relative;
+		display: grid;
+		place-items: center;
+		min-height: 44px;
+		cursor: pointer;
+	}
+
+	.option input {
+		position: absolute;
+		inset: 0;
+		margin: 0;
+		opacity: 0;
+		cursor: pointer;
+	}
+
+	.option span {
+		padding: 1px 4px;
+		color: var(--muted);
+	}
+
+	.option input:checked + span {
+		background: var(--accent);
+		color: #ffffff;
+	}
+
+	.option input:focus-visible + span {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+	}
+
+	.echo {
+		display: grid;
+		flex: 1 1 280px;
+		min-width: 0;
+		margin: 0;
+		padding: 13px 0;
+		line-height: 18px;
+	}
+
+	.echo > * {
+		grid-area: 1 / 1;
+		text-wrap: pretty;
+	}
+
+	/* Une seule consigne visible : celle du pointeur s'il sait survoler, sinon celle du toucher. */
+	.pointer {
+		display: none;
+	}
+
+	@media (hover: hover) and (pointer: fine) {
+		.pointer {
+			display: inline;
+		}
+
+		.touch {
+			display: none;
+		}
+	}
+
+	/* L'écho de la substitution recouvre la consigne le temps de sa lecture. */
+	.msg {
+		background: var(--paper);
+		color: var(--ink);
+		opacity: 0;
+	}
+
+	.annot:has(input[value='code']:checked) .msg.a,
+	.annot:has(input[value='clair']:checked) .msg.b {
+		visibility: hidden;
+		opacity: 1;
+	}
+
+	/* ——— Le mouvement, pour qui n'en demande pas moins ———
+	   Rien ne bouge au chargement : seules des transitions, que seul un changement d'état déclenche.
+	   La bascule passe note après note dans le sens du clic (`--o`, de gauche à droite vers le code,
+	   à rebours vers le clair) : V sélectionne la face ligne à ligne, elle s'efface, puis la nouvelle
+	   se tape ligne par ligne en INSERT et le curseur se fait bloc à Échap. */
+	@media (prefers-reduced-motion: no-preference) {
+		.annot:has(input[value='code']:checked) .note {
+			--d: calc(var(--o) * 70ms);
+		}
+
+		.annot:has(input[value='clair']:checked) .note {
+			--d: calc((var(--n) - 1 - var(--o)) * 70ms);
+		}
+
+		.annot .note {
+			--swap: calc(var(--d) + 320ms);
+			transition: opacity 260ms ease;
+		}
+
+		.face > .ty:nth-child(2) {
+			--r: 1;
+		}
+
+		.face > .ty:nth-child(3) {
+			--r: 2;
+		}
+
+		.face > .ty:nth-child(4) {
+			--r: 3;
+		}
+
+		.annot .face {
+			transition:
+				opacity 0s var(--swap),
+				visibility 0s var(--swap);
+		}
+
+		/* La face qui arrive : chaque ligne tapée en 170 ms, l'une après l'autre. */
+		.annot:has(input[value='clair']:checked) .face.plain :is(.ty, .ty > .in),
+		.annot:has(input[value='code']:checked) .face.code :is(.ty, .ty > .in) {
+			transition: translate 170ms steps(18, end) calc(var(--d) + 340ms + var(--r, 0) * 180ms);
+		}
+
+		/* La face qui part : ramenée hors de vue une fois cachée. */
+		.annot:has(input[value='code']:checked) .face.plain :is(.ty, .ty > .in),
+		.annot:has(input[value='clair']:checked) .face.code :is(.ty, .ty > .in) {
+			transition: translate 0s var(--swap);
+		}
+
+		.annot:has(input[value='code']:checked) .face.plain .ty::before,
+		.annot:has(input[value='clair']:checked) .face.code .ty::before {
+			transition: opacity 0s calc(var(--d) + var(--r, 0) * 55ms);
+		}
+
+		.annot:has(input[value='clair']:checked) .face.plain .last > .in::after,
+		.annot:has(input[value='code']:checked) .face.code .last > .in::after {
+			--typed: calc(var(--d) + 510ms + var(--r, 0) * 180ms);
+			transition:
+				opacity 0s var(--typed),
+				scale 0s calc(var(--typed) + 400ms),
+				visibility 0s calc(var(--typed) + 1000ms);
+		}
+
+		.annot:has(input[value='code']:checked) .vline.a,
+		.annot:has(input[value='clair']:checked) .vline.b {
+			transition: visibility 0s 320ms;
+		}
+
+		.annot:has(input[value='code']:checked) .insert.a,
+		.annot:has(input[value='clair']:checked) .insert.b {
+			transition:
+				opacity 0s 320ms,
+				visibility 0s 1580ms;
+		}
+
+		.annot:has(input[value='code']:checked) .msg.a,
+		.annot:has(input[value='clair']:checked) .msg.b {
+			transition:
+				opacity 0s 1600ms,
+				visibility 0s 4200ms;
+		}
+
+		/* Le viseur : le trait se trace de la note à la pièce (620 ms), puis les équerres se referment
+		   sur elle avec un rebond, un balayage la parcourt et son indice se tape au-dessus. Tout
+		   s'éteint d'un coup quand la pièce n'est plus visée. */
+		.annot .seg::after {
+			transition: scale 240ms cubic-bezier(0.4, 0, 1, 1);
+		}
+
+		.annot .note[data-on] .s1::after {
+			transition: scale 140ms cubic-bezier(0.6, 0, 1, 1);
+		}
+
+		.annot .note[data-on] .s2::after {
+			transition: scale 300ms linear 140ms;
+		}
+
+		.annot .note[data-on] .s3::after {
+			transition: scale 180ms cubic-bezier(0, 0, 0.2, 1) 440ms;
+		}
+
+		.annot .num::before,
+		.annot .pin::after {
+			transition: opacity 200ms ease;
+		}
+
+		.annot .pin[data-on]::after {
+			transition-delay: 560ms;
+		}
+
+		.annot .t::after {
+			transition: scale 240ms ease;
+		}
+
+		.annot .note[data-on] .t::after {
+			transition: scale 600ms cubic-bezier(0.7, 0, 0.2, 1);
+		}
+
+		.annot .pin {
+			transition: opacity 200ms ease;
+		}
+
+		.annot .finder {
+			transition:
+				opacity 140ms ease,
+				scale 200ms ease;
+		}
+
+		.annot .finder[data-on] {
+			transition:
+				opacity 180ms ease 520ms,
+				scale 700ms
+					linear(0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%, 0.938 16.7%, 1.017, 1.077, 1.121, 1.149 24.3%, 1.159, 1.163, 1.161, 1.154 29.9%, 1.129 32.8%, 1.051 39.6%, 1.017 43.1%, 0.991, 0.977 51%, 0.974 53.8%, 0.975 57.1%, 0.997 69.8%, 1.003 76.9%, 1)
+					520ms;
+		}
+
+		.annot .finder[data-on] .scan::before {
+			transition: translate 900ms cubic-bezier(0.6, 0, 0.3, 1) 760ms;
+		}
+
+		.annot .finder[data-on] :is(.tag, .tag .in) {
+			transition: translate 420ms steps(14, end) 900ms;
+		}
+	}
+</style>

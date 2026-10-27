@@ -32,7 +32,8 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 <style>
 	.dive-track,
 	.dive-blue,
-	.dive-motto {
+	.dive-motto,
+	:global(.dive-mode .insert) {
 		display: none;
 	}
 
@@ -51,6 +52,10 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 			.dive {
 				/* 1,9 écran, comme les 1 500 px de la planche pour 800 de haut. */
 				--dive-length: 190svh;
+			}
+
+			/* Toute la page voit la ligne de temps : la barre d'état, qui la suit aussi, est hors de la Plongée. */
+			:global(body) {
 				timeline-scope: --dive;
 			}
 
@@ -95,6 +100,35 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 			/* La barre d'état reste au-dessus du bleu, comme sur la planche, et sous le Lancement (10). */
 			:global(.status) {
 				z-index: 2;
+			}
+
+			/* Elle passe en INSERT pendant le bleu, sur les plages de la planche (12–86 %). Les deux libellés
+			   se superposent et basculent d'un coup par l'opacité, que le compositeur joue. La Lunette ouverte
+			   cache INSERT : COMMAND l'emporte à toute étape de la scène. */
+			:global(.dive-mode) {
+				display: grid;
+			}
+
+			:global(.dive-mode > *) {
+				grid-area: 1 / 1;
+			}
+
+			:global(.dive-mode .insert) {
+				display: inline;
+				opacity: 0;
+				animation: auto dive-lit step-start;
+				animation-timeline: --dive;
+				animation-range: contain 12% contain 86%;
+			}
+
+			:global(.dive-mode .normal) {
+				animation: auto dive-out step-start;
+				animation-timeline: --dive;
+				animation-range: contain 12% contain 86%;
+			}
+
+			:global(.status[data-mode='command'] .dive-mode .insert) {
+				display: none;
 			}
 
 			.dive-hero {
@@ -300,6 +334,14 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 			@keyframes dive-out {
 				to {
 					opacity: 0;
+				}
+			}
+
+			/* Une étape d'un coup (`step-start`) plutôt qu'une opacité constante : Chromium ne compose pas une
+			   animation dont les étapes sont toutes égales. */
+			@keyframes dive-lit {
+				to {
+					opacity: 1;
 				}
 			}
 

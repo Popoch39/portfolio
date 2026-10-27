@@ -41,7 +41,7 @@ const RESUME_MS = 5000;
 const HOVER_LIFT = 0.4;
 const KEY_TRAVEL = 1.1;
 /** Ce que la scène annonce au clavier, dans la langue du document. */
-const HELP: Localized<string> = {
+const UI: Localized<string> = {
 	fr: 'Banc de duel, joueur A : tapez une lettre ou l’espace pour frapper, retour arrière pour effacer, Ctrl + retour arrière pour effacer le mot.',
 	en: 'Duel bench, player A: type a letter or a space to strike, Backspace to erase, Ctrl + Backspace to erase the word.',
 };
@@ -287,7 +287,7 @@ const mount: MountMotion = ({ locale, scene, svg, releve }) => {
 
 	const attributes = {
 		role: 'application',
-		'aria-label': HELP[locale],
+		'aria-label': UI[locale],
 	};
 	for (const [name, value] of Object.entries(attributes)) scene.setAttribute(name, value);
 	draw(asksForStillness());

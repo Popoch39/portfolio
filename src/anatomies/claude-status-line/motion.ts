@@ -78,7 +78,14 @@ const tell = (name: string, shown: Shown, none: string, percent: string, resetIn
 	shown.pct == null ? `${name} ${none}` : `${name} ${bar(shown.pct).shown}${percent}${shown.reset ? `, ${resetIn(shown.reset)}` : ''}`;
 
 // Tout ce que le mouvement écrit ou annonce, dans les deux langues : le chargeur dit laquelle.
-const TEXTS = {
+const UI: Localized<{
+	describe: (minute: number, source: Source, five: Shown, week: Shown) => string;
+	start: string;
+	stop: string;
+	keys: string;
+	ruler: string;
+	scene: string;
+}> = {
 	fr: {
 		describe: (minute: number, source: Source, five: Shown, week: Shown) => {
 			const window = (name: string, shown: Shown) => tell(name, shown, 'sans pourcentage', ' %', (reset) => `reset dans ${reset}`);
@@ -101,13 +108,13 @@ const TEXTS = {
 		ruler: 'Dial rail time, in minutes of the session.',
 		scene: 'Dial rail: drag to the right to move time forward.',
 	},
-} satisfies Localized<unknown>;
+};
 
 const mount: MountMotion = ({ locale, scene, svg, releve, timeline }) => {
-	const T = TEXTS[locale];
+	const ui = UI[locale];
 	const describe = (t: number) => {
 		const pose = poseAt(t);
-		return T.describe(Math.floor(pose.t), SOURCES[pose.lever], pose.output.five, pose.output.week);
+		return ui.describe(Math.floor(pose.t), SOURCES[pose.lever], pose.output.five, pose.output.week);
 	};
 	const at = (name: string) => svg.querySelector<SVGGElement>(`[data-csl="${name}"]`);
 	// La règle de la fiche prend le clavier à la scène : c'est elle, le curseur du temps.
@@ -258,7 +265,7 @@ const mount: MountMotion = ({ locale, scene, svg, releve, timeline }) => {
 		touring = on;
 		if (!tourButton) return;
 		tourButton.toggleAttribute('data-touring', on);
-		if (tourLabel) tourLabel.textContent = on ? T.stop : T.start;
+		if (tourLabel) tourLabel.textContent = on ? ui.stop : ui.start;
 		write(tourIcon, 'd', on ? 'M1.5 1h2.5v8H1.5zM6 1h2.5v8H6z' : 'M2 1l7 4-7 4z');
 	};
 
@@ -470,7 +477,7 @@ const mount: MountMotion = ({ locale, scene, svg, releve, timeline }) => {
 
 	const attributes: Record<string, string> = {
 		role: 'slider',
-		'aria-label': `${ruler ? T.ruler : T.scene} ${T.keys}`,
+		'aria-label': `${ruler ? ui.ruler : ui.scene} ${ui.keys}`,
 		'aria-valuemin': '0',
 		'aria-valuemax': String(LAST),
 		...(ruler && { tabindex: '0' }),

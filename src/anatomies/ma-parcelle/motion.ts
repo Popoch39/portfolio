@@ -55,7 +55,7 @@ interface Run {
 }
 
 /** Le libellé de la scène : ce que font ses touches. */
-const KEYS: Localized<string> = {
+const UI: Localized<string> = {
 	fr: 'Colonne de sondage : maintenir flèche bas pour forer les strates, flèche haut pour remonter ; Début ramène au plateau, Fin envoie au fond, Entrée relance le sondage.',
 	en: 'Coring rig: hold Down arrow to drill through the strata, Up arrow to raise the barrel; Home returns it to the plate, End sends it to the bottom, Enter runs the survey again.',
 };
@@ -448,7 +448,7 @@ const mount: MountMotion = ({ locale, scene, svg, releve }) => {
 	svg.style.setProperty('user-select', 'none');
 	const attributes = {
 		role: 'slider',
-		'aria-label': KEYS[locale],
+		'aria-label': UI[locale],
 		'aria-valuemin': '0',
 		'aria-valuemax': String(M.STRATA.length),
 		'aria-valuenow': '0',

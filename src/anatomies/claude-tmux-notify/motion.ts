@@ -6,6 +6,7 @@
 // concept ; le pointeur, le doigt et le clavier de la scène font de même à la demande.
 // `.mjs`, comme `layout.ts` : un seul exemplaire du cœur du kit avec `lathe.mjs`.
 import { dotsSvg, solidSvg, translateAlong } from '../../vendor/anatomy/iso-kit.mjs';
+import type { Localized } from '../../lib/i18n.ts';
 import type { MountMotion } from '../contract.ts';
 import { asksForStillness, follow, loop, spring, type Spring } from '../live.ts';
 import {
@@ -31,7 +32,7 @@ import {
 import { LEVELS, NVIM, POLL_MS, START_SIZE, WINDOWS, bytesOf, relevesOf, toastOf, type HookEvent, type Level } from './model.ts';
 
 /** Ce que la scène annonce, dans la langue du document : son aide au clavier, et la fiche branchée. */
-const T = {
+const UI: Localized<{ label: string; plugged: string }> = {
 	fr: {
 		label: 'Tableau d’annonciateur : flèches ou chiffres 1 à 5 pour choisir une fenêtre tmux, Entrée pour y faire attendre Claude ou acquitter son volet tombé, F pour une fin de tour.',
 		plugged: ', fiche branchée',
@@ -80,7 +81,7 @@ const clamp = (t: number) => Math.min(1, Math.max(0, t));
 
 const mount: MountMotion = ({ locale, scene, svg, releve }) => {
 	const releves = relevesOf(locale);
-	const spoken = T[locale];
+	const ui = UI[locale];
 	const q = (name: string) => svg.querySelector<SVGGElement>(`[data-ctn="${name}"]`);
 	const all = <T>(make: (index: number) => T) => Array.from({ length: N }, (_, index) => make(index));
 	const flaps = all((index) => q(`flap-${index}`));
@@ -427,7 +428,7 @@ const mount: MountMotion = ({ locale, scene, svg, releve }) => {
 	// --- Interaction ----------------------------------------------------------------------------
 	const describe = () => {
 		scene.setAttribute('aria-valuenow', String(chosen + 1));
-		scene.setAttribute('aria-valuetext', `${releves.hover(chosen, wins[chosen].down)}${activeJack() === chosen ? spoken.plugged : ''}`);
+		scene.setAttribute('aria-valuetext', `${releves.hover(chosen, wins[chosen].down)}${activeJack() === chosen ? ui.plugged : ''}`);
 		drawFocus();
 	};
 	const pause = () => {
@@ -530,7 +531,7 @@ const mount: MountMotion = ({ locale, scene, svg, releve }) => {
 
 	const attributes = {
 		role: 'slider',
-		'aria-label': spoken.label,
+		'aria-label': ui.label,
 		'aria-valuemin': '1',
 		'aria-valuemax': String(N),
 	};

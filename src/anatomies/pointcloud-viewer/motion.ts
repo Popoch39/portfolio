@@ -32,7 +32,7 @@ const CARD_LIFT = 6;
 const SPIN_RATE = 14;
 
 /** Le libellé de la scène, qui explique ses touches, dans la langue du document. */
-const LABEL: Localized<string> = {
+const UI: Localized<string> = {
 	fr: 'Scanner sur trépied : les flèches tournent la tête d’un huitième de tour (Maj : dix tours) ; en avant elle lit 79 points, en arrière le cliquet patine. Fin finit le bake, C change le mode de couleur, Entrée relance un bake.',
 	en: 'Scanner on a tripod: the arrow keys turn the head an eighth of a turn (Shift: ten turns); forwards it reads 79 points, backwards the ratchet slips. End finishes the bake, C changes the colour mode, Enter starts a new bake.',
 };
@@ -607,7 +607,7 @@ const mount: MountMotion = ({ locale, scene, svg, releve }) => {
 
 	const attributes = {
 		role: 'slider',
-		'aria-label': LABEL[locale],
+		'aria-label': UI[locale],
 		'aria-valuemin': '0',
 		'aria-valuemax': String(POINTS),
 		'aria-valuenow': String(POINTS),

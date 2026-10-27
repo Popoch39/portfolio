@@ -35,7 +35,7 @@ import {
 import { check, DRAWERS, FIELDS, notched, pageRequest, PROXIMITY, REFUSED, releveOf, REST_PAGE, rowsOf, TOTAL, type Request } from './model.ts';
 
 /** Ce que le mouvement annonce, dans la langue du document. */
-const T: Localized<{ keys: string; drawer: (n: number) => string }> = {
+const UI: Localized<{ keys: string; drawer: (n: number) => string }> = {
 	fr: {
 		keys: 'Meuble à fiches : les flèches choisissent un tiroir, Entrée ou Espace le tire et demande sa page, Échap le repousse.',
 		drawer: (n: number) => `Tiroir ${n}, page ${n}`,
@@ -79,7 +79,7 @@ const pagesAt = (count: number) => {
 };
 
 const mount: MountMotion = ({ locale, scene, svg, releve }) => {
-	const texts = T[locale];
+	const ui = UI[locale];
 	const releveOn = (req: Request) => releveOf(req, locale);
 	const atRest = releveOn(pageRequest(REST_PAGE));
 	const all = (selector: string) => [...svg.querySelectorAll<SVGElement>(selector)];
@@ -430,7 +430,7 @@ const mount: MountMotion = ({ locale, scene, svg, releve }) => {
 		state.flapTarget = 0;
 		if (state.chute.shown && state.chute.drop === 0) state.chute.shown = false;
 	};
-	const describe = (index: number) => texts.drawer(index + 1);
+	const describe = (index: number) => ui.drawer(index + 1);
 	const select = (index: number) => {
 		state.selected = index;
 		light(index);
@@ -576,7 +576,7 @@ const mount: MountMotion = ({ locale, scene, svg, releve }) => {
 
 	const attributes = {
 		role: 'slider',
-		'aria-label': texts.keys,
+		'aria-label': ui.keys,
 		'aria-valuemin': '1',
 		'aria-valuemax': String(DRAWERS),
 		'aria-valuenow': String(state.selected + 1),

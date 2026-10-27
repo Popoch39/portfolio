@@ -46,7 +46,7 @@ const stats = activityStats(githubSnapshot);
 			<Contact />
 		</div>
 	</main>
-	<StatusBar secondary={ui.statusContributions[locale](formatNumber(stats.total, locale))} />
+	<StatusBar secondary={ui.statusContributions[locale](formatNumber(stats.total, locale))} dive />
 </Layout>
 
 <style is:global>

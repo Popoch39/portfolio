@@ -4,7 +4,10 @@
 // réduit, dans un navigateur qui sait la jouer, sur le compositeur.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROJECTS, attr, blocks, css, elementAt, readFiche, readHome, tags, text, withoutBlocks } from './helpers/dist.mjs';
+import { registerHooks } from 'node:module';
+import { setImmediate } from 'node:timers/promises';
+import { brotliCompressSync, constants } from 'node:zlib';
+import { PROJECTS, attr, blocks, css, elementAt, elements, moduleGraph, readDist, readFiche, readHome, tags, text, withoutBlocks } from './helpers/dist.mjs';
 
 const MOTION = /@media \(prefers-reduced-motion:\s*no-preference\)/;
 const SUPPORTED = /@supports [^{]*\(animation-timeline:\s*view\(\)\)/;
@@ -13,11 +16,13 @@ const PLAYED = /@keyframes\s+dive-|\banimation[\w-]*\s*:[^;{}]*\bdive-|\b(?:anim
 /** Les seules propriétés que le compositeur anime seul. */
 const COMPOSITED = new Set(['transform', 'translate', 'scale', 'opacity']);
 
+/** La devise de chaque langue, ligne à ligne (spec #70) : l'accent de l'accroche, coupé à un endroit naturel. */
+const MOTTO = { fr: ['de bout', 'en bout'], en: ['end', 'to end'] };
+
 /**
  * Les animations `dive-` de chaque règle, avec leur plage sur la scène en pourcentage `[début, fin]` :
  * la n-ième plage de `animation-range` va à la n-ième animation du raccourci (la liste se répète
- * si elle est plus courte), et le minifieur
- * écrit `contain 0%` sans son pourcentage.
+ * si elle est plus courte), et le minifieur écrit `contain 0%` sans son pourcentage.
  */
 const animations = (styles) =>
 	[...styles.matchAll(/([^{}]+)\{([^{}]*\banimation\s*:[^;{}]*\bdive-[^{}]*)\}/g)].map(([, selector, body]) => {
@@ -31,6 +36,16 @@ const animations = (styles) =>
 
 /** L'élément de la scène : celui qui s'épingle, l'en-tête et le héros dedans. */
 const sceneOf = (html) => elementAt(html, html.search(/<div class="dive-scene\b/));
+
+/** Le segment de mode de la barre d'état : le premier segment, dont la Lunette fait COMMAND. */
+const modeOf = (footer) => elementAt(footer, footer.search(/<span class="seg mode state\b/));
+
+/** Le script module de la page, en chemin servi. */
+const moduleOf = (html) => attr(tags(html, 'script').find((t) => attr(t, 'type') === 'module') ?? '', 'src') ?? '';
+/** Les morceaux qu'un code importe à la demande (`import("./y.js")`), en chemins servis. */
+const onDemand = (code) => [...code.matchAll(/import\(\s*["'`]\.\/([\w.-]+\.js)["'`]\s*\)/g)].map((m) => `/_astro/${m[1]}`);
+/** Le repli de Firefox : ce que le module de la page importe à la demande pour régler les animations `dive-`. */
+const fallbacksOf = (html) => onDemand(moduleGraph(moduleOf(html)).code).filter((path) => readDist(path.slice(1)).includes('dive-'));
 
 for (const { locale, projects } of [
 	{ locale: 'fr', projects: 'projets' },
@@ -54,6 +69,25 @@ for (const { locale, projects } of [
 		assert.ok(blue, 'bleu absent de la scène');
 		assert.equal(attr(blue, 'aria-hidden'), 'true');
 		assert.equal(text(elementAt(scene, scene.indexOf(blue))), '');
+	});
+
+	test(`${locale} : la devise sur le bleu est l’accent de l’accroche, en deux lignes, décorative`, () => {
+		const scene = sceneOf(html) ?? '';
+		const opening = tags(scene, 'div').find((tag) => /\bclass="dive-motto\b/.test(tag));
+		assert.ok(opening, 'devise absente de la scène');
+		assert.equal(attr(opening, 'aria-hidden'), 'true');
+		const motto = elementAt(scene, scene.indexOf(opening));
+		const lines = [...motto.matchAll(/<span class="dive-line\b[^>]*>([\s\S]*?)<\/span>/g)].map((m) => text(m[1]));
+		assert.deepEqual(lines, ['-- INSERT --', ...MOTTO[locale]]);
+		const emphasis = text(elements(html, 'p').find((p) => /\bclass="lede\b/.test(p)).match(/<em\b[^>]*>([\s\S]*?)<\/em>/)[1]);
+		assert.equal(MOTTO[locale].join(' '), emphasis, 'devise différente de l’accent de l’accroche');
+	});
+
+	test(`${locale} : en mouvement réduit ou sans prise en charge, la devise reste cachée`, () => {
+		for (const outside of [withoutBlocks(styles, MOTION), withoutBlocks(styles, SUPPORTED)]) {
+			const hidden = [...outside.matchAll(/([^{}]*)\{display:none\}/g)].flatMap(([, selector]) => selector.split(','));
+			assert.ok(hidden.some((selector) => /^\.dive-motto\b/.test(selector.trim())), 'devise visible');
+		}
 	});
 
 	test(`${locale} : la Plongée ne joue qu’en mouvement non réduit, dans un navigateur qui sait la jouer`, () => {
@@ -106,6 +140,21 @@ for (const { locale, projects } of [
 		for (const { selector, name, range } of fades) assert.ok(range[0] >= end, `${selector.trim()} : ${name} commence à ${range[0]} %, avant la fin de la remontée (${end} %)`);
 	});
 
+	// Le passage NORMAL → INSERT est décoratif (spec #68) : rien ne l'annonce, et un lecteur d'écran lit
+	// le mode tel qu'il est hors de la scène.
+	test(`${locale} : le segment de mode de la barre porte NORMAL, INSERT et COMMAND, sans région live`, () => {
+		const [footer] = elements(html, 'footer');
+		const segment = modeOf(footer ?? '');
+		assert.ok(segment, 'segment de mode absent');
+		for (const mode of ['NORMAL', 'INSERT', 'COMMAND']) assert.ok(text(segment).includes(mode), `${mode} absent`);
+		for (const tag of tags(segment, 'span')) {
+			assert.equal(attr(tag, 'aria-live'), undefined, tag);
+			assert.equal(attr(tag, 'role'), undefined, tag);
+		}
+		const insert = tags(segment, 'span').find((tag) => text(elementAt(segment, segment.indexOf(tag))) === 'INSERT');
+		assert.equal(attr(insert ?? '', 'aria-hidden'), 'true', 'INSERT lu par les lecteurs d’écran');
+	});
+
 	// Le minifieur sait replier la ligne de temps dans le raccourci, ou écrire une durée nulle : Chrome
 	// refuse le premier en entier, et la seconde jouerait l'animation d'un coup.
 	test(`${locale} : chaque animation de la Plongée suit la scène, sous une forme que Chrome accepte`, () => {
@@ -117,13 +166,103 @@ for (const { locale, projects } of [
 			assert.doesNotMatch(body, /\banimation-duration\s*:[^;]*\b0m?s\b/, `${selector.trim()} : durée nulle`);
 		}
 	});
+
+	// Firefox joue la scène par un repli, que Chrome et Safari ne téléchargent pas : l'accueil garde son
+	// seul module, et le repli n'est ni dans le HTML ni préchargé.
+	test(`${locale} : un seul module au chargement, le repli n’arrive qu’à la demande`, () => {
+		assert.equal(tags(html, 'script').filter((t) => attr(t, 'type') === 'module').length, 1, 'un seul script module');
+		const fallbacks = fallbacksOf(html);
+		assert.equal(fallbacks.length, 1, `replis : ${fallbacks.join(', ')}`);
+		assert.ok(!moduleGraph(moduleOf(html)).paths.includes(fallbacks[0]), 'repli chargé avec le module');
+		assert.ok(!html.includes(fallbacks[0].slice('/_astro/'.length)), 'repli dans le HTML');
+	});
+
+	// Les tickets de la Plongée ajoutent chacun leurs animations : le repli les prend toutes par leur
+	// préfixe, sans liste à tenir, et reste de quelques centaines d'octets sur le réseau (Brotli qualité
+	// 4, comme le budget des pages).
+	test(`${locale} : le repli règle les animations dive- sans en nommer aucune, en moins de 1 000 octets`, () => {
+		const code = readDist(fallbacksOf(html)[0]?.slice(1) ?? '');
+		for (const name of blocks(styles, /@keyframes\s+dive-[\w-]+/).map((block) => block.match(/@keyframes\s+([\w-]+)/)[1])) {
+			assert.ok(!code.includes(name), `${name} nommée par le repli`);
+		}
+		const weight = brotliCompressSync(code, { params: { [constants.BROTLI_PARAM_QUALITY]: 4 } }).length;
+		assert.ok(weight <= 1000, `repli de ${weight} o`);
+	});
 }
+
+/** Les modules que les morceaux du site demandent, en chemins servis ; le repli n'est pas exécuté. */
+const requested = [];
+const fallbackFiles = new Set(fallbacksOf(readHome()).map((path) => path.slice('/_astro/'.length)));
+registerHooks({
+	resolve(specifier, context, next) {
+		if (!context.parentURL?.includes('/dist/_astro/')) return next(specifier, context);
+		requested.push(specifier);
+		return fallbackFiles.has(specifier.replace(/^\.\//, '')) ? { url: 'data:text/javascript,', shortCircuit: true } : next(specifier, context);
+	},
+});
+
+let runs = 0;
+/**
+ * Exécute le module de l'accueil dans un faux navigateur. `supported` : les animations pilotées par le
+ * défilement ; `reduced` : le mouvement réduit. Les images ne passent que quand le test les rend
+ * (`frame`) ; `loaded` dit si le repli a été demandé.
+ */
+async function run({ supported, reduced }) {
+	const frames = [];
+	const before = requested.length;
+	Object.assign(globalThis, {
+		CSS: { supports: (...condition) => (/animation-timeline|animation-range|timeline-scope|view-timeline/.test(condition.join(':')) ? supported : false) },
+		matchMedia: (query) => ({
+			matches: /prefers-reduced-motion\s*(?::\s*reduce\s*)?\)/.test(query) ? reduced : /no-preference/.test(query) ? !reduced : false,
+			addEventListener() {},
+			removeEventListener() {},
+		}),
+		requestAnimationFrame: (callback) => frames.push(callback),
+		addEventListener() {},
+		document: {
+			createElement: () => ({ relList: { supports: () => true } }),
+			querySelector: () => null,
+			querySelectorAll: () => [],
+		},
+	});
+	await import(`${new URL(`../dist${moduleOf(readHome())}`, import.meta.url)}?${++runs}`);
+	await setImmediate();
+	return {
+		loaded: () => requested.slice(before).some((specifier) => fallbackFiles.has(specifier.replace(/^\.\//, ''))),
+		frame: () => frames.splice(0).forEach((callback) => callback(performance.now())),
+	};
+}
+
+test('le repli n’est demandé que sans animations pilotées par le défilement et hors mouvement réduit, après le premier rendu', async () => {
+	for (const [browser, options] of [
+		['Chrome', { supported: true, reduced: false }],
+		['Firefox en mouvement réduit', { supported: false, reduced: true }],
+	]) {
+		const page = await run(options);
+		for (let i = 0; i < 3; i++) {
+			page.frame();
+			await setImmediate();
+		}
+		assert.equal(page.loaded(), false, browser);
+	}
+
+	const firefox = await run({ supported: false, reduced: false });
+	assert.equal(firefox.loaded(), false, 'demandé avant la première image');
+	// Une image est rendue après ses rappels `requestAnimationFrame` : le repli attend la tâche suivante.
+	firefox.frame();
+	await Promise.resolve();
+	assert.equal(firefox.loaded(), false, 'demandé avant que la première image soit peinte');
+	await new Promise((resolve) => setTimeout(resolve, 20));
+	assert.equal(firefox.loaded(), true, 'repli jamais demandé');
+});
 
 test('les fiches restent sans Plongée', () => {
 	for (const locale of ['fr', 'en']) {
 		for (const { slug } of PROJECTS) {
 			const html = readFiche(slug, locale);
 			assert.equal(sceneOf(html), undefined, `${locale} ${slug} : scène`);
+			const [footer] = elements(html, 'footer');
+			assert.doesNotMatch(text(modeOf(footer ?? '') ?? ''), /INSERT/, `${locale} ${slug} : INSERT dans la barre`);
 			assert.doesNotMatch(css(html), PLAYED, `${locale} ${slug} : CSS de la Plongée`);
 		}
 	}

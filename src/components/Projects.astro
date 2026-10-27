@@ -79,17 +79,21 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 	// Par sa classe : l'ancre de la section change avec la langue.
 	const section = document.querySelector<HTMLElement>('section.projects');
 	const a3 = matchMedia(section?.querySelector('[data-panel] source')?.getAttribute('media') ?? 'not all');
-	const start = (section: HTMLElement) => void import('./preview.ts').then(({ preview }) => preview(section));
-	if (section && a3.matches) start(section);
-	else if (section) {
-		// Une fenêtre élargie après coup passe en A3 : l'aperçu démarre à ce moment-là.
+	if (section) {
+		// Tout de suite en A3, ou quand une fenêtre élargie après coup y passe.
 		const wake = () => {
 			if (!a3.matches) return;
 			a3.removeEventListener('change', wake);
-			start(section);
+			void import('./preview.ts').then((module) => module.preview(section));
 		};
 		a3.addEventListener('change', wake);
+		wake();
 	}
+
+	// La Plongée sans animations pilotées par le défilement (Firefox) : son repli, jamais en mouvement
+	// réduit, n'est demandé qu'une fois la première image peinte, pour ne pas la retarder (ADR 0009).
+	if (!CSS.supports('animation-timeline:view()') && !matchMedia('(prefers-reduced-motion)').matches)
+		requestAnimationFrame(() => setTimeout(() => import('./dive.ts')));
 </script>
 
 <style>

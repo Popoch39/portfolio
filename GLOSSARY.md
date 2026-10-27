@@ -121,3 +121,13 @@ _Avoid_ : action, raccourci
 La partie droite de la Lunette : l'Aperçu du projet sélectionné, ou l'aide de la commande.
 _EN_ : Pane
 _Avoid_ : preview, panneau
+
+**Portée** :
+Les pages où une commande existe (l'accueil, les fiches, les figures à temps). Hors de sa portée, elle n'est pas listée et répond `E492`.
+_EN_ : Scope
+_Avoid_ : contexte, disponibilité
+
+**Écho** :
+Le message qu'affiche la barre d'état à la place du chemin, quelques secondes, après une commande : une information (copie de l'adresse) ou une erreur (`E492`). Les lecteurs d'écran l'annoncent.
+_EN_ : Echo
+_Avoid_ : toast, notification, message

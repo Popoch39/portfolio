@@ -118,7 +118,7 @@ _EN_ : Command
 _Avoid_ : action, raccourci
 
 **Volet** :
-La partie droite de la Lunette : l'Aperçu du projet sélectionné, ou l'aide de la commande.
+La partie droite de la Lunette : l'Aperçu du projet sélectionné, la note de la pièce sélectionnée (`:pieces`), ou l'aide de la commande.
 _EN_ : Pane
 _Avoid_ : preview, panneau
 

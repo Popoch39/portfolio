@@ -26,6 +26,15 @@ export default defineConfig({
 		// `:version` de la Lunette : le commit, la date du build et la version d'Astro ; `:Lazy` : celles
 		// d'Astro et de TypeScript.
 		define: buildDefines(['astro', 'typescript']),
+		build: {
+			rollupOptions: {
+				output: {
+					// L'écouteur de la Lunette et l'aide au préchargement dans un seul morceau : un aller-retour de
+					// moins sur le chemin critique de l'accueil.
+					manualChunks: (id) => (id.includes('preload-helper') || id.includes('/lunette/keys') ? 'amorce' : undefined),
+				},
+			},
+		},
 	},
 	// Polices réduites à ce que le site affiche, régénérées par `pnpm build && pnpm polices` (ADR 0005).
 	fonts: [

@@ -250,6 +250,18 @@ test(':set lecture=code règle la lecture des notes ; :set view=plain aussi, en 
 	);
 });
 
+test(':help set cite la lecture des notes là où elle existe, dans la langue de la page', () => {
+	const setHelp = (context) => run('help set', context).pane.text;
+	assert.match(setHelp(ficheFigure), /:set lecture=clair\|code\b/);
+	assert.match(setHelp(ficheEn), /:set view=plain\|code\b/);
+	// L'index de :help seul dit la même chose.
+	assert.equal(run('help', ficheEn).pane.commands.find((command) => command.name === 'set').text, setHelp(ficheEn));
+	for (const context of [accueil, home, ficheTrekker]) {
+		assert.match(setHelp(context), /:set lang=/, context.locale);
+		assert.doesNotMatch(setHelp(context), /lecture|view/, `${context.locale} : lecture citée sans figure`);
+	}
+});
+
 test(':play lance le tour de la règle de temps, :pause l’arrête', () => {
 	assert.deepEqual(run(':play', ficheTemps), { kind: 'tour', play: true });
 	assert.deepEqual(run('pause', ficheTemps), { kind: 'tour', play: false });

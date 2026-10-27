@@ -91,7 +91,8 @@ interface Command {
 	aliases?: string[];
 	/** Où la commande a un sens ; absente, partout. Hors de sa portée, elle n'existe pas. */
 	scope?: (context: Context) => boolean;
-	help: Localized<string>;
+	/** Une aide qui dépend de la page cite ce qui n'existe que sur certaines (la lecture des notes). */
+	help: Localized<string> | ((context: Context) => string);
 	/**
 	 * Une liste à choisir : Tab sur la commande y passe, Entrée aussi si la commande ne se lance pas
 	 * seule. `unknown` est l'erreur d'une valeur qui ne répond à aucun choix ; absente ou sans erreur (une
@@ -225,9 +226,18 @@ const yankMail = ({ locale }: Context): Action => {
 	};
 };
 
-const setHelp: Localized<string> = {
-	fr: 'Change une option : :set lang=en ouvre cette page en anglais.',
-	en: 'Sets an option: :set lang=fr opens this page in French.',
+/** Sur une figure, l'aide cite aussi la lecture des notes, sous son nom dans la langue de la page. */
+const setHelp = ({ figure, locale }: Context) => {
+	const lecture = `:set ${lectureOf.clair.label[locale]}|${lectureOf.code.label[locale].split('=')[1]}`;
+	return figure
+		? {
+				fr: `Change une option : :set lang=en ouvre cette page en anglais, ${lecture} lit les notes de la figure en clair ou en code.`,
+				en: `Sets an option: :set lang=fr opens this page in French, ${lecture} reads the figure notes in plain words or as code.`,
+			}[locale]
+		: {
+				fr: 'Change une option : :set lang=en ouvre cette page en anglais.',
+				en: 'Sets an option: :set lang=fr opens this page in French.',
+			}[locale];
 };
 
 /**
@@ -311,14 +321,14 @@ const commands: Command[] = [
 		argument: {
 			title: { fr: 'Sections', en: 'Sections' },
 			enter: { fr: 'aller à la section', en: 'go to the section' },
-			choices: ({ locale }) =>
+			choices: (context) =>
 				sectionKeys.map((key, i) => ({
-					label: sections[key].label[locale],
-					others: inOthers(locale, (other) => sections[key].label[other]),
+					label: sections[key].label[context.locale],
+					others: inOthers(context.locale, (other) => sections[key].label[other]),
 					aliases: namesOf(sectionCommands[i]),
-					detail: `:${sections[key].id[locale]}`,
-					pane: helpOf(sectionCommands[i], locale),
-					action: go(sectionPath(key, locale)),
+					detail: `:${sections[key].id[context.locale]}`,
+					pane: helpOf(sectionCommands[i], context),
+					action: go(sectionPath(key, context.locale)),
 				})),
 		},
 	},
@@ -410,7 +420,7 @@ const commands: Command[] = [
 					.map(
 						(locale): Choice => ({
 							label: `lang=${locale}`,
-							pane: { kind: 'help', name: 'set', text: setHelp[context.locale] },
+							pane: { kind: 'help', name: 'set', text: setHelp(context) },
 							action: go(pathOf(context.page, locale)),
 						}),
 					),
@@ -514,7 +524,7 @@ const commands: Command[] = [
 			// Les commandes de la page seulement : une commande hors de portée n'existe pas, son aide non plus.
 			choices: (context) =>
 				inScope(context).map((command) => {
-					const pane = helpOf(command, context.locale);
+					const pane = helpOf(command, context);
 					return { label: pane.name, others: othersOf(command, context.locale), aliases: namesOf(command), pane, action: { kind: 'show', pane } };
 				}),
 			unknown: (value) => `E149: Sorry, no help for ${value}`,
@@ -525,7 +535,7 @@ const commands: Command[] = [
 				kind: 'help',
 				name: 'help',
 				text: indexText[context.locale],
-				commands: inScope(context).map((command) => helpOf(command, context.locale)),
+				commands: inScope(context).map((command) => helpOf(command, context)),
 			},
 		}),
 	},
@@ -541,7 +551,11 @@ const namesOf = (command: Command) => [...locales.map((locale) => nameOf(command
 /** Ses noms dans les autres langues, que le filtre accepte aussi (`career` sur une page française). */
 const othersOf = (command: Command, locale: Locale) => inOthers(locale, (other) => nameOf(command, other));
 
-const helpOf = (command: Command, locale: Locale) => ({ kind: 'help' as const, name: nameOf(command, locale), text: command.help[locale] });
+const helpOf = (command: Command, context: Context) => ({
+	kind: 'help' as const,
+	name: nameOf(command, context.locale),
+	text: typeof command.help === 'function' ? command.help(context) : command.help[context.locale],
+});
 
 const inScope = (context: Context) => commands.filter((command) => command.scope?.(context) ?? true);
 
@@ -666,7 +680,7 @@ export function list(line: string, context: Context): Listing {
 		entries: (argument === undefined ? filter(available, clean(line)) : []).map(({ command, label, hits }) => ({
 			label,
 			hits,
-			pane: helpOf(command, locale),
+			pane: helpOf(command, context),
 			line: command.argument ? `${label} ` : label,
 			action: command.run?.(context),
 		})),

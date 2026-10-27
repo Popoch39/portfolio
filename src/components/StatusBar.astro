@@ -166,6 +166,12 @@ const { path = '~/louis/portfolio.md', secondary, position = ui.statusBottom[loc
 		color: var(--on-ink-muted);
 	}
 
+	/* Une touche en attente se lit en clair et en gras ; la commande de la Lunette ouverte reste grise. */
+	.status:not([data-mode='command']) .showcmd {
+		color: var(--bg);
+		font-weight: 700;
+	}
+
 	/* Le showcmd prend la place du segment de droite tant qu'il a quelque chose à montrer. */
 	@media (min-width: 600px) {
 		.secondary,

@@ -41,6 +41,21 @@ for (const version of versions) {
 		}
 	});
 
+	// Les échos (erreur E492, copie de l'adresse) s'écrivent dans une région live présente dès le
+	// premier rendu, vide : une région ajoutée en même temps que son message ne serait pas annoncée.
+	test(`${version.locale} : la barre d’état de chaque page a la région d’écho, live polie et vide`, () => {
+		for (const { path, html } of pages) {
+			const [footer] = elements(html, 'footer');
+			const regions = tags(footer ?? '', 'span').filter((t) => attr(t, 'aria-live') !== undefined);
+			assert.equal(regions.length, 1, `${path} : une région d’écho`);
+			const [region] = regions;
+			assert.equal(attr(region, 'aria-live'), 'polite', path);
+			assert.equal(attr(region, 'role'), 'status', path);
+			assert.equal(attr(region, 'aria-hidden'), undefined, path);
+			assert.ok(footer.includes(`${region}</span>`), `${path} : région d’écho non vide`);
+		}
+	});
+
 	test(`${version.locale} : chaque page importe la Lunette à la demande, sans la référencer ni la précharger`, () => {
 		for (const { path, html } of pages) {
 			const chunks = lunetteOf(html);

@@ -92,6 +92,73 @@ test('run résout une ligne entière, ou répond E492', () => {
 	assert.deepEqual(run('nimporte', accueil), { error: 'E492: Not an editor command: nimporte' });
 });
 
+const names = (context) => list('', context).entries.map((entry) => entry.label);
+
+test('portée : une commande de fiche n’existe pas sur l’accueil, et y répond E492', () => {
+	for (const context of [accueil, home]) {
+		assert.ok(!names(context).includes('bn'), `${context.locale} : :bn listée sur l’accueil`);
+		assert.deepEqual(run('bn', context), { error: 'E492: Not an editor command: bn' });
+		assert.deepEqual(run(':bp', context), { error: 'E492: Not an editor command: bp' });
+	}
+	assert.ok(names(ficheTrekker).includes('bn'));
+	assert.ok(names(ficheTrekker).includes('bp'));
+	// La boucle de « Autres projets » : après la sixième fiche, la première.
+	assert.deepEqual(run('bn', ficheTrekker), { kind: 'go', path: '/projets/ma-parcelle/' });
+	assert.deepEqual(run('bn', { page: { kind: 'fiche', slug: 'ma-parcelle' }, locale: 'en' }), { kind: 'go', path: '/en/projects/typomaniac/' });
+	assert.deepEqual(run('bp', ficheTrekker), { kind: 'go', path: '/projets/pointcloud-viewer/' });
+});
+
+test(':help e montre l’aide de :e dans le Volet, dans la langue de la page', () => {
+	assert.deepEqual(run('help e', accueil), {
+		kind: 'show',
+		pane: { kind: 'help', name: 'e', text: 'Ouvre la fiche d’un projet : :e trekker.' },
+	});
+	assert.deepEqual(run(':help e', home), {
+		kind: 'show',
+		pane: { kind: 'help', name: 'e', text: 'Opens a project page: :e trekker.' },
+	});
+	// Le nom long de Vim, et l'abréviation de :help.
+	assert.deepEqual(run('h edit', accueil), run('help e', accueil));
+	// Une commande hors de portée n'a pas d'aide, comme un sujet inconnu de Vim.
+	assert.deepEqual(run('help bn', accueil), { error: 'E149: Sorry, no help for bn' });
+	assert.deepEqual(run('help nimporte', ficheTrekker), { error: 'E149: Sorry, no help for nimporte' });
+});
+
+test(':help attend une commande : la liste de la page, avec l’aide de chacune', () => {
+	const listing = list('help ', ficheTrekker);
+	assert.equal(listing.title, 'Commandes');
+	assert.equal(listing.prompt, ':help');
+	assert.equal(listing.argument, '');
+	assert.deepEqual(
+		listing.entries.map((entry) => entry.label),
+		names(ficheTrekker),
+	);
+	const [e] = list('help e', home).entries;
+	assert.equal(e.label, 'e');
+	assert.equal(e.line, 'help e');
+	assert.deepEqual(e.pane, { kind: 'help', name: 'e', text: 'Opens a project page: :e trekker.' });
+	assert.deepEqual(e.action, { kind: 'show', pane: e.pane });
+	assert.ok(!list('help ', accueil).entries.some((entry) => entry.label === 'bn'));
+});
+
+test(':help seul liste dans le Volet les commandes de la page ; Tab passe à son argument', () => {
+	for (const context of [accueil, home, ficheTrekker]) {
+		const result = run('help', context);
+		assert.equal(result.kind, 'show');
+		assert.equal(result.pane.name, 'help');
+		assert.deepEqual(
+			result.pane.commands.map((command) => command.name),
+			names(context),
+		);
+		const e = result.pane.commands.find((command) => command.name === 'e');
+		assert.equal(e.text, context.locale === 'fr' ? 'Ouvre la fiche d’un projet : :e trekker.' : 'Opens a project page: :e trekker.');
+		// Dans une Lunette vide, Entrée sur help lance la liste, Tab passe à l'argument.
+		const help = list('', context).entries.find((entry) => entry.label === 'help');
+		assert.deepEqual(help.action, result);
+		assert.equal(help.line, 'help ');
+	}
+});
+
 test('le contexte d’une page se lit dans son adresse', () => {
 	assert.deepEqual(contextAt('/'), accueil);
 	assert.deepEqual(contextAt('/en/'), home);

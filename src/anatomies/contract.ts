@@ -73,13 +73,13 @@ export type Tech =
 /**
  * La note d'une pièce, posée autour de la figure de la fiche et reliée à elle par un trait. Elle se
  * lit de deux façons : en clair (ce que fait la pièce, sans la métaphore de la machine) ou en code
- * (le symbole qui la porte et sa signature).
+ * (le symbole qui la porte et sa signature). Indice et symbole sont du code : une seule langue.
  */
-export interface Note {
+export interface Note<S extends Side = 'module'> {
 	/** Ce que fait la pièce, en commençant par un verbe : « Choisir la source ». 28 caractères au plus. */
-	title: string;
+	title: Text<S>;
 	/** Une phrase en clair, concrète, sans le vocabulaire de la machine. 90 caractères au plus. */
-	text: string;
+	text: Text<S>;
 	/** Les technologies en jeu, une ou deux, dessinées par leur logo. */
 	tech: readonly Tech[];
 	/** Indice technique court, en mono, à côté des logos : `stdin`, `fetch`. 18 caractères au plus. */
@@ -100,7 +100,7 @@ export interface Piece<S extends Side = 'module'> {
 	role: Text<S>;
 	code: CodeRef;
 	/** Sa note autour de la figure de la fiche. */
-	note: Note;
+	note: Note<S>;
 	/** La pièce maîtresse, seule en bleu au repos : une seule par anatomie. */
 	master?: true;
 }

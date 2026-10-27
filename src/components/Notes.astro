@@ -15,6 +15,7 @@ import type { Piece, Signature } from '../anatomies/contract';
 import type { AnnotationLayout } from '../anatomies/annotations';
 import { signatureLines } from '../anatomies/signature';
 import { logoOf } from '../anatomies/tech';
+import { localeOf, ui } from '../lib/i18n';
 
 interface Props {
 	layout: AnnotationLayout;
@@ -31,13 +32,14 @@ interface Props {
 }
 
 const { layout, svg, motion, phoneCrop = false, codeUrl, signatureOf, consignes, releve } = Astro.props;
+const locale = localeOf(Astro.currentLocale);
 const { notes, tall } = layout;
 /** Lignes de signature d'une note en code : trois, la hauteur d'une note en clair. */
 const SIGNATURE_LINES = 3;
 const fileOf = (piece: Piece<'page'>) => piece.code.path.split('/').pop();
 const master = notes.find(({ piece }) => piece.master)?.piece;
 const techs = [...new Set(notes.flatMap(({ piece }) => piece.note.tech))];
-const substitutions = `${notes.length} substitutions sur ${notes.length} lignes`;
+const substitutions = ui.substitutions[locale](notes.length);
 
 // La géométrie de la page : celle de la scène, puis de chaque note, marque et viseur.
 const geometry = [
@@ -91,7 +93,7 @@ const geometry = [
 				}
 			</div>
 		</div>
-		<ol class="notes" aria-label="Notes de la figure">
+		<ol class="notes" aria-label={ui.figureNotes[locale]}>
 			{
 				notes.map(({ piece, number, classes }) => {
 					const [first, last] = piece.code.lines;
@@ -116,7 +118,7 @@ const geometry = [
 									<span class="face code">
 										<span class="ty">
 											<span class="in">
-												<a class="ref" href={codeUrl(piece)} aria-label={`Code : ${piece.code.path}, lignes ${first} à ${last}`}>
+												<a class="ref" href={codeUrl(piece)} aria-label={ui.noteCode[locale](piece.code.path, first, last)}>
 													L{first}–{last} ↗
 												</a>
 											</span>
@@ -176,23 +178,23 @@ const geometry = [
 			<span class="m insert b">INSERT</span>
 		</span>
 		<span class="seg-sl file" aria-hidden="true">{master && fileOf(master)}</span>
-		<span class="seg-sl reading" aria-hidden="true">lecture=<span class="values"><span class="v plain">clair</span><span class="v code">code</span></span></span>
+		<span class="seg-sl reading" aria-hidden="true">{ui.viewOption[locale]}=<span class="values"><span class="v plain">{ui.viewPlain[locale]}</span><span class="v code">{ui.viewCode[locale]}</span></span></span>
 		<span class="fill"></span>
 		<span class="seg-sl releve"><span class="dot" aria-hidden="true"></span><span data-releve>{releve}</span></span>
-		<span class="seg-sl count" aria-hidden="true">{notes.length} notes</span>
+		<span class="seg-sl count" aria-hidden="true">{ui.noteCount[locale](notes.length)}</span>
 	</div>
 	<div class="mono cmd">
 		<fieldset class="lecture">
-			<legend class="sr-only">Lecture des notes</legend>
-			<span class="prompt" aria-hidden="true">:set lecture=</span>
+			<legend class="sr-only">{ui.noteView[locale]}</legend>
+			<span class="prompt" aria-hidden="true">:set {ui.viewOption[locale]}=</span>
 			<label class="option">
 				<input type="radio" name={`lecture-${motion}`} value="clair" autocomplete="off" checked />
-				<span>clair</span>
+				<span>{ui.viewPlain[locale]}</span>
 			</label>
 			<span class="bar" aria-hidden="true">|</span>
 			<label class="option">
 				<input type="radio" name={`lecture-${motion}`} value="code" autocomplete="off" />
-				<span>code</span>
+				<span>{ui.viewCode[locale]}</span>
 			</label>
 		</fieldset>
 		<p class="echo">

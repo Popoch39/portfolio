@@ -80,7 +80,12 @@ function inLocale(content: AnatomyContent, locale: Locale): AnatomyContent<'page
 		releve: text(content.releve),
 		caption: text(content.caption),
 		label: text(content.label),
-		pieces: content.pieces.map((piece) => ({ ...piece, name: text(piece.name), role: text(piece.role) })),
+		pieces: content.pieces.map((piece) => ({
+			...piece,
+			name: text(piece.name),
+			role: text(piece.role),
+			note: { ...piece.note, title: text(piece.note.title), text: text(piece.note.text) },
+		})),
 		seo: { title: text(seo.title), description: text(seo.description) },
 		timeline: timeline && {
 			...timeline,

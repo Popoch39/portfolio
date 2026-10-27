@@ -111,8 +111,11 @@ export const pieces: Piece[] = [
 		role: { fr: 'Reçoit la fiche de demande ; la serrure exige une session.', en: 'Takes in the request card; the lock demands a session.' },
 		code: { path: 'apps/api/src/modules/treks/treks.controller.ts', lines: [8, 24] },
 		note: {
-			title: 'Recevoir la demande',
-			text: 'Reçoit la demande de liste ; sans session ouverte, l’API répond 401.',
+			title: { fr: 'Recevoir la demande', en: 'Take the request' },
+			text: {
+				fr: 'Reçoit la demande de liste ; sans session ouverte, l’API répond 401.',
+				en: 'Takes in the list request; with no open session, the API answers 401.',
+			},
 			tech: ['nestjs'],
 			clue:'GET /api/v1/treks',
 			symbol: 'TreksController',
@@ -127,8 +130,11 @@ export const pieces: Piece[] = [
 		},
 		code: { path: 'packages/contracts/src/treks.ts', lines: [126, 185] },
 		note: {
-			title: 'Vérifier chaque paramètre',
-			text: 'Un seul contrat pour l’API, le web et le mobile : filtres, position, 100 par page.',
+			title: { fr: 'Vérifier chaque paramètre', en: 'Check every parameter' },
+			text: {
+				fr: 'Un seul contrat pour l’API, le web et le mobile : filtres, position, 100 par page.',
+				en: 'One contract for the API, web and mobile: filters, position, 100 per page.',
+			},
 			tech: ['zod', 'typescript'],
 			clue:'pageSize ≤ 100',
 			symbol: 'trekListQuerySchema',
@@ -141,8 +147,11 @@ export const pieces: Piece[] = [
 		role: { fr: 'Recueille la fiche refusée, avec le détail des champs fautifs.', en: 'Catches the refused card, with the details of the faulty fields.' },
 		code: { path: 'apps/api/src/common/filters/problem-details.filter.ts', lines: [52, 61] },
 		note: {
-			title: 'Refuser une demande fausse',
-			text: 'Répond 422 avec la liste des champs fautifs, au format standard RFC 9457.',
+			title: { fr: 'Refuser une demande fausse', en: 'Turn down a bad request' },
+			text: {
+				fr: 'Répond 422 avec la liste des champs fautifs, au format standard RFC 9457.',
+				en: 'Answers 422 with the list of faulty fields, in the standard RFC 9457 format.',
+			},
 			tech: ['nestjs', 'zod'],
 			clue:'422',
 			symbol: 'ZodValidationException',
@@ -157,8 +166,11 @@ export const pieces: Piece[] = [
 		},
 		code: { path: 'apps/api/src/modules/treks/treks.service.ts', lines: [127, 151] },
 		note: {
-			title: 'Découper une page',
-			text: 'Trie par nom puis id, saute les pages précédentes et garde 20 itinéraires.',
+			title: { fr: 'Découper une page', en: 'Cut out a page' },
+			text: {
+				fr: 'Trie par nom puis id, saute les pages précédentes et garde 20 itinéraires.',
+				en: 'Sorts by name then id, skips the earlier pages and keeps 20 routes.',
+			},
 			tech: ['drizzle'],
 			clue:'limit / offset',
 			symbol: 'toLimitOffset()',
@@ -173,8 +185,11 @@ export const pieces: Piece[] = [
 		},
 		code: { path: 'apps/api/src/modules/treks/treks.service.ts', lines: [152, 160] },
 		note: {
-			title: 'Compter les résultats',
-			text: 'Compte tous les résultats en même temps : 100 itinéraires donnent 5 pages.',
+			title: { fr: 'Compter les résultats', en: 'Count the results' },
+			text: {
+				fr: 'Compte tous les résultats en même temps : 100 itinéraires donnent 5 pages.',
+				en: 'Counts every result at the same time: 100 routes make 5 pages.',
+			},
 			tech: ['drizzle', 'postgresql'],
 			clue:'Promise.all',
 			symbol: '$count()',
@@ -186,8 +201,11 @@ export const pieces: Piece[] = [
 		role: { fr: 'Ce qui sort du tiroir : la fiche sans son tracé, qui reste au fond.', en: 'What comes out of the drawer: the card without its track, which stays at the bottom.' },
 		code: { path: 'packages/contracts/src/treks.ts', lines: [49, 74] },
 		note: {
-			title: 'Alléger chaque résultat',
-			text: 'Sert nom, distance et dénivelé sans la trace GPS, trop lourde pour une liste.',
+			title: { fr: 'Alléger chaque résultat', en: 'Slim down each result' },
+			text: {
+				fr: 'Sert nom, distance et dénivelé sans la trace GPS, trop lourde pour une liste.',
+				en: 'Serves name, distance and climb without the GPS track, too heavy for a list.',
+			},
 			tech: ['zod'],
 			clue:'toSummary()',
 			symbol: 'trekSummarySchema',
@@ -199,8 +217,11 @@ export const pieces: Piece[] = [
 		role: { fr: 'Font sortir le tiroir sans qu’on trie le meuble.', en: 'Bring the drawer out without sorting the whole cabinet.' },
 		code: { path: 'packages/db/src/schema/treks.ts', lines: [142, 148] },
 		note: {
-			title: 'Accélérer le tri',
-			text: 'Un index sur nom puis id : 0,9 ms au lieu de 130 ms par page, sur 2 442 itinéraires.',
+			title: { fr: 'Accélérer le tri', en: 'Speed up the sort' },
+			text: {
+				fr: 'Un index sur nom puis id : 0,9 ms au lieu de 130 ms par page, sur 2 442 itinéraires.',
+				en: 'An index on name then id: 0.9 ms instead of 130 ms per page, across 2,442 routes.',
+			},
 			tech: ['drizzle', 'postgresql'],
 			clue:'index(name, id)',
 			symbol: 'treks_name_id_idx',
@@ -212,8 +233,11 @@ export const pieces: Piece[] = [
 		role: { fr: 'Le meuble lui-même : chaque fiche y est rangée une fois.', en: 'The cabinet itself: each card is filed in it once.' },
 		code: { path: 'packages/db/src/schema/treks.ts', lines: [57, 91] },
 		note: {
-			title: 'Stocker les itinéraires',
-			text: 'Une table Postgres : une ligne par itinéraire, avec sa trace et son départ.',
+			title: { fr: 'Stocker les itinéraires', en: 'Store the routes' },
+			text: {
+				fr: 'Une table Postgres : une ligne par itinéraire, avec sa trace et son départ.',
+				en: 'A Postgres table: one row per route, with its track and its starting point.',
+			},
 			tech: ['drizzle', 'postgresql'],
 			clue:'pgTable(\'treks\')',
 			symbol: 'treks',

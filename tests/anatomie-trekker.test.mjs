@@ -27,6 +27,7 @@ function anatomyOf(html) {
 	const [figure] = elements(section, 'figure');
 	const svg = tags(section, 'svg').find((t) => attr(t, 'role') === 'img') ?? '';
 	const items = elements(section, 'li').filter((li) => /^item\b/.test(attr(tags(li, 'li')[0], 'class') ?? ''));
+	const notes = elements(section, 'li').filter((li) => /^note\b/.test(attr(tags(li, 'li')[0], 'class') ?? ''));
 	const [hero] = elements(html, 'section');
 	const head = headOf(html);
 	return {
@@ -38,6 +39,8 @@ function anatomyOf(html) {
 		caption: text(elements(section, 'figcaption')[0] ?? '').replace(/^Fig\. 1 — /, ''),
 		label: attr(svg, 'aria-label') ?? '',
 		pieces: items.map((li) => [spanOf(li, 'name'), spanOf(li.replace(/<a\b[\s\S]*<\/a>/, ''), 'role')]),
+		/** Le titre et la phrase de chaque note, en clair. */
+		notes: notes.map((li) => elements(li.match(/<div class="face plain\b[\s\S]*?<\/div>/)?.[0] ?? '', 'p').map(text)),
 	};
 }
 
@@ -54,7 +57,9 @@ test('en : la fiche de trekker montre son anatomie en anglais, sans un mot de fr
 	);
 	// La légende garde les chiffres du code, au format anglais.
 	assert.ok(en.caption.includes('(0.9 ms instead of 130 across 2,442 treks)'), en.caption);
-	const texts = [en.title, en.description, en.lede, ...en.consignes, en.releve, en.caption, en.label, ...en.pieces.flat()];
+	assert.equal(en.notes.length, 8, 'une note par pièce');
+	assert.deepEqual(en.notes[0], ['Take the request', 'Takes in the list request; with no open session, the API answers 401.']);
+	const texts = [en.title, en.description, en.lede, ...en.consignes, en.releve, en.caption, en.label, ...en.pieces.flat(), ...en.notes.flat()];
 	for (const value of texts) {
 		assert.ok(value.length > 0, 'texte vide');
 		assert.doesNotMatch(value, FRENCH, value);

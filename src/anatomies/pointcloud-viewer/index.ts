@@ -14,8 +14,11 @@ const carte: Piece = {
 	},
 	code: { path: 'src/hooks/use-bake.ts', lines: [78, 87] },
 	note: {
-		title: 'Choisir le fichier',
-		text: 'Un .las ou un .laz part à la conversion ; un .bin déjà converti s’ouvre aussitôt.',
+		title: { fr: 'Choisir le fichier', en: 'Pick the file' },
+		text: {
+			fr: 'Un .las ou un .laz part à la conversion ; un .bin déjà converti s’ouvre aussitôt.',
+			en: 'A .las or .laz goes off to be converted; a .bin already converted opens straight away.',
+		},
 		tech: ['react'],
 		clue:'.las / .laz',
 		symbol: 'openFile()',
@@ -30,8 +33,11 @@ const boitier: Piece = {
 	},
 	code: { path: 'src/workers/bake-worker.ts', lines: [13, 37] },
 	note: {
-		title: 'Travailler en arrière-plan',
-		text: 'Lance la conversion à part, sans figer la page, puis rend le résultat sans le recopier.',
+		title: { fr: 'Travailler en arrière-plan', en: 'Work in the background' },
+		text: {
+			fr: 'Lance la conversion à part, sans figer la page, puis rend le résultat sans le recopier.',
+			en: 'Converts off to one side so the page never freezes, then hands back the result uncopied.',
+		},
 		tech: ['typescript', 'webassembly'],
 		clue:'Web Worker',
 		symbol: 'self.onmessage',
@@ -46,8 +52,11 @@ const miroir: Piece = {
 	},
 	code: { path: 'webassembly/src/lib.rs', lines: [48, 132] },
 	note: {
-		title: 'Convertir les points',
-		text: 'Rust relit chaque point et le recentre sur le coin du nuage pour rester précis en 32 bits.',
+		title: { fr: 'Convertir les points', en: 'Convert the points' },
+		text: {
+			fr: 'Rust relit chaque point et le recentre sur le coin du nuage pour rester précis en 32 bits.',
+			en: 'Rust rereads each point, re-centring it on the cloud’s corner to stay precise in 32 bits.',
+		},
 		tech: ['rust', 'webassembly'],
 		clue:'reader.points()',
 		symbol: 'bake_to_pcbk()',
@@ -63,8 +72,11 @@ const disque: Piece = {
 	},
 	code: { path: 'src/lib/baked-pointcloud.ts', lines: [41, 91] },
 	note: {
-		title: 'Lire le format maison',
-		text: 'Un en-tête de 72 octets, puis 18 octets par point, lus sur place sans rien décoder.',
+		title: { fr: 'Lire le format maison', en: 'Read the in-house format' },
+		text: {
+			fr: 'Un en-tête de 72 octets, puis 18 octets par point, lus sur place sans rien décoder.',
+			en: 'A 72-byte header, then 18 bytes per point, read in place without decoding a thing.',
+		},
 		tech: ['typescript'],
 		clue:'TypedArray',
 		symbol: 'parseBakedPointCloud()',
@@ -79,8 +91,11 @@ const borne: Piece = {
 	},
 	code: { path: 'src/lib/map-anchor.ts', lines: [22, 46] },
 	note: {
-		title: 'Placer le nuage sur la carte',
-		text: 'Seul le coin du nuage passe du Lambert-93 au GPS ; tous les points s’y accrochent.',
+		title: { fr: 'Placer le nuage sur la carte', en: 'Put the cloud on the map' },
+		text: {
+			fr: 'Seul le coin du nuage passe du Lambert-93 au GPS ; tous les points s’y accrochent.',
+			en: 'Only the cloud’s corner goes from Lambert-93 to GPS; every point hangs off it.',
+		},
 		tech: ['maplibre'],
 		clue:'proj4',
 		symbol: 'computeAnchor()',
@@ -95,8 +110,11 @@ const nuage: Piece = {
 	},
 	code: { path: 'src/lib/pointcloud-layer.ts', lines: [25, 121] },
 	note: {
-		title: 'Dessiner les points',
-		text: 'three.js dessine le nuage par-dessus le fond de carte, en un seul envoi au GPU.',
+		title: { fr: 'Dessiner les points', en: 'Draw the points' },
+		text: {
+			fr: 'three.js dessine le nuage par-dessus le fond de carte, en un seul envoi au GPU.',
+			en: 'three.js draws the cloud over the base map, in a single upload to the GPU.',
+		},
 		tech: ['threedotjs', 'maplibre'],
 		clue:'custom layer',
 		symbol: 'PointCloudLayer',
@@ -111,8 +129,11 @@ const roue: Piece = {
 	},
 	code: { path: 'src/lib/pointcloud-shaders.ts', lines: [127, 156] },
 	note: {
-		title: 'Changer les couleurs',
-		text: 'RGB, intensité, classe ou altitude : une seule valeur change, les points restent.',
+		title: { fr: 'Changer les couleurs', en: 'Change the colours' },
+		text: {
+			fr: 'RGB, intensité, classe ou altitude : une seule valeur change, les points restent.',
+			en: 'RGB, intensity, class or altitude: a single value changes, the points stay put.',
+		},
 		tech: ['threedotjs', 'webgl'],
 		clue:'uniform',
 		symbol: 'createPointsMaterial()',

@@ -16,8 +16,11 @@ export const pieces: Piece[] = [
 		},
 		code: code([211, 227]),
 		note: {
-			title: 'Choisir la source',
-			text: 'Prend les limites de Claude Code, sinon de l’API, sinon du cache.',
+			title: { fr: 'Choisir la source', en: 'Pick the source' },
+			text: {
+				fr: 'Prend les limites de Claude Code, sinon de l’API, sinon du cache.',
+				en: 'Takes the limits from Claude Code, failing that the API, failing that the cache.',
+			},
 			tech: ['claude'],
 			clue:'stdin',
 			symbol: 'resolveRateLimits()',
@@ -32,8 +35,11 @@ export const pieces: Piece[] = [
 		},
 		code: code([157, 209]),
 		note: {
-			title: 'Demander à l’API',
-			text: 'Interroge l’API Anthropic avec votre jeton, en 2,5 s au plus.',
+			title: { fr: 'Demander à l’API', en: 'Ask the API' },
+			text: {
+				fr: 'Interroge l’API Anthropic avec votre jeton, en 2,5 s au plus.',
+				en: 'Queries the Anthropic API with your token, giving up after 2.5 s.',
+			},
 			tech: ['anthropic'],
 			clue:'fetch',
 			symbol: 'readOAuthToken()',
@@ -48,8 +54,11 @@ export const pieces: Piece[] = [
 		},
 		code: code([115, 145]),
 		note: {
-			title: 'Garder une copie',
-			text: 'Range les dernières limites dans un fichier JSON de secours.',
+			title: { fr: 'Garder une copie', en: 'Keep a copy' },
+			text: {
+				fr: 'Range les dernières limites dans un fichier JSON de secours.',
+				en: 'Saves the latest limits to a fallback JSON file.',
+			},
 			tech: ['json'],
 			clue:'~/.claude',
 			symbol: 'readCache()',
@@ -64,8 +73,11 @@ export const pieces: Piece[] = [
 		},
 		code: code([231, 254]),
 		note: {
-			title: 'Assembler la ligne',
-			text: 'Modèle · dossier · 5h · sem, sur une seule ligne de terminal.',
+			title: { fr: 'Assembler la ligne', en: 'Build the line' },
+			text: {
+				fr: 'Modèle · dossier · 5h · sem, sur une seule ligne de terminal.',
+				en: 'Model · folder · 5h · sem, on a single terminal line.',
+			},
 			tech: ['bun', 'typescript'],
 			clue:'render()',
 			symbol: 'render()',
@@ -80,8 +92,11 @@ export const pieces: Piece[] = [
 		},
 		code: code([103, 109]),
 		note: {
-			title: 'Dessiner les barres',
-			text: 'Dix cases par fenêtre : 68 % donne sept cases pleines.',
+			title: { fr: 'Dessiner les barres', en: 'Draw the bars' },
+			text: {
+				fr: 'Dix cases par fenêtre : 68 % donne sept cases pleines.',
+				en: 'Ten cells per window: at 68%, seven of them are filled.',
+			},
 			tech: ['typescript'],
 			clue:'bar()',
 			symbol: 'windowSegment()',
@@ -96,8 +111,11 @@ export const pieces: Piece[] = [
 		},
 		code: code([52, 69]),
 		note: {
-			title: 'Colorer selon l’usage',
-			text: 'Vert sous 50 %, jaune jusqu’à 80 %, rouge au-delà.',
+			title: { fr: 'Colorer selon l’usage', en: 'Colour by usage' },
+			text: {
+				fr: 'Vert sous 50 %, jaune jusqu’à 80 %, rouge au-delà.',
+				en: 'Green below 50%, yellow up to 80%, red above that.',
+			},
 			tech: ['typescript'],
 			clue:'colorFor()',
 			symbol: 'colorFor()',
@@ -113,8 +131,11 @@ export const pieces: Piece[] = [
 		},
 		code: code([73, 85]),
 		note: {
-			title: 'Compter jusqu’au reset',
-			text: 'Le temps avant la remise à zéro : 3j, 2h14 ou 14m.',
+			title: { fr: 'Compter jusqu’au reset', en: 'Count down to the reset' },
+			text: {
+				fr: 'Le temps avant la remise à zéro : 3j, 2h14 ou 14m.',
+				en: 'Time left before the limits reset: 3j, 2h14 or 14m.',
+			},
 			tech: ['typescript'],
 			clue:'fmtReset()',
 			symbol: 'fmtReset()',
@@ -129,8 +150,11 @@ export const pieces: Piece[] = [
 		},
 		code: code([280, 285]),
 		note: {
-			title: 'Recommencer chaque minute',
-			text: 'Claude Code relance le binaire toutes les 60 secondes.',
+			title: { fr: 'Recommencer chaque minute', en: 'Run again every minute' },
+			text: {
+				fr: 'Claude Code relance le binaire toutes les 60 secondes.',
+				en: 'Claude Code reruns the binary every 60 seconds.',
+			},
 			tech: ['claude'],
 			clue:'refreshInterval',
 			symbol: 'settings.statusLine',

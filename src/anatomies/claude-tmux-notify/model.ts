@@ -112,8 +112,11 @@ export const pieces: Piece[] = [
 		},
 		code: code('scripts/tmux-notify.sh', [9, 59]),
 		note: {
-			title: 'Écrire l’événement',
-			text: 'À chaque attente ou fin de Claude, ajoute une ligne JSON avec sa fenêtre tmux.',
+			title: { fr: 'Écrire l’événement', en: 'Write down the event' },
+			text: {
+				fr: 'À chaque attente ou fin de Claude, ajoute une ligne JSON avec sa fenêtre tmux.',
+				en: 'Whenever Claude waits or finishes, appends a JSON line with its tmux window.',
+			},
 			tech: ['claude', 'gnubash'],
 			clue:'tmux-notify.sh',
 			symbol: 'CACHE_FILE',
@@ -128,8 +131,11 @@ export const pieces: Piece[] = [
 		},
 		code: code(LUA, [149, 162]),
 		note: {
-			title: 'Repartir de la fin',
-			text: 'Au démarrage, vide le fichier s’il dépasse 1 Mio, puis ne lit que les lignes à venir.',
+			title: { fr: 'Repartir de la fin', en: 'Start from the end' },
+			text: {
+				fr: 'Au démarrage, vide le fichier s’il dépasse 1 Mio, puis ne lit que les lignes à venir.',
+				en: 'On start-up, empties the file if it exceeds 1 MiB, then reads only new lines.',
+			},
 			tech: ['neovim', 'lua'],
 			clue:'uv.fs_stat',
 			symbol: 'M.config.max_cache_size',
@@ -144,8 +150,11 @@ export const pieces: Piece[] = [
 		},
 		code: code(LUA, [164, 170]),
 		note: {
-			title: 'Surveiller le fichier',
-			text: 'Neovim regarde si le fichier a changé toutes les 1000 ms, sans bloquer l’éditeur.',
+			title: { fr: 'Surveiller le fichier', en: 'Watch the file' },
+			text: {
+				fr: 'Neovim regarde si le fichier a changé toutes les 1000 ms, sans bloquer l’éditeur.',
+				en: 'Neovim checks every 1,000 ms whether the file has changed, without blocking the editor.',
+			},
 			tech: ['neovim', 'lua'],
 			clue:'poll_interval',
 			symbol: 'uv.new_fs_poll()',
@@ -160,8 +169,11 @@ export const pieces: Piece[] = [
 		},
 		code: code(LUA, [104, 142]),
 		note: {
-			title: 'Lire les nouvelles lignes',
-			text: 'Lit seulement les octets ajoutés depuis la dernière lecture et décode chaque ligne.',
+			title: { fr: 'Lire les nouvelles lignes', en: 'Read the new lines' },
+			text: {
+				fr: 'Lit seulement les octets ajoutés depuis la dernière lecture et décode chaque ligne.',
+				en: 'Reads only the bytes added since the last read, and decodes each line.',
+			},
 			tech: ['lua', 'json'],
 			clue:'state.offset',
 			symbol: 'handle_lines()',
@@ -176,8 +188,11 @@ export const pieces: Piece[] = [
 		},
 		code: code(LUA, [64, 74]),
 		note: {
-			title: 'Vérifier la fenêtre active',
-			text: 'Demande à tmux si la fenêtre de Claude est déjà affichée : si oui, pas d’alerte.',
+			title: { fr: 'Vérifier la fenêtre active', en: 'Check the active window' },
+			text: {
+				fr: 'Demande à tmux si la fenêtre de Claude est déjà affichée : si oui, pas d’alerte.',
+				en: 'Asks tmux whether Claude’s window is already on screen: if so, no alert.',
+			},
 			tech: ['tmux'],
 			clue:'#{window_active}',
 			symbol: 'window_is_focused()',
@@ -192,8 +207,11 @@ export const pieces: Piece[] = [
 		},
 		code: code(LUA, [86, 102]),
 		note: {
-			title: 'Composer l’alerte',
-			text: 'Titre l’alerte « Claude — 2:api-server », en warn s’il attend, en info s’il a fini.',
+			title: { fr: 'Composer l’alerte', en: 'Compose the alert' },
+			text: {
+				fr: 'Titre l’alerte « Claude — 2:api-server », en warn s’il attend, en info s’il a fini.',
+				en: 'Titles the alert ‘Claude — 2:api-server’: warn while it waits, info once it is done.',
+			},
 			tech: ['neovim'],
 			clue:'warn · info',
 			symbol: 'emit()',
@@ -209,8 +227,11 @@ export const pieces: Piece[] = [
 		},
 		code: code(LUA, [76, 84]),
 		note: {
-			title: 'Choisir le notifieur',
-			text: 'Passe par Snacks s’il est installé, sinon par la notification native de Neovim.',
+			title: { fr: 'Choisir le notifieur', en: 'Pick the notifier' },
+			text: {
+				fr: 'Passe par Snacks s’il est installé, sinon par la notification native de Neovim.',
+				en: 'Goes through Snacks if it is installed, otherwise through Neovim’s own notifications.',
+			},
 			tech: ['neovim', 'lua'],
 			clue:'vim.notify',
 			symbol: 'default_notify()',

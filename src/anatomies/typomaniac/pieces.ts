@@ -15,8 +15,11 @@ export const pieces: Piece[] = [
 		},
 		code: { path: 'apps/api/src/app.ts', lines: [97, 182] },
 		note: {
-			title: 'Servir tout le jeu',
-			text: 'Un seul serveur Bun garde la file d’attente, les duels en mémoire et toute l’API.',
+			title: { fr: 'Servir tout le jeu', en: 'Serve the whole game' },
+			text: {
+				fr: 'Un seul serveur Bun garde la file d’attente, les duels en mémoire et toute l’API.',
+				en: 'A single Bun server holds the queue, the duels in memory and the whole API.',
+			},
 			tech: ['bun', 'typescript'],
 			clue:'Elysia',
 			symbol: 'DuelQueue',
@@ -31,8 +34,11 @@ export const pieces: Piece[] = [
 		},
 		code: { path: 'apps/frontend/src/stores/duel-store.ts', lines: [792, 823] },
 		note: {
-			title: 'Dater chaque frappe',
-			text: 'Chaque lettre est datée, affichée aussitôt, puis envoyée par lots de 50 ms.',
+			title: { fr: 'Dater chaque frappe', en: 'Timestamp each keystroke' },
+			text: {
+				fr: 'Chaque lettre est datée, affichée aussitôt, puis envoyée par lots de 50 ms.',
+				en: 'Each letter is timestamped, shown at once, then sent in 50 ms batches.',
+			},
 			tech: ['react', 'typescript'],
 			clue:'BATCH_MS',
 			symbol: 'pressed()',
@@ -47,8 +53,11 @@ export const pieces: Piece[] = [
 		},
 		code: { path: 'apps/api/src/modules/duel/index.ts', lines: [17, 52] },
 		note: {
-			title: 'Relier les deux joueurs',
-			text: 'Une WebSocket par onglet : on envoie ses frappes, on reçoit celles de l’adversaire.',
+			title: { fr: 'Relier les deux joueurs', en: 'Connect the two players' },
+			text: {
+				fr: 'Une WebSocket par onglet : on envoie ses frappes, on reçoit celles de l’adversaire.',
+				en: 'One WebSocket per tab: you send your keystrokes and receive your opponent’s.',
+			},
 			tech: ['bun'],
 			clue:'/api/duel',
 			symbol: 'duelModule()',
@@ -63,8 +72,11 @@ export const pieces: Piece[] = [
 		},
 		code: { path: 'apps/api/src/modules/duel/running-duel.ts', lines: [423, 522] },
 		note: {
-			title: 'Arbitrer le duel',
-			text: 'Le serveur garde le duel en mémoire, juge la manche à 30,4 s et relance 7 s après.',
+			title: { fr: 'Arbitrer le duel', en: 'Referee the duel' },
+			text: {
+				fr: 'Le serveur garde le duel en mémoire, juge la manche à 30,4 s et relance 7 s après.',
+				en: 'The server keeps the duel in memory, judges the round at 30.4 s and restarts 7 s later.',
+			},
 			tech: ['bun', 'typescript'],
 			clue:'RunningDuel',
 			symbol: 'endRound()',
@@ -80,8 +92,11 @@ export const pieces: Piece[] = [
 		},
 		code: { path: 'packages/typing-engine/src/acceptance.ts', lines: [21, 68] },
 		note: {
-			title: 'Vérifier la date des frappes',
-			text: 'Refuse une frappe datée avant le départ, après sa réception, à rebours ou trop tard.',
+			title: { fr: 'Vérifier la date des frappes', en: 'Check keystroke timestamps' },
+			text: {
+				fr: 'Refuse une frappe datée avant le départ, après sa réception, à rebours ou trop tard.',
+				en: 'Rejects a keystroke stamped before the start, after it arrived, out of order or too late.',
+			},
 			tech: ['typescript'],
 			clue:'acceptance.ts',
 			symbol: 'rejectReason()',
@@ -96,8 +111,11 @@ export const pieces: Piece[] = [
 		},
 		code: { path: 'packages/typing-engine/src/outcome.ts', lines: [21, 67] },
 		note: {
-			title: 'Désigner le gagnant',
-			text: 'Le meilleur score gagne la manche, puis la précision ; deux manches gagnent le duel.',
+			title: { fr: 'Désigner le gagnant', en: 'Name the winner' },
+			text: {
+				fr: 'Le meilleur score gagne la manche, puis la précision ; deux manches gagnent le duel.',
+				en: 'The higher score takes the round, then accuracy; two rounds won take the duel.',
+			},
 			tech: ['typescript'],
 			clue:'isDuelDecided()',
 			symbol: 'roundOutcome()',
@@ -112,8 +130,11 @@ export const pieces: Piece[] = [
 		},
 		code: { path: 'packages/ranked/src/ranked.ts', lines: [164, 206] },
 		note: {
-			title: 'Faire monter au classement',
-			text: 'Une victoire vaut 8 à 35 points de rang, 20 à niveau égal ; 100 points font monter.',
+			title: { fr: 'Faire monter au classement', en: 'Climb the rankings' },
+			text: {
+				fr: 'Une victoire vaut 8 à 35 points de rang, 20 à niveau égal ; 100 points font monter.',
+				en: 'A win is worth 8 to 35 rank points, 20 between equals; 100 points earn a promotion.',
+			},
 			tech: ['typescript'],
 			clue:'applyTp()',
 			symbol: 'tpDelta()',

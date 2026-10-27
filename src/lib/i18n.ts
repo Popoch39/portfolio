@@ -165,6 +165,26 @@ export const ui = {
 		fr: (path: string, first: number, last: number) => `Code : ${path}, lignes ${first}–${last} ↗`,
 		en: (path: string, first: number, last: number) => `Code: ${path}, lines ${first}–${last} ↗`,
 	},
+	// Notes de la figure : leur liste, le lien de chacune vers son code, et la ligne de commande qui
+	// bascule leur lecture (`:set lecture=clair|code`), avec la barre d'état qui la rappelle.
+	figureNotes: { fr: 'Notes de la figure', en: 'Figure notes' },
+	noteCode: {
+		fr: (path: string, first: number, last: number) => `Code : ${path}, lignes ${first} à ${last}`,
+		en: (path: string, first: number, last: number) => `Code: ${path}, lines ${first} to ${last}`,
+	},
+	noteView: { fr: 'Lecture des notes', en: 'Note view' },
+	viewOption: { fr: 'lecture', en: 'view' },
+	viewPlain: { fr: 'clair', en: 'plain' },
+	viewCode: { fr: 'code', en: 'code' },
+	// Le message de Vim après une substitution, dans la langue de Vim.
+	substitutions: {
+		fr: (notes: number) => `${notes} substitutions sur ${notes} lignes`,
+		en: (notes: number) => `${notes} substitutions on ${notes} lines`,
+	},
+	noteCount: {
+		fr: (notes: number) => `${notes} notes`,
+		en: (notes: number) => `${notes} notes`,
+	},
 	startTour: { fr: 'Lancer le tour', en: 'Start the tour' },
 	otherProjects: { fr: 'Autres projets', en: 'Other projects' },
 	previous: {

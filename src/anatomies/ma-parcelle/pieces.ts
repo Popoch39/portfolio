@@ -11,8 +11,11 @@ export const pieces: Piece[] = [
 		},
 		code: { path: 'src/map/layers/PciLayer.tsx', lines: [9, 45] },
 		note: {
-			title: 'Choisir une parcelle',
-			text: 'Un clic lit l’identifiant de la parcelle dans la carte déjà affichée, sans réseau.',
+			title: { fr: 'Choisir une parcelle', en: 'Pick a parcel' },
+			text: {
+				fr: 'Un clic lit l’identifiant de la parcelle dans la carte déjà affichée, sans réseau.',
+				en: 'A click reads the parcel’s ID from the map already on screen, with no network call.',
+			},
 			tech: ['maplibre', 'react'],
 			clue:'useLayerClick',
 			symbol: 'PciLayer()',
@@ -27,8 +30,11 @@ export const pieces: Piece[] = [
 		},
 		code: { path: 'src/stores/selection-store.ts', lines: [3, 20] },
 		note: {
-			title: 'Retenir une seule parcelle',
-			text: 'Une seule parcelle ouverte à la fois, repérée par son code cadastral de 14 caractères.',
+			title: { fr: 'Retenir une seule parcelle', en: 'Hold on to one parcel' },
+			text: {
+				fr: 'Une seule parcelle ouverte à la fois, repérée par son code cadastral de 14 caractères.',
+				en: 'One parcel open at a time, known by its 14-character cadastral code.',
+			},
 			tech: ['react', 'typescript'],
 			clue:'zustand',
 			symbol: 'SelectionState',
@@ -43,8 +49,11 @@ export const pieces: Piece[] = [
 		},
 		code: { path: 'src/api/cadastre.ts', lines: [63, 74] },
 		note: {
-			title: 'Charger la parcelle',
-			text: 'Demande au cadastre de l’IGN la forme et la surface de la parcelle, en une requête.',
+			title: { fr: 'Charger la parcelle', en: 'Load the parcel' },
+			text: {
+				fr: 'Demande au cadastre de l’IGN la forme et la surface de la parcelle, en une requête.',
+				en: 'Asks the IGN cadastre for the parcel’s shape and area, in a single request.',
+			},
 			tech: ['typescript'],
 			clue:'API Carto',
 			symbol: 'loadParcel()',
@@ -59,8 +68,11 @@ export const pieces: Piece[] = [
 		},
 		code: { path: 'src/queries/block.ts', lines: [6, 15] },
 		note: {
-			title: 'Partir de la parcelle',
-			text: 'Chaque bloc part de la parcelle déjà en cache ; si elle manque, tous échouent ensemble.',
+			title: { fr: 'Partir de la parcelle', en: 'Start from the parcel' },
+			text: {
+				fr: 'Chaque bloc part de la parcelle déjà en cache ; si elle manque, tous échouent ensemble.',
+				en: 'Every block starts from the cached parcel; if it is missing, they all fail together.',
+			},
 			tech: ['react', 'typescript'],
 			clue:'fetchQuery',
 			symbol: 'parcelBlockQuery()',
@@ -76,8 +88,11 @@ export const pieces: Piece[] = [
 		},
 		code: { path: 'src/api/fetch-json.ts', lines: [61, 91] },
 		note: {
-			title: 'Interroger chaque source',
-			text: 'Le navigateur appelle les API publiques sans serveur, 15 s au plus par réponse.',
+			title: { fr: 'Interroger chaque source', en: 'Query each source' },
+			text: {
+				fr: 'Le navigateur appelle les API publiques sans serveur, 15 s au plus par réponse.',
+				en: 'The browser calls the public APIs with no server in between, 15 s at most per reply.',
+			},
 			tech: ['typescript', 'json'],
 			clue:'fetch',
 			symbol: 'fetchBody()',
@@ -92,8 +107,11 @@ export const pieces: Piece[] = [
 		},
 		code: { path: 'src/components/report/blocks.ts', lines: [14, 25] },
 		note: {
-			title: 'Empiler les six blocs',
-			text: 'Cadastre, urbanisme, risques, ventes, bâtiment et DPE : chacun charge et échoue seul.',
+			title: { fr: 'Empiler les six blocs', en: 'Stack the six blocks' },
+			text: {
+				fr: 'Cadastre, urbanisme, risques, ventes, bâtiment et DPE : chacun charge et échoue seul.',
+				en: 'Cadastre, planning, hazards, sales, building and DPE: each loads and fails on its own.',
+			},
 			tech: ['react'],
 			clue:'<Block>Section',
 			symbol: 'BLOCKS',
@@ -108,8 +126,11 @@ export const pieces: Piece[] = [
 		},
 		code: { path: 'src/lib/summary/summary.ts', lines: [59, 68] },
 		note: {
-			title: 'Composer la synthèse',
-			text: 'Résume les blocs reçus, écarte ceux en panne et signale ceux qui chargent encore.',
+			title: { fr: 'Composer la synthèse', en: 'Write the summary' },
+			text: {
+				fr: 'Résume les blocs reçus, écarte ceux en panne et signale ceux qui chargent encore.',
+				en: 'Sums up the blocks received, leaves out failed ones and flags those still loading.',
+			},
 			tech: ['typescript'],
 			clue:'status',
 			symbol: 'assembleSummary()',

@@ -26,6 +26,8 @@ test('en : la fiche montre la rampe à cadran en anglais : titres, accroche, con
 	const svg = elements(section, 'svg').find((s) => attr(tags(s, 'svg')[0], 'role') === 'img') ?? '';
 	const pieces = elements(section, 'li').filter((li) => /^item\b/.test(attr(tags(li, 'li')[0], 'class') ?? ''));
 	assert.equal(pieces.length, 8);
+	const notes = elements(section, 'li').filter((li) => /^note\b/.test(attr(tags(li, 'li')[0], 'class') ?? ''));
+	assert.equal(notes.length, 8);
 	const texts = {
 		title: text(elements(html, 'title')[0] ?? ''),
 		description: attr(tags(html, 'meta').find((t) => attr(t, 'name') === 'description') ?? '', 'content') ?? '',
@@ -40,6 +42,16 @@ test('en : la fiche montre la rampe à cadran en anglais : titres, accroche, con
 				return [
 					[`${id} : nom`, text(byClass(li, 'span', 'name')[0] ?? '')],
 					[`${id} : rôle`, text((byClass(li, 'span', 'role')[0] ?? '').replace(/<a\b[\s\S]*<\/a>/, ''))],
+				];
+			}),
+		),
+		...Object.fromEntries(
+			notes.flatMap((li) => {
+				const id = attr(tags(li, 'li')[0], 'data-piece');
+				const [title, sentence] = elements(li.match(/<div class="face plain\b[\s\S]*?<\/div>/)?.[0] ?? '', 'p').map(text);
+				return [
+					[`${id} : titre de la note`, title],
+					[`${id} : phrase de la note`, sentence],
 				];
 			}),
 		),

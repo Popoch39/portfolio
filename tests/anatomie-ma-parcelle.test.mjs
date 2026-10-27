@@ -35,6 +35,10 @@ function anatomyTexts(html) {
 		pieces: elements(section, 'li')
 			.filter((li) => /^item\b/.test(attr(tags(li, 'li')[0], 'class') ?? ''))
 			.flatMap((li) => [text(byClass(li, 'span', 'name')[0] ?? ''), text((byClass(li, 'span', 'role')[0] ?? '').replace(/<a\b[\s\S]*<\/a>/, ''))]),
+		// Le titre et la phrase de chaque note, en clair.
+		notes: elements(section, 'li')
+			.filter((li) => /^note\b/.test(attr(tags(li, 'li')[0], 'class') ?? ''))
+			.flatMap((li) => elements(li.match(/<div class="face plain\b[\s\S]*?<\/div>/)?.[0] ?? '', 'p').map(text)),
 	};
 }
 
@@ -51,6 +55,7 @@ test('en : la fiche ne montre ni n’annonce aucun texte français de l’anatom
 		}
 	}
 	assert.equal(texts.pieces.length, 14, 'sept pièces, chacune avec son nom et son rôle');
+	assert.equal(texts.notes.length, 14, 'sept notes, chacune avec son titre et sa phrase');
 });
 
 test('en : l’aperçu de l’accueil nomme la machine, la consigne et le relevé en anglais, et décrit son image', () => {

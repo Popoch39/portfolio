@@ -16,7 +16,8 @@ const { path = '~/louis/portfolio.md', secondary, position = ui.statusBottom[loc
 
 {/* La Lunette (ADR 0007) pose `data-mode="command"` sur la barre pendant qu'elle est ouverte, et écrit la
     commande en cours dans le showcmd ; l'écouteur y écrit les touches en attente. Les boutons
-    `data-lunette` l'ouvrent. */}
+    `data-lunette` l'ouvrent. Les échos (`src/lunette/echo.ts`) s'écrivent dans `data-echo`, région live
+    présente dès le premier rendu pour être annoncée, et prennent la place du chemin. */}
 <footer class="mono status">
 	<div class="side">
 		<span class="seg mode state"><span class="normal">NORMAL</span><span class="command">COMMAND</span></span>
@@ -38,6 +39,7 @@ const { path = '~/louis/portfolio.md', secondary, position = ui.statusBottom[loc
 			>
 			<span>main</span>
 		</span>
+		<span class="seg echo" role="status" aria-live="polite" data-echo></span>
 		<span class="seg path">{path}</span>
 	</div>
 	<div class="side right">
@@ -155,9 +157,31 @@ const { path = '~/louis/portfolio.md', secondary, position = ui.statusBottom[loc
 		gap: 7px;
 	}
 
-	.path {
+	.path,
+	.echo {
 		overflow: hidden;
 		text-overflow: ellipsis;
+	}
+
+	/* L'écho remplace le chemin, puis le segment de droite. Vide, il reste affiché, sans largeur : une
+	   région live masquée ne serait pas annoncée à son apparition. */
+	.echo {
+		color: var(--accent-light);
+	}
+
+	.echo:empty {
+		padding: 0;
+	}
+
+	.echo:not(:empty) + .path,
+	.status:has(.echo:not(:empty)) .secondary {
+		display: none;
+	}
+
+	/* L'erreur, en encre sur papier comme le mode COMMAND. */
+	.echo[data-kind='error'] {
+		background: var(--paper);
+		color: var(--ink);
 	}
 
 	.secondary,

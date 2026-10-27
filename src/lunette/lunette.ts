@@ -2,6 +2,7 @@
 // un <dialog> modal qu'elle construit, et sa CSS qu'elle injecte. Elle ne décide de rien : pour la ligne
 // tapée et la page, le registre lui donne la liste et l'action ; elle les montre et les exécute.
 import css from './lunette.css?inline';
+import { echo } from './echo.ts';
 import { contextAt, list, run, type Action, type Entry, type Listing, type Pane } from './registry.ts';
 import { projects, restFigurePath } from '../data/profile.ts';
 import { defaultLocale, home, locales, type Localized } from '../lib/i18n.ts';
@@ -75,6 +76,7 @@ const paneTitle = el('span', 'title');
 paneTitle.id = 'lunette-pane';
 attrs(pane, { 'aria-labelledby': paneTitle.id });
 const help = el('p', 'help');
+const helpIndex = el('dl', 'index');
 const figure = el('div', 'figure');
 // Paresseuse : sur téléphone, le Volet n'est pas affiché et sa figure n'est jamais demandée.
 const image = Object.assign(el('img'), { alt: '', decoding: 'async', loading: 'lazy' });
@@ -88,7 +90,7 @@ const desc = el('p', 'desc');
 const stack = el('span', 'stack');
 head.append(name, rank);
 about.append(head, machine, desc, stack);
-pane.append(paneTitle, help, figure, about);
+pane.append(paneTitle, help, helpIndex, figure, about);
 
 const keys = el('p', 'keys');
 const enterLabel = el('span');
@@ -130,10 +132,12 @@ function option({ label, hits, detail }: Entry, index: number) {
 function show(content?: Pane) {
 	const project = content?.kind === 'project' ? projects.find((p) => p.slug === content.slug) : undefined;
 	help.hidden = content?.kind !== 'help';
+	helpIndex.hidden = !(content?.kind === 'help' && content.commands);
 	figure.hidden = about.hidden = !project;
 	if (content?.kind === 'help') {
 		paneTitle.textContent = `${say('help')} — ${content.name}`;
 		help.textContent = content.text;
+		helpIndex.replaceChildren(...(content.commands ?? []).flatMap(({ name, text }) => [el('dt', '', `:${name}`), el('dd', '', text)]));
 	} else if (project) {
 		paneTitle.textContent = `${say('preview')} — ${project.repo}`;
 		// La figure au repos, déjà servie par le site : demandée à la sélection de son projet seulement.
@@ -160,6 +164,8 @@ function select(index: number) {
 
 /** La ligne a changé : nouvelle liste, meilleur résultat sélectionné d'office. */
 function update() {
+	// Le Volet montré par une commande (`:help`) cède à la frappe suivante.
+	delete dialog.dataset.pane;
 	listing = list(line(), context);
 	// Une commande qui attend son argument passe dans le titre du prompt ; la saisie garde l'argument.
 	if (listing.argument !== undefined && !command) {
@@ -177,33 +183,93 @@ function update() {
 	select(0);
 }
 
+/**
+ * L'historique des commandes lancées, le plus récent en dernier, gardé pour l'onglet : il suit le
+ * visiteur d'une page à l'autre et part avec l'onglet. Chaque accès au stockage est protégé : bloqué
+ * (navigation privée stricte, cookies refusés), il lève une exception, et la Lunette se passe d'historique.
+ */
+const storageKey = 'lunette-history';
+
+function guarded<T>(access: () => T): T | undefined {
+	try {
+		return access();
+	} catch {
+		return undefined;
+	}
+}
+
+function past(): string[] {
+	const lines: unknown = guarded(() => JSON.parse(sessionStorage.getItem(storageKey) ?? '[]'));
+	return Array.isArray(lines) ? lines.filter((line): line is string => typeof line === 'string') : [];
+}
+
+let history: string[] = [];
+/** La ligne rappelée par ↑, tant que la frappe ne l'a pas changée. */
+let recalled: number | undefined;
+
+/** Comme Vim : une ligne relancée remonte en tête au lieu d'être doublée, et les plus vieilles tombent. */
+function remember(typed: string) {
+	history = [...history.filter((line) => line !== typed), typed].slice(-50);
+	guarded(() => sessionStorage.setItem(storageKey, JSON.stringify(history)));
+}
+
 function write(text: string) {
 	command = '';
+	recalled = undefined;
 	input.value = text;
 	update();
 }
 
+/** ↑ (`step` 1) remonte vers les plus anciennes, ↓ revient ; après la plus récente, la ligne vide. */
+function recall(step: number) {
+	const at = (recalled ?? history.length) - step;
+	if (at < 0) return;
+	write(history[at] ?? '');
+	if (at < history.length) recalled = at;
+}
+
 function act(action: Action) {
+	if (action.kind === 'show') {
+		show(action.pane);
+		// Sur téléphone, sans Volet à côté, il prend la place des résultats.
+		dialog.dataset.pane = '';
+		return;
+	}
 	dialog.close();
 	// Un simple changement d'adresse : la transition lettre à lettre (ADR 0004) joue d'elle-même.
 	location.assign(action.path);
 }
 
-/** Entrée : le résultat sélectionné, ou la commande qui attend son argument ; sinon la ligne entière. */
+/**
+ * Entrée : la commande qui attend son argument y passe ; sinon le résultat sélectionné, ou la ligne
+ * entière, est lancé et entre dans l'historique. Une ligne qui ne résout rien ferme la Lunette sur son
+ * erreur, comme la ligne de commande de Vim.
+ */
 function enter() {
 	const entry = listing.entries[selected];
 	if (entry && !entry.action) return write(entry.line);
+	remember((entry?.line ?? line()).trim());
 	const result = entry?.action ?? run(line(), context);
-	// Une ligne qui ne résout rien laisse la Lunette ouverte, telle quelle.
-	if ('kind' in result) act(result);
+	if ('kind' in result) return act(result);
+	dialog.close();
+	echo(result.error, 'error');
 }
 
-input.addEventListener('input', update);
+input.addEventListener('input', () => {
+	recalled = undefined;
+	update();
+});
 
 input.addEventListener('keydown', (event) => {
 	const { key, ctrlKey } = event;
+	const arrow = key === 'ArrowUp' ? 1 : key === 'ArrowDown' ? -1 : 0;
+	// Dans une Lunette vide, ↑ et ↓ parcourent l'historique ; ⌃p et ⌃n déplacent toujours la sélection.
+	if (arrow && (recalled !== undefined || (!line() && history.length))) {
+		event.preventDefault();
+		return recall(arrow);
+	}
 	// Le meilleur résultat est en bas : ↑ remonte vers les moins bons.
-	const move = key === 'ArrowUp' || (ctrlKey && key === 'p') ? 1 : key === 'ArrowDown' || (ctrlKey && key === 'n') ? -1 : 0;
+	const move = arrow || (ctrlKey && key === 'p' ? 1 : ctrlKey && key === 'n' ? -1 : 0);
 	const { length } = listing.entries;
 	if (move) {
 		event.preventDefault();
@@ -263,6 +329,9 @@ export function open(typed = '') {
 		document.head.append(el('style', '', css));
 		document.body.append(dialog);
 	}
+	// La ligne de commande recouvre le message précédent, comme dans Vim.
+	echo();
+	history = past();
 	write(typed);
 	bar?.setAttribute('data-mode', 'command');
 	// Modale : la page est inerte, Échap ferme, et le focus revient où il était.

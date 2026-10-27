@@ -211,6 +211,21 @@
 	display: none;
 }
 
+/* Sauf le Volet qu'une commande montre (`:help`) : il prend la place des résultats, jusqu'à la frappe
+   suivante. */
+@media (width < 900px) {
+	.lunette[data-pane] .results {
+		display: none;
+	}
+
+	.lunette[data-pane] .pane {
+		grid-area: results;
+		display: flex;
+		flex-direction: column;
+		padding: 24px 16px;
+	}
+}
+
 @media (min-width: 900px) {
 	.lunette .window {
 		grid-template: 'results pane' minmax(0, 1fr) 'prompt pane' 48px / minmax(0, 540fr) minmax(0, 544fr);
@@ -317,6 +332,31 @@
 
 .lunette .stack {
 	font-size: 12px;
+}
+
+/* L'aide de `:help` seul : chaque commande de la page et ce qu'elle fait. */
+.lunette .index {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	align-content: start;
+	gap: 8px 20px;
+	min-height: 0;
+	margin: 20px 0 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	font-size: 13px;
+	line-height: 1.45;
+}
+
+.lunette .index dt {
+	color: var(--accent);
+	font-weight: 700;
+}
+
+.lunette .index dd {
+	margin: 0;
+	font-family: var(--font-sans);
+	font-size: 14px;
 }
 
 /* Après les `display` ci-dessus : ce que le Volet ne montre pas pour ce résultat. */

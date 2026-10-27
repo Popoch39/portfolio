@@ -14,16 +14,17 @@ const root = new URL('../', import.meta.url);
 const BASE = String.fromCharCode(...Array.from({ length: 95 }, (_, i) => 32 + i)) + '…';
 
 /**
- * Les features gardées : celles que le navigateur applique d'office, parmi celles que livrait Google
- * Fonts (qui n'avait pas `rlig` pour la mono). Les autres (fractions, chiffres tabulaires…), aucune
- * règle CSS ne les demande à ces polices : les garder coûterait des glyphes jamais dessinés.
+ * Les features gardées : celles que le navigateur applique d'office à du texte latin, sauf `rlig`
+ * pour la mono, sans laquelle le site est dessiné (ADR 0005). Les autres (fractions, chiffres
+ * tabulaires…), aucune règle CSS ne les demande à ces polices : les garder coûterait des glyphes
+ * jamais dessinés.
  */
 const ARCHIVO_FEATURES = ['ccmp', 'kern', 'liga', 'locl', 'mark', 'mkmk', 'rvrn'];
 
 /**
- * Les trois polices servies. Sans hinting, comme celles que servait Google Fonts : il ne joue que
- * sous Windows et pèse un tiers de la mono. L'axe de largeur s'arrête à 100 % : le site ne dessine
- * rien de plus large, et l'italique n'est dessinée qu'à 100 %.
+ * Les trois polices servies. Sans hinting : en woff2 sur le web, il ne joue que sous Windows, et
+ * pèse un tiers de la mono. L'axe de largeur s'arrête à 100 % : le site ne dessine rien de plus
+ * large, et l'italique n'est dessinée qu'à 100 %.
  */
 const FONTS = {
 	romaine: { source: 'Archivo[wdth,wght].ttf', output: 'archivo.woff2', axes: { wdth: { min: 62, max: 100 } }, features: ARCHIVO_FEATURES },

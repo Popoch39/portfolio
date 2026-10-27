@@ -52,7 +52,10 @@ export const alternatesOf = (page: Page): { hreflang: string; path: string }[] =
 	{ hreflang: 'x-default', path: pathOf(page, xDefaultLocale) },
 ];
 
-/** Les formats de chaque langue : `Intl`, `og:locale`, et `lang` du document comme des `hreflang`. */
+/**
+ * Les formats de chaque langue : `Intl`, `og:locale`, et `lang` du document comme des `hreflang`.
+ * Les mouvements des figures le lisent aussi : il part avec le chargeur (une centaine d'octets).
+ */
 export const formats: Localized<{ intl: string; ogLocale: string; lang: string }> = {
 	fr: { intl: 'fr-FR', ogLocale: 'fr_FR', lang: 'fr' },
 	en: { intl: 'en-GB', ogLocale: 'en_GB', lang: 'en' },

@@ -5,7 +5,7 @@
 // fiche, la règle de temps montre et règle le temps, et le tour ne part que sur son bouton ; dans
 // l'aperçu, sans règle, le tour part seul quand on laisse la figure.
 import { axisVector, holdStill, translateAlong } from '../../vendor/anatomy/iso-kit.ts';
-import type { Localized } from '../../lib/i18n.ts';
+import { formats, type Localized } from '../../lib/i18n.ts';
 import type { MountMotion } from '../contract.ts';
 import { asksForStillness, follow, loop, spring, type Spring } from '../live.ts';
 import { readingAnchor, rulerX } from '../ruler.ts';
@@ -68,7 +68,7 @@ function tourSpeed(t: number) {
 function spokenDelay(reset: string) {
 	const [, value, unit, minutes] = /^(\d+)([jhm])(\d*)$/.exec(reset) ?? [];
 	if (!unit) return reset;
-	const say = (n: string, name: string) => new Intl.NumberFormat('en-GB', { style: 'unit', unit: name, unitDisplay: 'long' }).format(Number(n));
+	const say = (n: string, name: string) => new Intl.NumberFormat(formats.en.intl, { style: 'unit', unit: name, unitDisplay: 'long' }).format(Number(n));
 	if (unit === 'j') return say(value, 'day');
 	if (unit === 'm') return say(value, 'minute');
 	return `${say(value, 'hour')}${Number(minutes) ? ` ${say(minutes, 'minute')}` : ''}`;

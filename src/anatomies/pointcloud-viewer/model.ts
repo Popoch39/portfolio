@@ -1,7 +1,7 @@
 // Modèle de l'anatomie de pointcloud-viewer : les vrais chiffres du dépôt, au commit lu. Le relevé,
 // la spirale dessinée, les secteurs du disque et le rythme du bake en découlent. Module pur : il
 // tourne au build, sous Node pour l'audit, et dans le module de mouvement.
-import type { Locale, Localized } from '../../lib/i18n.ts';
+import { formats, type Locale, type Localized } from '../../lib/i18n.ts';
 
 /** Commit lu de Popoch39/pointcloud-viewer : tous les liens vers le code y sont figés. */
 export const SHA = 'e30a105e0cf22c12d500d6bbf06fcd26b12697a1';
@@ -154,14 +154,10 @@ export const readSpeed = (angle: number) => Math.min(READ_TOP, READ_START + angl
 export const EPSG = 2154;
 export const ANCHOR = { lat: 48.8468, lng: 2.3384 };
 
-/**
- * Les mots du relevé et le format de ses nombres : les chiffres, eux, ne changent pas d'une langue
- * à l'autre. Le format reprend `formats` du module i18n sans l'importer : importé ici, il passerait
- * dans le morceau du chargeur, que télécharge toute page qui a une figure.
- */
-const WORDS: Localized<{ intl: string; mb: string; turn: string; ratchet: string; bytes: string; anchor: string; modes: string[] }> = {
-	fr: { intl: 'fr-FR', mb: 'Mo', turn: 'tour', ratchet: 'cliquet', bytes: 'o', anchor: 'ancre', modes: ['RGB', 'intensité', 'classification', 'altitude'] },
-	en: { intl: 'en-GB', mb: 'MB', turn: 'turn', ratchet: 'ratchet', bytes: 'B', anchor: 'anchor', modes: ['RGB', 'intensity', 'classification', 'altitude'] },
+/** Les mots du relevé : les chiffres, eux, ne changent pas d'une langue à l'autre. */
+const WORDS: Localized<{ mb: string; turn: string; ratchet: string; bytes: string; anchor: string; modes: string[] }> = {
+	fr: { mb: 'Mo', turn: 'tour', ratchet: 'cliquet', bytes: 'o', anchor: 'ancre', modes: ['RGB', 'intensité', 'classification', 'altitude'] },
+	en: { mb: 'MB', turn: 'turn', ratchet: 'ratchet', bytes: 'B', anchor: 'anchor', modes: ['RGB', 'intensity', 'classification', 'altitude'] },
 };
 
 /**
@@ -171,7 +167,7 @@ const WORDS: Localized<{ intl: string; mb: string; turn: string; ratchet: string
  */
 export const releveOf = (locale: Locale) => {
 	const words = WORDS[locale];
-	const { intl } = words;
+	const { intl } = formats[locale];
 	const count = (value: number) => value.toLocaleString(intl);
 	const decimal = (value: number, digits: number) => value.toLocaleString(intl, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 	const all = `${count(POINTS)} pts`;

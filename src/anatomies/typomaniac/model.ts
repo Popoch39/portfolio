@@ -4,7 +4,7 @@
 // `isDuelDecided`, `tpDelta`, `applyTp`, `isFlooding`. Le relevé, la géométrie au repos et le
 // mouvement lisent tous ce module ; il tourne au build, sous Node pour l'audit et dans le
 // navigateur, sans DOM.
-import type { Locale, Localized } from '../../lib/i18n.ts';
+import { formats, type Locale, type Localized } from '../../lib/i18n.ts';
 
 // --- Constantes du code (apps/api, apps/frontend, packages/typing-engine, packages/ranked) ---
 
@@ -579,7 +579,7 @@ function handle(duel: Duel, event: Event) {
 				const words = WORDS[duel.locale];
 				const verdict = trip.reason
 					? words.rejected + words.reasons[REASONS.indexOf(trip.reason)]
-					: `${words.accepted[0]}${last.kind === 'char' ? last.char.replace(' ', '␣') : '⌫'}${words.accepted[1]}${formatMs(last.at, words)} ms`;
+					: `${words.accepted[0]}${last.kind === 'char' ? last.char.replace(' ', '␣') : '⌫'}${words.accepted[1]}${formatMs(last.at, duel.locale)} ms`;
 				duel.note = { until: event.at + 1200, text: `${head(duel)} · ${verdict}` };
 			}
 			schedule(duel, { at: event.at + CABLE_MS, kind: trip.reason ? RESYNC : RELAY, trip });
@@ -845,8 +845,8 @@ export function mmrOf(duel: Duel) {
 
 // --- Relevé ---
 
-// Le mouvement sert les deux versions : le relevé porte ses deux langues, et leurs nombres
-// (« 18,6 s » et « 1 234 ms » en français, « 18.6 s » et « 1,234 ms » en anglais britannique).
+// Le mouvement sert les deux versions : le relevé porte ses deux langues, et leurs nombres au
+// format de chacune (« 18,6 s » et « 1 234 ms » en français, « 18.6 s » et « 1,234 ms » en anglais).
 const FR = {
 	reasons: ['avant le départ', 'datée après son arrivée', 'hors d’ordre', 'après la fin'],
 	tiers: ['Fer', 'Bronze', 'Argent', 'Or', 'Platine', 'Diamant'],
@@ -863,9 +863,6 @@ const FR = {
 	outcomes: ['B gagne', 'égalité', 'A gagne'],
 	end: 'fin',
 	shield: ' · bouclier',
-	point: ',',
-	/** Espace fine insécable, comme `Intl` en français. */
-	thousands: ' ',
 };
 type Words = typeof FR;
 const WORDS: Localized<Words> = {
@@ -885,13 +882,15 @@ const WORDS: Localized<Words> = {
 		outcomes: ['B wins', 'draw', 'A wins'],
 		end: 'end',
 		shield: ' · shield',
-		point: '.',
-		thousands: ',',
 	},
 };
 
-const decimal = (value: number, { point }: Words) => value.toFixed(1).replace('.', point);
-const formatMs = (ms: number, { thousands }: Words) => String(ms).replace(/\B(?=(\d{3})+$)/g, thousands);
+/**
+ * Arrondi par `toFixed` avant `Intl` : le premier arrondit la valeur binaire (0,15 → « 0,1 »), le
+ * second son écriture décimale (« 0,2 »), et le chrono du relevé suit l'arrondi de `toFixed`.
+ */
+const decimal = (value: number, locale: Locale) => Number(value.toFixed(1)).toLocaleString(formats[locale].intl, { minimumFractionDigits: 1 });
+const formatMs = (ms: number, locale: Locale) => ms.toLocaleString(formats[locale].intl);
 
 /** Le relevé, lu sur l'état du duel à son instant, dans sa langue. */
 export function releveOf(duel: Duel): string {
@@ -915,7 +914,7 @@ export function releveOf(duel: Duel): string {
 	}
 	if (duel.phase === PAUSE) return `${words.pause}${Math.max(1, Math.ceil((duel.phaseAt + BREAK_MS - clock) / 1000))} s`;
 	const t = Math.min(Math.max(roundTime(duel), 0), ROUND_MS + TOLERANCE_MS) / 1000;
-	return `${head(duel)} · ${decimal(t, words)} s · A ${a}–${b} B`;
+	return `${head(duel)} · ${decimal(t, duel.locale)} s · A ${a}–${b} B`;
 }
 
 const head = (duel: Duel) => {

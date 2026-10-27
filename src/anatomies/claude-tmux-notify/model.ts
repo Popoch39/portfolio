@@ -1,7 +1,7 @@
 // Modèle de claude-tmux-notify.nvim, au commit lu : les constantes du plugin, la ligne JSON que
 // le crochet ajoute au fichier de cache, et le sondage qui la lit. Le relevé et le mouvement en
 // découlent ; aucune API de navigateur, pour tourner aussi sous Node (audit).
-import type { Locale } from '../../lib/i18n.ts';
+import { formats, type Locale, type Localized } from '../../lib/i18n.ts';
 import type { Piece } from '../contract.ts';
 
 /** Commit lu de Popoch39/claude-tmux-notify.nvim (branche `master`). */
@@ -68,22 +68,17 @@ export function startOffset(size: number) {
 export const START_SIZE = 18_406;
 
 /**
- * Format des nombres de chaque langue (`formats` du module i18n, recopié : l'importer l'ajouterait au
- * morceau du chargeur, que toutes les pages téléchargent). Le français du site ne groupe les chiffres
- * qu'à partir de 10 000 (« 1000 ms », mais « 1 048 576 o ») ; l'anglais dès 1 000 (« 1,000 ms »).
+ * Groupement des chiffres de chaque langue. Le français du site ne groupe les chiffres qu'à partir
+ * de 10 000 (« 1000 ms », mais « 1 048 576 o ») ; l'anglais dès 1 000 (« 1,000 ms »).
  */
-const NUMBERS = {
-	fr: { intl: 'fr-FR', useGrouping: 'min2' },
-	en: { intl: 'en-GB', useGrouping: 'auto' },
-} as const;
+const GROUPING = { fr: 'min2', en: 'auto' } as const satisfies Localized<Intl.NumberFormatOptions['useGrouping']>;
 
 /**
  * Les relevés dans une langue. Le formateur est créé ici, une fois par appel, et non à chaque image :
  * le mouvement l'appelle à son montage, avec la langue du document.
  */
 export function relevesOf(locale: Locale) {
-	const { intl, useGrouping } = NUMBERS[locale];
-	const n = new Intl.NumberFormat(intl, { useGrouping }).format;
+	const n = new Intl.NumberFormat(formats[locale].intl, { useGrouping: GROUPING[locale] }).format;
 	const ms = (value: number) => `${n(Math.max(0, Math.round(value)))} ms`;
 	const w = (window: number) => WINDOWS[window];
 	return {

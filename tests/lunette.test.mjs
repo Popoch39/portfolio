@@ -135,3 +135,11 @@ test('la CSS de la Lunette, dans son morceau : ni :hover, ni transition, ni anim
 	assert.doesNotMatch(code, /\btransition\s*:/);
 	assert.doesNotMatch(code, /@keyframes|\banimation(?:-[a-z-]+)?\s*:/);
 });
+
+// Le champ n'a pas de contour : le bloc curseur en tient lieu, et ne doit donc pas mentir sur le focus.
+test('le bloc curseur de la Lunette, son indicateur de focus, s’efface quand le champ perd le focus', () => {
+	const [chunk] = lunetteOf(readPage(HOME.fr));
+	const code = readDist(chunk.slice(1));
+	assert.match(code, /\.lunette input\{[^}]*outline:\s*none/, 'le champ a retrouvé son contour : ce test n’a plus lieu d’être');
+	assert.match(code, /\.lunette input:not\(:focus\)\s*\+\s*\.cursor\s*\{\s*visibility:\s*hidden/);
+});

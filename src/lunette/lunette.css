@@ -149,7 +149,7 @@
 }
 
 /* La saisie prend la largeur de son texte : le bloc curseur la suit, à la place du curseur natif, qui
-   clignoterait. Le bloc dit où est le focus, qui ne quitte jamais ce champ. */
+   clignoterait. Le bloc tient lieu d'indicateur de focus : il n'est là que si le champ l'a. */
 .lunette input {
 	flex: 0 1 auto;
 	min-width: 1px;
@@ -170,6 +170,12 @@
 	width: 9px;
 	height: 18px;
 	background: var(--ink);
+}
+
+/* Le focus parti ailleurs (un lecteur d'écran sur le bouton fermer, par exemple), le bloc s'efface sans
+   décaler la ligne. */
+.lunette input:not(:focus) + .cursor {
+	visibility: hidden;
 }
 
 /* Sans `field-sizing`, le bloc ne suivrait pas le texte : le curseur natif le remplace. */

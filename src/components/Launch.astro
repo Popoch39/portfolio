@@ -1,8 +1,8 @@
 ---
-// Le lancement (maquette 2 · Buffer, ADR 0008), rendu en tête de l'accueil : à la première arrivée de
-// la session, `nvim portfolio.md` se tape dans un terminal qui charge chaque section, le curseur bloc
-// inonde l'écran, Échap, et le bleu se range dans le segment NORMAL de la barre d'état pendant que
-// l'accueil entre. Écran et CSS sont rendus au build ; sans l'attribut `data-launch` du document,
+// Le lancement (maquette 2 · Buffer, ADR 0008), rendu en tête de l'accueil : à chaque chargement, sauf
+// en revenant du site, `nvim portfolio.md` se tape dans un terminal qui charge chaque section, le
+// curseur bloc inonde l'écran, Échap, et le bleu se range dans le segment NORMAL de la barre d'état
+// pendant que l'accueil entre. Écran et CSS sont rendus au build ; sans l'attribut `data-launch` du document,
 // l'écran n'est pas affiché et rien ne s'anime.
 import { sectionKeys, sections } from '../data/profile';
 import { localeOf, ui } from '../lib/i18n';
@@ -16,23 +16,21 @@ const OK_COLUMN = 24;
 const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.length));
 ---
 
-{/* La porte : classique et avant l'écran, elle pose `data-launch` avant le premier rendu. Elle ne joue
-    qu'à la première arrivée de la session sur l'accueil, venue d'ailleurs que du site (un retour de
-    fiche garde sa view transition), sans ancre et sans mouvement réduit ; sans stockage de session,
-    jamais. Une touche, un clic, la molette ou un défilement le terminent sur-le-champ tant que le bleu
-    couvre l'écran ; une fois qu'il se range (3450 ms), couper ferait sauter l'accueil à sa place :
+{/* La porte : classique et avant l'écran, elle pose `data-launch` avant le premier rendu. Elle joue à
+    chaque chargement de l'accueil, rechargement compris, sauf au retour (bouton précédent) ou en venant
+    d'une page du site : l'arrivée d'une fiche garde sa view transition. Le référent survit à un
+    rechargement, d'où le type de navigation lu en premier. Ni vers une ancre, ni en mouvement réduit.
+    Une touche, un clic, la molette ou un défilement le terminent sur-le-champ tant que le bleu
+    couvre l'écran ; une fois qu'il se range (5500 ms), couper ferait sauter l'accueil à sa place :
     la suite se joue six fois plus vite. Le départ de la page coupe toujours. Sinon, il finit avec
     `launch-done`, la plus longue de ses animations. Les commentaires restent ici : ceux du script
     partiraient avec chaque accueil. */}
 <script is:inline>
 	(() => {
 		const root = document.documentElement;
-		try {
-			if (sessionStorage.launch || location.hash || document.referrer.startsWith(location.origin + '/') || !matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
-			sessionStorage.launch = 1;
-		} catch {
-			return;
-		}
+		const navigation = performance.getEntriesByType('navigation')[0]?.type;
+		const fromSite = navigation !== 'reload' && document.referrer.startsWith(location.origin + '/');
+		if (navigation === 'back_forward' || fromSite || location.hash || !matchMedia('(prefers-reduced-motion: no-preference)').matches) return;
 		root.dataset.launch = '';
 		const inputs = ['keydown', 'click', 'wheel', 'scroll', 'pagehide'];
 		const quiet = () => inputs.forEach((type) => removeEventListener(type, skip, true));
@@ -45,7 +43,7 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 		const skip = (e) => {
 			quiet();
 			const launch = document.getAnimations().filter((a) => a.animationName?.startsWith('launch-'));
-			if (e.type !== 'pagehide' && launch.find((a) => a.animationName === 'launch-done')?.currentTime > 3450) launch.forEach((a) => a.updatePlaybackRate(6));
+			if (e.type !== 'pagehide' && launch.find((a) => a.animationName === 'launch-done')?.currentTime > 5500) launch.forEach((a) => a.updatePlaybackRate(6));
 			else end({ animationName: 'launch-done' });
 		};
 		for (const type of inputs) addEventListener(type, skip, { capture: true, passive: true });
@@ -87,14 +85,14 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 		display: none;
 	}
 
-	/* La chronologie, en ms depuis le premier rendu :
-	   250–1100     `nvim portfolio.md` se tape, une colonne toutes les 50 ms ;
-	   1150–2500    la barre se remplit ; de 1200, une ligne de sortie toutes les 170 ms ;
-	   2450–3050    le curseur bloc inonde l'écran ;
-	   2950–3650    la touche Échap, enfoncée à 3330 ;
-	   3100         sous le bleu, l'accueil prend sa pose de départ ;
-	   3450–4250    le bleu se range dans le segment NORMAL, le titre monte ;
-	   3650–4600    le reste de l'accueil entre, le curseur du titre s'étire, le bleu s'efface. */
+	/* La chronologie de la maquette, en ms depuis le premier rendu :
+	   400–1600     `nvim portfolio.md` se tape, une colonne toutes les 70 ms ;
+	   1700–4600    la barre se remplit ; de 1800, une ligne de sortie toutes les 360 ms ;
+	   4100–5000    le curseur bloc inonde l'écran ;
+	   4800–5900    la touche Échap, enfoncée à 5460 ;
+	   5100         sous le bleu, l'accueil prend sa pose de départ ;
+	   5500–6700    le bleu se range dans le segment NORMAL, le titre monte (5600–7000) ;
+	   6100–7520    le reste de l'accueil entre, le curseur du titre s'étire, le bleu s'efface. */
 	@media (prefers-reduced-motion: no-preference) {
 		:global(:root[data-launch]) .launch {
 			/* Bord gauche du contenu de la page et ligne de la commande : le terminal s'y cale, et le
@@ -105,7 +103,7 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 			position: fixed;
 			inset: 0;
 			z-index: 10;
-			animation: launch-done 4600ms linear forwards;
+			animation: launch-done 7520ms linear forwards;
 		}
 
 		.term {
@@ -139,13 +137,13 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 			inset: 0 auto 0 0;
 			width: 18ch;
 			background: var(--ink);
-			animation: launch-type 850ms steps(17, end) 250ms both;
+			animation: launch-type 1200ms steps(17, end) 400ms both;
 		}
 
-		/* Une ligne de sortie toutes les 170 ms, la première à 1200. */
+		/* Une ligne de sortie toutes les 360 ms, la première à 1800. */
 		:global(:root[data-launch]) .out {
 			color: var(--on-ink-muted);
-			animation: launch-line 260ms cubic-bezier(0.16, 1, 0.3, 1) calc(1200ms + var(--rank, 0) * 170ms) both;
+			animation: launch-line 200ms cubic-bezier(0.16, 1, 0.3, 1) calc(1800ms + var(--rank, 0) * 360ms) both;
 		}
 
 		.out:nth-child(3) {
@@ -198,7 +196,7 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 			inset: 0;
 			background: var(--status-segment);
 			transform-origin: left;
-			animation: launch-fill 1350ms cubic-bezier(0.55, 0, 0.15, 1) 1150ms both;
+			animation: launch-fill 2900ms cubic-bezier(0.55, 0, 0.15, 1) 1700ms both;
 		}
 
 		.side {
@@ -225,7 +223,7 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 			min-width: calc(4ch + 28px);
 			text-align: right;
 			counter-reset: n var(--launch-n);
-			animation: launch-count 1350ms cubic-bezier(0.55, 0, 0.15, 1) 1150ms both;
+			animation: launch-count 2900ms cubic-bezier(0.55, 0, 0.15, 1) 1700ms both;
 		}
 
 		.pct::after {
@@ -245,7 +243,7 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 			font: 16px var(--font-mono);
 			visibility: visible;
 			pointer-events: none;
-			animation: launch-type 850ms steps(17, end) 250ms both;
+			animation: launch-type 1200ms steps(17, end) 400ms both;
 		}
 
 		:global(:root[data-launch]) .block {
@@ -258,8 +256,8 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 			background: var(--accent);
 			transform-origin: 0 0;
 			animation:
-				launch-flood 1800ms 2450ms both,
-				launch-out 120ms linear 4250ms forwards;
+				launch-flood 2600ms 4100ms both,
+				launch-out 50ms linear 6700ms forwards;
 		}
 
 		:global(:root[data-launch]) .key {
@@ -274,7 +272,7 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 			color: #ffffff;
 			visibility: visible;
 			pointer-events: none;
-			animation: launch-key 700ms 2950ms both;
+			animation: launch-key 1100ms 4800ms both;
 		}
 
 		.cap {
@@ -297,48 +295,49 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 		}
 
 		/* L'accueil, peint dès le premier rendu sous l'écran (son titre est le LCP) : il ne prend sa
-		   pose de départ qu'à 3100 ms, sous le bleu. D'où `forwards`, jamais `both`. */
+		   pose de départ qu'à 5100 ms, sous le bleu. D'où `forwards`, jamais `both`. */
 		:global(:root[data-launch] .hero .line) {
 			clip-path: inset(-25% -5% 0 -5%);
 		}
 
 		:global(:root[data-launch] .hero .rise) {
-			animation: launch-rise 1150ms 3100ms forwards;
+			animation: launch-rise 1900ms 5100ms forwards;
 		}
 
 		:global(:root[data-launch] .hero .last .rise) {
-			animation-delay: 3160ms;
+			animation-delay: 5190ms;
 		}
 
 		:global(:root[data-launch] .hero .cursor) {
 			transform-origin: left;
-			animation: launch-cursor 1400ms 3100ms forwards;
+			animation: launch-cursor 2000ms 5100ms forwards;
 		}
 
 		:global(:root[data-launch] .site-header),
 		:global(:root[data-launch] .hero .topline) {
-			animation: launch-enter 1350ms 3100ms forwards;
+			animation: launch-enter 2200ms 5100ms forwards;
 		}
 
 		:global(:root[data-launch] .hero .lede) {
-			animation: launch-enter 1350ms 3140ms forwards;
+			animation: launch-enter 2200ms 5160ms forwards;
 		}
 
 		:global(:root[data-launch] .hero .facts) {
-			animation: launch-enter 1350ms 3190ms forwards;
+			animation: launch-enter 2200ms 5240ms forwards;
 		}
 
 		:global(:root[data-launch] .hero .actions) {
-			animation: launch-enter 1350ms 3250ms forwards;
+			animation: launch-enter 2200ms 5320ms forwards;
 		}
 
-		/* L'écran s'efface à 3450 ms, le bleu couvrant tout : le bloc et la touche restent. */
+		/* L'écran s'efface à 5500 ms (73,14 % de 7520), le bleu couvrant tout : le bloc et la touche
+		   restent. */
 		@keyframes launch-done {
 			0%,
-			74.99% {
+			73.13% {
 				visibility: visible;
 			}
-			75%,
+			73.14%,
 			100% {
 				visibility: hidden;
 			}
@@ -369,15 +368,15 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 			}
 		}
 
-		/* Relatif au curseur, décalé de 17 colonnes à la fin de la frappe. 600 ms pour inonder, 400 de
-		   plein écran, 800 pour se ranger. */
+		/* Relatif au curseur, décalé de 17 colonnes à la fin de la frappe. 900 ms pour inonder, 500 de
+		   plein écran, 1200 pour se ranger. */
 		@keyframes launch-flood {
 			from {
 				transform: translate(calc(var(--left) + 2ch), calc(var(--top) + 4px)) scale(var(--cell-x), var(--cell-y));
 				animation-timing-function: cubic-bezier(0.83, 0, 0.17, 1);
 			}
-			33.333%,
-			55.556% {
+			34.615%,
+			53.846% {
 				transform: translate(-17ch, 0) scale(1, 1);
 				animation-timing-function: cubic-bezier(0.83, 0, 0.17, 1);
 			}
@@ -398,15 +397,15 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 				transform: translateY(10px) scale(0.92);
 				animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 			}
-			28.571%,
-			54.286% {
+			27.273%,
+			54.545% {
 				opacity: 1;
 				transform: none;
 			}
 			60% {
 				transform: translateY(5px) scale(0.98);
 			}
-			64.286% {
+			63.636% {
 				opacity: 1;
 				transform: none;
 				animation-timing-function: cubic-bezier(0.7, 0, 0.84, 0);
@@ -419,7 +418,7 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 
 		@keyframes launch-rise {
 			0%,
-			30.435% {
+			26.316% {
 				transform: translateY(108%);
 				animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 			}
@@ -430,7 +429,7 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 
 		@keyframes launch-enter {
 			0%,
-			40.741% {
+			45.455% {
 				opacity: 0;
 				transform: translateY(20px);
 				animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
@@ -443,7 +442,7 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 
 		@keyframes launch-cursor {
 			0%,
-			78.571% {
+			80% {
 				transform: scaleX(0);
 				animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 			}

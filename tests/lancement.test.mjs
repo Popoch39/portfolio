@@ -1,6 +1,6 @@
-// Le lancement (maquette 2 · Buffer, ADR 0008) : à la première arrivée de la session sur l'accueil,
-// `nvim portfolio.md` se tape dans un terminal, le curseur bloc inonde l'écran puis se range dans le
-// segment NORMAL de la barre d'état, et l'accueil entre.
+// Le lancement (maquette 2 · Buffer, ADR 0008) : à chaque chargement de l'accueil, sauf en revenant
+// du site, `nvim portfolio.md` se tape dans un terminal, le curseur bloc inonde l'écran puis se range
+// dans le segment NORMAL de la barre d'état, et l'accueil entre.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -20,29 +20,26 @@ const screenOf = (html) => {
 };
 
 /**
- * Exécute le script de la porte dans un faux navigateur. Rend l'attribut du document, le stockage de
- * session et les écouteurs encore inscrits ; `fire` leur envoie un évènement.
+ * Exécute le script de la porte dans un faux navigateur. `navigation` est le type de l'entrée de
+ * navigation (`navigate`, `reload`, `back_forward`). Rend l'attribut du document et les écouteurs
+ * encore inscrits ; `fire` leur envoie un évènement.
  */
-function run(script, { referrer = '', hash = '', seen = false, reduced = false, storage = true, animations = [] } = {}) {
+function run(script, { navigation = 'navigate', referrer = '', hash = '', reduced = false, animations = [] } = {}) {
 	const dataset = {};
-	const store = seen ? { launch: '1' } : {};
 	const listeners = new Map();
 	const sandbox = {
 		document: { documentElement: { dataset }, referrer, getAnimations: () => animations },
 		location: { hash, origin: ORIGIN, href: `${ORIGIN}/${hash}` },
+		performance: { getEntriesByType: (type) => (type === 'navigation' ? [{ type: navigation }] : []) },
 		matchMedia: (query) => ({ matches: /:\s*reduce\)/.test(query) ? reduced : /:\s*no-preference\)/.test(query) ? !reduced : false }),
 		addEventListener: (type, fn) => listeners.set(type, fn),
 		removeEventListener: (type, fn) => listeners.get(type) === fn && listeners.delete(type),
 	};
-	Object.defineProperty(sandbox, 'sessionStorage', {
-		get() {
-			if (!storage) throw new Error('SecurityError');
-			return store;
-		},
-	});
 	vm.runInNewContext(script.replace(/^<script\b[^>]*>|<\/script>$/g, ''), sandbox);
-	return { dataset, store, listeners, fire: (type, props = {}) => listeners.get(type)?.({ type, ...props }) };
+	return { dataset, listeners, fire: (type, props = {}) => listeners.get(type)?.({ type, ...props }) };
 }
+
+const FICHE_URL = `${ORIGIN}/projets/trekker/`;
 
 const playing = (page) => 'launch' in page.dataset;
 
@@ -72,21 +69,27 @@ for (const [locale, version] of Object.entries(VERSIONS)) {
 		assert.ok(gate.length < 1500, `porte de ${gate.length} o`);
 	});
 
-	test(`${locale} : le lancement joue à la première arrivée de la session, venue d’ailleurs`, () => {
-		for (const referrer of ['', 'https://github.com/Popoch39']) {
-			const page = run(gate, { referrer });
-			assert.ok(playing(page), `référent « ${referrer} »`);
-			assert.ok(page.store.launch, 'session non marquée');
+	test(`${locale} : le lancement joue à chaque arrivée venue d’ailleurs, et à chaque rechargement (F5)`, () => {
+		const cases = {
+			'adresse tapée': {},
+			'lien externe': { referrer: 'https://github.com/Popoch39' },
+			rechargement: { navigation: 'reload' },
+			// Le référent survit au rechargement : F5 sur un accueil atteint depuis une fiche rejoue aussi.
+			'rechargement après une fiche': { navigation: 'reload', referrer: FICHE_URL },
+		};
+		for (const [name, options] of Object.entries(cases)) {
+			assert.ok(playing(run(gate, options)), name);
+			assert.ok(playing(run(gate, options)), `${name}, une seconde fois`);
 		}
 	});
 
-	test(`${locale} : il ne joue ni deux fois par session, ni depuis le site, ni vers une ancre, ni en mouvement réduit, ni sans stockage`, () => {
+	test(`${locale} : il ne joue ni au retour, ni depuis une page du site, ni vers une ancre, ni en mouvement réduit`, () => {
 		const cases = {
-			'déjà vu': { seen: true },
-			'depuis une fiche': { referrer: `${ORIGIN}/projets/trekker/` },
+			'retour depuis une fiche': { navigation: 'back_forward', referrer: FICHE_URL },
+			'retour sans référent': { navigation: 'back_forward' },
+			'lien depuis une fiche': { referrer: FICHE_URL },
 			'vers une ancre': { hash: '#contact' },
 			'mouvement réduit': { reduced: true },
-			'stockage refusé': { storage: false },
 		};
 		for (const [name, options] of Object.entries(cases)) {
 			const page = run(gate, options);
@@ -104,11 +107,11 @@ for (const [locale, version] of Object.entries(VERSIONS)) {
 		}
 	});
 
-	// Une fois le bleu en train de se ranger (3450 ms), couper ferait sauter l'accueil à sa place : la
+	// Une fois le bleu en train de se ranger (5500 ms), couper ferait sauter l'accueil à sa place : la
 	// suite se joue en accéléré, et la fin de `launch-done` le termine.
 	test(`${locale} : pendant l’entrée de l’accueil, une touche accélère la fin au lieu de la couper`, () => {
 		const animation = (animationName, currentTime) => ({ animationName, currentTime, playbackRate: 1, updatePlaybackRate(rate) { this.playbackRate = rate; } });
-		const entering = [animation('launch-done', 3800), animation('launch-enter', 3800), animation('iso-spin', 3800)];
+		const entering = [animation('launch-done', 6000), animation('launch-enter', 6000), animation('iso-spin', 6000)];
 		const page = run(gate, { animations: entering });
 		page.fire('keydown');
 		assert.ok(playing(page), 'coupé pendant l’entrée');
@@ -117,7 +120,7 @@ for (const [locale, version] of Object.entries(VERSIONS)) {
 		page.fire('animationend', { animationName: 'launch-done' });
 		assert.ok(!playing(page));
 
-		const covered = [animation('launch-done', 3300), animation('launch-enter', 3300)];
+		const covered = [animation('launch-done', 5300), animation('launch-enter', 5300)];
 		const early = run(gate, { animations: covered });
 		early.fire('click');
 		assert.ok(!playing(early), 'sous le bleu, le saut coupe');

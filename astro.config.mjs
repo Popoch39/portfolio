@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig, fontProviders } from 'astro/config';
 import { defaultLocale, locales } from './src/lib/i18n.ts';
+import { cloudflareHeaders } from './src/integrations/cloudflare-headers.mjs';
 
 // https://astro.build/config
 export default defineConfig({
@@ -18,6 +19,8 @@ export default defineConfig({
 		// Aucune feuille de style externe : la CSS part avec le HTML, rien ne bloque le premier rendu.
 		inlineStylesheets: 'always',
 	},
+	// Cache et Early Hints pour Cloudflare Pages, tirés du HTML construit.
+	integrations: [cloudflareHeaders()],
 	// Polices réduites à ce que le site affiche, régénérées par `pnpm build && pnpm polices` (ADR 0005).
 	fonts: [
 		{

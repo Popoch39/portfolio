@@ -39,17 +39,25 @@ const events = watch('event', isEvent);
 
 /**
  * Les moments où la Lunette était demandée ou ouverte : la touche qui l'ouvre, la frappe et Entrée sont
- * les siennes, pas celles de la page, que :checkhealth mesure. La première ouverture commence au
- * téléchargement de ce morceau, que la touche lance ; les suivantes à l'appel d'`opened`, pendant
- * elle. `lead` couvre le début de la touche : la Maj ou le Ctrl enfoncé avant, le pointerdown d'un clic.
+ * les siennes, pas celles de la page, que :checkhealth mesure. Une ouverture commence à l'appel
+ * d'`opened`, pendant la touche ; celle qui importe ce morceau, dès son téléchargement, que la touche a
+ * lancé. `lead` couvre le début de la touche : la Maj ou le Ctrl enfoncé avant, le pointerdown d'un clic.
  */
 const periods: { start: number; end: number }[] = [];
 const requested = performance.getEntriesByName(import.meta.url)[0]?.startTime;
 const lead = 500;
 
+/**
+ * Vrai jusqu'à la fin de la tâche qui évalue ce morceau : une ouverture d'ici là est celle qui l'a
+ * importé. `yy` l'importe aussi, sans l'ouvrir ; l'ouverture suivante ne remonte pas jusqu'à lui.
+ */
+let importing = true;
+setTimeout(() => (importing = false));
+
 export function opened() {
 	const now = performance.now();
-	periods.push({ start: periods.length ? now : Math.min(requested ?? now, now), end: Infinity });
+	periods.push({ start: importing ? Math.min(requested ?? now, now) : now, end: Infinity });
+	importing = false;
 }
 
 export function closed() {

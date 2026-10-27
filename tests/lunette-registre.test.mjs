@@ -239,14 +239,11 @@ test(':marks liste les cinq sections avec leur nom localisé, et l’aide de cha
 	assert.equal(marks.line, 'marks ');
 });
 
-test(':q revient d’une fiche à l’accueil de sa langue, et n’existe pas sur l’accueil', () => {
+// Sur l'accueil, `:q` répond E37 : c'est un easter egg, testé avec les autres (lunette-oeufs).
+test(':q revient d’une fiche à l’accueil de sa langue', () => {
 	assert.deepEqual(run(':q', ficheTrekker), { kind: 'go', path: '/' });
 	assert.deepEqual(run('quit', { page: { kind: 'fiche', slug: 'trekker' }, locale: 'en' }), { kind: 'go', path: '/en/' });
 	assert.ok(names(ficheTrekker).includes('q'));
-	for (const context of [accueil, home]) {
-		assert.ok(!names(context).includes('q'), `${context.locale} : :q listée sur l’accueil`);
-		assert.deepEqual(run('q', context), { error: 'E492: Not an editor command: q' });
-	}
 });
 
 test('le contexte d’une page se lit dans son adresse', () => {

@@ -180,7 +180,13 @@ test('portée : :pieces n’existe que sur une fiche à figure, :play et :pause 
 			assert.deepEqual(run(name, context), { error: `E492: Not an editor command: ${name}` });
 		}
 		assert.ok(!list('set ', context).entries.some((entry) => /^(lecture|view)=/.test(entry.label)), `${context.locale} : lecture réglable sur l’accueil`);
+		// Hors de sa portée, l'option n'existe pas plus que la commande : E492, pas E474.
+		for (const line of ['set lecture=code', ':set view=plain', 'set lecture']) {
+			assert.deepEqual(run(line, context), { error: `E492: Not an editor command: ${line.replace(/^:/, '')}` }, `${context.locale} : ${line}`);
+		}
 	}
+	// Sur une figure, une valeur inconnue reste un argument invalide.
+	assert.deepEqual(run('set view=gras', ficheFigure), { error: 'E474: Invalid argument: view=gras' });
 	assert.ok(names(ficheFigure).includes('pieces'));
 	for (const name of ['play', 'pause']) {
 		assert.ok(!names(ficheFigure).includes(name), `:${name} listée sur une figure sans temps`);

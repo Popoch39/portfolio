@@ -94,13 +94,14 @@ interface Command {
 	help: Localized<string>;
 	/**
 	 * Une liste à choisir : Tab sur la commande y passe, Entrée aussi si la commande ne se lance pas
-	 * seule. `unknown` est l'erreur d'une valeur qui ne répond à aucun choix (E492 de la ligne sinon).
+	 * seule. `unknown` est l'erreur d'une valeur qui ne répond à aucun choix ; absente ou sans erreur (une
+	 * option hors de sa portée), le E492 de la ligne.
 	 */
 	argument?: {
 		title: Localized<string>;
 		enter: Localized<string>;
 		choices: (context: Context) => Choice[];
-		unknown?: (value: string) => string;
+		unknown?: (value: string, context: Context) => string | undefined;
 	};
 	/** Sans argument. Absente, la commande en exige un. */
 	run?: (context: Context) => Result;
@@ -173,6 +174,9 @@ const lectureOf = {
 		help: { fr: 'Lit les notes de la figure en code : le symbole et la signature de chaque pièce.', en: 'Reads the figure notes as code: the symbol and signature of each part.' },
 	},
 } satisfies Record<string, Record<'label' | 'help', Localized<string>>>;
+
+/** Le nom de l'option dans chaque langue : `lecture`, `view`. */
+const lectureNames = locales.map((locale) => lectureOf.clair.label[locale].split('=')[0]);
 
 /**
  * La lecture des notes, réglée comme la ligne de commande de la carte : `lecture=clair` sur une page
@@ -403,7 +407,8 @@ const commands: Command[] = [
 					),
 				...lectures(context),
 			],
-			unknown: (value) => `E474: Invalid argument: ${value}`,
+			// Hors d'une figure, l'option de lecture n'existe pas, comme les commandes de la fiche.
+			unknown: (value, { figure }) => (figure || !lectureNames.includes(value.split('=')[0]) ? `E474: Invalid argument: ${value}` : undefined),
 		},
 	},
 	{
@@ -671,8 +676,8 @@ export function run(line: string, context: Context): Result {
 	const exact = choices.find((choice) => [choice.label, ...(choice.aliases ?? [])].some((alias) => alias.toLowerCase() === wanted));
 	const action = (exact ?? filter(choices, wanted)[0])?.action;
 	if (action) return action;
-	const { unknown: missing } = command.argument;
-	return missing ? { error: missing(value) } : unknown;
+	const error = command.argument.unknown?.(value, context);
+	return error ? { error } : unknown;
 }
 
 /** Le contexte d'une page d'après son adresse, ou rien hors des pages du site. */

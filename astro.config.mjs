@@ -20,8 +20,9 @@ export default defineConfig({
 		inlineStylesheets: 'always',
 	},
 	vite: {
-		// `:version` de la Lunette : le commit, la date du build et la version d'Astro.
-		define: buildDefines(['astro']),
+		// `:version` de la Lunette : le commit, la date du build et la version d'Astro ; `:Lazy` : celles
+		// d'Astro et de TypeScript.
+		define: buildDefines(['astro', 'typescript']),
 	},
 	fonts: [
 		{

@@ -1,12 +1,12 @@
 import type { APIRoute } from 'astro';
-import { projects } from '../data/profile';
-import { alternatesOf, fiche, home, locales, pathOf } from '../lib/i18n';
+import { pages } from '../data/profile';
+import { alternatesOf, locales, pathOf } from '../lib/i18n';
 
 // L'accueil et les fiches, chaque version avec les mêmes alternatives que les `hreflang` de son
 // `<head>` : pas besoin de l'intégration @astrojs/sitemap.
 export const GET = (({ site }) => {
 	if (!site) throw new Error('`site` doit être défini dans astro.config.mjs : le sitemap en dérive.');
-	const urls = [home, ...projects.map((project) => fiche(project.slug))].flatMap((page) => {
+	const urls = pages.flatMap((page) => {
 		const alternates = alternatesOf(page)
 			.map(({ hreflang, path }) => `<xhtml:link rel="alternate" hreflang="${hreflang}" href="${new URL(path, site).href}"/>`)
 			.join('');

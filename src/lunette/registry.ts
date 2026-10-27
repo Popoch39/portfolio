@@ -2,7 +2,8 @@
 // sous Node. La Lunette lui passe la ligne tapée et le contexte de la page ; il lui rend la liste à
 // afficher, meilleur résultat en tête, et l'action que la ligne résout. Chaque commande déclare son nom,
 // ses alias, sa portée, son aide et son argument : en ajouter une ne touche ni au filtre ni à la Lunette.
-import { identity, projects, sectionKeys, sections, type SectionKey } from '../data/profile.ts';
+import { identity, pages, projects, sectionKeys, sections, type SectionKey } from '../data/profile.ts';
+import { smile } from './smile.ts';
 import { fiche, home, locales, pathOf, type Locale, type Localized, type Page } from '../lib/i18n.ts';
 
 /** Ce que la page offre aux commandes. Les tickets suivants y ajoutent la figure (temps, pièces). */
@@ -20,7 +21,12 @@ export type Action =
 	| { kind: 'show'; pane: Pane }
 	| { kind: 'yank'; text: string; copied: string; failed: string }
 	/** Une adresse hors du site, ouverte dans un nouvel onglet. */
-	| { kind: 'open'; url: string };
+	| { kind: 'open'; url: string }
+	/** L'écran fermé sous un aplat d'encre (`:q!` sur l'accueil), jusqu'à Échap ou `:e`. */
+	| { kind: 'quit' };
+
+/** L'action d'une commande, ou l'erreur que répondrait Vim, écrite dans l'écho. */
+export type Result = Action | { error: string };
 
 /**
  * Ce que montre le Volet pour un résultat : l'Aperçu d'un projet, ou l'aide d'une commande ; celle de
@@ -31,7 +37,24 @@ export type Pane =
 	| { kind: 'project'; slug: string }
 	| { kind: 'help'; name: string; text: string; commands?: { name: string; text: string }[] }
 	| { kind: 'health' }
-	| { kind: 'version' };
+	| { kind: 'version' }
+	/** Un dessin en mono, réduit à la largeur du Volet (`:smile`). */
+	| { kind: 'art'; title: string; lines: string[] }
+	/** L'arbre de netrw (`:Ex`) ; `at` est la ligne de la page sélectionnée. */
+	| { kind: 'tree'; title: string; lines: string[]; at: number }
+	/** La stack façon lazy.nvim (`:Lazy`). */
+	| { kind: 'plugins'; title: string; plugins: Plugin[] };
+
+/**
+ * Un outil de la stack : « loaded » s'il sert au premier rendu, « lazy » s'il ne charge qu'à la demande.
+ * La Lunette lit la version de `package` dans les valeurs du build ; le registre, sous Node, ne la voit pas.
+ */
+export interface Plugin {
+	name: string;
+	package?: string;
+	role: string;
+	state: 'loaded' | 'lazy';
+}
 
 /** Une valeur proposée à l'argument d'une commande (un projet pour `:e`). */
 interface Choice {
@@ -65,7 +88,7 @@ interface Command {
 		unknown?: (value: string) => string;
 	};
 	/** Sans argument. Absente, la commande en exige un. */
-	run?: (context: Context) => Action;
+	run?: (context: Context) => Result;
 }
 
 /** Une ligne de résultat : `hits` sont les positions des lettres trouvées dans `label`. */
@@ -77,7 +100,7 @@ export interface Entry {
 	/** La ligne qu'écrit Tab sur ce résultat. */
 	line: string;
 	/** Absente quand Entrée passe à l'argument de la commande. */
-	action?: Action;
+	action?: Result;
 }
 
 export interface Listing {
@@ -141,6 +164,47 @@ const setHelp: Localized<string> = {
 	fr: 'Change une option : :set lang=en ouvre cette page en anglais.',
 	en: 'Sets an option: :set lang=fr opens this page in French.',
 };
+
+/**
+ * Les pages du site en arborescence, façon netrw : le français à la racine, l'anglais sous `en/`. Les
+ * mêmes que celles du sitemap ; chacune montre au Volet l'arbre entier, elle-même marquée.
+ */
+function explorer(): Choice[] {
+	const paths = locales.flatMap((locale) => pages.map((page) => pathOf(page, locale)));
+	// La ligne de chaque dossier de l'arbre, par son chemin relatif (`en/projects/`) ; la racine d'abord.
+	const rows = new Map([['', 0]]);
+	const lines = ['./'];
+	const relative = (path: string) => path.slice(1);
+	for (const path of paths) {
+		let dir = '';
+		relative(path)
+			.split('/')
+			.filter(Boolean)
+			.forEach((part, depth) => {
+				dir += `${part}/`;
+				if (rows.has(dir)) return;
+				rows.set(dir, lines.length);
+				lines.push(`${'| '.repeat(depth + 1)}${part}/`);
+			});
+	}
+	return paths.map((path) => ({
+		label: relative(path) || './',
+		pane: { kind: 'tree', title: 'netrw', lines, at: rows.get(relative(path)) ?? 0 },
+		action: go(path),
+	}));
+}
+
+/** La stack du site, ce qui sert au premier rendu d'abord, comme les « Loaded » de lazy.nvim. */
+const stack: { name: string | Localized<string>; package?: string; role: Localized<string>; state: Plugin['state'] }[] = [
+	{ name: 'astro', package: 'astro', role: { fr: 'les pages, rendues au build', en: 'the pages, rendered at build time' }, state: 'loaded' },
+	{ name: 'typescript', package: 'typescript', role: { fr: 'les types, vérifiés au build', en: 'the types, checked at build time' }, state: 'loaded' },
+	{ name: 'Archivo', role: { fr: 'les titres et le texte', en: 'headings and text' }, state: 'loaded' },
+	{ name: 'Fragment Mono', role: { fr: 'la barre d’état et les commandes', en: 'the status bar and commands' }, state: 'loaded' },
+	{ name: { fr: 'écouteur', en: 'listener' }, role: { fr: ':, gg, ]] et yy, avec la page', en: ':, gg, ]] and yy, with the page' }, state: 'loaded' },
+	{ name: { fr: 'aperçu', en: 'preview' }, role: { fr: 'la figure à côté des projets, sur grand écran', en: 'the figure next to the projects, on wide screens' }, state: 'lazy' },
+	{ name: 'figures', role: { fr: 'les anatomies animées des fiches', en: 'the animated anatomies of project pages' }, state: 'lazy' },
+	{ name: { fr: 'Lunette', en: 'Telescope' }, role: { fr: 'cette fenêtre, à la première commande', en: 'this window, on the first command' }, state: 'lazy' },
+];
 
 /** L'ancre d'une section dans l'accueil de la page : depuis une fiche, on y revient. */
 const sectionPath = (key: SectionKey, locale: Locale) => `${pathOf(home, locale)}#${sections[key].id[locale]}`;
@@ -256,12 +320,16 @@ const commands: Command[] = [
 	{
 		name: 'q',
 		aliases: ['quit'],
-		// Sur l'accueil, `:q` n'a nulle part où revenir : sa réponse y est un easter egg (E37), pas un
-		// retour. D'ici là, il n'y existe pas.
-		scope: onFiche,
-		help: { fr: 'Revient à l’accueil.', en: 'Goes back to the home page.' },
-		// Un simple changement d'adresse : le nom de la fiche vole jusqu'à sa ligne de l'accueil (ADR 0004).
-		run: ({ locale }) => go(pathOf(home, locale)),
+		help: { fr: 'Quitte la page : d’une fiche, revient à l’accueil.', en: 'Quits the page: from a project page, goes back home.' },
+		// Sur l'accueil, il n'y a nulle part où revenir : Vim refuse de quitter un tampon modifié.
+		// Ailleurs, un simple changement d'adresse : le nom de la fiche vole jusqu'à sa ligne (ADR 0004).
+		run: ({ page, locale }) => (page.kind === 'home' ? { error: 'E37: No write since last change (add ! to override)' } : go(pathOf(home, locale))),
+	},
+	{
+		name: 'q!',
+		aliases: ['quit!'],
+		help: { fr: 'Quitte sans enregistrer : d’une fiche, revient à l’accueil.', en: 'Quits without saving: from a project page, goes back home.' },
+		run: ({ page, locale }) => (page.kind === 'home' ? { kind: 'quit' } : go(pathOf(home, locale))),
 	},
 	{
 		name: 'set',
@@ -299,6 +367,35 @@ const commands: Command[] = [
 			en: 'Shows the commit and date of the build, and the Astro version.',
 		},
 		run: () => ({ kind: 'show', pane: { kind: 'version' } }),
+	},
+	{
+		name: 'smile',
+		help: { fr: 'L’easter egg de Neovim.', en: 'Neovim’s easter egg.' },
+		run: () => ({ kind: 'show', pane: { kind: 'art', title: 'smile', lines: smile } }),
+	},
+	{
+		name: 'Ex',
+		aliases: ['Explore'],
+		help: { fr: 'Parcourt les pages du site, façon netrw.', en: 'Browses the pages of the site, netrw style.' },
+		argument: {
+			title: { fr: 'Pages', en: 'Pages' },
+			enter: { fr: 'ouvrir la page', en: 'open the page' },
+			choices: explorer,
+		},
+	},
+	{
+		name: 'Lazy',
+		// Le gestionnaire des outils de Neovim : ici, les mêmes.
+		aliases: ['Mason'],
+		help: { fr: 'La stack du site, façon gestionnaire de plugins.', en: 'The stack of the site, plugin manager style.' },
+		run: ({ locale }) => ({
+			kind: 'show',
+			pane: {
+				kind: 'plugins',
+				title: 'lazy.nvim',
+				plugins: stack.map(({ name, role, ...rest }) => ({ ...rest, name: typeof name === 'string' ? name : name[locale], role: role[locale] })),
+			},
+		}),
 	},
 	{
 		name: 'help',
@@ -471,7 +568,7 @@ export function list(line: string, context: Context): Listing {
 }
 
 /** L'action d'une ligne entière, validée sans choisir de résultat ; ou l'erreur que répondrait Vim. */
-export function run(line: string, context: Context): Action | { error: string } {
+export function run(line: string, context: Context): Result {
 	const unknown = { error: `E492: Not an editor command: ${clean(line)}` };
 	const { name, argument } = parse(line);
 	const command = find(name, context);

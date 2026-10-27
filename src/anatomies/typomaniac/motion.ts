@@ -27,7 +27,6 @@ import {
 	rush,
 	RUNNING,
 	sliderPose,
-	START,
 	takeOver,
 	tokenAt,
 	advance,
@@ -211,7 +210,7 @@ const mount: MountMotion = ({ locale, scene, svg, releve }) => {
 	/** Un nouveau duel, au format choisi, piloté comme l'était le précédent. */
 	function restart() {
 		const tour = duel.tour;
-		duel = createDuel(texts, ranked, START, locale);
+		duel = createDuel(texts, locale, ranked);
 		if (!tour) takeOver(duel);
 	}
 

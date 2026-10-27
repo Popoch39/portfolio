@@ -360,7 +360,7 @@ const newSide = (index: number, mmr: number): Side => ({
 	mmr,
 });
 
-export function createDuel(texts: Texts, ranked = true, standings: readonly Standing[] = START, locale: Locale = 'fr'): Duel {
+export function createDuel(texts: Texts, locale: Locale, ranked = true, standings: readonly Standing[] = START): Duel {
 	const duel: Duel = {
 		texts,
 		locale,
@@ -933,8 +933,8 @@ const REST_MS = 18_600;
  * Le duel du tour mené en temps réel jusqu'à la pose au repos : même chemin au build et au montage.
  * La pose ne dépend pas de la langue, seul le relevé la lit.
  */
-export function restDuel(texts: Texts, locale: Locale = 'fr'): Duel {
-	const duel = createDuel(texts, true, START, locale);
+export function restDuel(texts: Texts, locale: Locale): Duel {
+	const duel = createDuel(texts, locale);
 	duel.tour = false;
 	for (;;) {
 		const left = duel.round === 1 && duel.phase === RUNNING ? REST_MS - roundTime(duel) : Infinity;

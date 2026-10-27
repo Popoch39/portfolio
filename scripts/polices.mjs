@@ -5,7 +5,7 @@
 // échoue tant qu'un caractère du build manque à la police qui le dessine. Relancé sans changement,
 // il réécrit les mêmes octets.
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { extname } from 'node:path';
+import { extname, join } from 'node:path';
 import subsetFont from 'subset-font';
 
 const root = new URL('../', import.meta.url);
@@ -65,11 +65,10 @@ function italic(pages) {
 }
 
 /** Les fichiers du build dont on relève le texte, par extension. */
-function distFiles(dir = new URL('dist/', root)) {
-	return readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
-		entry.isDirectory() ? distFiles(new URL(`${entry.name}/`, dir)) : ['.html', '.svg', '.js'].includes(extname(entry.name)) ? [new URL(entry.name, dir)] : [],
-	);
-}
+const distFiles = () =>
+	readdirSync(new URL('dist/', root), { recursive: true, withFileTypes: true })
+		.filter((entry) => entry.isFile() && ['.html', '.svg', '.js'].includes(extname(entry.name)))
+		.map((entry) => join(entry.parentPath, entry.name));
 
 /** Un ensemble de caractères en chaîne triée : le fichier ne bouge que si un caractère change. */
 const sorted = (chars) => [...chars].sort((a, b) => a.codePointAt(0) - b.codePointAt(0)).join('');
@@ -78,7 +77,7 @@ async function main() {
 	if (!existsSync(new URL('dist/index.html', root))) throw new Error('dist/index.html introuvable : lancer `pnpm build` avant `pnpm polices`.');
 	const files = distFiles();
 	const contents = files.map((file) => readFileSync(file, 'utf8'));
-	const pages = contents.filter((_, i) => files[i].pathname.endsWith('.html'));
+	const pages = contents.filter((_, i) => files[i].endsWith('.html'));
 	const caracteres = { romaine: sorted(upright(contents)), italique: sorted(italic(pages)) };
 	caracteres.mono = caracteres.romaine;
 	for (const [name, { source, output, axes, features }] of Object.entries(FONTS)) {

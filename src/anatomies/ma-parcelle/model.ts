@@ -141,7 +141,7 @@ export const REST_RELEVE: Localized<string> = { fr: `${PARCEL} · ${WORDS.fr.rea
 export function releveOf({ depth, selected, lost, cached, done }: Sounding, locale: Locale) {
 	const words = WORDS[locale];
 	if (cached && selected) return `${PARCEL} · ${words.cached} · 0 req.`;
-	if (done) return `6/6 · ${lost ? `1 ${words.lost}` :`${TOTAL_REQUESTS} req.`} · ${words.servers}`;
+	if (done) return `6/6 · ${lost ? `1 ${words.lost}` : `${TOTAL_REQUESTS} req.`} · ${words.servers}`;
 	const index = stratumAt(depth);
 	if (index < 0 || !selected) return REST_RELEVE[locale];
 	const stratum = STRATA[index];

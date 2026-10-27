@@ -37,7 +37,7 @@ const LABEL: Localized<string> = {
 	en: 'Scanner on a tripod: the arrow keys turn the head an eighth of a turn (Shift: ten turns); forwards it reads 79 points, backwards the ratchet slips. End finishes the bake, C changes the colour mode, Enter starts a new bake.',
 };
 
-type Phase ='reset' | 'spin' | 'read' | 'write' | 'transfer' | 'anchor' | 'rendered';
+type Phase = 'reset' | 'spin' | 'read' | 'write' | 'transfer' | 'anchor' | 'rendered';
 
 /** Écart signé le plus court, dans ]−π, π]. */
 const wrap = (angle: number) => angle - TAU * Math.round(angle / TAU);

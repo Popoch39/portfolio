@@ -93,8 +93,12 @@ const sourceCode = {
 	const anatomy = scene?.closest('section');
 	if (scene?.dataset.motion && svg && releve && anatomy) {
 		// Arrivée par la transition lettre à lettre (ADR 0004) : la figure ne se monte qu'une fois les
-		// lettres posées, son montage ferait sauter des images.
-		await document.activeViewTransition?.finished;
+		// lettres posées, son montage ferait sauter des images. Prérendue au survol (ADR 0006), la fiche
+		// n'est affichée, et sa transition créée, qu'à son activation : `pagereveal` porte alors la transition.
+		const transition = document.prerendering
+			? await new Promise<ViewTransition | null>((resolve) => addEventListener('pagereveal', (e) => resolve(e.viewTransition), { once: true }))
+			: document.activeViewTransition;
+		await transition?.finished;
 		linkPieces(anatomy);
 		const ruler = card?.querySelector<HTMLElement>('[data-regle]');
 		const tour = card?.querySelector<HTMLButtonElement>('[data-tour]');

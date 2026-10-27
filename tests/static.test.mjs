@@ -23,9 +23,12 @@ const pages = [
 const withoutFigures = (page) =>
 	elements(page, 'svg').reduce((rest, svg) => (/\bclass="[^"]*\biso-svg\b/.test(tags(svg, 'svg')[0]) ? rest.replace(svg, '') : rest), page);
 
-test('scripts limités au JSON-LD, au chargeur (au plus un module, servi par le site) et à la view transition', () => {
+test('scripts limités au JSON-LD, au chargeur (au plus un module, servi par le site), à la view transition et aux règles de prérendu', () => {
 	for (const page of pages) {
-		const all = elements(page.html, 'script').filter((s) => attr(tags(s, 'script')[0], 'type') !== 'application/ld+json');
+		// Les règles de prérendu (ADR 0006), vérifiées par speculation.test.mjs : un bloc de JSON, pas du code.
+		const rules = elements(page.html, 'script').filter((s) => attr(tags(s, 'script')[0], 'type') === 'speculationrules');
+		assert.equal(rules.length, 1, `${page.name} : règles de prérendu`);
+		const all = elements(page.html, 'script').filter((s) => !['application/ld+json', 'speculationrules'].includes(attr(tags(s, 'script')[0], 'type') ?? ''));
 		// Le script de la transition, vérifié par transition.test.mjs : le seul en ligne.
 		const transition = all.filter((s) => !attr(tags(s, 'script')[0], 'src') && /pagereveal/.test(s));
 		assert.equal(transition.length, 1, `${page.name} : script de la transition`);

@@ -4,6 +4,7 @@ import { identity, pageMeta, themeColor, type ShareImage } from '../data/profile
 import { person } from '../lib/structured-data';
 import { alternatesOf, formats, home, localeOf, locales, pathOf, type Page } from '../lib/i18n';
 import LetterTransition from '../components/LetterTransition.astro';
+import SpeculationRules from '../components/SpeculationRules.astro';
 
 interface Props {
 	/** Sans les paramètres suivants, la page reprend les valeurs de l'accueil. */
@@ -71,6 +72,7 @@ const jsonLd = JSON.stringify(structuredData).replaceAll('<', '\\u003c');
 		}
 		{/* X reprend titre, description et image d'Open Graph : seul le format de carte lui est propre. */}
 		<meta name="twitter:card" content="summary_large_image" />
+		<SpeculationRules />
 		<script is:inline type="application/ld+json" set:html={jsonLd} />
 		{/* Romaine et italique d'Archivo préchargées : elles dessinent l'accroche, élément LCP de chaque page. */}
 		<Font cssVariable="--font-archivo" preload={[{ style: 'normal' }, { style: 'italic' }]} />

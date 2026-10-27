@@ -40,8 +40,8 @@ export const shortfalls = (results) =>
 			.map(([id, category]) => ({ page, category, score: scores[id], floor: floorOf(page, id) })),
 	);
 
-const number = (digits, minimumFractionDigits = 0) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: digits, minimumFractionDigits });
-const seconds = (ms) => `${number(1, 1).format(ms / 1000)} s`;
+const formatter = (digits, minimumFractionDigits = 0) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: digits, minimumFractionDigits });
+const seconds = (ms) => `${formatter(1, 1).format(ms / 1000)} s`;
 
 /** Une ligne du tableau, tirée du rapport Lighthouse d'une page. */
 function resultOf(page, report) {
@@ -55,9 +55,9 @@ function resultOf(page, report) {
 			...Object.keys(CATEGORIES).map((id) => scores[id] ?? '—'),
 			seconds(metric('first-contentful-paint')),
 			seconds(metric('largest-contentful-paint')),
-			`${number(0).format(metric('total-blocking-time'))} ms`,
-			number(3).format(metric('cumulative-layout-shift')),
-			`${number(0).format(metric('total-byte-weight') / 1024)} Kio`,
+			`${formatter(0).format(metric('total-blocking-time'))} ms`,
+			formatter(3).format(metric('cumulative-layout-shift')),
+			`${formatter(0).format(metric('total-byte-weight') / 1024)} Kio`,
 		],
 	};
 }

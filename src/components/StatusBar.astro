@@ -57,6 +57,11 @@ const { path = '~/louis/portfolio.md', secondary, position = ui.statusBottom[loc
 		line-height: var(--status-height);
 	}
 
+	/* Lettre à lettre (ADR 0004) : la barre ne bouge pas, seuls ses segments changent. */
+	:global(:root:active-view-transition) .status {
+		view-transition-name: status;
+	}
+
 	.side {
 		display: flex;
 		align-items: stretch;

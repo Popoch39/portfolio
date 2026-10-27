@@ -1,0 +1,13 @@
+# View transition lettre à lettre entre l'accueil et une fiche
+
+Entre l'accueil et une fiche, dans les deux sens, le nom du projet passe d'une page à l'autre une lettre à la fois (maquette 5 · Lettre à lettre) : chaque lettre quitte la ligne de l'accueil à 28 ms de la précédente, décrit un arc et se pose en capitale dans le titre de la fiche, puis le curseur arrive. C'est une view transition native entre documents (`@view-transition { navigation: auto }`), sans routeur côté client : la page d'arrivée dessine les pseudo-éléments, si bien que la fiche règle l'aller et l'accueil le retour. Un script classique de quelques lignes, en ligne dans le `<head>`, écoute `pageswap` et `pagereveal` : il cherche le nom dont `data-word` est l'adresse de l'autre page, le découpe en lettres nommées `letter-<rang>` le temps de la transition, puis le rend à un seul texte. Toute autre navigation (autre fiche, autre langue) est sans transition. Les autres blocs (en-tête et aperçu des projets, corps et anatomie de la fiche, barre d'état) sont nommés en CSS sous `:root:active-view-transition`, le temps de la transition seulement.
+
+## Considered Options
+
+- **`<ClientRouter />` d'Astro** : écarté. Il fait du site une application à page unique, charge son routeur sur toutes les pages et oblige à réinitialiser les scripts des figures après chaque navigation.
+- **Nommer en CSS les lettres de toutes les lignes** (sans script) : écarté. Il faudrait couper les six noms en lettres dans le HTML (86 éléments à l'accueil), chaque lettre serait capturée à chaque transition, et les lettres des autres lignes se détacheraient de leur ligne. Seul un script sait quelle ligne a été choisie, et retrouve celle qui reçoit les lettres au retour.
+- **Script en module, comme le chargeur des figures** : écarté. Un module s'exécute trop tard : `pagereveal` part avant le premier rendu.
+
+## Consequences
+
+Les règles de l'ADR 0001 et de l'ADR 0003 sont révisées pour la transition seulement : chaque page porte, en plus du JSON-LD et d'au plus un module, ce script en ligne dans le `<head>` ; `animation` est permis sur les pseudo-éléments `::view-transition-*` et `@keyframes` sous le préfixe `vt-`, le tout dans `@media (prefers-reduced-motion: no-preference)`, sauf les délais par rang, sans effet hors d'une transition. L'accueil attend l'analyse de la liste des projets avant son premier rendu (`<link rel="expect" blocking="render">`), pour que la ligne qui reçoit les lettres existe au retour. Sans prise en charge des view transitions entre documents (Firefox), la navigation reste instantanée.

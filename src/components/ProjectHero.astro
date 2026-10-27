@@ -1,7 +1,7 @@
 ---
 import { githubRepoUrl, projects, type Project } from '../data/profile';
 import type { Lede } from '../anatomies/contract';
-import { localeOf, ui } from '../lib/i18n';
+import { home, localeOf, pathOf, ui } from '../lib/i18n';
 
 interface Props {
 	project: Project;
@@ -20,7 +20,7 @@ const repoUrl = githubRepoUrl(project.repo);
 		<span><span class="mode">-- NORMAL --</span> {ui.ficheFile[locale](project.repo)}</span>{' '}
 		<span>{ui.ficheRank[locale](pad(rank), pad(projects.length))}</span>
 	</div>
-	<h1 class="title">{project.repo}<span class="cursor" aria-hidden="true"></span></h1>
+	<h1 class="title"><span data-word={pathOf(home, locale)}>{project.repo}</span><span class="cursor" data-word-cursor aria-hidden="true"></span></h1>
 	<div class="body">
 		<p class="lede">{lede.before}<em>{lede.emphasis}</em>{lede.after}</p>
 		<dl class="facts">
@@ -87,6 +87,11 @@ const repoUrl = githubRepoUrl(project.repo);
 		align-items: flex-start;
 		gap: 32px clamp(24px, 4vw, 64px);
 		margin-top: clamp(28px, 4vw, 56px);
+	}
+
+	/* Lettre à lettre (ADR 0004) : le corps monte en deuxième temps, nommé le temps de la transition. */
+	:global(:root:active-view-transition) .body {
+		view-transition-name: hero-body;
 	}
 
 	.lede {

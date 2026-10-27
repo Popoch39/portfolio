@@ -5,6 +5,7 @@ import GrainPatterns from './GrainPatterns.astro';
 import { projects, publicRepoCount, restFigurePath, sections, type Project } from '../data/profile';
 import { anatomyOf } from '../anatomies/registry';
 import { fiche, localeOf, pathOf, ui } from '../lib/i18n';
+import { projectsEndId } from '../lib/transition';
 
 const locale = localeOf(Astro.currentLocale);
 const { id, label } = sections.projects;
@@ -21,11 +22,11 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 		<ol class="list">
 			{
 				projects.map((p, i) => (
-					<li class="item">
+					<li class="item" data-word-frame>
 						{/* Les `{' '}` font lire le lien « 01 typomaniac … » et non « 01typomaniac… ». */}
 						<a class="grid row" href={hrefOf(p)} data-selected={i === 0 ? '' : undefined}>
 							<span class="mono num">{numberOf(i)}</span>{' '}
-							<span class="name">{p.repo}</span>{' '}
+							<span class="name" data-word={hrefOf(p)}>{p.repo}</span>{' '}
 							<span class="desc">{p.description[locale]}</span>{' '}
 							<span class="mono stack">{p.stack.join(' · ')}</span>{' '}
 							<span class="mono year">{p.year} →</span>
@@ -36,7 +37,7 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 		</ol>
 		{/* L'aperçu A3 : un panneau par projet, seul l'actif est visible. Sa description et sa stack
 		    doublent celles de la ligne, que les technologies d'assistance lisent déjà. */}
-		<div class="preview">
+		<div id={projectsEndId} class="preview">
 			{
 				projects.map((p, i) => {
 					const anatomy = anatomyOf(p, locale);
@@ -91,6 +92,16 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 <style>
 	.projects {
 		padding-top: clamp(56px, 7vw, 108px);
+	}
+
+	/* Lettre à lettre (ADR 0004) : l'en-tête et l'aperçu s'écartent chacun de son côté. Nommés le temps
+	   de la transition seulement : un nom fait de l'élément un contexte d'empilement. */
+	:global(:root:active-view-transition) .projects > :global(.section-header) {
+		view-transition-name: projects-head;
+	}
+
+	:global(:root:active-view-transition) .preview {
+		view-transition-name: preview;
 	}
 
 	.list {

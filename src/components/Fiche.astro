@@ -92,6 +92,9 @@ const sourceCode = {
 	const releve = card?.querySelector<HTMLElement>('[data-releve]');
 	const anatomy = scene?.closest('section');
 	if (scene?.dataset.motion && svg && releve && anatomy) {
+		// Arrivée par la transition lettre à lettre (ADR 0004) : la figure ne se monte qu'une fois les
+		// lettres posées, son montage ferait sauter des images.
+		await document.activeViewTransition?.finished;
 		linkPieces(anatomy);
 		const ruler = card?.querySelector<HTMLElement>('[data-regle]');
 		const tour = card?.querySelector<HTMLButtonElement>('[data-tour]');
@@ -102,5 +105,90 @@ const sourceCode = {
 <style>
 	.anatomy {
 		padding-top: clamp(24px, 4vw, 56px);
+	}
+
+	/* Lettre à lettre (ADR 0004) : l'anatomie monte en dernier, nommée le temps de la transition. */
+	:global(:root:active-view-transition) .anatomy {
+		view-transition-name: anatomy;
+	}
+</style>
+
+<style is:global>
+	/* Lettre à lettre, l'aller (ADR 0004). L'accueil s'écarte du nom : l'en-tête monte, les autres lignes
+	   descendent, l'aperçu glisse à droite. Les lettres partent l'une après l'autre, en minuscules, et se
+	   posent en capitales ; la fiche monte en trois temps, puis le curseur arrive. */
+	@media (prefers-reduced-motion: no-preference) {
+		::view-transition-old(root),
+		::view-transition-old(projects-head),
+		::view-transition-old(preview) {
+			--vt-shift: 0 48px;
+			animation: vt-leave 480ms cubic-bezier(0.5, 0, 0.2, 1) both;
+		}
+
+		::view-transition-old(projects-head) {
+			--vt-shift: 0 -32px;
+		}
+
+		::view-transition-old(preview) {
+			--vt-shift: 32px 0;
+		}
+
+		::view-transition-old(word-frame) {
+			animation: vt-leave 240ms ease both;
+		}
+
+		::view-transition-new(root) {
+			--vt-shift: 0 -10px;
+			animation: vt-arrive 640ms cubic-bezier(0.16, 1, 0.3, 1) 320ms both;
+		}
+
+		::view-transition-new(hero-body) {
+			--vt-shift: 0 28px;
+			animation: vt-arrive 720ms cubic-bezier(0.16, 1, 0.3, 1) 640ms both;
+		}
+
+		::view-transition-new(anatomy) {
+			--vt-shift: 0 48px;
+			animation: vt-arrive 800ms cubic-bezier(0.16, 1, 0.3, 1) 800ms both;
+		}
+
+		::view-transition-group(status) {
+			animation-duration: 320ms;
+			animation-delay: 80ms;
+		}
+
+		::view-transition-group(*.letter) {
+			animation-duration: 960ms;
+		}
+
+		::view-transition-old(*.letter) {
+			animation-name: vt-arc, vt-lowercase-out;
+			animation-duration: 960ms, 480ms;
+		}
+
+		::view-transition-new(*.letter) {
+			animation-name: vt-arc, vt-capital-in;
+			animation-duration: 960ms, 560ms;
+		}
+
+		@keyframes vt-lowercase-out {
+			from,
+			17% {
+				opacity: 1;
+			}
+			to {
+				opacity: 0;
+			}
+		}
+
+		@keyframes vt-capital-in {
+			from,
+			29% {
+				opacity: 0;
+			}
+			to {
+				opacity: 1;
+			}
+		}
 	}
 </style>

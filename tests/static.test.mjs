@@ -2,7 +2,9 @@
 // Règles de D1 révisées pour les figures (ADR 0001) : pour tout script, le JSON-LD et le chargeur
 // des figures ; l'attribut `style` n'est toléré que dans les SVG de figure, `animation` et
 // `@keyframes` que dans la CSS des figures (kit et palette, sélecteurs `.iso`, noms `iso-`) ;
-// jamais de `:hover`, et `transition` seulement dans la CSS des notes de la figure (ADR 0003).
+// jamais de `:hover`, et `transition` seulement dans la CSS des notes de la figure (ADR 0003). La view
+// transition lettre à lettre (ADR 0004) ajoute son script en ligne, ses `@keyframes` `vt-` et ses
+// animations de pseudo-éléments `::view-transition-*`.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PROJECTS, readFiche, readHome, tags, attr, elements, css } from './helpers/dist.mjs';
@@ -20,10 +22,25 @@ const pages = [
 const withoutFigures = (page) =>
 	elements(page, 'svg').reduce((rest, svg) => (/\bclass="[^"]*\biso-svg\b/.test(tags(svg, 'svg')[0]) ? rest.replace(svg, '') : rest), page);
 
-test('scripts limités au JSON-LD et au chargeur : au plus un module, servi par le site', () => {
+/** La CSS sans ses blocs `@keyframes vt-…` : leurs étapes portent `animation-timing-function`. */
+const withoutTransitionKeyframes = (styles) => {
+	let rest = styles;
+	for (let at = rest.search(/@keyframes\s+vt-/); at >= 0; at = rest.search(/@keyframes\s+vt-/)) {
+		let end = rest.indexOf('{', at);
+		for (let depth = 1; depth > 0; ) depth += rest[++end] === '{' ? 1 : rest[end] === '}' ? -1 : 0;
+		rest = rest.slice(0, at) + rest.slice(end + 1);
+	}
+	return rest;
+};
+
+test('scripts limités au JSON-LD, au chargeur (au plus un module, servi par le site) et à la view transition', () => {
 	for (const page of pages) {
-		const scripts = tags(page.html, 'script').filter((t) => attr(t, 'type') !== 'application/ld+json');
-		assert.ok(scripts.length <= 1, `${page.name} : ${scripts.length} scripts hors JSON-LD`);
+		const all = elements(page.html, 'script').filter((s) => attr(tags(s, 'script')[0], 'type') !== 'application/ld+json');
+		// Le script de la transition, vérifié par transition.test.mjs : le seul en ligne.
+		const transition = all.filter((s) => !attr(tags(s, 'script')[0], 'src') && /pagereveal/.test(s));
+		assert.equal(transition.length, 1, `${page.name} : script de la transition`);
+		const scripts = all.filter((s) => !transition.includes(s)).map((s) => tags(s, 'script')[0]);
+		assert.ok(scripts.length <= 1, `${page.name} : ${scripts.length} scripts hors JSON-LD et transition`);
 		for (const script of scripts) {
 			assert.equal(attr(script, 'type'), 'module', page.name);
 			assert.match(attr(script, 'src') ?? '', /^\/_astro\/[\w.-]+\.js$/, `${page.name} : ${script}`);
@@ -49,8 +66,9 @@ test('la CSS livrée n’a ni :hover ni transition hors des notes de la figure, 
 	for (const page of pages) {
 		const pageStyles = css(page.html);
 		assert.ok(pageStyles.length > 0, `${page.name} : aucune CSS trouvée`);
-		// ADR 0003 : les transitions ne vivent que dans la CSS des notes, sous `.annot`.
-		const transitioned = [...pageStyles.matchAll(/([^{}]+)\{[^{}]*\btransition(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap((m) => m[1].split(/,(?![^(]*\))/));
+		// ADR 0003 : les transitions ne vivent que dans la CSS des notes, sous `.annot`
+		// (`view-transition-name` n'en est pas une).
+		const transitioned = [...pageStyles.matchAll(/([^{}]+)\{[^{}]*(?<![\w-])transition(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap((m) => m[1].split(/,(?![^(]*\))/));
 		assert.deepEqual(
 			transitioned.map((selector) => selector.trim()).filter((selector) => !selector.startsWith('.annot')),
 			[],
@@ -59,12 +77,18 @@ test('la CSS livrée n’a ni :hover ni transition hors des notes de la figure, 
 		// La pseudo-classe, pas la requête média `(hover: hover)`, qui teste ce que sait le pointeur.
 		assert.doesNotMatch(pageStyles, /(?<!\(\s*hover\s*):hover\b/i, page.name);
 		const keyframes = [...pageStyles.matchAll(/@keyframes\s+([\w-]+)/gi)].map((m) => m[1]);
-		assert.deepEqual(keyframes.filter((name) => !name.startsWith('iso-')), [], `${page.name} : @keyframes hors du kit`);
-		const animated = [...pageStyles.matchAll(/([^{}]+)\{[^{}]*\banimation(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap((m) => m[1].split(','));
 		assert.deepEqual(
-			animated.map((selector) => selector.trim()).filter((selector) => !selector.startsWith('.iso')),
+			keyframes.filter((name) => !name.startsWith('iso-') && !name.startsWith('vt-')),
 			[],
-			`${page.name} : animation hors de la CSS du kit`,
+			`${page.name} : @keyframes hors du kit et de la transition`,
+		);
+		const animated = [...withoutTransitionKeyframes(pageStyles).matchAll(/([^{}]+)\{[^{}]*\banimation(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap((m) =>
+			m[1].split(/,(?![^(]*\))/),
+		);
+		assert.deepEqual(
+			animated.map((selector) => selector.trim()).filter((selector) => !selector.startsWith('.iso') && !selector.startsWith('::view-transition-')),
+			[],
+			`${page.name} : animation hors de la CSS du kit et de la transition`,
 		);
 	}
 });

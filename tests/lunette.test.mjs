@@ -3,7 +3,7 @@
 // existe déjà sur la page. Ni son HTML, ni sa CSS, ni son script ne partent avec la page.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { FICHE, HOME, PROJECTS, attr, css, elements, moduleGraph, readDist, readPage, tags, text } from './helpers/dist.mjs';
+import { FICHE, HOME, PROJECTS, attr, css, hasAttr, elements, moduleGraph, readDist, readPage, tags, text } from './helpers/dist.mjs';
 
 const versions = [
 	{ locale: 'fr', wq: 'Ouvrir les commandes (:wq)', commands: ': commandes' },
@@ -53,6 +53,21 @@ for (const version of versions) {
 			assert.equal(attr(region, 'role'), 'status', path);
 			assert.equal(attr(region, 'aria-hidden'), undefined, path);
 			assert.ok(footer.includes(`${region}</span>`), `${path} : région d’écho non vide`);
+		}
+	});
+
+	// Le showcmd de Neovim : les touches en attente, à gauche de « : commandes » (planche « Barre d'état »).
+	// Un écho visuel de ce qu'on vient de taper : rien à lire pour un lecteur d'écran.
+	test(`${version.locale} : la barre d’état de chaque page a le showcmd, vide, à gauche de « ${version.commands} », masqué aux lecteurs d’écran`, () => {
+		for (const { path, html } of pages) {
+			const [footer] = elements(html, 'footer');
+			const [showcmd] = tags(footer ?? '', 'span').filter((t) => hasAttr(t, 'data-showcmd'));
+			assert.ok(showcmd, `${path} : pas de showcmd`);
+			assert.equal(attr(showcmd, 'aria-hidden'), 'true', path);
+			const [segment] = elements(footer.slice(footer.indexOf(showcmd)), 'span');
+			assert.equal(text(segment), '', `${path} : showcmd non vide`);
+			const commands = elements(footer, 'button').find((b) => text(b) === version.commands);
+			assert.ok(footer.indexOf(showcmd) < footer.indexOf(commands), `${path} : showcmd après « ${version.commands} »`);
 		}
 	});
 

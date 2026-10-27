@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { PROJECTS, attr, css, elements, readFiche, readHome, tags, text, withoutBlocks } from './helpers/dist.mjs';
+import { PROJECTS, attr, css, launchGate, readFiche, readHome, tags, text, withoutBlocks } from './helpers/dist.mjs';
 
 const ORIGIN = 'https://louis.example';
 
@@ -12,9 +12,6 @@ const VERSIONS = {
 	fr: { sections: ['héros', 'projets', 'parcours', 'activité', 'stack', 'contact'], key: 'Échap' },
 	en: { sections: ['hero', 'projects', 'career', 'activity', 'stack', 'contact'], key: 'Esc' },
 };
-
-/** Le script en ligne qui décide du lancement : classique, sans `src`. */
-const gateOf = (html) => elements(html, 'script').find((s) => !attr(tags(s, 'script')[0], 'src') && !attr(tags(s, 'script')[0], 'type') && /sessionStorage/.test(s));
 
 /** L'écran du lancement, du début de son élément à l'en-tête du site. */
 const screenOf = (html) => {
@@ -26,12 +23,12 @@ const screenOf = (html) => {
  * Exécute le script de la porte dans un faux navigateur. Rend l'attribut du document, le stockage de
  * session et les écouteurs encore inscrits ; `fire` leur envoie un évènement.
  */
-function run(script, { referrer = '', hash = '', seen = false, reduced = false, storage = true } = {}) {
+function run(script, { referrer = '', hash = '', seen = false, reduced = false, storage = true, animations = [] } = {}) {
 	const dataset = {};
 	const store = seen ? { launch: '1' } : {};
 	const listeners = new Map();
 	const sandbox = {
-		document: { documentElement: { dataset }, referrer },
+		document: { documentElement: { dataset }, referrer, getAnimations: () => animations },
 		location: { hash, origin: ORIGIN, href: `${ORIGIN}/${hash}` },
 		matchMedia: (query) => ({ matches: /:\s*reduce\)/.test(query) ? reduced : /:\s*no-preference\)/.test(query) ? !reduced : false }),
 		addEventListener: (type, fn) => listeners.set(type, fn),
@@ -51,7 +48,7 @@ const playing = (page) => 'launch' in page.dataset;
 
 for (const [locale, version] of Object.entries(VERSIONS)) {
 	const html = readHome(locale);
-	const gate = gateOf(html) ?? '';
+	const gate = launchGate(html) ?? '';
 	const screen = screenOf(html) ?? '';
 
 	test(`${locale} : l’écran du lancement, caché aux lecteurs d’écran, tape \`nvim portfolio.md\` et charge chaque section`, () => {
@@ -71,7 +68,8 @@ for (const [locale, version] of Object.entries(VERSIONS)) {
 		assert.ok(gate, 'script de la porte absent');
 		const at = (fragment) => html.indexOf(fragment);
 		assert.ok(at(gate) < at(screen) && at(screen) < at('<header'), 'ordre : porte, écran, en-tête');
-		assert.ok(gate.length < 800, `porte de ${gate.length} o`);
+		// Le plafond du script en ligne de la transition (transition.test.mjs).
+		assert.ok(gate.length < 1500, `porte de ${gate.length} o`);
 	});
 
 	test(`${locale} : le lancement joue à la première arrivée de la session, venue d’ailleurs`, () => {
@@ -106,6 +104,25 @@ for (const [locale, version] of Object.entries(VERSIONS)) {
 		}
 	});
 
+	// Une fois le bleu en train de se ranger (3450 ms), couper ferait sauter l'accueil à sa place : la
+	// suite se joue en accéléré, et la fin de `launch-done` le termine.
+	test(`${locale} : pendant l’entrée de l’accueil, une touche accélère la fin au lieu de la couper`, () => {
+		const animation = (animationName, currentTime) => ({ animationName, currentTime, playbackRate: 1, updatePlaybackRate(rate) { this.playbackRate = rate; } });
+		const entering = [animation('launch-done', 3800), animation('launch-enter', 3800), animation('iso-spin', 3800)];
+		const page = run(gate, { animations: entering });
+		page.fire('keydown');
+		assert.ok(playing(page), 'coupé pendant l’entrée');
+		assert.deepEqual(entering.map((a) => a.playbackRate > 1), [true, true, false]);
+		assert.deepEqual([...page.listeners.keys()], ['animationend'], 'les touches suivantes ne relancent rien');
+		page.fire('animationend', { animationName: 'launch-done' });
+		assert.ok(!playing(page));
+
+		const covered = [animation('launch-done', 3300), animation('launch-enter', 3300)];
+		const early = run(gate, { animations: covered });
+		early.fire('click');
+		assert.ok(!playing(early), 'sous le bleu, le saut coupe');
+	});
+
 	test(`${locale} : la fin de sa dernière animation le termine, pas celle d’une autre`, () => {
 		const page = run(gate);
 		page.fire('animationend', { animationName: 'launch-flood' });
@@ -115,6 +132,19 @@ for (const [locale, version] of Object.entries(VERSIONS)) {
 		assert.ok(!playing(page));
 		assert.equal(page.listeners.size, 0);
 		assert.match(css(html), /@keyframes launch-done\b/, 'l’animation attendue par la porte n’existe pas');
+	});
+
+	// La frappe se règle en colonnes dans la CSS, et chaque ligne de sortie y a son rang.
+	test(`${locale} : la frappe compte une colonne par caractère de la commande, et chaque ligne de sortie a son rang`, () => {
+		const styles = css(html);
+		const columns = 'nvim portfolio.md'.length;
+		assert.ok(styles.includes(`steps(${columns},end)`), `steps(${columns})`);
+		assert.match(styles, new RegExp(`translateX?\\(${columns}ch\\)`));
+		assert.match(styles, new RegExp(`translate\\(-${columns}ch`));
+		const outputs = (screen.match(/<div class="out\b/g) ?? []).length;
+		for (let rank = 1; rank < outputs; rank++) {
+			assert.match(styles, new RegExp(`\\.out[^{]*:nth-child\\(${rank + 2}\\)[^{]*\\{--rank:${rank}\\}`), `rang ${rank}`);
+		}
 	});
 
 	test(`${locale} : sans l’attribut (sans JS, ou une fois fini), l’écran n’est pas affiché`, () => {
@@ -145,7 +175,7 @@ test('les fiches n’ont ni porte ni écran de lancement', () => {
 	for (const locale of Object.keys(VERSIONS)) {
 		for (const { slug } of PROJECTS) {
 			const html = readFiche(slug, locale);
-			assert.equal(gateOf(html), undefined, `${locale} ${slug} : porte`);
+			assert.equal(launchGate(html), undefined, `${locale} ${slug} : porte`);
 			assert.equal(screenOf(html), undefined, `${locale} ${slug} : écran`);
 			assert.doesNotMatch(css(html), /data-launch/, `${locale} ${slug} : CSS du lancement`);
 		}

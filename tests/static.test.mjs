@@ -10,7 +10,7 @@
 // animations, toutes sous `:root[data-launch]` (vérifié par lancement.test.mjs).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROJECTS, readFiche, readHome, tags, attr, elements, css, withoutBlocks } from './helpers/dist.mjs';
+import { PROJECTS, readFiche, readHome, tags, attr, elements, css, launchGate, withoutBlocks } from './helpers/dist.mjs';
 
 const html = readHome();
 const styles = css(html);
@@ -30,9 +30,8 @@ test('scripts limités au JSON-LD, au chargeur (au plus un module, servi par le 
 		const all = elements(page.html, 'script').filter((s) => attr(tags(s, 'script')[0], 'type') !== 'application/ld+json');
 		// Les scripts en ligne, vérifiés par transition.test.mjs et lancement.test.mjs : la transition
 		// partout, la porte du lancement à l'accueil seulement.
-		const inline = (pattern) => all.filter((s) => !attr(tags(s, 'script')[0], 'src') && pattern.test(s));
-		const transition = inline(/pagereveal/);
-		const launch = inline(/data-launch|dataset\.launch/);
+		const transition = all.filter((s) => !attr(tags(s, 'script')[0], 'src') && /pagereveal/.test(s));
+		const launch = [launchGate(page.html)].filter(Boolean);
 		assert.equal(transition.length, 1, `${page.name} : script de la transition`);
 		assert.equal(launch.length, page.home ? 1 : 0, `${page.name} : porte du lancement`);
 		const scripts = all.filter((s) => !transition.includes(s) && !launch.includes(s)).map((s) => tags(s, 'script')[0]);

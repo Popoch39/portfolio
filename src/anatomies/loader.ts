@@ -23,7 +23,8 @@ declare global {
 /**
  * Une page prérendue au survol (ADR 0006) n'est pas encore affichée : aucun mouvement n'est chargé
  * avant son activation, le processeur ne travaille pas pour une page que le visiteur n'ouvrira
- * peut-être pas.
+ * peut-être pas. La fiche, qui attend déjà `pagereveal` (postérieur à l'activation), passe ici sans
+ * attendre ; l'aperçu de l'accueil n'a que cette attente.
  */
 const activated = () =>
 	document.prerendering

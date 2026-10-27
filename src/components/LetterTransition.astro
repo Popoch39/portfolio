@@ -21,30 +21,36 @@ const { page } = Astro.props;
     gardent un nom à retirer). Le curseur vole après la dernière lettre ; l'accueil n'en a pas,
     un repère au bout du nom lui sert de départ et d'arrivée (une espace sans chasse : vide, le repère
     n'aurait pas de boîte et ne serait pas capturé). Hors de l'écran, le nom ne vole pas :
-    celui de l'autre page se pose ou s'efface sur place. Les commentaires restent ici : ceux du script
-    partiraient avec chaque page. */}
+    celui de l'autre page se pose ou s'efface sur place. Un départ peut commencer avant la fin de
+    l'arrivée (retour pendant l'animation) : il défait d'abord l'arrivée, et la fin de celle-ci ne
+    touche plus aux lettres du départ. Les commentaires restent ici : ceux du script partiraient avec
+    chaque page. */}
 <script is:inline>
 	(() => {
+		let restore;
+		const span = (text) => Object.assign(document.createElement('span'), { textContent: text });
 		const flyName = (transition, url) => {
 			if (!transition) return;
+			restore?.();
 			const word = url && document.querySelector(`[data-word="${new URL(url).pathname}"]`);
 			if (!word) return transition.skipTransition();
 			const { top, bottom } = word.getBoundingClientRect();
 			if (bottom < 0 || top > innerHeight) return;
 			const name = word.textContent;
-			word.replaceChildren(...Array.from(name, (c) => Object.assign(document.createElement('span'), { textContent: c })));
+			word.replaceChildren(...Array.from(name, span));
 			const letters = [...word.children];
-			const cursor =
-				word.parentElement.querySelector('[data-word-cursor]') ?? word.appendChild(Object.assign(document.createElement('span'), { textContent: '​' }));
+			const cursor = word.parentElement.querySelector('[data-word-cursor]') ?? word.appendChild(span(String.fromCharCode(8203)));
 			[...letters, cursor].forEach((el, i) => Object.assign(el.style, { viewTransitionName: `letter-${i}`, viewTransitionClass: 'letter' }));
 			const frame = word.closest('[data-word-frame]');
 			if (frame) frame.style.viewTransitionName = 'word-frame';
-			transition.finished.finally(() => {
+			const undo = () => {
+				restore = undefined;
 				word.textContent = name;
-				cursor.style.removeProperty('view-transition-name');
-				cursor.style.removeProperty('view-transition-class');
-				frame?.style.removeProperty('view-transition-name');
-			});
+				cursor.style.viewTransitionName = cursor.style.viewTransitionClass = '';
+				if (frame) frame.style.viewTransitionName = '';
+			};
+			restore = undo;
+			transition.finished.finally(() => restore === undo && undo());
 		};
 		addEventListener('pageswap', (e) => flyName(e.viewTransition, e.activation?.entry.url));
 		addEventListener('pagereveal', (e) => flyName(e.viewTransition, self.navigation?.activation?.from?.url));

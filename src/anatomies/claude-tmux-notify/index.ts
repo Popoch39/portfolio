@@ -3,13 +3,14 @@
 import { localize } from '../../lib/i18n.ts';
 import type { Anatomy } from '../contract.ts';
 import { renderRest } from './geometry.ts';
+import { machine } from './machine.ts';
 import { NVIM, pieces, relevesOf, SHA } from './model.ts';
 
 export const anatomy: Anatomy = {
 	content: {
 		slug: 'claude-tmux-notify',
 		sha: SHA,
-		machine: { fr: 'Tableau d’annonciateur', en: 'Annunciator board' },
+		machine,
 		lede: {
 			before: { fr: 'Quand Claude Code vous ', en: 'When Claude Code is ' },
 			emphasis: { fr: 'attend', en: 'waiting' },

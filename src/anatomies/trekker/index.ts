@@ -2,13 +2,14 @@
 // `GET /api/v1/treks`, et la fiche de demande passe d'abord au gabarit du contrat partagé.
 import type { Anatomy } from '../contract.ts';
 import { renderRest } from './geometry.ts';
+import { machine } from './machine.ts';
 import { pieces, releve, SHA } from './model.ts';
 
 export const anatomy: Anatomy = {
 	content: {
 		slug: 'trekker',
 		sha: SHA,
-		machine: { fr: 'Meuble à fiches et gabarit Zod', en: 'Card cabinet and Zod gauge' },
+		machine,
 		lede: {
 			before: { fr: 'Une API de randonnées où chaque requête passe d’abord au ', en: 'A hiking API where every request first goes through the ' },
 			emphasis: { fr: 'gabarit', en: 'gauge' },

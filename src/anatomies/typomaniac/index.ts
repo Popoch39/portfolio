@@ -3,6 +3,7 @@
 import { localize } from '../../lib/i18n.ts';
 import type { Anatomy, RestFigure } from '../contract.ts';
 import { renderRest } from './geometry.ts';
+import { machine } from './machine.ts';
 import { releveOf, restDuel } from './model.ts';
 import { pieces, SHA } from './pieces.ts';
 import { TEXTS } from './texts.ts';
@@ -16,7 +17,7 @@ export const anatomy: Anatomy = {
 	content: {
 		slug: 'typomaniac',
 		sha: SHA,
-		machine: { fr: 'Banc de duel', en: 'Duel bench' },
+		machine,
 		lede: {
 			before: {
 				fr: 'Deux claviers face à une tour : chaque lettre est datée chez le joueur, mais c’est le serveur qui ',

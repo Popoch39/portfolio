@@ -44,18 +44,25 @@ export function bar(pct: number) {
 	return { clamped, filled: Math.round((clamped / 100) * BAR_WIDTH), shown: Math.round(clamped), zone: zoneOf(clamped) };
 }
 
+/** Le délai avant reset tel que `fmtReset` le découpe : en jours, en heures et minutes, ou en minutes. */
+export type Delay = { days: number } | { hours: number; minutes: number } | { minutes: number };
+
+/** Le découpage de `fmtReset` (L74–L85), que l'annonce dit en toutes lettres. */
+export function delayOf(epochSec: number, nowSec: number): Delay {
+	const delta = epochSec - nowSec;
+	if (delta <= 0) return { minutes: 0 };
+	if (delta >= 86400) return { days: Math.floor(delta / 86400) };
+	if (delta >= 3600) return { hours: Math.floor(delta / 3600), minutes: Math.floor((delta % 3600) / 60) };
+	return { minutes: Math.floor(delta / 60) };
+}
+
 /** `fmtReset` (L74–L85), avec l'instant présent en paramètre au lieu de `Date.now()`. */
 export function fmtReset(epochSec: number | undefined, nowSec: number): string {
 	if (epochSec == null) return '';
-	const delta = epochSec - nowSec;
-	if (delta <= 0) return '0m';
-	if (delta >= 86400) return `${Math.floor(delta / 86400)}j`;
-	if (delta >= 3600) {
-		const h = Math.floor(delta / 3600);
-		const m = Math.floor((delta % 3600) / 60);
-		return `${h}h${String(m).padStart(2, '0')}`;
-	}
-	return `${Math.floor(delta / 60)}m`;
+	const delay = delayOf(epochSec, nowSec);
+	if ('days' in delay) return `${delay.days}j`;
+	if ('hours' in delay) return `${delay.hours}h${String(delay.minutes).padStart(2, '0')}`;
+	return `${delay.minutes}m`;
 }
 
 /** `hasFreshData` (L143–L145) : seule la fenêtre de 5 h compte. */
@@ -132,6 +139,8 @@ export interface Shown {
 	pct: number | null;
 	/** Délai avant reset, au format de `fmtReset`. */
 	reset: string;
+	/** Le même délai, découpé, ou `null` quand `reset` est vide. */
+	delay: Delay | null;
 }
 
 export interface Output {
@@ -139,12 +148,13 @@ export interface Output {
 	week: Shown;
 }
 
-const shownOf = (window: Window | undefined, nowSec: number): Shown => ({
-	pct: window?.used_percentage ?? null,
-	reset: window?.used_percentage == null ? '' : fmtReset(window.resets_at, nowSec),
-});
+const shownOf = (window: Window | undefined, nowSec: number): Shown => {
+	const pct = window?.used_percentage ?? null;
+	const resetsAt = pct == null ? undefined : window?.resets_at;
+	return { pct, reset: fmtReset(resetsAt, nowSec), delay: resetsAt == null ? null : delayOf(resetsAt, nowSec) };
+};
 
-const BLANK: Output = { five: { pct: null, reset: '' }, week: { pct: null, reset: '' } };
+const BLANK: Output = { five: { pct: null, reset: '', delay: null }, week: { pct: null, reset: '', delay: null } };
 
 export const outputOf = (render: Render): Output => ({
 	five: shownOf(render.limits?.five_hour, render.m * minute),

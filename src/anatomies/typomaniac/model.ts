@@ -175,7 +175,7 @@ export const roundOutcome = (a: Score, b: Score) => Math.sign(a.score - b.score 
 // --- Contrôles du guichet (acceptance.ts) et cadence (running-duel.ts) ---
 
 export type Reason = 'before-start' | 'after-arrival' | 'out-of-order' | 'after-end';
-/** Les motifs dans l'ordre des contrôles, qui est celui des bras du guichet (et de `WORDS.reasons`). */
+/** Les motifs dans l'ordre des contrôles, qui est celui des bras du guichet. */
 export const REASONS: Reason[] = ['before-start', 'after-arrival', 'out-of-order', 'after-end'];
 
 /** `rejectReason` : pourquoi l'horloge du client n'est pas crue, ou `null`. */
@@ -578,8 +578,8 @@ function handle(duel: Duel, event: Event) {
 			if (trip.visitor || (trip.reason && !trip.hidden)) {
 				const words = WORDS[duel.locale];
 				const verdict = trip.reason
-					? words.rejected + words.reasons[REASONS.indexOf(trip.reason)]
-					: `${words.accepted[0]}${last.kind === 'char' ? last.char.replace(' ', '␣') : '⌫'}${words.accepted[1]}${formatMs(last.at, duel.locale)} ms`;
+					? words.rejected + words.reasons[trip.reason]
+					: words.accepted(last.kind === 'char' ? last.char.replace(' ', '␣') : '⌫', formatMs(last.at, duel.locale));
 				duel.note = { until: event.at + 1200, text: `${head(duel)} · ${verdict}` };
 			}
 			schedule(duel, { at: event.at + CABLE_MS, kind: trip.reason ? RESYNC : RELAY, trip });
@@ -848,7 +848,7 @@ export function mmrOf(duel: Duel) {
 // Le mouvement sert les deux versions : le relevé porte ses deux langues, et leurs nombres au
 // format de chacune (« 18,6 s » et « 1 234 ms » en français, « 18.6 s » et « 1,234 ms » en anglais).
 const FR = {
-	reasons: ['avant le départ', 'datée après son arrivée', 'hors d’ordre', 'après la fin'],
+	reasons: { 'before-start': 'avant le départ', 'after-arrival': 'datée après son arrivée', 'out-of-order': 'hors d’ordre', 'after-end': 'après la fin' } satisfies Record<Reason, string>,
 	tiers: ['Fer', 'Bronze', 'Argent', 'Or', 'Platine', 'Diamant'],
 	round: 'manche ',
 	judged: ' jugée',
@@ -857,7 +857,7 @@ const FR = {
 	start: ' · départ dans ',
 	pause: 'pause · reprise dans ',
 	rejected: 'refusée : ',
-	accepted: ['« ', ' » acceptée à '],
+	accepted: (key: string, ms: string) => `« ${key} » acceptée à ${ms} ms`,
 	forfeit: 'forfait : plus de 40 frappes en 1 s',
 	/** Par issue du duel, de −1 (B gagne) à 1 (A gagne). */
 	outcomes: ['B gagne', 'égalité', 'A gagne'],
@@ -868,7 +868,7 @@ type Words = typeof FR;
 const WORDS: Localized<Words> = {
 	fr: FR,
 	en: {
-		reasons: ['before the start', 'timestamped after arrival', 'out of order', 'after the end'],
+		reasons: { 'before-start': 'before the start', 'after-arrival': 'timestamped after arrival', 'out-of-order': 'out of order', 'after-end': 'after the end' },
 		tiers: ['Iron', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'],
 		round: 'round ',
 		judged: ' judged',
@@ -877,7 +877,7 @@ const WORDS: Localized<Words> = {
 		start: ' · starts in ',
 		pause: 'break · resumes in ',
 		rejected: 'rejected: ',
-		accepted: ['“', '” accepted at '],
+		accepted: (key, ms) => `“${key}” accepted at ${ms} ms`,
 		forfeit: 'forfeit: over 40 keystrokes in 1 s',
 		outcomes: ['B wins', 'draw', 'A wins'],
 		end: 'end',

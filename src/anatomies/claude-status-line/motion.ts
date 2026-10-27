@@ -10,7 +10,7 @@ import type { MountMotion } from '../contract.ts';
 import { asksForStillness, follow, loop, spring, type Spring } from '../live.ts';
 import { readingAnchor, rulerX } from '../ruler.ts';
 import { DETENTS, MODULES, BLADE_FIRST, BLADE_PITCH, PIVOT_Z, PINIONS, DIAL, WHEEL, PROBE, projection as P } from './layout.ts';
-import { bar, cacheLevel, EVENTS, LAST, minuteReading, poseAt, releveOf, REST, SOURCES, type Pose, type Shown, type Source } from './model.ts';
+import { bar, cacheLevel, EVENTS, LAST, minuteReading, poseAt, releveOf, REST, SOURCES, type Delay, type Pose, type Shown, type Source } from './model.ts';
 import {
 	bladeSvg,
 	crankAt,
@@ -64,18 +64,16 @@ function tourSpeed(t: number) {
 	return EVENTS.some((e) => e > 0 && Math.abs(t - e) < 1.2) ? TOUR_SLOW : TOUR_SPEED;
 }
 
-/** Un délai de `fmtReset` (`3j`, `2h14`, `59m`) dit en toutes lettres, pour une annonce en anglais. */
-function spokenDelay(reset: string) {
-	const [, value, unit, minutes] = /^(\d+)([jhm])(\d*)$/.exec(reset) ?? [];
-	if (!unit) return reset;
-	const say = (n: string, name: string) => new Intl.NumberFormat(formats.en.intl, { style: 'unit', unit: name, unitDisplay: 'long' }).format(Number(n));
-	if (unit === 'j') return say(value, 'day');
-	if (unit === 'm') return say(value, 'minute');
-	return `${say(value, 'hour')}${Number(minutes) ? ` ${say(minutes, 'minute')}` : ''}`;
+/** Un délai de reset dit en toutes lettres, pour une annonce en anglais. */
+function spokenDelay(delay: Delay) {
+	const say = (n: number, unit: string) => new Intl.NumberFormat(formats.en.intl, { style: 'unit', unit, unitDisplay: 'long' }).format(n);
+	if ('days' in delay) return say(delay.days, 'day');
+	if ('hours' in delay) return `${say(delay.hours, 'hour')}${delay.minutes ? ` ${say(delay.minutes, 'minute')}` : ''}`;
+	return say(delay.minutes, 'minute');
 }
 
-const tell = (name: string, shown: Shown, none: string, percent: string, resetIn: (reset: string) => string) =>
-	shown.pct == null ? `${name} ${none}` : `${name} ${bar(shown.pct).shown}${percent}${shown.reset ? `, ${resetIn(shown.reset)}` : ''}`;
+const tell = (name: string, shown: Shown, none: string, percent: string, resetIn: (delay: Delay, reset: string) => string) =>
+	shown.pct == null ? `${name} ${none}` : `${name} ${bar(shown.pct).shown}${percent}${shown.delay ? `, ${resetIn(shown.delay, shown.reset)}` : ''}`;
 
 // Tout ce que le mouvement écrit ou annonce, dans les deux langues : le chargeur dit laquelle.
 const UI: Localized<{
@@ -88,7 +86,7 @@ const UI: Localized<{
 }> = {
 	fr: {
 		describe: (minute: number, source: Source, five: Shown, week: Shown) => {
-			const window = (name: string, shown: Shown) => tell(name, shown, 'sans pourcentage', ' %', (reset) => `reset dans ${reset}`);
+			const window = (name: string, shown: Shown) => tell(name, shown, 'sans pourcentage', ' %', (_, reset) => `reset dans ${reset}`);
 			return `Minute ${minute} : source ${source}, ${window('5 heures', five)}, ${window('semaine', week)}`;
 		},
 		start: 'Lancer le tour',
@@ -99,7 +97,7 @@ const UI: Localized<{
 	},
 	en: {
 		describe: (minute: number, source: Source, five: Shown, week: Shown) => {
-			const window = (name: string, shown: Shown) => tell(name, shown, 'with no percentage', '%', (reset) => `resets in ${spokenDelay(reset)}`);
+			const window = (name: string, shown: Shown) => tell(name, shown, 'with no percentage', '%', (delay) => `resets in ${spokenDelay(delay)}`);
 			return `Minute ${minute}: source ${source}, ${window('5-hour window', five)}, ${window('weekly window', week)}`;
 		},
 		start: 'Start the tour',
@@ -248,8 +246,8 @@ const mount: MountMotion = ({ locale, scene, svg, releve, timeline }) => {
 		const source = SOURCES[DETENTS.reduce((best, deg, index) => (Math.abs(deg - lever.at) < Math.abs(DETENTS[best] - lever.at) ? index : best), 0)];
 		const text = releveOf(
 			source,
-			{ pct: pose.output.five.pct == null ? null : needles[0].at, reset: pose.output.five.reset },
-			{ pct: pose.output.week.pct == null ? null : needles[1].at, reset: pose.output.week.reset },
+			{ ...pose.output.five, pct: pose.output.five.pct == null ? null : needles[0].at },
+			{ ...pose.output.week, pct: pose.output.week.pct == null ? null : needles[1].at },
 			locale,
 		);
 		if (text !== lastText) releve.textContent = lastText = text;

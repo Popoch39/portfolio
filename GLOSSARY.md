@@ -86,7 +86,7 @@ _EN_ : Time ruler
 _Avoid_ : slider, timeline, frise
 
 **Aperçu** :
-La figure du projet sélectionné, à côté des projets de l'accueil.
+La figure du projet sélectionné, à côté d'une liste de projets : celle de l'accueil, ou celle de la Lunette.
 _EN_ : Preview
 _Avoid_ : prévisualisation, vignette
 
@@ -104,3 +104,20 @@ _Avoid_ : compteur, readout
 La pose de départ d'une figure, avant tout mouvement.
 _EN_ : At rest
 _Avoid_ : état initial, statique
+
+## Lunette
+
+**Lunette** :
+Le picker centré qu'ouvre `:`, façon Telescope : on y tape ou choisit une commande.
+_EN_ : Telescope
+_Avoid_ : palette, picker, modale
+
+**Commande** :
+Ce qu'on tape ou choisit dans la Lunette (`:e trekker`), avec son argument s'il en faut un.
+_EN_ : Command
+_Avoid_ : action, raccourci
+
+**Volet** :
+La partie droite de la Lunette : l'Aperçu du projet sélectionné, ou l'aide de la commande.
+_EN_ : Pane
+_Avoid_ : preview, panneau

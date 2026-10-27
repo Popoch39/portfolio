@@ -88,7 +88,7 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 
 	/* La chronologie de la maquette au tempo ×0,8, en ms depuis le premier rendu :
 	   320–1280     `nvim portfolio.md` se tape, une colonne toutes les 56 ms ;
-	   1360–3680    la barre se remplit ; de 1440, une ligne de sortie toutes les 288 ms ;
+	   1360–3680    la barre se remplit ; de 1440, une ligne de sortie toutes les 100 ms ;
 	   3280–4000    le curseur bloc inonde l'écran ;
 	   3840–4720    la touche Échap, enfoncée à 4370 ;
 	   4080         sous le bleu, l'accueil prend sa pose de départ ;
@@ -141,10 +141,10 @@ const leaders = (name: string) => '.'.repeat(Math.max(3, OK_COLUMN - 1 - name.le
 			animation: launch-type 960ms steps(17, end) 320ms both;
 		}
 
-		/* Une ligne de sortie toutes les 288 ms, la première à 1440. */
+		/* Une ligne de sortie toutes les 100 ms, la première à 1440. */
 		:global(:root[data-launch]) .out {
 			color: var(--on-ink-muted);
-			animation: launch-line 160ms cubic-bezier(0.16, 1, 0.3, 1) calc(1440ms + var(--rank, 0) * 288ms) both;
+			animation: launch-line 120ms cubic-bezier(0.16, 1, 0.3, 1) calc(1440ms + var(--rank, 0) * 100ms) both;
 		}
 
 		.out:nth-child(3) {

@@ -108,7 +108,7 @@ _Avoid_ : état initial, statique
 ## Lunette
 
 **Lunette** :
-Le picker centré qu'ouvre `:`, façon Telescope : on y tape ou choisit une commande.
+La fenêtre de commandes centrée, façon Telescope, qu'ouvre `:` : on y tape ou choisit une commande.
 _EN_ : Telescope
 _Avoid_ : palette, picker, modale
 

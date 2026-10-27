@@ -43,8 +43,8 @@ const typing = (target: EventTarget | null) =>
 addEventListener('keydown', (event) => {
 	const { key } = event;
 	if (event.defaultPrevented || event.isComposing) return;
-	// Le raccourci qu'ouvrent d'autres éditeurs sur leur liste de commandes, avant celui du navigateur (sa
-	// barre de recherche). Maj+K ou Verr. Maj donnent `K`.
+	// Le raccourci qui ouvre la liste des commandes d'autres éditeurs, avant celui du navigateur (sa barre
+	// de recherche). Maj+K ou Verr. Maj donnent `K`.
 	if ((event.ctrlKey || event.metaKey) && !event.altKey && /^k$/i.test(key)) {
 		event.preventDefault();
 		return open();

@@ -16,6 +16,11 @@ La page d'un projet, à son adresse lisible.
 _EN_ : Project page
 _Avoid_ : page projet, détail
 
+**Lancement** :
+À la première arrivée de la session sur l'accueil, le terminal qui ouvre `portfolio.md` dans Neovim avant que l'accueil n'entre ; une touche ou un clic le termine.
+_EN_ : Launch
+_Avoid_ : loader, intro, splash, écran de chargement
+
 ## Langues
 
 **Version** :

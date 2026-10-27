@@ -1,0 +1,17 @@
+---
+// Prérendu au survol (ADR 0006) : la page qu'un lien interne vise est rendue en arrière-plan quand le
+// pointeur s'y attarde (`moderate` : 200 ms sur ordinateur), pour s'afficher aussitôt au clic. Le
+// sélecteur de langue (le seul lien qui porte `hreflang`) et les ancres de la page courante sont
+// exclus ; `/*` relatif à la page ne retient que les liens du site. Sans prise en charge (Firefox,
+// Safari), le bloc est ignoré.
+const rules = {
+	prerender: [
+		{
+			where: { and: [{ href_matches: '/*' }, { not: { selector_matches: "[hreflang], [href^='#']" } }] },
+			eagerness: 'moderate',
+		},
+	],
+};
+---
+
+<script is:inline type="speculationrules" set:html={JSON.stringify(rules)} />

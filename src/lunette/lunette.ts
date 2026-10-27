@@ -5,6 +5,7 @@ import css from './lunette.css?inline';
 import { echo } from './echo.ts';
 import { closed, health, opened } from './health.ts';
 import { version } from './version.ts';
+import { draw, drawn, quit } from './oeufs.ts';
 import { contextAt, list, run, type Action, type Context, type Entry, type Listing, type Pane } from './registry.ts';
 import { projects, restFigurePath } from '../data/profile.ts';
 import { defaultLocale, home, locales, type Localized } from '../lib/i18n.ts';
@@ -117,7 +118,9 @@ head.append(name, rank);
 about.append(head, machine, desc, stack);
 // La sortie d'une commande, comme le tampon qu'ouvre Neovim : :checkhealth, :version.
 const report = el('div', 'report');
-pane.append(paneTitle, help, helpIndex, figure, about, report);
+// Les easter eggs : :smile, :Ex, :Lazy.
+const egg = el('div', 'egg');
+pane.append(paneTitle, help, helpIndex, figure, about, report, egg);
 
 const keys = el('p', 'keys');
 const enterLabel = el('span');
@@ -162,7 +165,11 @@ function show(content?: Pane) {
 	helpIndex.hidden = !(content?.kind === 'help' && content.commands);
 	figure.hidden = about.hidden = !project;
 	report.hidden = content?.kind !== 'health' && content?.kind !== 'version';
-	if (content?.kind === 'health' || content?.kind === 'version') {
+	egg.hidden = !drawn(content);
+	if (drawn(content)) {
+		paneTitle.textContent = content.title;
+		egg.replaceChildren(...draw(content, locale));
+	} else if (content?.kind === 'health' || content?.kind === 'version') {
 		paneTitle.textContent = `:${content.kind === 'health' ? 'checkhealth' : 'version'}`;
 		report.replaceChildren(...(content.kind === 'health' ? health(locale) : version(locale)));
 	} else if (content?.kind === 'help') {
@@ -298,6 +305,8 @@ function act(action: Action) {
 		// Le bouton bascule : il ne sert que s'il ne fait pas déjà ce qu'on demande.
 		if (button && action.play !== button.hasAttribute('data-touring')) button.click();
 	}
+	// Après la Lunette fermée : l'aplat rendra le focus à ce qu'elle-même vient de rendre.
+	else if (action.kind === 'quit') quit(locale);
 }
 
 /**

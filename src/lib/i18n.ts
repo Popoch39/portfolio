@@ -141,6 +141,14 @@ export const ui = {
 		en: (total: string) => `${total} contributions · 12 months`,
 	},
 	statusBottom: { fr: 'Bas', en: 'Bot' },
+	// Lancement (ADR 0008) : la ligne du héros, qui n'est pas une section du menu, et la touche de sortie
+	// du mode INSERT, comme l'écrit un clavier de chaque langue.
+	launchHero: { fr: 'héros', en: 'hero' },
+	launchEscape: { fr: 'Échap', en: 'Esc' },
+	// Les deux boutons de la barre d'état qui ouvrent la Lunette (ADR 0007). `:wq` ne dit pas ce qu'il
+	// fait : son nom accessible le dit, et garde le texte visible pour la commande vocale.
+	statusCommands: { fr: ': commandes', en: ': commands' },
+	openCommands: { fr: 'Ouvrir les commandes (:wq)', en: 'Open commands (:wq)' },
 	// Fiche : héros, en-tête de l'anatomie, nomenclature, notes, règle de temps, autres projets et
 	// barre d'état. Les textes de l'anatomie elle-même viennent de son module.
 	ficheFile: {

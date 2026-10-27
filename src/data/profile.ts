@@ -2,7 +2,7 @@
 // la page à jour. Règle de contenu : ni téléphone, ni adresse, ni date de naissance.
 // Chaque texte affiché a ses deux langues côte à côte (`Localized`), le français au-dessus ;
 // les faits (années, stack, dépôts, entreprises, villes, liens) restent écrits une seule fois.
-import { defaultLocale, home, pathOf, type Locale, type Localized } from '../lib/i18n.ts';
+import { defaultLocale, fiche, home, pathOf, type Locale, type Localized, type Page } from '../lib/i18n.ts';
 
 export interface Employer {
 	name: string;
@@ -305,6 +305,9 @@ export const projects: Project[] = [
 		year: 2026,
 	},
 ];
+
+/** Les pages du site, sans leur langue : celles du sitemap, que `:Ex` parcourt aussi. */
+export const pages: Page[] = [home, ...projects.map((project) => fiche(project.slug))];
 
 /** Nombre de dépôts publics sur GitHub, relevé à la main (affiché dans l'en-tête des projets). */
 export const publicRepoCount = 41;

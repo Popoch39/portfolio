@@ -16,6 +16,11 @@ La page d'un projet, à son adresse lisible.
 _EN_ : Project page
 _Avoid_ : page projet, détail
 
+**Lancement** :
+À chaque chargement de l'accueil, sauf en revenant d'une page du site, le terminal qui ouvre `portfolio.md` dans Neovim avant que l'accueil n'entre ; une touche ou un clic le termine.
+_EN_ : Launch
+_Avoid_ : loader, intro, splash, écran de chargement
+
 ## Langues
 
 **Version** :
@@ -86,7 +91,7 @@ _EN_ : Time ruler
 _Avoid_ : slider, timeline, frise
 
 **Aperçu** :
-La figure du projet sélectionné, à côté des projets de l'accueil.
+La figure du projet sélectionné, à côté d'une liste de projets : celle de l'accueil, ou celle de la Lunette.
 _EN_ : Preview
 _Avoid_ : prévisualisation, vignette
 
@@ -104,3 +109,30 @@ _Avoid_ : compteur, readout
 La pose de départ d'une figure, avant tout mouvement.
 _EN_ : At rest
 _Avoid_ : état initial, statique
+
+## Lunette
+
+**Lunette** :
+La fenêtre de commandes centrée, façon Telescope, qu'ouvre `:` : on y tape ou choisit une commande.
+_EN_ : Telescope
+_Avoid_ : palette, picker, modale
+
+**Commande** :
+Ce qu'on tape ou choisit dans la Lunette (`:e trekker`), avec son argument s'il en faut un.
+_EN_ : Command
+_Avoid_ : action, raccourci
+
+**Volet** :
+La partie droite de la Lunette : l'Aperçu du projet sélectionné, la note de la pièce sélectionnée (`:pieces`), l'aide de la commande, ou ce qu'elle montre une fois lancée (`:checkhealth`, `:version`, `:smile`, `:Lazy`).
+_EN_ : Pane
+_Avoid_ : preview, panneau
+
+**Portée** :
+Les pages où une commande existe (l'accueil, les fiches, les figures à temps). Hors de sa portée, elle n'est pas listée et répond `E492`.
+_EN_ : Scope
+_Avoid_ : contexte, disponibilité
+
+**Écho** :
+Le message qu'affiche la barre d'état à la place du chemin, quelques secondes, après une commande : une information (copie de l'adresse) ou une erreur (`E492`). Les lecteurs d'écran l'annoncent.
+_EN_ : Echo
+_Avoid_ : toast, notification, message

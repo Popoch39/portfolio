@@ -10,12 +10,17 @@ interface Props {
 	position?: string | null;
 }
 
-const { path = '~/louis/portfolio.md', secondary, position = ui.statusBottom[localeOf(Astro.currentLocale)] } = Astro.props;
+const locale = localeOf(Astro.currentLocale);
+const { path = '~/louis/portfolio.md', secondary, position = ui.statusBottom[locale] } = Astro.props;
 ---
 
+{/* La Lunette (ADR 0007) pose `data-mode="command"` sur la barre pendant qu'elle est ouverte, et écrit la
+    commande en cours dans le showcmd ; l'écouteur y écrit les touches en attente. Les boutons
+    `data-lunette` l'ouvrent. Les échos (`src/lunette/echo.ts`) s'écrivent dans `data-echo`, région live
+    présente dès le premier rendu pour être annoncée, et prennent la place du chemin. */}
 <footer class="mono status">
 	<div class="side">
-		<span class="seg mode">NORMAL</span>
+		<span class="seg mode state"><span class="normal">NORMAL</span><span class="command">COMMAND</span></span>
 		<span class="seg dark branch">
 			<svg
 				aria-hidden="true"
@@ -34,12 +39,15 @@ const { path = '~/louis/portfolio.md', secondary, position = ui.statusBottom[loc
 			>
 			<span>main</span>
 		</span>
+		<span class="seg echo" role="status" aria-live="polite" data-echo></span>
 		<span class="seg path">{path}</span>
 	</div>
 	<div class="side right">
+		<span class="seg showcmd" aria-hidden="true" data-showcmd></span>
 		<span class="seg secondary">{secondary}</span>
+		<button type="button" class="seg dark commands" aria-haspopup="dialog" data-lunette>{ui.statusCommands[locale]}</button>
 		{position && <span class="seg dark">{position}</span>}
-		<span class="seg mode">:wq</span>
+		<button type="button" class="seg mode wq" aria-haspopup="dialog" aria-label={ui.openCommands[locale]} data-lunette>:wq</button>
 	</div>
 </footer>
 
@@ -72,9 +80,25 @@ const { path = '~/louis/portfolio.md', secondary, position = ui.statusBottom[loc
 		flex-shrink: 0;
 	}
 
+	/* Les boutons sont des segments comme les autres : rien du style du navigateur. */
 	.seg {
+		margin: 0;
 		padding: 0 14px;
+		border: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
 		white-space: nowrap;
+	}
+
+	button.seg {
+		cursor: pointer;
+	}
+
+	/* Le contour bleu du site se perdrait sur le bleu de `:wq` : un contour clair, à l'intérieur. */
+	button.seg:focus-visible {
+		outline-color: var(--bg);
+		outline-offset: -4px;
 	}
 
 	.mode {
@@ -83,8 +107,48 @@ const { path = '~/louis/portfolio.md', secondary, position = ui.statusBottom[loc
 		font-weight: 700;
 	}
 
+	/* La Lunette ouverte : COMMAND, en encre sur papier. */
+	.state .command,
+	.status[data-mode='command'] .state .normal {
+		display: none;
+	}
+
+	.status[data-mode='command'] .state {
+		background: var(--paper);
+		color: var(--ink);
+	}
+
+	.status[data-mode='command'] .state .command {
+		display: inline;
+	}
+
 	.dark {
 		background: var(--status-segment);
+	}
+
+	/* La barre fait 30 px : la cible de `:wq` déborde vers le haut jusqu'à 44 px (WCAG 2.5.5), sans
+	   déplacer son texte. Sur téléphone, c'est le seul accès à la Lunette. */
+	.wq {
+		position: relative;
+		min-width: 44px;
+	}
+
+	.wq::before {
+		content: '';
+		position: absolute;
+		inset: -14px 0 0;
+	}
+
+	/* `: commandes` n'est utile qu'à l'ordinateur, où `:wq` ne dit pas assez ce qu'il ouvre. */
+	.commands {
+		display: none;
+		color: var(--on-ink-muted);
+	}
+
+	@media (min-width: 900px) {
+		.commands {
+			display: block;
+		}
 	}
 
 	.branch {
@@ -93,19 +157,54 @@ const { path = '~/louis/portfolio.md', secondary, position = ui.statusBottom[loc
 		gap: 7px;
 	}
 
-	.path {
+	.path,
+	.echo {
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
 
-	.secondary {
+	/* L'écho remplace le chemin, puis le segment de droite. Vide, il reste affiché, sans largeur : une
+	   région live masquée ne serait pas annoncée à son apparition. */
+	.echo {
+		color: var(--accent-light);
+	}
+
+	.echo:empty {
+		padding: 0;
+	}
+
+	.echo:not(:empty) + .path,
+	.status:has(.echo:not(:empty)) .secondary {
+		display: none;
+	}
+
+	/* L'erreur, en encre sur papier comme le mode COMMAND. */
+	.echo[data-kind='error'] {
+		background: var(--paper);
+		color: var(--ink);
+	}
+
+	.secondary,
+	.showcmd {
 		display: none;
 		color: var(--on-ink-muted);
 	}
 
+	/* Une touche en attente se lit en clair et en gras ; la commande de la Lunette ouverte reste grise. */
+	.status:not([data-mode='command']) .showcmd {
+		color: var(--bg);
+		font-weight: 700;
+	}
+
+	/* Le showcmd prend la place du segment de droite tant qu'il a quelque chose à montrer. */
 	@media (min-width: 600px) {
-		.secondary {
+		.secondary,
+		.showcmd:not(:empty) {
 			display: block;
+		}
+
+		.showcmd:not(:empty) + .secondary {
+			display: none;
 		}
 	}
 </style>

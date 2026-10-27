@@ -1,0 +1,134 @@
+/* Les easter eggs de la Lunette (#62), injectés au premier dessin, jamais livrés avec la page. Comme la
+   Lunette : aucune animation, l'aplat de :q! apparaît et disparaît d'un coup ; aucun `:hover`. */
+
+/* Le Volet d'un easter egg : il défile, seul, sous son titre. */
+.lunette .egg {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	font-size: 13px;
+	line-height: 1.6;
+}
+
+.lunette .egg pre {
+	margin: 0;
+	font: inherit;
+}
+
+/* :smile — le « NOPE » de Neovim, réduit pour que ses 93 colonnes tiennent dans la largeur du Volet
+   (0,6 em par caractère en Fragment Mono). */
+.lunette .art {
+	container-type: inline-size;
+	color: var(--accent);
+}
+
+.lunette .art pre {
+	font-size: calc(100cqi / 56);
+	line-height: 1.15;
+}
+
+/* :Ex — la page sélectionnée, comme la ligne du curseur de netrw. */
+.lunette .tree b {
+	background: var(--accent-wash);
+	color: var(--accent-deep);
+	font-weight: 700;
+}
+
+/* :Lazy — une ligne par outil, en colonnes : repère, nom, version, état, rôle. */
+.lunette .plugins {
+	display: grid;
+	grid-template-columns: auto max-content max-content max-content minmax(0, 1fr);
+	gap: 6px 12px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.lunette .plugins li {
+	display: grid;
+	grid-template-columns: subgrid;
+	grid-column: 1 / -1;
+	align-items: baseline;
+}
+
+.lunette .plugins .mark,
+.lunette .plugins .version,
+.lunette .plugins .state {
+	color: var(--muted);
+}
+
+.lunette .plugins [data-state='loaded'] .mark,
+.lunette .plugins [data-state='loaded'] .state {
+	color: var(--accent);
+}
+
+.lunette .plugins .role {
+	font-family: var(--font-sans);
+	font-size: 14px;
+}
+
+/* :q! — l'écran fermé : un aplat d'encre sur tout l'écran, barre d'état comprise. */
+.quit:modal {
+	position: fixed;
+	inset: 0;
+	width: auto;
+	height: auto;
+	max-width: none;
+	max-height: none;
+	margin: 0;
+	padding: var(--page-margin);
+	border: 0;
+	background: var(--ink);
+	color: var(--bg);
+	font-family: var(--font-mono);
+	font-size: 15px;
+	line-height: 1.6;
+	/* Le défilement sous l'aplat ne passe pas à la page : elle se rouvre où elle était. */
+	overflow: hidden;
+	overscroll-behavior: contain;
+}
+
+.quit[open] {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+.quit::backdrop {
+	background: none;
+}
+
+.quit p {
+	max-width: 60ch;
+	margin: 0;
+}
+
+.quit .hint {
+	color: var(--on-ink-muted);
+}
+
+.quit .line {
+	display: flex;
+	gap: 8px;
+	margin-top: 24px;
+}
+
+.quit .chevron {
+	color: var(--accent-light);
+	font-weight: 700;
+}
+
+/* Le seul champ de l'écran, toujours focalisé : le curseur suffit à le dire. */
+.quit input {
+	flex: 1;
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	outline: none;
+	background: none;
+	color: inherit;
+	font: inherit;
+	caret-color: var(--bg);
+}

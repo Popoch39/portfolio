@@ -133,6 +133,10 @@ export function withoutBlocks(styles, opening) {
 	return rest;
 }
 
+/** La porte du lancement (ADR 0008) : le script en ligne qui pose `data-launch`, ou `undefined`. */
+export const launchGate = (html) =>
+	elements(html, 'script').find((s) => !attr(tags(s, 'script')[0], 'src') && !attr(tags(s, 'script')[0], 'type') && /dataset\.launch/.test(s));
+
 /** Toute la CSS livrée dans la page (contenu des balises `<style>`). */
 export function css(html) {
 	return elements(html, 'style')

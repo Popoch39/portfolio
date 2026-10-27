@@ -27,11 +27,12 @@ const servedFile = (family, style) =>
 		.find((face) => new RegExp(`font-family:\\s*"?${family}-`).test(face) && new RegExp(`font-style:\\s*${style}`).test(face) && /url\(/.test(face))
 		?.match(/url\(["']?\/([^)"']+)/)?.[1];
 // En points de code, pour que les invisibles se lisent : U+00AD césure conditionnelle, U+202F espace
-// fine insécable (nombres formatés par `Intl`), U+1D49 ᵉ, U+2197 ↗, U+232B ⌫, U+2423 ␣, U+2605 ★.
+// fine insécable (nombres formatés par `Intl`), U+1D49 ᵉ, U+2197 ↗, U+21B5 ↵, U+21E5 ⇥, U+2303 ⌃,
+// U+232B ⌫, U+2423 ␣, U+25CB ○, U+25CF ●, U+2605 ★.
 const FONTS = {
-	romaine: { file: servedFile('Archivo', 'normal'), source: 'Archivo[wdth,wght].ttf', absent: [0x202f, 0x1d49, 0x2197, 0x232b, 0x2423, 0x2605] },
+	romaine: { file: servedFile('Archivo', 'normal'), source: 'Archivo[wdth,wght].ttf', absent: [0x202f, 0x1d49, 0x2197, 0x21b5, 0x21e5, 0x2303, 0x232b, 0x2423, 0x25cb, 0x25cf, 0x2605] },
 	italique: { file: servedFile('Archivo', 'italic'), source: 'Archivo-Italic[wdth,wght].ttf', absent: [] },
-	mono: { file: servedFile('Fragment Mono', 'normal'), source: 'FragmentMono-Regular.ttf', absent: [0xad, 0x202f, 0x1d49, 0x232b, 0x2423, 0x2605] },
+	mono: { file: servedFile('Fragment Mono', 'normal'), source: 'FragmentMono-Regular.ttf', absent: [0xad, 0x202f, 0x1d49, 0x21b5, 0x21e5, 0x2303, 0x232b, 0x2423, 0x2605] },
 };
 const sourceOf = (font) => readFileSync(new URL(`../src/vendor/fonts/${FONTS[font].source}`, import.meta.url));
 const servedCmap = Object.fromEntries(Object.entries(FONTS).map(([font, { file }]) => [font, cmap(readDist(file, null))]));

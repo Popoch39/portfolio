@@ -73,6 +73,9 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 	// L'amorce de l'aperçu A3, seul script que télécharge l'accueil hors de l'A3 : l'aperçu, et avec
 	// lui le chargeur des fiches et la mise en avant des pièces, n'est importé qu'une fois la bascule
 	// vérifiée. Elle est celle de l'image au repos des panneaux : une seule requête pour les deux.
+	// L'écouteur de la Lunette passe aussi par ce module, le seul de l'accueil (ADR 0007).
+	import '../lunette/keys.ts';
+
 	// Par sa classe : l'ancre de la section change avec la langue.
 	const section = document.querySelector<HTMLElement>('section.projects');
 	const a3 = matchMedia(section?.querySelector('[data-panel] source')?.getAttribute('media') ?? 'not all');

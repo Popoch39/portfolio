@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig, fontProviders } from 'astro/config';
 import { defaultLocale, locales } from './src/lib/i18n.ts';
+import { buildDefines } from './src/lib/build-info.mjs';
 
 // https://astro.build/config
 export default defineConfig({
@@ -17,6 +18,11 @@ export default defineConfig({
 	build: {
 		// Aucune feuille de style externe : la CSS part avec le HTML, rien ne bloque le premier rendu.
 		inlineStylesheets: 'always',
+	},
+	vite: {
+		// `:version` de la Lunette : le commit, la date du build et la version d'Astro ; `:Lazy` : celles
+		// d'Astro et de TypeScript.
+		define: buildDefines(['astro', 'typescript']),
 	},
 	fonts: [
 		{

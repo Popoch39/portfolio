@@ -2,6 +2,7 @@
 // L'anglais (#37) est une transcréation en anglais britannique ; `5h`, `sem` et les délais restent
 // ceux du binaire, qui les écrit ainsi.
 import type { AnatomyContent, Piece } from '../contract.ts';
+import { machine } from './machine.ts';
 import { releve, SHA, timeline } from './model.ts';
 
 const code = (lines: [number, number]) => ({ path: 'statusline.ts', lines });
@@ -165,7 +166,7 @@ export const pieces: Piece[] = [
 export const content: AnatomyContent = {
 	slug: 'claude-status-line',
 	sha: SHA,
-	machine: { fr: 'Rampe à cadran', en: 'Dial rail' },
+	machine,
 	lede: {
 		before: { fr: 'L’usage de votre abonnement Claude Code, ', en: 'Your Claude Code subscription usage, ' },
 		emphasis: { fr: 'mesuré', en: 'measured' },

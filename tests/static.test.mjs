@@ -4,7 +4,8 @@
 // `@keyframes` que dans la CSS des figures (kit et palette, sélecteurs `.iso`, noms `iso-`) ;
 // jamais de `:hover`, et `transition` seulement dans la CSS des notes de la figure (ADR 0003). La view
 // transition lettre à lettre (ADR 0004) ajoute son script en ligne, ses `@keyframes` `vt-` et ses
-// animations de pseudo-éléments `::view-transition-*`.
+// animations de pseudo-éléments `::view-transition-*`. La Lunette (ADR 0007) n'ajoute aucun script :
+// le module de la page importe son écouteur, et elle-même n'arrive qu'à la première commande.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PROJECTS, readFiche, readHome, tags, attr, elements, css, withoutBlocks } from './helpers/dist.mjs';

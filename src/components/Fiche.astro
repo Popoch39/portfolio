@@ -82,9 +82,11 @@ const sourceCode = {
 </Layout>
 
 <script>
-	// Le chargeur de la fiche : la figure arrive dessinée, seul son mouvement passe par ici.
+	// Le chargeur de la fiche : la figure arrive dessinée, seul son mouvement passe par ici. L'écouteur de
+	// la Lunette passe aussi par ce module, le seul de la fiche (ADR 0007).
 	import { mountFigure } from '../anatomies/loader.ts';
-	import { linkPieces } from '../anatomies/highlight.ts';
+	import { aimPiece, linkPieces } from '../anatomies/highlight.ts';
+	import '../lunette/keys.ts';
 
 	const scene = document.querySelector<HTMLElement>('[data-motion]');
 	const svg = scene?.querySelector('svg');
@@ -96,6 +98,9 @@ const sourceCode = {
 		// lettres posées, son montage ferait sauter des images.
 		await document.activeViewTransition?.finished;
 		linkPieces(anatomy);
+		// `:pieces` vise par un événement `aim` sur le crochet de la pièce : la Lunette n'importe pas la
+		// mise en avant, ce module la passe à `aimPiece`.
+		anatomy.addEventListener('aim', ({ target }) => target instanceof Element && aimPiece(target));
 		const ruler = card?.querySelector<HTMLElement>('[data-regle]');
 		const tour = card?.querySelector<HTMLButtonElement>('[data-tour]');
 		void mountFigure({ scene, svg, releve, timeline: ruler && tour ? { ruler, tour } : undefined }, scene.dataset.motion);

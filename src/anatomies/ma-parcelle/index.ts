@@ -1,6 +1,7 @@
 // Anatomie de ma_parcelle : la colonne de sondage (fiche de concept : `concept.md`).
 import type { Anatomy } from '../contract.ts';
 import { renderRest } from './geometry.ts';
+import { machine } from './machine.ts';
 import { REST_RELEVE, SHA } from './model.ts';
 import { pieces } from './pieces.ts';
 
@@ -8,7 +9,7 @@ export const anatomy: Anatomy = {
 	content: {
 		slug: 'ma-parcelle',
 		sha: SHA,
-		machine: { fr: 'Colonne de sondage', en: 'Coring rig' },
+		machine,
 		lede: {
 			before: { fr: 'Cliquez une parcelle : la carte la ', en: 'Click a land parcel and the map ' },
 			emphasis: { fr: 'carotte', en: 'cores' },

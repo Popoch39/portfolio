@@ -3,6 +3,7 @@
 import { localize } from '../../lib/i18n.ts';
 import type { Anatomy, Piece } from '../contract.ts';
 import { renderRest, type Pieces } from './geometry.ts';
+import { machine } from './machine.ts';
 import { releveOf, SHA } from './model.ts';
 
 const carte: Piece = {
@@ -146,7 +147,7 @@ export const anatomy: Anatomy = {
 	content: {
 		slug: 'pointcloud-viewer',
 		sha: SHA,
-		machine: { fr: 'Scanner laser sur trépied', en: 'Laser scanner on a tripod' },
+		machine,
 		lede: {
 			before: {
 				fr: 'Un nuage LiDAR lu en Rust compilé en WebAssembly, puis posé sur la carte par three.js : tout se passe dans le ',

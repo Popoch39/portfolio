@@ -16,11 +16,14 @@ export type Action = { kind: 'go'; path: string } | { kind: 'show'; pane: Pane }
 
 /**
  * Ce que montre le Volet pour un résultat : l'Aperçu d'un projet, ou l'aide d'une commande ; celle de
- * `:help` seul liste en plus les commandes de la page.
+ * `:help` seul liste en plus les commandes de la page. La sortie de `:checkhealth` et de `:version` se
+ * lit dans le navigateur et dans le build : la Lunette la compose, le registre ne fait que la nommer.
  */
 export type Pane =
 	| { kind: 'project'; slug: string }
-	| { kind: 'help'; name: string; text: string; commands?: { name: string; text: string }[] };
+	| { kind: 'help'; name: string; text: string; commands?: { name: string; text: string }[] }
+	| { kind: 'health' }
+	| { kind: 'version' };
 
 /** Une valeur proposée à l'argument d'une commande (un projet pour `:e`). */
 interface Choice {
@@ -134,6 +137,24 @@ const commands: Command[] = [
 		scope: onFiche,
 		help: { fr: 'Revient au projet précédent, dans la boucle des autres projets.', en: 'Goes back to the previous project, looping like Other projects.' },
 		run: neighbour(-1),
+	},
+	{
+		name: 'checkhealth',
+		aliases: ['che'],
+		help: {
+			fr: 'Mesure la visite en cours : LCP, CLS et INP, avec leur seuil et un verdict.',
+			en: 'Measures the current visit: LCP, CLS and INP, with their threshold and a verdict.',
+		},
+		run: () => ({ kind: 'show', pane: { kind: 'health' } }),
+	},
+	{
+		name: 'version',
+		aliases: ['ve'],
+		help: {
+			fr: 'Montre le commit et la date du build, et la version d’Astro.',
+			en: 'Shows the commit and date of the build, and the Astro version.',
+		},
+		run: () => ({ kind: 'show', pane: { kind: 'version' } }),
 	},
 	{
 		name: 'help',

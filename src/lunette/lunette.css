@@ -359,6 +359,61 @@
 	font-size: 14px;
 }
 
+/* La sortie d'une commande (`:checkhealth`, `:version`), en mono comme le tampon de Neovim. */
+.lunette .report {
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	font-size: 13px;
+	line-height: 1.6;
+}
+
+.lunette .report p,
+.lunette .report ul {
+	margin: 0;
+	padding: 0;
+}
+
+.lunette .report .intro {
+	margin-bottom: 8px;
+	font-family: var(--font-sans);
+	font-size: 15px;
+	line-height: 1.45;
+}
+
+/* Les sections de `:checkhealth` : un titre fini par « ~ », puis une puce « - » par verdict. */
+.lunette .report h3 {
+	margin: 16px 0 4px;
+	color: var(--accent);
+	font-size: inherit;
+	font-weight: 700;
+}
+
+.lunette .report li {
+	list-style: none;
+}
+
+.lunette .report li::before {
+	content: '- ';
+	content: '- ' / '';
+}
+
+.lunette .report .unavailable {
+	color: var(--muted);
+}
+
+.lunette .verdict[data-verdict='good'] {
+	color: var(--accent);
+}
+
+/* « ok » en bleu, « à améliorer » en encre grasse, « mauvais » en papier sur encre : le seul qui doit
+   sauter aux yeux, sans couleur d'alerte que la palette du site n'a pas. */
+.lunette .verdict[data-verdict='poor'] {
+	padding: 0 4px;
+	background: var(--ink);
+	color: var(--paper);
+}
+
 /* Après les `display` ci-dessus : ce que le Volet ne montre pas pour ce résultat. */
 .lunette [hidden] {
 	display: none;

@@ -3,6 +3,8 @@
 // tapée et la page, le registre lui donne la liste et l'action ; elle les montre et les exécute.
 import css from './lunette.css?inline';
 import { echo } from './echo.ts';
+import { closed, health, opened } from './health.ts';
+import { version } from './version.ts';
 import { contextAt, list, run, type Action, type Entry, type Listing, type Pane } from './registry.ts';
 import { projects, restFigurePath } from '../data/profile.ts';
 import { defaultLocale, home, locales, type Localized } from '../lib/i18n.ts';
@@ -90,7 +92,9 @@ const desc = el('p', 'desc');
 const stack = el('span', 'stack');
 head.append(name, rank);
 about.append(head, machine, desc, stack);
-pane.append(paneTitle, help, helpIndex, figure, about);
+// La sortie d'une commande, comme le tampon qu'ouvre Neovim : :checkhealth, :version.
+const report = el('div', 'report');
+pane.append(paneTitle, help, helpIndex, figure, about, report);
 
 const keys = el('p', 'keys');
 const enterLabel = el('span');
@@ -134,7 +138,11 @@ function show(content?: Pane) {
 	help.hidden = content?.kind !== 'help';
 	helpIndex.hidden = !(content?.kind === 'help' && content.commands);
 	figure.hidden = about.hidden = !project;
-	if (content?.kind === 'help') {
+	report.hidden = content?.kind !== 'health' && content?.kind !== 'version';
+	if (content?.kind === 'health' || content?.kind === 'version') {
+		paneTitle.textContent = `:${content.kind === 'health' ? 'checkhealth' : 'version'}`;
+		report.replaceChildren(...(content.kind === 'health' ? health(locale) : version(locale)));
+	} else if (content?.kind === 'help') {
 		paneTitle.textContent = `${say('help')} — ${content.name}`;
 		help.textContent = content.text;
 		helpIndex.replaceChildren(...(content.commands ?? []).flatMap(({ name, text }) => [el('dt', '', `:${name}`), el('dd', '', text)]));
@@ -318,6 +326,7 @@ dialog.addEventListener('click', (event) => {
 close.addEventListener('click', () => dialog.close());
 
 dialog.addEventListener('close', () => {
+	closed();
 	bar?.removeAttribute('data-mode');
 	if (showcmd) showcmd.textContent = '';
 });
@@ -325,6 +334,8 @@ dialog.addEventListener('close', () => {
 /** Ouvre la Lunette, avec la frappe déjà tapée ; déjà ouverte, lui rend le focus. */
 export function open(typed = '') {
 	if (dialog.open) return input.focus();
+	// Avant tout : la touche qui ouvre la Lunette n'est pas une interaction de la page (:checkhealth).
+	opened();
 	if (!dialog.isConnected) {
 		document.head.append(el('style', '', css));
 		document.body.append(dialog);

@@ -3,7 +3,7 @@
 // afficher, meilleur résultat en tête, et l'action que la ligne résout. Chaque commande déclare son nom,
 // ses alias, sa portée, son aide et son argument : en ajouter une ne touche ni au filtre ni à la Lunette.
 import { projects, sectionKeys, sections, type SectionKey } from '../data/profile.ts';
-import { fiche, home, locales, pathOf, ui, type Locale, type Localized, type Page } from '../lib/i18n.ts';
+import { fiche, home, locales, pathOf, type Locale, type Localized, type Page } from '../lib/i18n.ts';
 
 /** Une pièce de la figure, lue dans la page : son crochet, son nom et sa note en clair. */
 export interface FigurePiece {
@@ -127,10 +127,21 @@ const withFigure = ({ figure }: Context) => figure !== undefined;
 
 const withTimeline = ({ figure }: Context) => figure?.timeline === true;
 
-const lectureHelp = {
-	clair: { fr: 'Lit les notes de la figure en clair : ce que fait chaque pièce.', en: 'Reads the figure notes in plain words: what each part does.' },
-	code: { fr: 'Lit les notes de la figure en code : le symbole et la signature de chaque pièce.', en: 'Reads the figure notes as code: the symbol and signature of each part.' },
-} satisfies Record<string, Localized<string>>;
+/**
+ * Les deux lectures des notes, nommées comme la ligne de commande de la carte. Recopiées de
+ * `ui.viewOption`, `ui.viewPlain` et `ui.viewCode` : importer `ui` mettrait toute la table des textes
+ * dans le morceau d'i18n que l'aperçu de l'accueil partage avec la Lunette.
+ */
+const lectureOf = {
+	clair: {
+		label: { fr: 'lecture=clair', en: 'view=plain' },
+		help: { fr: 'Lit les notes de la figure en clair : ce que fait chaque pièce.', en: 'Reads the figure notes in plain words: what each part does.' },
+	},
+	code: {
+		label: { fr: 'lecture=code', en: 'view=code' },
+		help: { fr: 'Lit les notes de la figure en code : le symbole et la signature de chaque pièce.', en: 'Reads the figure notes as code: the symbol and signature of each part.' },
+	},
+} satisfies Record<string, Record<'label' | 'help', Localized<string>>>;
 
 /**
  * La lecture des notes, réglée comme la ligne de commande de la carte : `lecture=clair` sur une page
@@ -139,11 +150,11 @@ const lectureHelp = {
 const lectures = ({ figure, locale }: Context): Choice[] =>
 	figure
 		? (['clair', 'code'] as const).map((value) => {
-				const labelOf = (lang: Locale) => `${ui.viewOption[lang]}=${(value === 'clair' ? ui.viewPlain : ui.viewCode)[lang]}`;
+				const { label, help } = lectureOf[value];
 				return {
-					label: labelOf(locale),
-					others: locales.filter((other) => other !== locale).map(labelOf),
-					pane: { kind: 'help', name: labelOf(locale), text: lectureHelp[value][locale] },
+					label: label[locale],
+					others: locales.filter((other) => other !== locale).map((other) => label[other]),
+					pane: { kind: 'help', name: label[locale], text: help[locale] },
 					action: { kind: 'lecture', value },
 				};
 			})

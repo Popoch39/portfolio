@@ -5,11 +5,12 @@
 // fiche, la règle de temps montre et règle le temps, et le tour ne part que sur son bouton ; dans
 // l'aperçu, sans règle, le tour part seul quand on laisse la figure.
 import { axisVector, holdStill, translateAlong } from '../../vendor/anatomy/iso-kit.ts';
+import { formats, type Localized } from '../../lib/i18n.ts';
 import type { MountMotion } from '../contract.ts';
 import { asksForStillness, follow, loop, spring, type Spring } from '../live.ts';
 import { readingAnchor, rulerX } from '../ruler.ts';
 import { DETENTS, MODULES, BLADE_FIRST, BLADE_PITCH, PIVOT_Z, PINIONS, DIAL, WHEEL, PROBE, projection as P } from './layout.ts';
-import { bar, cacheLevel, EVENTS, LAST, poseAt, releveOf, REST, SOURCES, timeline as TIMELINE, type Pose } from './model.ts';
+import { bar, cacheLevel, EVENTS, LAST, minuteReading, poseAt, releveOf, REST, SOURCES, type Delay, type Pose, type Shown, type Source } from './model.ts';
 import {
 	bladeSvg,
 	crankAt,
@@ -63,15 +64,56 @@ function tourSpeed(t: number) {
 	return EVENTS.some((e) => e > 0 && Math.abs(t - e) < 1.2) ? TOUR_SLOW : TOUR_SPEED;
 }
 
-const describe = (t: number) => {
-	const pose = poseAt(t);
-	const { five, week } = pose.output;
-	const window = (label: string, shown: typeof five, unit: string) =>
-		shown.pct == null ? `${label} sans pourcentage` : `${label} ${bar(shown.pct).shown} %${shown.reset ? `, ${unit} ${shown.reset}` : ''}`;
-	return `Minute ${Math.floor(pose.t)} : source ${SOURCES[pose.lever]}, ${window('5 heures', five, 'reset dans')}, ${window('semaine', week, 'reset dans')}`;
+/** Un délai de reset dit en toutes lettres, pour une annonce en anglais. */
+function spokenDelay(delay: Delay) {
+	const say = (n: number, unit: string) => new Intl.NumberFormat(formats.en.intl, { style: 'unit', unit, unitDisplay: 'long' }).format(n);
+	if ('days' in delay) return say(delay.days, 'day');
+	if ('hours' in delay) return `${say(delay.hours, 'hour')}${delay.minutes ? ` ${say(delay.minutes, 'minute')}` : ''}`;
+	return say(delay.minutes, 'minute');
+}
+
+const tell = (name: string, shown: Shown, none: string, percent: string, resetIn: (delay: Delay, reset: string) => string) =>
+	shown.pct == null ? `${name} ${none}` : `${name} ${bar(shown.pct).shown}${percent}${shown.delay ? `, ${resetIn(shown.delay, shown.reset)}` : ''}`;
+
+// Tout ce que le mouvement écrit ou annonce, dans les deux langues : le chargeur dit laquelle.
+const UI: Localized<{
+	describe: (minute: number, source: Source, five: Shown, week: Shown) => string;
+	start: string;
+	stop: string;
+	keys: string;
+	ruler: string;
+	scene: string;
+}> = {
+	fr: {
+		describe: (minute: number, source: Source, five: Shown, week: Shown) => {
+			const window = (name: string, shown: Shown) => tell(name, shown, 'sans pourcentage', ' %', (_, reset) => `reset dans ${reset}`);
+			return `Minute ${minute} : source ${source}, ${window('5 heures', five)}, ${window('semaine', week)}`;
+		},
+		start: 'Lancer le tour',
+		stop: 'Arrêter le tour',
+		keys: 'Au clavier, les flèches avancent ou reculent d’une minute, Page suivante et Page précédente d’une heure, Fin va au prochain événement, Début revient à la pose au repos, Espace lance ou arrête le tour.',
+		ruler: 'Temps de la rampe à cadran, en minutes de session.',
+		scene: 'Rampe à cadran : glissez vers la droite pour faire avancer le temps.',
+	},
+	en: {
+		describe: (minute: number, source: Source, five: Shown, week: Shown) => {
+			const window = (name: string, shown: Shown) => tell(name, shown, 'with no percentage', '%', (delay) => `resets in ${spokenDelay(delay)}`);
+			return `Minute ${minute}: source ${source}, ${window('5-hour window', five)}, ${window('weekly window', week)}`;
+		},
+		start: 'Start the tour',
+		stop: 'Stop the tour',
+		keys: 'With the keyboard, the arrow keys step one minute forward or back, Page Down and Page Up one hour, End goes to the next event, Home returns to the at-rest pose, Space starts or stops the tour.',
+		ruler: 'Dial rail time, in minutes of the session.',
+		scene: 'Dial rail: drag to the right to move time forward.',
+	},
 };
 
-const mount: MountMotion = ({ scene, svg, releve, timeline }) => {
+const mount: MountMotion = ({ locale, scene, svg, releve, timeline }) => {
+	const ui = UI[locale];
+	const describe = (t: number) => {
+		const pose = poseAt(t);
+		return ui.describe(Math.floor(pose.t), SOURCES[pose.lever], pose.output.five, pose.output.week);
+	};
 	const at = (name: string) => svg.querySelector<SVGGElement>(`[data-csl="${name}"]`);
 	// La règle de la fiche prend le clavier à la scène : c'est elle, le curseur du temps.
 	const ruler = timeline?.ruler ?? null;
@@ -204,14 +246,15 @@ const mount: MountMotion = ({ scene, svg, releve, timeline }) => {
 		const source = SOURCES[DETENTS.reduce((best, deg, index) => (Math.abs(deg - lever.at) < Math.abs(DETENTS[best] - lever.at) ? index : best), 0)];
 		const text = releveOf(
 			source,
-			{ pct: pose.output.five.pct == null ? null : needles[0].at, reset: pose.output.five.reset },
-			{ pct: pose.output.week.pct == null ? null : needles[1].at, reset: pose.output.week.reset },
+			{ ...pose.output.five, pct: pose.output.five.pct == null ? null : needles[0].at },
+			{ ...pose.output.week, pct: pose.output.week.pct == null ? null : needles[1].at },
+			locale,
 		);
 		if (text !== lastText) releve.textContent = lastText = text;
 		// Le curseur de la règle, au temps affiché.
 		write(thumb, 'x', rulerX(pose.t, LAST));
 		write(reading, 'text-anchor', readingAnchor(pose.t, LAST));
-		const minute = TIMELINE.reading(Math.min(pose.t, LAST));
+		const minute = minuteReading(Math.min(pose.t, LAST));
 		if (reading && reading.textContent !== minute) reading.textContent = minute;
 	};
 
@@ -220,7 +263,7 @@ const mount: MountMotion = ({ scene, svg, releve, timeline }) => {
 		touring = on;
 		if (!tourButton) return;
 		tourButton.toggleAttribute('data-touring', on);
-		if (tourLabel) tourLabel.textContent = on ? 'Arrêter le tour' : 'Lancer le tour';
+		if (tourLabel) tourLabel.textContent = on ? ui.stop : ui.start;
 		write(tourIcon, 'd', on ? 'M1.5 1h2.5v8H1.5zM6 1h2.5v8H6z' : 'M2 1l7 4-7 4z');
 	};
 
@@ -430,13 +473,9 @@ const mount: MountMotion = ({ scene, svg, releve, timeline }) => {
 		{ signal },
 	);
 
-	const keysHelp =
-		'Au clavier, les flèches avancent ou reculent d’une minute, Page suivante et Page précédente d’une heure, Fin va au prochain événement, Début revient à la pose au repos, Espace lance ou arrête le tour.';
 	const attributes: Record<string, string> = {
 		role: 'slider',
-		'aria-label': ruler
-			? `Temps de la rampe à cadran, en minutes de session. ${keysHelp}`
-			: `Rampe à cadran : glissez vers la droite pour faire avancer le temps. ${keysHelp}`,
+		'aria-label': `${ruler ? ui.ruler : ui.scene} ${ui.keys}`,
 		'aria-valuemin': '0',
 		'aria-valuemax': String(LAST),
 		...(ruler && { tabindex: '0' }),

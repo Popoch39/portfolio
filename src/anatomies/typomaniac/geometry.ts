@@ -27,6 +27,7 @@ import {
 	type SolidStyle,
 } from '../../vendor/anatomy/iso-kit.ts';
 import * as G from './kit.mjs';
+import { defaultLocale } from '../../lib/i18n.ts';
 import type { RestFigure } from '../contract.ts';
 import { pieceSvg } from '../piece.ts';
 import * as L from './layout.ts';
@@ -698,4 +699,5 @@ export function renderFrom(duel: Duel): RestFigure {
 	return { width: L.WIDTH, height: L.HEIGHT, body };
 }
 
-export const renderRest = (): RestFigure => renderFrom(restDuel(TEXTS));
+/** La pose au repos ne dépend pas de la langue : seul le relevé, absent de la figure, la lit. */
+export const renderRest = (): RestFigure => renderFrom(restDuel(TEXTS, defaultLocale));

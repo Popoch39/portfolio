@@ -1,0 +1,106 @@
+---
+// La fiche d'un projet, rendue par la route de chaque langue (`src/pages/projets/[slug].astro`,
+// `src/pages/en/projects/[slug].astro`) : la langue vient de l'URL, par `Astro.currentLocale`.
+import Layout from '../layouts/Layout.astro';
+import SiteHeader from './SiteHeader.astro';
+import ProjectHero from './ProjectHero.astro';
+import SectionHeader from './SectionHeader.astro';
+import FigureCard from './FigureCard.astro';
+import Nomenclature from './Nomenclature.astro';
+import Notes from './Notes.astro';
+import Regle from './Regle.astro';
+import GrainPatterns from './GrainPatterns.astro';
+import ProjectNav from './ProjectNav.astro';
+import StatusBar from './StatusBar.astro';
+import { githubRepoUrl, shareImageOf, type Project } from '../data/profile';
+import { person } from '../lib/structured-data';
+import { fiche, formats, localeOf, pathOf, ui } from '../lib/i18n';
+import { anatomyOf } from '../anatomies/registry';
+import { restSvg } from '../anatomies/figure';
+import { annotate } from '../anatomies/annotations';
+
+interface Props {
+	project: Project;
+}
+
+const { project } = Astro.props;
+const locale = localeOf(Astro.currentLocale);
+const page = fiche(project.slug);
+const anatomy = anatomyOf(project, locale);
+const { content } = anatomy;
+const notes = annotate(content, anatomy.renderRest().body, anatomy.anchors);
+
+const sourceCode = {
+	'@context': 'https://schema.org',
+	'@type': 'SoftwareSourceCode',
+	name: project.repo,
+	description: content.seo.description,
+	inLanguage: formats[locale].lang,
+	url: new URL(pathOf(page, locale), Astro.site).href,
+	codeRepository: githubRepoUrl(project.repo),
+	programmingLanguage: project.language,
+	author: person(Astro.site, locale),
+};
+---
+
+<Layout
+	page={page}
+	title={content.seo.title}
+	description={content.seo.description}
+	shareImage={shareImageOf(project, content.machine, locale)}
+	ogType="website"
+	structuredData={sourceCode}
+>
+	<div class="container">
+		<SiteHeader page={page} current="projects" />
+	</div>
+	<main class="container">
+		<ProjectHero project={project} lede={content.lede} />
+		<section class="anatomy">
+			<SectionHeader number="A" title={ui.anatomy[locale]} note={ui.anatomyNote[locale](content.pieces.length)} />
+			<FigureCard fig={1} title={content.title} caption={content.caption}>
+				<Notes
+					slot="stage"
+					layout={notes}
+					svg={restSvg(anatomy)}
+					motion={anatomy.motion}
+					phoneCrop={content.phoneCrop}
+					codeUrl={anatomy.codeUrl}
+					signatureOf={anatomy.signatureOf}
+					consignes={content.timeline?.consignes ?? content.consignes}
+					releve={content.releve}
+				>
+					{content.timeline && <Regle timeline={content.timeline} />}
+				</Notes>
+			</FigureCard>
+			<Nomenclature pieces={content.pieces} codeUrl={anatomy.codeUrl} />
+			<GrainPatterns />
+		</section>
+		<ProjectNav project={project} />
+	</main>
+	<StatusBar path={ui.statusFiche[locale](project.repo)} secondary={ui.statusParts[locale](1, content.pieces.length)} position={null} />
+</Layout>
+
+<script>
+	// Le chargeur de la fiche : la figure arrive dessinée, seul son mouvement passe par ici.
+	import { mountFigure } from '../anatomies/loader.ts';
+	import { linkPieces } from '../anatomies/highlight.ts';
+
+	const scene = document.querySelector<HTMLElement>('[data-motion]');
+	const svg = scene?.querySelector('svg');
+	const card = scene?.closest('figure');
+	const releve = card?.querySelector<HTMLElement>('[data-releve]');
+	const anatomy = scene?.closest('section');
+	if (scene?.dataset.motion && svg && releve && anatomy) {
+		linkPieces(anatomy);
+		const ruler = card?.querySelector<HTMLElement>('[data-regle]');
+		const tour = card?.querySelector<HTMLButtonElement>('[data-tour]');
+		void mountFigure({ scene, svg, releve, timeline: ruler && tour ? { ruler, tour } : undefined }, scene.dataset.motion);
+	}
+</script>
+
+<style>
+	.anatomy {
+		padding-top: clamp(24px, 4vw, 56px);
+	}
+</style>

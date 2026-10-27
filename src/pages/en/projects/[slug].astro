@@ -1,0 +1,8 @@
+---
+import Fiche from '../../../components/Fiche.astro';
+import type { Props } from '../../projets/_routes.ts';
+
+export { getStaticPaths } from '../../projets/_routes.ts';
+---
+
+<Fiche project={Astro.props.project} />

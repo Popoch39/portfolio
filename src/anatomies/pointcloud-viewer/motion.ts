@@ -4,13 +4,14 @@
 // vrai flux : choix du fichier, bake Rust en WebAssembly, écriture du PCBK, transfert sans copie,
 // ancre, rendu three.js, puis la roue change le mode de couleur.
 import { holdStill, iso, translateAlong, type Point3 } from '../../vendor/anatomy/iso-kit.ts';
+import type { Localized } from '../../lib/i18n.ts';
 import type { MountMotion } from '../contract.ts';
 import { asksForStillness, loop, spring, type Spring } from '../live.ts';
 import { cloudPoints, dotsPath, renderedPaths } from './cloud.ts';
 import { discMarks, RAIL_DIR, TRAVEL } from './disc.ts';
 import { ballAt, facingOf, mirrorAt, slitAt, smooth, teethAt, ticksAt, ventsAt, windowsAt, type Drum } from './head.ts';
 import { AZIMUTH, beamSlot, dirOf, ELEVATION, GROUND, impactAt, LAYERS, projection as P, TILE } from './layout.ts';
-import { DRAWN, drawnIndex, INKS, LAST_ANGLE, MODES, PER_TURN, POINTS, readSpeed, releve as text } from './model.ts';
+import { DRAWN, drawnIndex, INKS, LAST_ANGLE, MODES, PER_TURN, POINTS, readSpeed, releveOf } from './model.ts';
 
 const TAU = Math.PI * 2;
 /** Vitesse affichée plafonnée (2,2 tours/s) : au-delà, la fente passe en flou de bougé. */
@@ -30,6 +31,12 @@ const RESUME_MS = 2000;
 const CARD_LIFT = 6;
 const SPIN_RATE = 14;
 
+/** Le libellé de la scène, qui explique ses touches, dans la langue du document. */
+const UI: Localized<string> = {
+	fr: 'Scanner sur trépied : les flèches tournent la tête d’un huitième de tour (Maj : dix tours) ; en avant elle lit 79 points, en arrière le cliquet patine. Fin finit le bake, C change le mode de couleur, Entrée relance un bake.',
+	en: 'Scanner on a tripod: the arrow keys turn the head an eighth of a turn (Shift: ten turns); forwards it reads 79 points, backwards the ratchet slips. End finishes the bake, C changes the colour mode, Enter starts a new bake.',
+};
+
 type Phase = 'reset' | 'spin' | 'read' | 'write' | 'transfer' | 'anchor' | 'rendered';
 
 /** Écart signé le plus court, dans ]−π, π]. */
@@ -44,7 +51,8 @@ const offsetOf = (by: Point3): [number, number] => {
 	return [b[0] - a[0], b[1] - a[1]];
 };
 
-const mount: MountMotion = ({ scene, svg, releve }) => {
+const mount: MountMotion = ({ locale, scene, svg, releve }) => {
+	const text = releveOf(locale);
 	const one = <T extends Element = SVGElement>(selector: string) => svg.querySelector<T>(selector);
 	const rot = (key: string) => one(`[data-rot="${key}"]`);
 	const setD = (node: Element | null, d: string) => {
@@ -141,7 +149,7 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 			case 'write':
 				return text.writing;
 			case 'rendered':
-				return text.rendered(MODES[mode()]);
+				return text.rendered(mode());
 			default:
 				return text.anchored;
 		}
@@ -599,8 +607,7 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 
 	const attributes = {
 		role: 'slider',
-		'aria-label':
-			'Scanner sur trépied : les flèches tournent la tête d’un huitième de tour (Maj : dix tours) ; en avant elle lit 79 points, en arrière le cliquet patine. Fin finit le bake, C change le mode de couleur, Entrée relance un bake.',
+		'aria-label': UI[locale],
 		'aria-valuemin': '0',
 		'aria-valuemax': String(POINTS),
 		'aria-valuenow': String(POINTS),

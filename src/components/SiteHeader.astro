@@ -1,29 +1,36 @@
 ---
-import { identity, sections, type Section } from '../data/profile';
+import LanguageSwitch from './LanguageSwitch.astro';
+import { identity, sectionKeys, sections, type SectionKey } from '../data/profile';
+import { home, localeOf, pathOf, type Page } from '../lib/i18n';
 
 interface Props {
-	/** Section de l'accueil dont relève la page (une fiche relève de « projets »). */
-	current?: Section['id'];
+	/** La page affichée : l'accueil, ou une fiche dont le sélecteur de langue mène à l'autre version. */
+	page: Page;
+	/** Section de l'accueil dont relève la page (une fiche relève de « projects »). */
+	current?: SectionKey;
 }
 
-const { current } = Astro.props;
+const { page, current } = Astro.props;
+const locale = localeOf(Astro.currentLocale);
 // Les sections sont des ancres de l'accueil : depuis une autre page, les liens y retournent.
-const onHome = Astro.url.pathname === '/';
-const home = onHome ? '' : '/';
+const homePath = pathOf(home, locale);
+const onHome = page.kind === 'home';
+const homeHref = onHome ? '' : homePath;
 ---
 
 <header class="site-header">
-	<a class="name" href={onHome ? '#top' : '/'}>{identity.name}</a>
-	<span class="mono meta role">{identity.role}</span>
+	<a class="name" href={onHome ? '#top' : homePath}>{identity.name}</a>
+	<span class="mono meta role">{identity.role[locale]}</span>
 	<span class="mono meta city">{identity.city}, {identity.country}</span>
 	<nav class="nav" aria-label="Sections">
 		{
-			sections.map((s) => (
-				<a href={`${home}#${s.id}`} aria-current={s.id === current ? 'true' : undefined}>
-					{s.label}
+			sectionKeys.map((key) => (
+				<a href={`${homeHref}#${sections[key].id[locale]}`} aria-current={key === current ? 'true' : undefined}>
+					{sections[key].label[locale]}
 				</a>
 			))
 		}
+		<LanguageSwitch page={page} />
 	</nav>
 </header>
 
@@ -86,8 +93,10 @@ const home = onHome ? '' : '/';
 			column-gap: var(--gutter);
 		}
 
+		/* Vers 600 px, sections et sélecteur de langue ne tiennent plus à côté du nom : le sélecteur
+		   passe à la ligne plutôt que de faire défiler la page. */
 		.nav {
-			flex-wrap: nowrap;
+			flex-wrap: wrap;
 			justify-content: flex-end;
 		}
 	}

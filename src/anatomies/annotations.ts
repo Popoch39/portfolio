@@ -49,7 +49,7 @@ type Row = 'up' | 'down';
 type Side = 'left' | 'right';
 
 export interface NoteLayout {
-	piece: Piece;
+	piece: Piece<'page'>;
 	/** Numéro de nomenclature, sur deux chiffres. */
 	number: string;
 	/** Classes de disposition de la note (rangée, côté, sens des traits). */
@@ -224,7 +224,7 @@ function chain(prefix: string, pins: number[]) {
  * La mise en page des notes de `content` sur la figure au repos `body`, d'après ses ancrages. Le
  * relevé doit être celui de cette figure : sinon, relancer `pnpm ancres`.
  */
-export function annotate(content: AnatomyContent, body: string, anchors: Anchors | undefined): AnnotationLayout {
+export function annotate(content: AnatomyContent<'page'>, body: string, anchors: Anchors | undefined): AnnotationLayout {
 	if (!anchors || anchors.print !== figurePrint(body)) {
 		throw new Error(`Anatomie « ${content.slug} » : ancrages absents ou d’une autre figure (pnpm build && pnpm ancres)`);
 	}

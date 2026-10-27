@@ -17,7 +17,23 @@ export function readDist(path, encoding = 'utf8') {
 	return readFileSync(url, encoding);
 }
 
-export const readHome = () => readDist('index.html');
+/** HTML de la page servie à un chemin du site (`/`, `/en/`, `/projets/trekker/`). */
+export const readPage = (pathname) => readDist(`${pathname.slice(1)}index.html`);
+
+/** Adresse de l'accueil dans chaque langue. */
+export const HOME = { fr: '/', en: '/en/' };
+
+/** HTML de l'accueil, en français par défaut. */
+export const readHome = (locale = 'fr') => readPage(HOME[locale]);
+
+/** Le `<head>` d'une page. */
+export const headOf = (html) => elements(html, 'head')[0] ?? '';
+
+/** Les `<link rel="alternate" hreflang>` d'une page : `{ fr, en, 'x-default' }` → URL. */
+export function alternates(html) {
+	const links = tags(headOf(html), 'link').filter((t) => attr(t, 'rel') === 'alternate' && attr(t, 'hreflang'));
+	return Object.fromEntries(links.map((t) => [attr(t, 'hreflang'), attr(t, 'href')]));
+}
 
 /** Projets mis en avant, dans l'ordre de l'accueil : adresse de la fiche et nom du dépôt. */
 export const PROJECTS = [
@@ -29,8 +45,14 @@ export const PROJECTS = [
 	{ slug: 'ma-parcelle', repo: 'ma_parcelle' },
 ];
 
-/** HTML de la fiche d'un projet (`/projets/<slug>/`). */
-export const readFiche = (slug) => readDist(`projets/${slug}/index.html`);
+/** Adresse de la fiche d'un projet dans chaque langue : le segment est traduit, pas le slug. */
+export const FICHE = { fr: (slug) => `/projets/${slug}/`, en: (slug) => `/en/projects/${slug}/` };
+
+/** HTML de la fiche d'un projet, en français par défaut. */
+export const readFiche = (slug, locale = 'fr') => readPage(FICHE[locale](slug));
+
+/** Adresse de la figure au repos autonome d'un projet : une par version, puisqu'elle porte un libellé. */
+export const FIGURE = { fr: (slug) => `/figures/${slug}.svg`, en: (slug) => `/en/figures/${slug}.svg` };
 
 /** Toutes les occurrences d'une balise ouvrante, attributs compris (ex. `tags(html, 'link')`). */
 export function tags(html, name) {

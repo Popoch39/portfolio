@@ -2,6 +2,7 @@
 // la parcelle de référence de ses tests, 33063 KJ 33. Chaque strate est un bloc de la fiche, aussi
 // épaisse que le nombre de requêtes que son bloc envoie ; le relevé, le log, la carotte et
 // l'avance du carottier en découlent. Pur : il tourne au build, sous Node et dans le navigateur.
+import type { Locale, Localized } from '../../lib/i18n.ts';
 
 /** Commit lu du dépôt `ma_parcelle` : tous les liens et tous les chiffres y sont figés. */
 export const SHA = '8d83a60bcf40c7d61355296887bcbdec026b8d4d';
@@ -14,23 +15,23 @@ export type Level = (typeof LEVELS)[number];
 
 export interface Stratum {
 	id: string;
-	name: string;
+	name: Localized<string>;
 	/** Requêtes HTTP envoyées par le bloc pour KJ 33 : l'épaisseur de la strate. */
 	requests: number;
-	/** Ce que la strate livre au relevé. */
-	value: string;
+	/** Ce que la strate livre au relevé, nombres au format de chaque langue. */
+	value: Localized<string>;
 	/** Ligne du log : le niveau que la synthèse en retient, ou rien (ligne vierge). */
 	level: Level | null;
 }
 
 /** Les six blocs dans l'ordre de `BLOCKS` (`src/components/report/blocks.ts` L18–25). */
 export const STRATA: readonly Stratum[] = [
-	{ id: 'cadastre', name: 'Cadastre', requests: 1, value: '131 m²', level: 'info' },
-	{ id: 'urbanisme', name: 'Urbanisme', requests: 8, value: 'aucune zone publiée', level: 'vigilance' },
-	{ id: 'risques', name: 'Risques', requests: 11, value: 'vigilance au plus', level: null },
-	{ id: 'ventes', name: 'Ventes', requests: 5, value: '4 125 €/m² (7)', level: 'info' },
-	{ id: 'batiment', name: 'Bâtiment', requests: 3, value: '1850 · alt. 7,47 m', level: 'info' },
-	{ id: 'dpe', name: 'DPE', requests: 4, value: '377 annoncés', level: null },
+	{ id: 'cadastre', name: { fr: 'Cadastre', en: 'Cadastre' }, requests: 1, value: { fr: '131 m²', en: '131 m²' }, level: 'info' },
+	{ id: 'urbanisme', name: { fr: 'Urbanisme', en: 'Planning' }, requests: 8, value: { fr: 'aucune zone publiée', en: 'no zone published' }, level: 'vigilance' },
+	{ id: 'risques', name: { fr: 'Risques', en: 'Hazards' }, requests: 11, value: { fr: 'vigilance au plus', en: 'caution at most' }, level: null },
+	{ id: 'ventes', name: { fr: 'Ventes', en: 'Sales' }, requests: 5, value: { fr: '4 125 €/m² (7)', en: '€4,125/m² (7)' }, level: 'info' },
+	{ id: 'batiment', name: { fr: 'Bâtiment', en: 'Building' }, requests: 3, value: { fr: '1850 · alt. 7,47 m', en: '1850 · alt. 7.47 m' }, level: 'info' },
+	{ id: 'dpe', name: { fr: 'DPE', en: 'DPE' }, requests: 4, value: { fr: '377 annoncés', en: '377 listed' }, level: null },
 ];
 
 /** La strate que perd un tour sur deux : la BDNB répond 500 (`summary.test.ts` L254–264). */
@@ -129,17 +130,24 @@ export interface Sounding {
 	done: boolean;
 }
 
-export const REST_RELEVE = `${PARCEL} · prêt · 0/6`;
-export const CACHED_RELEVE = `${PARCEL} · en cache · 0 req.`;
+/** Les mots du relevé ; la parcelle, les nombres et « req. » sont les mêmes dans les deux langues. */
+const WORDS: Localized<{ ready: string; cached: string; lost: string; servers: string }> = {
+	fr: { ready: 'prêt', cached: 'en cache', lost: 'strate perdue', servers: '0 serveur' },
+	en: { ready: 'ready', cached: 'cached', lost: 'stratum lost', servers: '0 servers' },
+};
 
-export function releveOf({ depth, selected, lost, cached, done }: Sounding) {
-	if (cached && selected) return CACHED_RELEVE;
-	if (done) return lost ? '6/6 · 1 strate perdue · 0 serveur' : `6/6 · ${TOTAL_REQUESTS} req. · 0 serveur`;
+export const REST_RELEVE: Localized<string> = { fr: `${PARCEL} · ${WORDS.fr.ready} · 0/6`, en: `${PARCEL} · ${WORDS.en.ready} · 0/6` };
+
+export function releveOf({ depth, selected, lost, cached, done }: Sounding, locale: Locale) {
+	const words = WORDS[locale];
+	if (cached && selected) return `${PARCEL} · ${words.cached} · 0 req.`;
+	if (done) return `6/6 · ${lost ? `1 ${words.lost}` : `${TOTAL_REQUESTS} req.`} · ${words.servers}`;
 	const index = stratumAt(depth);
-	if (index < 0 || !selected) return REST_RELEVE;
+	if (index < 0 || !selected) return REST_RELEVE[locale];
 	const stratum = STRATA[index];
-	if (lost && index === LOST) return `${index + 1}/6 ${stratum.name} · BDNB 500 · strate perdue`;
-	return `${index + 1}/6 ${stratum.name} · ${stratum.requests} req. · ${stratum.value}`;
+	const head = `${index + 1}/6 ${stratum.name[locale]}`;
+	if (lost && index === LOST) return `${head} · BDNB 500 · ${words.lost}`;
+	return `${head} · ${stratum.requests} req. · ${stratum.value[locale]}`;
 }
 
 /** Le cran de chaque ligne du log : 0 vierge, 1 à 3 pour info, vigilance, alerte. */

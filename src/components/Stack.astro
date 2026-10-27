@@ -1,15 +1,19 @@
 ---
 import SectionHeader from './SectionHeader.astro';
-import { identity, stack, dailyTools } from '../data/profile';
+import { identity, stack, dailyTools, sections } from '../data/profile';
+import { localeOf, ui } from '../lib/i18n';
+
+const locale = localeOf(Astro.currentLocale);
+const { id, label } = sections.stack;
 ---
 
-<section id="stack" class="stack">
-	<SectionHeader number={4} title="Stack" note=":set stack?" />
+<section id={id[locale]} class="stack">
+	<SectionHeader number={4} title={label[locale]} note=":set stack?" />
 	<dl class="categories">
 		{
 			stack.map((category) => (
 				<div class="grid category">
-					<dt class="mono label">{category.label}</dt>
+					<dt class="mono label">{category.label[locale]}</dt>
 					<dd class="items">
 						{/* Espace insécable avant « / » : la barre ne commence jamais une ligne. Les
 						   vrais espaces hors du séparateur masqué gardent les mots distincts à l'oral. */}
@@ -30,8 +34,8 @@ import { identity, stack, dailyTools } from '../data/profile';
 		}
 	</dl>
 	<p class="mono tools">
-		{dailyTools.map((tool) => `${tool.role} : ${tool.name}`).join(' · ')} —{' '}
-		<a href={identity.links.nvimConfig}>la config est sur GitHub</a>
+		{dailyTools.map((tool) => ui.dailyTool[locale](tool.role[locale], tool.name)).join(' · ')} —{' '}
+		<a href={identity.links.nvimConfig}>{ui.configOnGitHub[locale]}</a>
 	</p>
 </section>
 

@@ -3,6 +3,7 @@
 // et s'arrête net au relâcher. Au fond, le treuil remonte le tube intérieur puis le carottier
 // remonte. Le plateau (ou Entrée) relance le sondage, depuis le cache dès qu'un sondage a abouti.
 // Au repos, un tour fore strate par strate ; un tour sur deux perd la strate Bâtiment.
+import type { Localized } from '../../lib/i18n.ts';
 import { translateAlong, type Point3 } from '../../vendor/anatomy/iso-kit.ts';
 import type { MountMotion } from '../contract.ts';
 import { asksForStillness, loop, spring, type Spring } from '../live.ts';
@@ -53,9 +54,15 @@ interface Run {
 	cached: boolean;
 }
 
+/** Le libellé de la scène : ce que font ses touches. */
+const UI: Localized<string> = {
+	fr: 'Colonne de sondage : maintenir flèche bas pour forer les strates, flèche haut pour remonter ; Début ramène au plateau, Fin envoie au fond, Entrée relance le sondage.',
+	en: 'Coring rig: hold Down arrow to drill through the strata, Up arrow to raise the barrel; Home returns it to the plate, End sends it to the bottom, Enter runs the survey again.',
+};
+
 const at = (selector: string, root: Element) => [...root.querySelectorAll(`[data-mp="${selector}"]`)];
 
-const mount: MountMotion = ({ scene, svg, releve }) => {
+const mount: MountMotion = ({ locale, scene, svg, releve }) => {
 	const rides = at('ride', svg);
 	const core = at('core', svg)[0];
 	const lostBand = svg.querySelector('[data-band="4"]');
@@ -286,7 +293,7 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 			write(sliders[index], 'transform', shift([RIGHT[0] * state.at, RIGHT[1] * state.at, 0]));
 		});
 
-		const text = M.releveOf(state);
+		const text = M.releveOf(state, locale);
 		if (releve.textContent !== text) {
 			releve.textContent = text;
 			scene.setAttribute('aria-valuetext', text);
@@ -441,12 +448,11 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 	svg.style.setProperty('user-select', 'none');
 	const attributes = {
 		role: 'slider',
-		'aria-label':
-			'Colonne de sondage : maintenir flèche bas pour forer les strates, flèche haut pour remonter ; Début ramène au plateau, Fin envoie au fond, Entrée relance le sondage.',
+		'aria-label': UI[locale],
 		'aria-valuemin': '0',
 		'aria-valuemax': String(M.STRATA.length),
 		'aria-valuenow': '0',
-		'aria-valuetext': M.REST_RELEVE,
+		'aria-valuetext': M.REST_RELEVE[locale],
 	};
 	for (const [name, value] of Object.entries(attributes)) scene.setAttribute(name, value);
 

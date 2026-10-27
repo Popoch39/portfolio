@@ -6,12 +6,14 @@
 // rend vivante.
 import type { Timeline } from '../anatomies/contract';
 import { readingAnchor, rulerX } from '../anatomies/ruler';
+import { localeOf, ui } from '../lib/i18n';
 
 interface Props {
-	timeline: Timeline;
+	timeline: Timeline<'page'>;
 }
 
 const { timeline } = Astro.props;
+const locale = localeOf(Astro.currentLocale);
 const { last, rest, events, tick, marks, reading } = timeline;
 const at = (t: number) => rulerX(t, last);
 const ticks = Array.from({ length: Math.floor(last / tick) + 1 }, (_, i) => i * tick);
@@ -21,7 +23,7 @@ const major = new Set(marks.map((mark) => mark.at));
 <div class="regle">
 	<button class="mono tour" type="button" data-tour disabled>
 		<svg class="tour-icon" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1l7 4-7 4z"></path></svg>
-		<span data-tour-label>Lancer le tour</span>
+		<span data-tour-label>{ui.startTour[locale]}</span>
 	</button>
 	<div class="ruler" data-regle>
 		<svg class="graduations" width="100%" height="78" aria-hidden="true" focusable="false">

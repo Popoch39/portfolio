@@ -1,10 +1,12 @@
 ---
 import { Font } from 'astro:assets';
-import { identity, pageMeta, type ShareImage } from '../data/profile';
+import { identity, pageMeta, themeColor, type ShareImage } from '../data/profile';
 import { person } from '../lib/structured-data';
+import { alternatesOf, formats, home, localeOf, locales, pathOf, type Page } from '../lib/i18n';
 
 interface Props {
 	/** Sans les paramètres suivants, la page reprend les valeurs de l'accueil. */
+	page?: Page;
 	title?: string;
 	description?: string;
 	shareImage?: ShareImage;
@@ -14,35 +16,42 @@ interface Props {
 	structuredData?: Record<string, unknown>;
 }
 
-const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const locale = localeOf(Astro.currentLocale);
 
 const {
-	title = pageMeta.title,
-	description = pageMeta.description,
-	shareImage = pageMeta.shareImage,
+	page = home,
+	title = pageMeta[locale].title,
+	description = pageMeta[locale].description,
+	shareImage = pageMeta[locale].shareImage,
 	ogType = 'profile',
-	structuredData = { '@context': 'https://schema.org', ...person(Astro.site) },
+	structuredData = { '@context': 'https://schema.org', ...person(Astro.site, locale) },
 } = Astro.props;
+const canonical = new URL(pathOf(page, locale), Astro.site).href;
+// Chaque version déclare toutes les versions, elle-même comprise, et `x-default` (ADR 0002).
+const alternates = alternatesOf(page).map(({ hreflang, path }) => ({ hreflang, href: new URL(path, Astro.site).href }));
+const otherLocales = locales.filter((version) => version !== locale);
 const shareImageUrl = new URL(shareImage.path, Astro.site).href;
 // `<` échappé : aucune valeur ne peut fermer la balise <script> avant l'heure.
 const jsonLd = JSON.stringify(structuredData).replaceAll('<', '\\u003c');
 ---
 
 <!doctype html>
-<html lang="fr">
+<html lang={formats[locale].lang}>
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>{title}</title>
 		<meta name="description" content={description} />
 		<link rel="canonical" href={canonical} />
-		<meta name="theme-color" content={pageMeta.themeColor} />
+		{alternates.map(({ hreflang, href }) => <link rel="alternate" hreflang={hreflang} href={href} />)}
+		<meta name="theme-color" content={themeColor} />
 		{/* `sizes` sur le .ico : sans lui, Chrome le préfère au SVG. */}
 		<link rel="icon" href="/favicon.ico" sizes="32x32" />
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 		<link rel="sitemap" href="/sitemap.xml" />
 		<meta property="og:type" content={ogType} />
-		<meta property="og:locale" content="fr_FR" />
+		<meta property="og:locale" content={formats[locale].ogLocale} />
+		{otherLocales.map((version) => <meta property="og:locale:alternate" content={formats[version].ogLocale} />)}
 		<meta property="og:url" content={canonical} />
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />

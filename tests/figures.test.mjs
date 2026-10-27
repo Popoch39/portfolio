@@ -1,13 +1,19 @@
-// SVG au repos : un fichier autonome par projet (styles embarqués), qui servira l'aperçu sans
-// JavaScript, la base de l'aperçu vivant et la capture de l'image de partage.
+// SVG au repos : un fichier autonome par projet et par version (styles embarqués), qui servira
+// l'aperçu sans JavaScript, la base de l'aperçu vivant et la capture de l'image de partage. Il porte
+// le libellé de la figure : chaque version a le sien.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROJECTS, readDist, readFiche, readHome, tags, attr, hasAttr, css } from './helpers/dist.mjs';
+import { FIGURE, PROJECTS, readDist, readFiche, readHome, tags, attr, hasAttr, css } from './helpers/dist.mjs';
 
-const figures = PROJECTS.map((project) => ({ ...project, svg: readDist(`figures/${project.slug}.svg`) }));
+const LOCALES = ['fr', 'en'];
+const figures = PROJECTS.flatMap((project) =>
+	LOCALES.map((locale) => ({ ...project, locale, slug: `${project.slug} (${locale})`, file: project.slug, svg: readDist(FIGURE[locale](project.slug).slice(1)) })),
+);
 const hooks = (markup) => new Set(tags(markup, 'g').filter((g) => hasAttr(g, 'data-piece')).map((g) => attr(g, 'data-piece')));
+/** Le libellé de la figure d'une fiche : celui de son `<svg role="img">`. */
+const ficheLabel = (html) => attr(tags(html, 'svg').find((t) => attr(t, 'role') === 'img') ?? '', 'aria-label');
 
-test('un SVG par projet, en racine, avec role="img" et un libellé', () => {
+test('un SVG par projet et par version, en racine, avec role="img" et un libellé', () => {
 	for (const { slug, svg } of figures) {
 		const [root] = tags(svg, 'svg');
 		assert.ok(svg.trimStart().startsWith('<svg'), `${slug} : le fichier commence par <svg>`);
@@ -41,7 +47,11 @@ test('les trames du grain : dans chaque SVG autonome, et une seule fois par page
 	for (const { slug, svg } of figures) {
 		for (const id of ids) assert.match(svg, new RegExp(`<pattern id="${id}"`), `${slug} : trame ${id} absente`);
 	}
-	const pages = [{ name: 'accueil', html: readHome() }, ...PROJECTS.map(({ slug }) => ({ name: `fiche ${slug}`, html: readFiche(slug) }))];
+	const pages = [
+		{ name: 'accueil', html: readHome() },
+		{ name: 'accueil anglais', html: readHome('en') },
+		...PROJECTS.flatMap(({ slug }) => LOCALES.map((locale) => ({ name: `fiche ${slug} (${locale})`, html: readFiche(slug, locale) }))),
+	];
 	for (const { name, html } of pages) {
 		for (const id of ids) assert.equal(html.match(new RegExp(`\\sid="${id}"`, 'g'))?.length ?? 0, 1, `${name} : trame ${id}`);
 	}
@@ -58,10 +68,11 @@ test('le grain masque les faces d’un solide d’un bloc : la plupart des faces
 	assert.match(css(figures[0].svg), /\[data-on\][^{]*\.iso-faces[^{]*{[^}]*mask-image/, 'le masque du grain vise les groupes de faces');
 });
 
-test('le SVG autonome montre les mêmes pièces que la figure de la fiche', () => {
-	for (const { slug, svg } of figures) {
-		const fiche = readFiche(slug);
+test('le SVG autonome montre les mêmes pièces que la figure de la fiche de sa version, sous le même libellé', () => {
+	for (const { slug, file, locale, svg } of figures) {
+		const fiche = readFiche(file, locale);
 		assert.ok(hooks(svg).size > 0, `${slug} : aucun crochet de pièce`);
 		assert.deepEqual([...hooks(svg)].sort(), [...hooks(fiche)].sort(), slug);
+		assert.equal(attr(tags(svg, 'svg')[0], 'aria-label'), ficheLabel(fiche), `${slug} : libellé d’une autre version`);
 	}
 });

@@ -1,13 +1,15 @@
 ---
 import { githubRepoUrl, projects, type Project } from '../data/profile';
 import type { Lede } from '../anatomies/contract';
+import { localeOf, ui } from '../lib/i18n';
 
 interface Props {
 	project: Project;
-	lede: Lede;
+	lede: Lede<'page'>;
 }
 
 const { project, lede } = Astro.props;
+const locale = localeOf(Astro.currentLocale);
 const pad = (n: number) => String(n).padStart(2, '0');
 const rank = projects.indexOf(project) + 1;
 const repoUrl = githubRepoUrl(project.repo);
@@ -15,8 +17,8 @@ const repoUrl = githubRepoUrl(project.repo);
 
 <section id="top" class="hero">
 	<div class="mono topline">
-		<span><span class="mode">-- NORMAL --</span> ~/projets/{project.repo}.md</span>{' '}
-		<span>projet {pad(rank)} / {pad(projects.length)}</span>
+		<span><span class="mode">-- NORMAL --</span> {ui.ficheFile[locale](project.repo)}</span>{' '}
+		<span>{ui.ficheRank[locale](pad(rank), pad(projects.length))}</span>
 	</div>
 	<h1 class="title">{project.repo}<span class="cursor" aria-hidden="true"></span></h1>
 	<div class="body">
@@ -27,11 +29,11 @@ const repoUrl = githubRepoUrl(project.repo);
 				<dd>{project.stack.join(' · ')}</dd>
 			</div>
 			<div>
-				<dt class="mono">Année</dt>
+				<dt class="mono">{ui.year[locale]}</dt>
 				<dd>{project.year}</dd>
 			</div>
 			<div>
-				<dt class="mono">Dépôt</dt>
+				<dt class="mono">{ui.repository[locale]}</dt>
 				<dd><a href={repoUrl}>{repoUrl.replace('https://', '')} ↗</a></dd>
 			</div>
 		</dl>

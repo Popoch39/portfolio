@@ -3,6 +3,7 @@
 // manche. Le visiteur est le joueur A : un clic sur son clavier frappe la lettre attendue, une
 // vraie touche frappe ce caractère ; le pilote de A s'arrête alors, et reprend 5 s après.
 import { solidSvg, translateAlong, type Point3 } from '../../vendor/anatomy/iso-kit.ts';
+import type { Localized } from '../../lib/i18n.ts';
 import type { MountMotion } from '../contract.ts';
 import { asksForStillness, loop } from '../live.ts';
 import * as L from './layout.ts';
@@ -26,7 +27,6 @@ import {
 	rush,
 	RUNNING,
 	sliderPose,
-	START,
 	takeOver,
 	tokenAt,
 	advance,
@@ -39,8 +39,13 @@ const RESUME_MS = 5000;
 /** Une touche survolée se soulève à peine. */
 const HOVER_LIFT = 0.4;
 const KEY_TRAVEL = 1.1;
+/** Ce que la scène annonce au clavier, dans la langue du document. */
+const UI: Localized<string> = {
+	fr: 'Banc de duel, joueur A : tapez une lettre ou l’espace pour frapper, retour arrière pour effacer, Ctrl + retour arrière pour effacer le mot.',
+	en: 'Duel bench, player A: type a letter or a space to strike, Backspace to erase, Ctrl + Backspace to erase the word.',
+};
 
-const mount: MountMotion = ({ scene, svg, releve }) => {
+const mount: MountMotion = ({ locale, scene, svg, releve }) => {
 	const all = (selector: string) => [...svg.querySelectorAll<SVGElement>(selector)];
 	const one = (selector: string) => svg.querySelector<SVGElement>(selector);
 
@@ -87,7 +92,7 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 
 	// Les textes des manches viennent du SVG au repos, qui les porte sur le bandeau de A.
 	const texts = (one('[data-texts]')?.dataset.texts ?? '').split('|').map((text) => text.split(' '));
-	let duel: Duel = restDuel(texts);
+	let duel: Duel = restDuel(texts, locale);
 	let ranked = true;
 	let touring = !asksForStillness();
 	let wait = TOUR_START;
@@ -205,7 +210,7 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 	/** Un nouveau duel, au format choisi, piloté comme l'était le précédent. */
 	function restart() {
 		const tour = duel.tour;
-		duel = createDuel(texts, ranked, START);
+		duel = createDuel(texts, locale, ranked);
 		if (!tour) takeOver(duel);
 	}
 
@@ -281,7 +286,7 @@ const mount: MountMotion = ({ scene, svg, releve }) => {
 
 	const attributes = {
 		role: 'application',
-		'aria-label': 'Banc de duel, joueur A : tapez une lettre ou l’espace pour frapper, retour arrière pour effacer, Ctrl + retour arrière pour effacer le mot.',
+		'aria-label': UI[locale],
 	};
 	for (const [name, value] of Object.entries(attributes)) scene.setAttribute(name, value);
 	draw(asksForStillness());

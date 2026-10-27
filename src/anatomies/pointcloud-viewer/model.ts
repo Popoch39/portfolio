@@ -1,6 +1,7 @@
 // Modèle de l'anatomie de pointcloud-viewer : les vrais chiffres du dépôt, au commit lu. Le relevé,
 // la spirale dessinée, les secteurs du disque et le rythme du bake en découlent. Module pur : il
 // tourne au build, sous Node pour l'audit, et dans le module de mouvement.
+import { formats, type Locale, type Localized } from '../../lib/i18n.ts';
 
 /** Commit lu de Popoch39/pointcloud-viewer : tous les liens vers le code y sont figés. */
 export const SHA = 'e30a105e0cf22c12d500d6bbf06fcd26b12697a1';
@@ -61,7 +62,8 @@ export const SECTORS = (() => {
 
 // --- Les modes de couleur, `src/lib/pointcloud-shaders.ts` -----------------------------------
 
-export const MODES = ['RGB', 'intensité', 'classification', 'altitude'] as const;
+/** Les clés du dépôt (`ColorMode`, L10) ; le relevé affiche leurs libellés, dans la langue du document. */
+export const MODES = ['rgb', 'intensity', 'classification', 'altitude'] as const;
 export type Mode = (typeof MODES)[number];
 
 /** Palette ASPRS des classes 0 à 5, les seules de l'échantillon (`i mod 6`), L35-L41. */
@@ -96,11 +98,11 @@ const luminance = ([r, g, b]: [number, number, number]) => 0.2126 * r + 0.7152 *
 export function lightOf(index: number, mode: Mode) {
 	const t = angleOf(index);
 	switch (mode) {
-		case 'RGB': {
+		case 'rgb': {
 			const channel = (unit: number) => (Math.floor(unit * 65_535) >> 8) / 255;
 			return luminance([channel(Math.sin(t) * 0.5 + 0.5), channel(Math.cos(t) * 0.5 + 0.5), channel(index / POINTS)]);
 		}
-		case 'intensité':
+		case 'intensity':
 			return (index % 65_536) / 65_535;
 		case 'classification':
 			return luminance(CLASS_PALETTE[index % 6]);
@@ -152,21 +154,31 @@ export const readSpeed = (angle: number) => Math.min(READ_TOP, READ_START + angl
 export const EPSG = 2154;
 export const ANCHOR = { lat: 48.8468, lng: 2.3384 };
 
-// Pas le `formatNumber` du site (`src/lib/activity.ts`) : ses formats de date, construits à
-// l'import, suivraient dans le module de mouvement et le feraient passer au-dessus de 20 Ko.
-const numberFormat = new Intl.NumberFormat('fr-FR');
-const decimal = (value: number, digits: number) =>
-	new Intl.NumberFormat('fr-FR', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
-export const formatCount = (value: number) => numberFormat.format(value);
+/** Les mots du relevé : les chiffres, eux, ne changent pas d'une langue à l'autre. */
+const WORDS: Localized<{ mb: string; turn: string; ratchet: string; bytes: string; anchor: string; modes: string[] }> = {
+	fr: { mb: 'Mo', turn: 'tour', ratchet: 'cliquet', bytes: 'o', anchor: 'ancre', modes: ['RGB', 'intensité', 'classification', 'altitude'] },
+	en: { mb: 'MB', turn: 'turn', ratchet: 'ratchet', bytes: 'B', anchor: 'anchor', modes: ['RGB', 'intensity', 'classification', 'altitude'] },
+};
 
-/** « 1,80 Mo » : unités de `bake-panel.tsx` L18-L23, à la virgule. */
-export const PCBK_SIZE = `${decimal(PCBK_BYTES / 1_000_000, 2)} Mo`;
-
-export const releve = {
-	rest: `${formatCount(POINTS)} pts · ${PCBK_SIZE} · EPSG:${EPSG}`,
-	reading: (read: number) => `${formatCount(read)} / ${formatCount(POINTS)} pts · tour ${Math.floor(read / PER_TURN)}`,
-	slipping: (read: number) => `${formatCount(read)} / ${formatCount(POINTS)} pts · cliquet`,
-	writing: `${formatCount(POINTS)} pts · PCBK v${VERSION} · ${formatCount(PCBK_BYTES)} o`,
-	anchored: `${formatCount(POINTS)} pts · ancre ${decimal(ANCHOR.lat, 3)}° N ${decimal(ANCHOR.lng, 3)}° E`,
-	rendered: (mode: Mode) => `${formatCount(POINTS)} pts · ${mode}`,
+/**
+ * Le relevé dans une langue, nombres à son format. Pas le `formatNumber` du site
+ * (`src/lib/activity.ts`) : ses formats de date, construits à l'import, suivraient dans le module
+ * de mouvement et le feraient passer au-dessus de 20 Ko.
+ */
+export const releveOf = (locale: Locale) => {
+	const words = WORDS[locale];
+	const { intl } = formats[locale];
+	const count = (value: number) => value.toLocaleString(intl);
+	const decimal = (value: number, digits: number) => value.toLocaleString(intl, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+	const all = `${count(POINTS)} pts`;
+	return {
+		// « 1,80 Mo » : unités de `bake-panel.tsx` L18-L23.
+		rest: `${all} · ${decimal(PCBK_BYTES / 1_000_000, 2)} ${words.mb} · EPSG:${EPSG}`,
+		reading: (read: number) => `${count(read)} / ${all} · ${words.turn} ${Math.floor(read / PER_TURN)}`,
+		slipping: (read: number) => `${count(read)} / ${all} · ${words.ratchet}`,
+		writing: `${all} · PCBK v${VERSION} · ${count(PCBK_BYTES)} ${words.bytes}`,
+		anchored: `${all} · ${words.anchor} ${decimal(ANCHOR.lat, 3)}° N ${decimal(ANCHOR.lng, 3)}° E`,
+		/** Le relevé du nuage rendu, avec le mode de couleur `mode` (rang dans `MODES`). */
+		rendered: (mode: number) => `${all} · ${words.modes[mode]}`,
+	};
 };

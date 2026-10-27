@@ -1,11 +1,12 @@
 <!doctype html>
 <!--
-	Composition de l'image de partage (public/og.png, 1200×630), capturée une fois par
-	`pnpm og:capture` puis versionnée. Hors de src/pages et de public : elle n'est pas publiée.
-	Les textes reprennent le module d'identité (src/data/profile.ts) ; le texte alternatif
-	de l'image y est décrit (pageMeta.shareImage.alt) : les garder d'accord.
+	Composition de l'image de partage de l'accueil (public/og.png, public/og.en.png, 1200×630),
+	remplie et capturée par `pnpm og:capture` pour chaque langue, puis versionnée. Hors de src/pages
+	et de public : elle n'est pas publiée. Les champs entre signes pour cent viennent du module
+	d'identité (src/data/profile.ts, shareCaption) ; le texte alternatif de l'image y est décrit
+	(pageMeta.<langue>.shareImage.alt) : les garder d'accord.
 -->
-<html lang="fr">
+<html lang="%LANG%">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=1200" />
@@ -101,8 +102,8 @@
 			<span>Pocheron<i class="cursor"></i></span>
 		</h1>
 		<p class="mono subtitle">
-			<span>Concepteur &amp; développeur d’applications, fullstack</span>
-			<span class="city">Besançon</span>
+			<span>%ROLE%</span>
+			<span class="city">%PLACE%</span>
 		</p>
 	</body>
 </html>

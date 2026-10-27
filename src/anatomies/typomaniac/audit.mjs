@@ -2,6 +2,7 @@
 //   node src/anatomies/typomaniac/audit.mjs --audit
 // Il vérifie la pose au repos : câbles, pièces de révolution, appuis, et que l'ordre de peinture
 // de la figure est bien celui que la vraie profondeur impose.
+import { defaultLocale } from '../../lib/i18n.ts';
 import * as A from '../../vendor/anatomy/audit.mjs';
 import { build, layers } from './geometry.ts';
 import { P } from './layout.ts';
@@ -9,7 +10,7 @@ import { restDuel } from './model.ts';
 import { record } from './settle.mjs';
 import { TEXTS } from './texts.ts';
 
-const { items, routes } = build(restDuel(TEXTS));
+const { items, routes } = build(restDuel(TEXTS, defaultLocale));
 // Un jeton qui n'est pas sur le rail dans la pose au repos est en attente, invisible (opacité 0).
 const all = layers(items).all.filter((item) => item.shapes.length || !item.name.startsWith('guichet.token'));
 const R = record(all, P);

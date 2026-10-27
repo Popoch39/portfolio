@@ -5,12 +5,15 @@
 // Mesuré dans Chromium headless (variable CHROMIUM, sinon `chromium` du PATH) sur le SVG autonome du
 // build. Lancé à la main (`pnpm build && pnpm ancres`) quand une figure change : le relevé porte
 // l'empreinte de la figure mesurée, et le build échoue s'il ne correspond plus.
+// La figure française suffit : un relevé sert aux deux versions, et l'empreinte vérifiée au build de
+// chaque version fait échouer celle dont la figure dessinerait autre chose.
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { projects, restFigurePath } from '../src/data/profile.ts';
+import { defaultLocale } from '../src/lib/i18n.ts';
 import { figurePrint } from '../src/anatomies/anchors.ts';
 
 const root = new URL('../', import.meta.url);
@@ -112,10 +115,10 @@ function measure() {
 const scratch = mkdtempSync(join(tmpdir(), 'ancres-'));
 try {
 	for (const project of projects) {
-		const figure = new URL(`dist${restFigurePath(project)}`, root);
+		const figure = new URL(`dist${restFigurePath(project, defaultLocale)}`, root);
 		if (!existsSync(figure)) throw new Error(`${fileURLToPath(figure)} introuvable : lancer \`pnpm build\` avant le relevé.`);
 		const { anatomy } = await import(`../src/anatomies/${project.slug}/index.ts`);
-		const { width, height, body } = anatomy.renderRest();
+		const { width, height, body } = anatomy.renderRest(defaultLocale);
 		const svg = readFileSync(figure, 'utf8').replace('<svg ', `<svg width="${width}" height="${height}" `);
 		const page = join(scratch, `${project.slug}.html`);
 		writeFileSync(

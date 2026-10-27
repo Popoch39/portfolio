@@ -1,0 +1,325 @@
+/* La Lunette, maquette A · Telescope fidèle (ADR 0007). Injectée à la première ouverture, jamais livrée
+   avec la page. Aucune animation : elle apparaît et disparaît d'un coup, comme le Telescope de Neovim.
+   Le survol d'un résultat le sélectionne par un attribut posé par le script, jamais par `:hover`. */
+
+/* Le voile : le fond de la page à 80 %, au-dessus de tout sauf de la barre d'état, qui reste lisible. */
+.lunette:modal {
+	position: fixed;
+	inset: 0 0 var(--status-height);
+	width: auto;
+	height: auto;
+	max-width: none;
+	max-height: none;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: color-mix(in srgb, var(--bg) 80%, transparent);
+	color: var(--ink);
+	font-family: var(--font-mono);
+	/* Le défilement sous le voile ne passe pas à la page. */
+	overflow: hidden;
+	overscroll-behavior: contain;
+}
+
+.lunette[open] {
+	display: grid;
+	place-items: center;
+}
+
+.lunette::backdrop {
+	background: none;
+	overflow: hidden;
+	overscroll-behavior: contain;
+}
+
+/* Téléphone : la fenêtre occupe tout l'écran au-dessus de la barre d'état, la liste sur le prompt. */
+.lunette .window {
+	position: relative;
+	display: grid;
+	grid-template: 'results' minmax(0, 1fr) 'prompt' 48px / minmax(0, 1fr);
+	gap: 12px;
+	width: 100%;
+	height: 100%;
+	padding: 12px;
+	background: var(--paper);
+}
+
+/* Les cadres : un filet d'encre, et leur titre posé dans le trait du haut. */
+.lunette .frame {
+	position: relative;
+	min-width: 0;
+	min-height: 0;
+	border: 1px solid var(--ink);
+}
+
+.lunette .title {
+	position: absolute;
+	top: -9px;
+	left: 16px;
+	max-width: calc(100% - 32px);
+	overflow: hidden;
+	padding: 0 8px;
+	background: var(--paper);
+	font-size: 12px;
+	line-height: 16px;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+/* Les résultats sont calés en bas : le meilleur, premier de la liste, juste au-dessus du prompt. */
+.lunette .results {
+	grid-area: results;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
+	padding: 18px 0 8px;
+}
+
+.lunette [role='listbox'] {
+	display: flex;
+	flex-direction: column-reverse;
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	list-style: none;
+	font-size: 14px;
+}
+
+.lunette [role='option'] {
+	display: flex;
+	flex: none;
+	align-items: center;
+	gap: 8px;
+	height: 32px;
+	padding: 0 14px;
+	cursor: pointer;
+}
+
+.lunette [role='option']::before {
+	content: '';
+	flex: 0 0 14px;
+	color: var(--accent);
+	font-weight: 700;
+}
+
+.lunette [aria-selected='true'] {
+	background: var(--accent-wash);
+	color: var(--accent-deep);
+}
+
+/* Repère visuel seul : l'option active est annoncée par `aria-activedescendant`. */
+.lunette [aria-selected='true']::before {
+	content: '›';
+	content: '›' / '';
+}
+
+.lunette .label {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.lunette .label b {
+	color: var(--accent);
+	font-weight: 700;
+}
+
+.lunette .detail {
+	color: var(--muted);
+	font-size: 12px;
+}
+
+/* Le prompt : `>`, la saisie, le bloc curseur, puis le compte. */
+.lunette .prompt {
+	grid-area: prompt;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 0 16px;
+	font-size: 15px;
+}
+
+.lunette .chevron {
+	color: var(--accent);
+	font-weight: 700;
+}
+
+/* La saisie prend la largeur de son texte : le bloc curseur la suit, à la place du curseur natif, qui
+   clignoterait. Le bloc dit où est le focus, qui ne quitte jamais ce champ. */
+.lunette input {
+	flex: 0 1 auto;
+	min-width: 1px;
+	max-width: 100%;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	outline: none;
+	background: none;
+	color: inherit;
+	font: inherit;
+	caret-color: transparent;
+	field-sizing: content;
+}
+
+.lunette .cursor {
+	flex: none;
+	width: 9px;
+	height: 18px;
+	background: var(--ink);
+}
+
+/* Sans `field-sizing`, le bloc ne suivrait pas le texte : le curseur natif le remplace. */
+@supports not (field-sizing: content) {
+	.lunette input {
+		flex: 1;
+		caret-color: var(--ink);
+	}
+
+	.lunette .cursor {
+		display: none;
+	}
+}
+
+.lunette .count {
+	margin-left: auto;
+	color: var(--muted);
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+/* Sans touche Échap sur un téléphone : de quoi fermer, à portée du pouce. */
+.lunette .close {
+	min-width: 44px;
+	min-height: 44px;
+	margin-right: -12px;
+	padding: 0 12px;
+	border: 0;
+	background: none;
+	color: var(--ink);
+	font: inherit;
+	font-size: 12px;
+	cursor: pointer;
+}
+
+/* Le Volet et la rangée d'aide n'existent qu'à l'ordinateur. */
+.lunette .pane,
+.lunette .keys {
+	display: none;
+}
+
+@media (min-width: 900px) {
+	.lunette .window {
+		grid-template: 'results pane' minmax(0, 1fr) 'prompt pane' 48px / minmax(0, 540fr) minmax(0, 544fr);
+		width: min(1120px, 100% - 64px);
+		height: min(640px, 100% - 96px);
+		box-shadow:
+			0 1px 0 var(--ink),
+			0 24px 60px rgb(17 17 16 / 0.16);
+	}
+
+	.lunette .close {
+		display: none;
+	}
+
+	.lunette .pane {
+		grid-area: pane;
+		display: flex;
+		flex-direction: column;
+		padding: 24px 28px 22px;
+	}
+
+	.lunette .keys {
+		position: absolute;
+		top: calc(100% + 16px);
+		right: 0;
+		left: 0;
+		display: flex;
+		gap: 22px;
+		margin: 0;
+		color: var(--muted);
+		font-size: 12px;
+	}
+
+	.lunette .keys > :last-child {
+		margin-left: auto;
+	}
+}
+
+.lunette kbd {
+	color: var(--ink);
+	font: inherit;
+	font-weight: 700;
+}
+
+/* Le Volet d'un projet : son Aperçu, la figure au repos, puis sa fiche en quelques lignes. */
+.lunette .figure {
+	display: flex;
+	flex: 1;
+	align-items: center;
+	justify-content: center;
+	min-height: 0;
+}
+
+.lunette .figure img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+.lunette .about {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding-top: 16px;
+	border-top: 1px solid var(--rule);
+}
+
+.lunette .head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 16px;
+}
+
+.lunette .name {
+	min-width: 0;
+	font-family: var(--font-sans);
+	font-size: 34px;
+	font-weight: 800;
+	font-stretch: 80%;
+	line-height: 1;
+	letter-spacing: -0.015em;
+	text-transform: uppercase;
+	overflow-wrap: anywhere;
+}
+
+.lunette .rank,
+.lunette .machine {
+	color: var(--muted);
+	font-size: 12px;
+}
+
+.lunette .rank {
+	white-space: nowrap;
+}
+
+.lunette .desc,
+.lunette .help {
+	max-width: 46ch;
+	margin: 0;
+	font-family: var(--font-sans);
+	font-size: 15px;
+	line-height: 1.45;
+}
+
+.lunette .stack {
+	font-size: 12px;
+}
+
+/* Après les `display` ci-dessus : ce que le Volet ne montre pas pour ce résultat. */
+.lunette [hidden] {
+	display: none;
+}

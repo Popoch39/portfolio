@@ -1,7 +1,9 @@
 // Lecture de la sortie du build : le seul seam testé (cf. spec #1, « Testing Decisions »).
 // Pas de parseur HTML pour rester sans dépendance : les helpers ciblent des motifs
 // simples du HTML minifié produit par Astro.
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const DIST = new URL('../../dist/', import.meta.url);
 
@@ -15,6 +17,16 @@ export function readDist(path, encoding = 'utf8') {
 		throw new Error(`dist/${path} introuvable : lancer \`pnpm build\` (ou \`pnpm test\`, qui build d'abord).`);
 	}
 	return readFileSync(url, encoding);
+}
+
+/** Tous les fichiers de `dist/`, en chemins relatifs triés (`index.html`, `_astro/fonts/x.woff2`). */
+export function distFiles() {
+	if (!existsSync(DIST)) throw new Error("dist/ introuvable : lancer `pnpm build` (ou `pnpm test`, qui build d'abord).");
+	const root = fileURLToPath(DIST);
+	return readdirSync(root, { recursive: true, withFileTypes: true })
+		.filter((entry) => entry.isFile())
+		.map((entry) => relative(root, join(entry.parentPath, entry.name)))
+		.sort();
 }
 
 /** HTML de la page servie à un chemin du site (`/`, `/en/`, `/projets/trekker/`). */

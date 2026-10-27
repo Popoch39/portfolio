@@ -13,15 +13,34 @@ const motions = new Map(
 	),
 );
 
-const loaderOf = (motion: string) => {
-	const load = motions.get(motion);
-	if (!load) throw new Error(`Figure : aucun module de mouvement « ${motion} »`);
-	return load;
+declare global {
+	interface Document {
+		/** Vrai tant qu'une page prérendue n'est pas affichée (Prerendering Revamped, absent de lib.dom). */
+		readonly prerendering?: boolean;
+	}
+}
+
+/**
+ * Une page prérendue au survol (ADR 0006) n'est pas encore affichée : aucun mouvement n'est chargé
+ * avant son activation, le processeur ne travaille pas pour une page que le visiteur n'ouvrira
+ * peut-être pas. La fiche, qui attend déjà `pagereveal` (postérieur à l'activation), passe ici sans
+ * attendre ; l'aperçu de l'accueil n'a que cette attente.
+ */
+const activated = () =>
+	document.prerendering
+		? new Promise<void>((resolve) => document.addEventListener('prerenderingchange', () => resolve(), { once: true }))
+		: Promise.resolve();
+
+const load = async (motion: string) => {
+	const loader = motions.get(motion);
+	if (!loader) throw new Error(`Figure : aucun module de mouvement « ${motion} »`);
+	await activated();
+	return loader();
 };
 
 /** Télécharge le mouvement d'une figure sans le monter (par exemple quand le navigateur est inactif). */
 export const preloadMotion = async (motion: string) => {
-	await loaderOf(motion)();
+	await load(motion);
 };
 
 /**
@@ -32,7 +51,7 @@ export const preloadMotion = async (motion: string) => {
  * arrêt de tabulation par temps.
  */
 export async function mountFigure(stage: Omit<Stage, 'locale'>, motion: string, { signal }: { signal?: AbortSignal } = {}) {
-	const mount = await loaderOf(motion)();
+	const mount = await load(motion);
 	if (signal?.aborted) return () => {};
 	if (!stage.timeline) stage.scene.tabIndex = 0;
 	const stop = mount({ ...stage, locale: documentLocale() });

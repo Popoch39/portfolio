@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig, fontProviders } from 'astro/config';
 import { defaultLocale, locales } from './src/lib/i18n.ts';
+import { cloudflareHeaders } from './src/integrations/cloudflare-headers.mjs';
 import { buildDefines } from './src/lib/build-info.mjs';
 
 // https://astro.build/config
@@ -19,35 +20,47 @@ export default defineConfig({
 		// Aucune feuille de style externe : la CSS part avec le HTML, rien ne bloque le premier rendu.
 		inlineStylesheets: 'always',
 	},
+	// Cache et Early Hints pour Cloudflare Pages, tirés du HTML construit.
+	integrations: [cloudflareHeaders()],
 	vite: {
 		// `:version` de la Lunette : le commit, la date du build et la version d'Astro ; `:Lazy` : celles
 		// d'Astro et de TypeScript.
 		define: buildDefines(['astro', 'typescript']),
-	},
-	fonts: [
-		{
-			provider: fontProviders.google(),
-			name: 'Archivo',
-			cssVariable: '--font-archivo',
-			weights: ['100 900'],
-			styles: ['normal', 'italic'],
-			subsets: ['latin'],
-			fallbacks: ['Helvetica Neue', 'Arial', 'sans-serif'],
-			options: {
-				experimental: {
-					// L'axe de largeur porte les titres condensés (font-stretch 62 %–125 %).
-					variableAxis: { wdth: [['62', '125']] },
+		build: {
+			rollupOptions: {
+				output: {
+					// L'écouteur de la Lunette et l'aide au préchargement dans un seul morceau : un aller-retour de
+					// moins sur le chemin critique de l'accueil.
+					manualChunks: (id) => (id.includes('preload-helper') || id.includes('/lunette/keys') ? 'amorce' : undefined),
 				},
 			},
 		},
+	},
+	// Polices réduites à ce que le site affiche, régénérées par `pnpm build && pnpm polices` (ADR 0005).
+	fonts: [
 		{
-			provider: fontProviders.google(),
+			provider: fontProviders.local(),
+			name: 'Archivo',
+			cssVariable: '--font-archivo',
+			fallbacks: ['Helvetica Neue', 'Arial', 'sans-serif'],
+			options: {
+				// La romaine d'abord : c'est d'elle qu'Astro tire les métriques de la police de repli.
+				variants: [
+					// L'axe de largeur porte les titres condensés (font-stretch 62 %–100 %).
+					{ weight: '100 900', style: 'normal', stretch: '62% 100%', src: ['./src/fonts/archivo.woff2'] },
+					// L'italique n'est dessinée qu'à pleine largeur : son axe de largeur est figé à 100 %.
+					{ weight: '100 900', style: 'italic', stretch: '100%', src: ['./src/fonts/archivo-italique.woff2'] },
+				],
+			},
+		},
+		{
+			provider: fontProviders.local(),
 			name: 'Fragment Mono',
 			cssVariable: '--font-mono',
-			weights: [400],
-			styles: ['normal'],
-			subsets: ['latin'],
 			fallbacks: ['ui-monospace', 'Menlo', 'monospace'],
+			options: {
+				variants: [{ weight: 400, style: 'normal', src: ['./src/fonts/fragment-mono.woff2'] }],
+			},
 		},
 	],
 });

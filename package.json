@@ -15,6 +15,7 @@
     "favicon:ico": "node scripts/favicon-ico.mjs",
     "signatures": "node scripts/signatures.mjs",
     "ancres": "node scripts/ancres.mjs",
+    "polices": "node scripts/polices.mjs",
     "perf": "node scripts/perf.mjs",
     "test": "astro build && node --test \"tests/**/*.test.mjs\""
   },
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
+    "subset-font": "^2.9.0",
     "typescript": "^6.0.3"
   }
 }

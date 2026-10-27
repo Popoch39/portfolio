@@ -182,7 +182,6 @@ test('portée : :pieces n’existe que sur une fiche à figure, :play et :pause 
 		assert.ok(!list('set ', context).entries.some((entry) => /^(lecture|view)=/.test(entry.label)), `${context.locale} : lecture réglable sur l’accueil`);
 	}
 	assert.ok(names(ficheFigure).includes('pieces'));
-	assert.ok(names(ficheFigure).includes('set'));
 	for (const name of ['play', 'pause']) {
 		assert.ok(!names(ficheFigure).includes(name), `:${name} listée sur une figure sans temps`);
 		assert.deepEqual(run(name, ficheFigure), { error: `E492: Not an editor command: ${name}` });
@@ -223,6 +222,96 @@ test(':pieces filtre les pièces par leur nom, et vise une pièce tapée par son
 	assert.deepEqual(run(':pieces 03', ficheFigure), { kind: 'aim', piece: 'capsule-cache' });
 	// Comme une étiquette introuvable de Vim.
 	assert.deepEqual(run('pieces zzz', ficheFigure), { error: 'E426: Tag not found: zzz' });
+});
+
+test(':set lang=en ouvre la même page dans l’autre version, et l’inverse', () => {
+	assert.deepEqual(run(':set lang=en', ficheTrekker), { kind: 'go', path: '/en/projects/trekker/' });
+	assert.deepEqual(run('set lang=fr', { page: { kind: 'fiche', slug: 'trekker' }, locale: 'en' }), { kind: 'go', path: '/projets/trekker/' });
+	assert.deepEqual(run('set lang=en', accueil), { kind: 'go', path: '/en/' });
+	assert.deepEqual(run('set lang=fr', home), { kind: 'go', path: '/' });
+	// La commande Vim est la même dans les deux versions ; l'autre version est proposée d'abord.
+	for (const context of [accueil, home]) {
+		const listing = list('set ', context);
+		assert.equal(listing.prompt, ':set');
+		assert.deepEqual(
+			listing.entries.map((entry) => entry.label),
+			context.locale === 'fr' ? ['lang=en', 'lang=fr'] : ['lang=fr', 'lang=en'],
+		);
+	}
+	assert.deepEqual(run('set lang=de', accueil), { error: 'E474: Invalid argument: lang=de' });
+});
+
+test('une section mène à son ancre de l’accueil, depuis l’accueil comme depuis une fiche', () => {
+	assert.deepEqual(run(':parcours', accueil), { kind: 'go', path: '/#parcours' });
+	assert.deepEqual(run('parcours', ficheTrekker), { kind: 'go', path: '/#parcours' });
+	assert.deepEqual(run('activity', { page: { kind: 'fiche', slug: 'trekker' }, locale: 'en' }), { kind: 'go', path: '/en/#activity' });
+	// Les noms suivent la langue de la page.
+	assert.deepEqual(
+		['projets', 'parcours', 'activite', 'stack', 'contact'].filter((name) => names(accueil).includes(name)),
+		['projets', 'parcours', 'activite', 'stack', 'contact'],
+	);
+	assert.deepEqual(
+		['projects', 'career', 'activity', 'stack', 'contact'].filter((name) => names(home).includes(name)),
+		['projects', 'career', 'activity', 'stack', 'contact'],
+	);
+	assert.ok(!names(accueil).includes('career'));
+	assert.ok(!names(home).includes('parcours'));
+});
+
+test('les alias de l’autre langue sont acceptés : :career sur une page française', () => {
+	// L'ancre reste celle de la page.
+	assert.deepEqual(run('career', accueil), { kind: 'go', path: '/#parcours' });
+	assert.deepEqual(run(':projets', home), { kind: 'go', path: '/en/#projects' });
+	// Le filtre les trouve aussi, et montre le nom tapé.
+	const [career] = list('career', accueil).entries;
+	assert.equal(career.label, 'career');
+	assert.deepEqual(career.hits, [0, 1, 2, 3, 4, 5]);
+	assert.deepEqual(career.action, { kind: 'go', path: '/#parcours' });
+	// Et en argument de :help.
+	assert.deepEqual(
+		list('help career', accueil).entries.map((entry) => entry.label),
+		['career'],
+	);
+	// Sans saisie, chaque commande une seule fois, dans la langue de la page.
+	assert.equal(names(accueil).filter((name) => name === 'contact').length, 1);
+});
+
+test(':marks liste les cinq sections avec leur nom localisé, et l’aide de chacune au Volet', () => {
+	for (const [context, labels, title] of [
+		[accueil, ['Projets', 'Parcours', 'Activité', 'Stack', 'Contact'], 'Sections'],
+		[home, ['Projects', 'Career', 'Activity', 'Stack', 'Contact'], 'Sections'],
+		[ficheTrekker, ['Projets', 'Parcours', 'Activité', 'Stack', 'Contact'], 'Sections'],
+	]) {
+		const listing = list('marks ', context);
+		assert.equal(listing.title, title);
+		assert.equal(listing.prompt, ':marks');
+		assert.equal(listing.total, 5);
+		assert.deepEqual(
+			listing.entries.map((entry) => entry.label),
+			labels,
+		);
+	}
+	const [parcours] = list('marks parc', accueil).entries;
+	assert.equal(parcours.label, 'Parcours');
+	assert.deepEqual(parcours.pane, run('help parcours', accueil).pane);
+	assert.deepEqual(parcours.action, { kind: 'go', path: '/#parcours' });
+	// Depuis une fiche, et avec le nom de l'autre langue.
+	assert.deepEqual(run('marks career', ficheTrekker), { kind: 'go', path: '/#parcours' });
+	assert.deepEqual(list('marks care', accueil).entries[0].action, { kind: 'go', path: '/#parcours' });
+	// Une Lunette vide : Entrée sur :marks ouvre la liste.
+	const marks = list('', accueil).entries.find((entry) => entry.label === 'marks');
+	assert.equal(marks.action, undefined);
+	assert.equal(marks.line, 'marks ');
+});
+
+test(':q revient d’une fiche à l’accueil de sa langue, et n’existe pas sur l’accueil', () => {
+	assert.deepEqual(run(':q', ficheTrekker), { kind: 'go', path: '/' });
+	assert.deepEqual(run('quit', { page: { kind: 'fiche', slug: 'trekker' }, locale: 'en' }), { kind: 'go', path: '/en/' });
+	assert.ok(names(ficheTrekker).includes('q'));
+	for (const context of [accueil, home]) {
+		assert.ok(!names(context).includes('q'), `${context.locale} : :q listée sur l’accueil`);
+		assert.deepEqual(run('q', context), { error: 'E492: Not an editor command: q' });
+	}
 });
 
 test('le contexte d’une page se lit dans son adresse', () => {

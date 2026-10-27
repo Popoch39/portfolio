@@ -104,11 +104,11 @@ for (const [locale, version] of Object.entries(VERSIONS)) {
 		}
 	});
 
-	// Une fois le bleu en train de se ranger (3450 ms), couper ferait sauter l'accueil à sa place : la
+	// Une fois le bleu en train de se ranger (5500 ms), couper ferait sauter l'accueil à sa place : la
 	// suite se joue en accéléré, et la fin de `launch-done` le termine.
 	test(`${locale} : pendant l’entrée de l’accueil, une touche accélère la fin au lieu de la couper`, () => {
 		const animation = (animationName, currentTime) => ({ animationName, currentTime, playbackRate: 1, updatePlaybackRate(rate) { this.playbackRate = rate; } });
-		const entering = [animation('launch-done', 3800), animation('launch-enter', 3800), animation('iso-spin', 3800)];
+		const entering = [animation('launch-done', 6000), animation('launch-enter', 6000), animation('iso-spin', 6000)];
 		const page = run(gate, { animations: entering });
 		page.fire('keydown');
 		assert.ok(playing(page), 'coupé pendant l’entrée');
@@ -117,7 +117,7 @@ for (const [locale, version] of Object.entries(VERSIONS)) {
 		page.fire('animationend', { animationName: 'launch-done' });
 		assert.ok(!playing(page));
 
-		const covered = [animation('launch-done', 3300), animation('launch-enter', 3300)];
+		const covered = [animation('launch-done', 5300), animation('launch-enter', 5300)];
 		const early = run(gate, { animations: covered });
 		early.fire('click');
 		assert.ok(!playing(early), 'sous le bleu, le saut coupe');

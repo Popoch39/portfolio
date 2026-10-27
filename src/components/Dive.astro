@@ -4,6 +4,12 @@
 // curseur du nom grandit jusqu'à couvrir l'écran, puis le bleu se replie dans le carré de « 01 » de
 // Projets, qui suit la scène dans le flux. Tout est en CSS pilotée par le défilement ; en mouvement réduit
 // ou dans un navigateur qui ne sait pas la jouer, ces enveloppes ne changent rien à la page.
+import { localeOf, ui } from '../lib/i18n';
+
+// La devise sur le bleu : l'accent de l'accroche, coupé en deux lignes là où sa langue le déclare.
+const { emphasis, mottoBreak } = ui.heroLede[localeOf(Astro.currentLocale)];
+const words = emphasis.split(' ');
+const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) => line.join(' '));
 ---
 
 <div class="dive">
@@ -13,6 +19,11 @@
 			<slot name="head" />
 			<div class="dive-hero"><slot name="hero" /></div>
 			<div class="dive-blue" aria-hidden="true"></div>
+			{/* Elle double l'accroche : ni lue, ni reprise dans les extraits de recherche. */}
+			<div class="dive-motto" aria-hidden="true" data-nosnippet>
+				<span class="dive-mask"><span class="dive-line mono">-- INSERT --</span></span>
+				<span class="dive-words">{motto.map((line) => <span class="dive-mask"><span class="dive-line">{line}</span></span>)}</span>
+			</div>
 		</div>
 	</div>
 	<div class="dive-next"><slot /></div>
@@ -20,7 +31,9 @@
 
 <style>
 	.dive-track,
-	.dive-blue {
+	.dive-blue,
+	.dive-motto,
+	:global(.dive-mode .insert) {
 		display: none;
 	}
 
@@ -29,6 +42,7 @@
 	   5–34 %      le curseur grandit jusqu'à couvrir l'écran, l'en-tête compris ;
 	   9–30 %      « Louis » et « Pocheron » enflent et s'estompent ;
 	   33,6–34 %   l'aplat bleu prend le relais du curseur ; sous lui, le héros s'efface et Projets paraît ;
+	   34,75–57,5 % sur le bleu, « -- INSERT -- » puis les deux lignes de la devise montent et repartent ;
 	   58–88 %     le bleu se replie dans le carré de « 01 », Projets se pose d'un léger zoom en arrière ;
 	   88–100 %    le bleu s'efface sur le vrai carré ; Projets reste tenu jusqu'à la fin de la scène.
 	   Chaque raccourci `animation` porte la durée `auto`, comme la planche : sans elle, le minifieur
@@ -38,6 +52,10 @@
 			.dive {
 				/* 1,9 écran, comme les 1 500 px de la planche pour 800 de haut. */
 				--dive-length: 190svh;
+			}
+
+			/* Toute la page voit la ligne de temps : la barre d'état, qui la suit aussi, est hors de la Plongée. */
+			:global(body) {
 				timeline-scope: --dive;
 			}
 
@@ -82,6 +100,35 @@
 			/* La barre d'état reste au-dessus du bleu, comme sur la planche, et sous le Lancement (10). */
 			:global(.status) {
 				z-index: 2;
+			}
+
+			/* Elle passe en INSERT pendant le bleu, sur les plages de la planche (12–86 %). Les deux libellés
+			   se superposent et basculent d'un coup par l'opacité, que le compositeur joue. La Lunette ouverte
+			   cache INSERT : COMMAND l'emporte à toute étape de la scène. */
+			:global(.dive-mode) {
+				display: grid;
+			}
+
+			:global(.dive-mode > *) {
+				grid-area: 1 / 1;
+			}
+
+			:global(.dive-mode .insert) {
+				display: inline;
+				opacity: 0;
+				animation: auto dive-lit step-start;
+				animation-timeline: --dive;
+				animation-range: contain 12% contain 86%;
+			}
+
+			:global(.dive-mode .normal) {
+				animation: auto dive-out step-start;
+				animation-timeline: --dive;
+				animation-range: contain 12% contain 86%;
+			}
+
+			:global(.status[data-mode='command'] .dive-mode .insert) {
+				display: none;
 			}
 
 			.dive-hero {
@@ -189,6 +236,70 @@
 					contain 88% contain 100%;
 			}
 
+			/* La devise, centrée dans l'écran sur le bleu, dans la colonne du contenu, et à la taille du titre
+			   du héros, comme sur la planche : son étalon (`23.2cqi`) est la largeur du contenu. Sur un écran
+			   large et bas, la hauteur la borne pour que ses deux lignes y tiennent. Elle couvre l'écran sans
+			   rien intercepter. */
+			.dive-motto {
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				gap: 22px;
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100dvh;
+				box-sizing: border-box;
+				padding: 0 calc(max(0px, (100% - var(--container)) / 2) + var(--page-margin));
+				container-type: inline-size;
+				color: #fff;
+				pointer-events: none;
+			}
+
+			.dive-words {
+				display: block;
+				font-size: min(22vw, 330px, 23.2cqi, 36dvh);
+				line-height: 0.8;
+				font-weight: 800;
+				font-stretch: 62%;
+				letter-spacing: -0.015em;
+				text-transform: uppercase;
+			}
+
+			/* Chaque ligne monte de son masque puis y repart vers le haut : le bleu ne la coupe jamais, elle
+			   est sortie avant qu'il se replie (58 %). La planche décale chaque ligne de `--k` pas ;
+			   « -- INSERT -- » passe un demi-pas avant la première, une fois le bleu posé (34 %). La montée
+			   anime `translate` et la sortie `transform` : deux animations de la même propriété sur un élément
+			   ne seraient plus jouées par le compositeur. */
+			.dive-mask {
+				--k: 0;
+				display: block;
+				overflow: clip;
+			}
+
+			.dive-motto > .dive-mask {
+				--k: -0.5;
+				font-size: 13px;
+				line-height: 20px;
+				opacity: 0.85;
+			}
+
+			.dive-mask + .dive-mask {
+				--k: 1;
+			}
+
+			.dive-line {
+				display: block;
+				animation:
+					auto dive-rise cubic-bezier(0.2, 0.7, 0.2, 1) both,
+					auto dive-sink cubic-bezier(0.6, 0, 0.8, 0.3) forwards;
+				animation-timeline: --dive;
+				animation-range:
+					contain calc(36% + var(--k) * 2.5%) contain calc(44% + var(--k) * 2.5%),
+					contain calc(51% + var(--k) * 1.5%) contain calc(56% + var(--k) * 1.5%);
+			}
+
 			/* Projets, juste après la scène : il paraît sous le bleu, et une translation qui compense le
 			   défilement le tient à sa place de fin de scène, sous l'en-tête ; elle s'annule avec la scène,
 			   sans rien laisser derrière elle (ni contexte d'empilement, ni bloc conteneur). Zoomé, il déborde
@@ -223,6 +334,14 @@
 			@keyframes dive-out {
 				to {
 					opacity: 0;
+				}
+			}
+
+			/* Une étape d'un coup (`step-start`) plutôt qu'une opacité constante : Chromium ne compose pas une
+			   animation dont les étapes sont toutes égales. */
+			@keyframes dive-lit {
+				to {
+					opacity: 1;
 				}
 			}
 
@@ -262,6 +381,18 @@
 				to {
 					translate: 0 var(--dot-top);
 					scale: tan(atan2(9px, 100vw)) tan(atan2(9px, 100dvh));
+				}
+			}
+
+			@keyframes dive-rise {
+				from {
+					translate: 0 105%;
+				}
+			}
+
+			@keyframes dive-sink {
+				to {
+					transform: translateY(-105%);
 				}
 			}
 

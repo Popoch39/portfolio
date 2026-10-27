@@ -8,10 +8,12 @@ interface Props {
 	secondary: string;
 	/** Position dans le fichier, façon Neovim ; `null` masque le segment (la maquette de fiche ne l'a pas). */
 	position?: string | null;
+	/** Le segment de mode suit la Plongée de l'accueil (ADR 0009), qui l'anime : INSERT pendant le bleu. */
+	dive?: boolean;
 }
 
 const locale = localeOf(Astro.currentLocale);
-const { path = '~/louis/portfolio.md', secondary, position = ui.statusBottom[locale] } = Astro.props;
+const { path = '~/louis/portfolio.md', secondary, position = ui.statusBottom[locale], dive = false } = Astro.props;
 ---
 
 {/* La Lunette (ADR 0007) pose `data-mode="command"` sur la barre pendant qu'elle est ouverte, et écrit la
@@ -20,7 +22,9 @@ const { path = '~/louis/portfolio.md', secondary, position = ui.statusBottom[loc
     présente dès le premier rendu pour être annoncée, et prennent la place du chemin. */}
 <footer class="mono status">
 	<div class="side">
-		<span class="seg mode state"><span class="normal">NORMAL</span><span class="command">COMMAND</span></span>
+		<span class:list={['seg mode state', { 'dive-mode': dive }]}
+			><span class="normal">NORMAL</span>{dive && <span class="insert" aria-hidden="true">INSERT</span>}<span class="command">COMMAND</span></span
+		>
 		<span class="seg dark branch">
 			<svg
 				aria-hidden="true"

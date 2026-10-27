@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
 import { setImmediate } from 'node:timers/promises';
 import { brotliCompressSync, constants } from 'node:zlib';
-import { PROJECTS, attr, blocks, css, elementAt, moduleGraph, readDist, readFiche, readHome, tags, text, withoutBlocks } from './helpers/dist.mjs';
+import { PROJECTS, attr, blocks, css, elementAt, elements, moduleGraph, readDist, readFiche, readHome, tags, text, withoutBlocks } from './helpers/dist.mjs';
 
 const MOTION = /@media \(prefers-reduced-motion:\s*no-preference\)/;
 const SUPPORTED = /@supports [^{]*\(animation-timeline:\s*view\(\)\)/;
@@ -16,8 +16,14 @@ const PLAYED = /@keyframes\s+dive-|\banimation[\w-]*\s*:[^;{}]*\bdive-|\b(?:anim
 /** Les seules propriétés que le compositeur anime seul. */
 const COMPOSITED = new Set(['transform', 'translate', 'scale', 'opacity']);
 
+/** La devise de chaque langue, ligne à ligne (spec #70) : l'accent de l'accroche, coupé à un endroit naturel. */
+const MOTTO = { fr: ['de bout', 'en bout'], en: ['end', 'to end'] };
+
 /** L'élément de la scène : celui qui s'épingle, l'en-tête et le héros dedans. */
 const sceneOf = (html) => elementAt(html, html.search(/<div class="dive-scene\b/));
+
+/** Le segment de mode de la barre d'état : le premier segment, dont la Lunette fait COMMAND. */
+const modeOf = (footer) => elementAt(footer, footer.search(/<span class="seg mode state\b/));
 
 /** Le script module de la page, en chemin servi. */
 const moduleOf = (html) => attr(tags(html, 'script').find((t) => attr(t, 'type') === 'module') ?? '', 'src') ?? '';
@@ -48,6 +54,25 @@ for (const { locale, projects } of [
 		assert.ok(blue, 'bleu absent de la scène');
 		assert.equal(attr(blue, 'aria-hidden'), 'true');
 		assert.equal(text(elementAt(scene, scene.indexOf(blue))), '');
+	});
+
+	test(`${locale} : la devise sur le bleu est l’accent de l’accroche, en deux lignes, décorative`, () => {
+		const scene = sceneOf(html) ?? '';
+		const opening = tags(scene, 'div').find((tag) => /\bclass="dive-motto\b/.test(tag));
+		assert.ok(opening, 'devise absente de la scène');
+		assert.equal(attr(opening, 'aria-hidden'), 'true');
+		const motto = elementAt(scene, scene.indexOf(opening));
+		const lines = [...motto.matchAll(/<span class="dive-line\b[^>]*>([\s\S]*?)<\/span>/g)].map((m) => text(m[1]));
+		assert.deepEqual(lines, ['-- INSERT --', ...MOTTO[locale]]);
+		const emphasis = text(elements(html, 'p').find((p) => /\bclass="lede\b/.test(p)).match(/<em\b[^>]*>([\s\S]*?)<\/em>/)[1]);
+		assert.equal(MOTTO[locale].join(' '), emphasis, 'devise différente de l’accent de l’accroche');
+	});
+
+	test(`${locale} : en mouvement réduit ou sans prise en charge, la devise reste cachée`, () => {
+		for (const outside of [withoutBlocks(styles, MOTION), withoutBlocks(styles, SUPPORTED)]) {
+			const hidden = [...outside.matchAll(/([^{}]*)\{display:none\}/g)].flatMap(([, selector]) => selector.split(','));
+			assert.ok(hidden.some((selector) => /^\.dive-motto\b/.test(selector.trim())), 'devise visible');
+		}
 	});
 
 	test(`${locale} : la Plongée ne joue qu’en mouvement non réduit, dans un navigateur qui sait la jouer`, () => {
@@ -82,6 +107,21 @@ for (const { locale, projects } of [
 		assert.ok(hiding.length > 0, 'aucune @keyframes ne cache le héros');
 		const users = [...styles.matchAll(/([^{}]+)\{[^{}]*\banimation(?:-name)?\s*:([^;{}]*)/g)].filter(([, , list]) => hiding.some((name) => list.includes(name)));
 		assert.ok(users.some(([, selector]) => /\.dive-hero\b/.test(selector)), 'le héros n’est jamais caché');
+	});
+
+	// Le passage NORMAL → INSERT est décoratif (spec #68) : rien ne l'annonce, et un lecteur d'écran lit
+	// le mode tel qu'il est hors de la scène.
+	test(`${locale} : le segment de mode de la barre porte NORMAL, INSERT et COMMAND, sans région live`, () => {
+		const [footer] = elements(html, 'footer');
+		const segment = modeOf(footer ?? '');
+		assert.ok(segment, 'segment de mode absent');
+		for (const mode of ['NORMAL', 'INSERT', 'COMMAND']) assert.ok(text(segment).includes(mode), `${mode} absent`);
+		for (const tag of tags(segment, 'span')) {
+			assert.equal(attr(tag, 'aria-live'), undefined, tag);
+			assert.equal(attr(tag, 'role'), undefined, tag);
+		}
+		const insert = tags(segment, 'span').find((tag) => text(elementAt(segment, segment.indexOf(tag))) === 'INSERT');
+		assert.equal(attr(insert ?? '', 'aria-hidden'), 'true', 'INSERT lu par les lecteurs d’écran');
 	});
 
 	// Le minifieur sait replier la ligne de temps dans le raccourci, ou écrire une durée nulle : Chrome
@@ -190,6 +230,8 @@ test('les fiches restent sans Plongée', () => {
 		for (const { slug } of PROJECTS) {
 			const html = readFiche(slug, locale);
 			assert.equal(sceneOf(html), undefined, `${locale} ${slug} : scène`);
+			const [footer] = elements(html, 'footer');
+			assert.doesNotMatch(text(modeOf(footer ?? '') ?? ''), /INSERT/, `${locale} ${slug} : INSERT dans la barre`);
 			assert.doesNotMatch(css(html), PLAYED, `${locale} ${slug} : CSS de la Plongée`);
 		}
 	}

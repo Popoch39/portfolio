@@ -2,7 +2,8 @@
 // d'encre de `:q!`. Le registre décide ; ce module ne fait que dessiner, avec sa CSS, injectée au premier
 // dessin comme celle de la Lunette.
 import css from './oeufs.css?inline';
-import type { Pane } from './registry.ts';
+import { el } from './dom.ts';
+import { bare, commandLabel, type Pane } from './registry.ts';
 import type { Locale, Localized } from '../lib/i18n.ts';
 
 /** Les Volets que dessine ce module : chacun porte son titre. */
@@ -15,15 +16,7 @@ const words = {
 	nope: { fr: 'NOPE, en lettres de caractères', en: 'NOPE, in letters made of characters' },
 	closed: { fr: 'Portfolio fermé, sans enregistrer.', en: 'Portfolio closed, without saving.' },
 	reopen: { fr: 'Échap, ou :e puis ↵, pour le rouvrir.', en: 'Esc, or :e then ↵, to reopen it.' },
-	command: { fr: 'Commande', en: 'Command' },
 } satisfies Record<string, Localized<string>>;
-
-function el<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text = ''): HTMLElementTagNameMap[K] {
-	const node = document.createElement(tag);
-	node.className = className;
-	node.textContent = text;
-	return node;
-}
 
 let styled = false;
 
@@ -89,16 +82,16 @@ function closedScreen(locale: Locale) {
 	chevron.setAttribute('aria-hidden', 'true');
 	// Un vrai champ : sur téléphone, sans Échap, c'est par lui qu'on tape `:e`.
 	const input = Object.assign(el('input'), { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: false, autofocus: true });
-	input.setAttribute('aria-label', words.command[locale]);
+	input.setAttribute('aria-label', commandLabel[locale]);
 	line.append(chevron, input);
 	dialog.append(message, hint, line);
 	input.addEventListener('keydown', (event) => {
-		// L'écran est fermé : Ctrl/Cmd+K n'ouvre pas la Lunette dessus (l'écouteur ignore une touche traitée).
-		if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') event.preventDefault();
+		// L'écran est fermé : ses touches n'atteignent pas l'écouteur, et Ctrl/Cmd+K n'ouvre pas la Lunette dessus.
+		event.stopPropagation();
 		if (event.key !== 'Enter') return;
 		event.preventDefault();
 		// Le `:e` seul de Vim recharge le fichier courant : ici, il rouvre la page telle qu'elle était.
-		if (/^\s*:*\s*e(dit)?!?\s*$/.test(input.value)) dialog.close();
+		if (bare(input.value, 'e')) dialog.close();
 		input.value = '';
 	});
 	dialog.addEventListener('close', () => (input.value = ''));

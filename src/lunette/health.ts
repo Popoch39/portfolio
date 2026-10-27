@@ -2,6 +2,7 @@
 // section par mesure et une puce par verdict. La Lunette n'est importée qu'à la première commande : ce
 // qui précède se lit dans le tampon du navigateur (`buffered`), et l'observation continue ensuite, tant
 // que la page vit.
+import { el } from './dom.ts';
 import { formats, type Locale, type Localized } from '../lib/i18n.ts';
 
 /** Absente de lib.dom : l'API Layout Instability n'est qu'un brouillon du WICG. */
@@ -145,13 +146,6 @@ const metrics: Metric[] = [
 		measure: () => (supports('event') ? (inp() ?? words.noInteraction) : words.unsupported),
 	},
 ];
-
-function el<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, ...children: (Node | string)[]) {
-	const node = document.createElement(tag);
-	node.className = className;
-	node.append(...children);
-	return node;
-}
 
 /** La sortie de :checkhealth pour le Volet, mesurée à l'instant. */
 export function health(locale: Locale): Node[] {

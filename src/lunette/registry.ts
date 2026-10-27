@@ -140,6 +140,9 @@ const rank = (index: number) => String(index + 1).padStart(2, '0');
 
 const commandsTitle: Localized<string> = { fr: 'Commandes', en: 'Commands' };
 
+/** Le nom du champ où l'on tape une commande, dans la Lunette comme sur l'écran de `:q!`. */
+export const commandLabel: Localized<string> = { fr: 'Commande', en: 'Command' };
+
 const indexText: Localized<string> = {
 	fr: 'Les commandes de cette page. :help <commande> en explique une.',
 	en: 'The commands of this page. :help <command> explains one.',
@@ -158,6 +161,12 @@ const neighbour =
 const withFigure = ({ figure }: Context) => figure !== undefined;
 
 const withTimeline = ({ figure }: Context) => figure?.timeline === true;
+
+/** Un nom dans la langue de la page, qu'il en change ou non. */
+const localized = (name: string | Localized<string>, locale: Locale) => (typeof name === 'string' ? name : name[locale]);
+
+/** Ce que `pick` donne dans chaque langue autre que celle de la page : les noms que le filtre accepte aussi. */
+const inOthers = (locale: Locale, pick: (other: Locale) => string) => locales.filter((other) => other !== locale).map(pick);
 
 /**
  * Les deux lectures des notes, nommées comme la ligne de commande de la carte. Recopiées de
@@ -188,7 +197,7 @@ const lectures = ({ figure, locale }: Context): Choice[] =>
 				const { label, help } = lectureOf[value];
 				return {
 					label: label[locale],
-					others: locales.filter((other) => other !== locale).map((other) => label[other]),
+					others: inOthers(locale, (other) => label[other]),
 					pane: { kind: 'help', name: label[locale], text: help[locale] },
 					action: { kind: 'lecture', value },
 				};
@@ -251,7 +260,7 @@ function explorer(): Choice[] {
 }
 
 /** La stack du site, ce qui sert au premier rendu d'abord, comme les « Loaded » de lazy.nvim. */
-const stack: { name: string | Localized<string>; package?: string; role: Localized<string>; state: Plugin['state'] }[] = [
+const stack: (Omit<Plugin, 'name' | 'role'> & { name: string | Localized<string>; role: Localized<string> })[] = [
 	{ name: 'astro', package: 'astro', role: { fr: 'les pages, rendues au build', en: 'the pages, rendered at build time' }, state: 'loaded' },
 	{ name: 'typescript', package: 'typescript', role: { fr: 'les types, vérifiés au build', en: 'the types, checked at build time' }, state: 'loaded' },
 	{ name: 'Archivo', role: { fr: 'les titres et le texte', en: 'headings and text' }, state: 'loaded' },
@@ -305,7 +314,7 @@ const commands: Command[] = [
 			choices: ({ locale }) =>
 				sectionKeys.map((key, i) => ({
 					label: sections[key].label[locale],
-					others: locales.filter((other) => other !== locale).map((other) => sections[key].label[other]),
+					others: inOthers(locale, (other) => sections[key].label[other]),
 					aliases: namesOf(sectionCommands[i]),
 					detail: `:${sections[key].id[locale]}`,
 					pane: helpOf(sectionCommands[i], locale),
@@ -488,7 +497,7 @@ const commands: Command[] = [
 			pane: {
 				kind: 'plugins',
 				title: 'lazy.nvim',
-				plugins: stack.map(({ name, role, ...rest }) => ({ ...rest, name: typeof name === 'string' ? name : name[locale], role: role[locale] })),
+				plugins: stack.map(({ name, role, ...rest }) => ({ ...rest, name: localized(name, locale), role: role[locale] })),
 			},
 		}),
 	},
@@ -524,13 +533,13 @@ const commands: Command[] = [
 
 const runLabel: Localized<string> = { fr: 'lancer', en: 'run' };
 
-const nameOf = (command: Command, locale: Locale) => (typeof command.name === 'string' ? command.name : command.name[locale]);
+const nameOf = (command: Command, locale: Locale) => localized(command.name, locale);
 
 /** Tous les noms qu'accepte une commande tapée en entier : les deux langues et les alias. */
 const namesOf = (command: Command) => [...locales.map((locale) => nameOf(command, locale)), ...(command.aliases ?? [])];
 
 /** Ses noms dans les autres langues, que le filtre accepte aussi (`career` sur une page française). */
-const othersOf = (command: Command, locale: Locale) => locales.filter((other) => other !== locale).map((other) => nameOf(command, other));
+const othersOf = (command: Command, locale: Locale) => inOthers(locale, (other) => nameOf(command, other));
 
 const helpOf = (command: Command, locale: Locale) => ({ kind: 'help' as const, name: nameOf(command, locale), text: command.help[locale] });
 
@@ -539,15 +548,18 @@ const inScope = (context: Context) => commands.filter((command) => command.scope
 /** La commande d'un nom tapé en entier, dans l'une ou l'autre langue, si la page la permet. */
 const find = (name: string, context: Context) => inScope(context).find((command) => namesOf(command).includes(name));
 
-/** La ligne sans le `:` que tape un vimiste par réflexe. */
-const clean = (line: string) => line.replace(/^\s*:*/, '').trimEnd();
+/** La ligne sans le `:` que tape un vimiste par réflexe ; comme Vim, les espaces autour ne comptent pas. */
+const unprefixed = (line: string) => line.replace(/^[\s:]*/, '');
+
+/** Sans les espaces de fin non plus : la ligne telle que la cite une erreur, ou que le filtre cherche. */
+const clean = (line: string) => unprefixed(line).trimEnd();
 
 /**
  * Le nom de la commande, puis son argument s'il a commencé : après une espace, ou tout de suite derrière
  * un nom fait d'un signe (`:!github`). Sans argument, la ligne est un nom en cours de frappe.
  */
 function parse(line: string): { name: string; argument?: string } {
-	const [, name = '', space, rest] = line.replace(/^\s*:*/, '').match(/^([A-Za-z]+!?|[^\sA-Za-z])?(\s*)(.*)$/) ?? [];
+	const [, name = '', space, rest] = unprefixed(line).match(/^([A-Za-z]+!?|[^\sA-Za-z])?(\s*)(.*)$/) ?? [];
 	return { name, argument: space || /^[^A-Za-z]/.test(name) ? rest : undefined };
 }
 
@@ -680,10 +692,20 @@ export function run(line: string, context: Context): Result {
 	return error ? { error } : unknown;
 }
 
+/**
+ * Vrai si la ligne est la commande `name` seule, sous l'un de ses noms, sans argument et le `!` de Vim
+ * admis : le `:e` qui rouvre l'écran de `:q!`.
+ */
+export function bare(line: string, name: string): boolean {
+	const typed = parse(line);
+	const command = commands.find((command) => namesOf(command).includes(name));
+	return !!command && !typed.argument?.trim() && namesOf(command).includes(typed.name.replace(/!$/, ''));
+}
+
 /** Le contexte d'une page d'après son adresse, ou rien hors des pages du site. */
 export function contextAt(pathname: string): Context | undefined {
 	for (const locale of locales) {
-		for (const page of [home, ...projects.map((p) => fiche(p.slug))]) {
+		for (const page of pages) {
 			if (pathOf(page, locale) === pathname) return { page, locale };
 		}
 	}

@@ -2,14 +2,15 @@
 // un <dialog> modal qu'elle construit, et sa CSS qu'elle injecte. Elle ne décide de rien : pour la ligne
 // tapée et la page, le registre lui donne la liste et l'action ; elle les montre et les exécute.
 import css from './lunette.css?inline';
+import { el } from './dom.ts';
 import { echo } from './echo.ts';
 import { closed, health, opened } from './health.ts';
 import { version } from './version.ts';
 import { draw, drawn, quit } from './oeufs.ts';
 import { recall } from './recall.ts';
-import { contextAt, list, run, type Action, type Context, type Entry, type Listing, type Pane } from './registry.ts';
+import { commandLabel, contextAt, list, run, type Action, type Context, type Entry, type Listing, type Pane } from './registry.ts';
 import { projects, restFigurePath } from '../data/profile.ts';
-import { defaultLocale, home, locales, type Localized } from '../lib/i18n.ts';
+import { defaultLocale, home, locales, type Locale, type Localized } from '../lib/i18n.ts';
 import type { Text } from '../anatomies/contract.ts';
 
 const machines = import.meta.glob<Text>('../anatomies/*/machine.ts', { eager: true, import: 'machine' });
@@ -44,7 +45,6 @@ const { locale } = context;
 
 const words = {
 	telescope: { fr: 'Lunette', en: 'Telescope' },
-	command: { fr: 'Commande', en: 'Command' },
 	preview: { fr: 'Aperçu', en: 'Preview' },
 	help: { fr: 'Aide', en: 'Help' },
 	note: { fr: 'Note', en: 'Note' },
@@ -56,13 +56,6 @@ const words = {
 } satisfies Record<string, Localized<string>>;
 
 const say = (word: keyof typeof words) => words[word][locale];
-
-function el<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text = ''): HTMLElementTagNameMap[K] {
-	const node = document.createElement(tag);
-	node.className = className;
-	node.textContent = text;
-	return node;
-}
 
 const attrs = (node: Element, values: Record<string, string>) => {
 	for (const [name, value] of Object.entries(values)) node.setAttribute(name, value);
@@ -90,7 +83,7 @@ const promptTitle = el('span', 'title');
 const chevron = el('span', 'chevron', '>');
 const input = el('input');
 Object.assign(input, { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: false, autofocus: true });
-attrs(input, { role: 'combobox', 'aria-label': say('command'), 'aria-controls': listbox.id, 'aria-autocomplete': 'list' });
+attrs(input, { role: 'combobox', 'aria-label': commandLabel[locale], 'aria-controls': listbox.id, 'aria-autocomplete': 'list' });
 const cursor = el('span', 'cursor');
 const count = el('span', 'count');
 const close = el('button', 'close', say('close'));
@@ -159,20 +152,27 @@ function option({ label, hits, detail }: Entry, index: number) {
 	return li;
 }
 
+/** Les sorties de commande, composées à l'instant : leur titre au Volet, et leur contenu. */
+const reports: Partial<Record<Pane['kind'], { title: string; render: (locale: Locale) => Node[] }>> = {
+	health: { title: ':checkhealth', render: health },
+	version: { title: ':version', render: version },
+};
+
 /** Le Volet du résultat sélectionné : l'Aperçu d'un projet, la note d'une pièce, ou l'aide d'une commande. */
 function show(content?: Pane) {
 	const project = content?.kind === 'project' ? projects.find((p) => p.slug === content.slug) : undefined;
+	const output = content && reports[content.kind];
 	help.hidden = content?.kind !== 'help' && content?.kind !== 'note';
 	helpIndex.hidden = !(content?.kind === 'help' && content.commands);
 	figure.hidden = about.hidden = !project;
-	report.hidden = content?.kind !== 'health' && content?.kind !== 'version';
+	report.hidden = !output;
 	egg.hidden = !drawn(content);
 	if (drawn(content)) {
 		paneTitle.textContent = content.title;
 		egg.replaceChildren(...draw(content, locale));
-	} else if (content?.kind === 'health' || content?.kind === 'version') {
-		paneTitle.textContent = `:${content.kind === 'health' ? 'checkhealth' : 'version'}`;
-		report.replaceChildren(...(content.kind === 'health' ? health(locale) : version(locale)));
+	} else if (output) {
+		paneTitle.textContent = output.title;
+		report.replaceChildren(...output.render(locale));
 	} else if (content?.kind === 'help') {
 		paneTitle.textContent = `${say('help')} — ${content.name}`;
 		help.textContent = content.text;

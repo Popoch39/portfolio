@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { list, run } from '../src/lunette/registry.ts';
+import { bare, list, run } from '../src/lunette/registry.ts';
 import { HOME, attr, moduleGraph, readDist, readPage, tags } from './helpers/dist.mjs';
 
 const accueil = { page: { kind: 'home' }, locale: 'fr' };
@@ -42,6 +42,12 @@ test(':q! ferme l’accueil sous un aplat ; sur une fiche, il revient à l’acc
 
 // La première ligne du `:smile` de Neovim (`verify_command`, src/nvim/ex_docmd.c), recopiée à la main.
 const nope = '#xxn`          #xnxx`        ,+x@##@Mz;`        .xxxxxxxxxnz+,      znnnnnnnnnnnnnnnn.';
+
+// L'écran fermé se rouvre par `:e` seul, sous les noms que le registre donne à la commande.
+test(':e seul, ou :edit, rouvre l’écran de :q! ; avec un argument ou sous un autre nom, non', () => {
+	for (const line of ['e', ':e', 'e ', ' :e', 'edit', ':edit!', 'e!', ': e']) assert.ok(bare(line, 'e'), line);
+	for (const line of ['e trekker', 'ex', 'q', 'edi', '']) assert.ok(!bare(line, 'e'), line);
+});
 
 test(':smile montre au Volet l’ASCII art de Neovim, partout', () => {
 	for (const context of [accueil, home, ficheTrekker]) {

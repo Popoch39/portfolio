@@ -13,7 +13,7 @@ let typed: string | undefined;
  * Appelle l'export `name` de la Lunette, importée à la première commande qui en a besoin. Par son nom,
  * pas par une fonction : chaque octet de l'écouteur part avec chaque page.
  */
-const load = (name: 'open' | 'yank') =>
+const load = (name: 'open' | 'yank' | 'gd') =>
 	(lunette ??= import('./lunette.ts')).then(
 		(module) => module[name](typed),
 		// Hors ligne, par exemple : la prochaine commande retentera l'import.
@@ -27,7 +27,7 @@ function open() {
 }
 
 /** Les séquences du mode normal : une séquence s'ajoute ici, sans toucher à l'écouteur. */
-const sequences: Sequences = { ':': open, yy: () => load('yank'), ...motions };
+const sequences: Sequences = { ':': open, yy: () => load('yank'), gd: () => load('gd'), ...motions };
 
 const showcmd = document.querySelector('[data-showcmd]');
 

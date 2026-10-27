@@ -159,6 +159,97 @@ test(':help seul liste dans le Volet les commandes de la page ; Tab passe à son
 	}
 });
 
+/**
+ * Les trois premières pièces de la claude-status-line, telles que la Lunette les lit dans la page : la
+ * nomenclature (ordre et nom), puis la note en clair de chacune.
+ */
+const pieces = [
+	{ id: 'aiguillage', name: 'Tête d’aiguillage', note: { title: 'Choisir la source', text: 'Prend les limites de Claude Code, sinon de l’API, sinon du cache.' } },
+	{ id: 'sonde-api', name: 'Sonde API', note: { title: 'Demander à l’API', text: 'Interroge l’API Anthropic avec votre jeton, en 2,5 s au plus.' } },
+	{ id: 'capsule-cache', name: 'Capsule de cache', note: { title: 'Garder une copie', text: 'Range les dernières limites dans un fichier JSON de secours.' } },
+];
+/** Une fiche dont la figure a une règle de temps, et la même figure sans. */
+const ficheTemps = { page: { kind: 'fiche', slug: 'claude-status-line' }, locale: 'fr', figure: { pieces, timeline: true } };
+const ficheFigure = { ...ficheTemps, figure: { pieces, timeline: false } };
+const ficheEn = { ...ficheTemps, locale: 'en' };
+
+test('portée : :pieces n’existe que sur une fiche à figure, :play et :pause que sur une figure à temps', () => {
+	for (const context of [accueil, home]) {
+		for (const name of ['pieces', 'play', 'pause']) {
+			assert.ok(!names(context).includes(name), `${context.locale} : :${name} listée sur l’accueil`);
+			assert.deepEqual(run(name, context), { error: `E492: Not an editor command: ${name}` });
+		}
+		assert.ok(!list('set ', context).entries.some((entry) => /^(lecture|view)=/.test(entry.label)), `${context.locale} : lecture réglable sur l’accueil`);
+	}
+	assert.ok(names(ficheFigure).includes('pieces'));
+	for (const name of ['play', 'pause']) {
+		assert.ok(!names(ficheFigure).includes(name), `:${name} listée sur une figure sans temps`);
+		assert.deepEqual(run(name, ficheFigure), { error: `E492: Not an editor command: ${name}` });
+		assert.ok(names(ficheTemps).includes(name), `:${name} absente d’une figure à temps`);
+	}
+});
+
+test(':pieces liste les pièces de la figure, numérotées comme la nomenclature, avec leur note dans le Volet', () => {
+	const listing = list('pieces ', ficheFigure);
+	assert.equal(listing.title, 'Pièces');
+	assert.equal(listing.prompt, ':pieces');
+	assert.equal(listing.total, 3);
+	assert.deepEqual(
+		listing.entries.map(({ label, detail }) => [label, detail]),
+		[
+			['Tête d’aiguillage', '01'],
+			['Sonde API', '02'],
+			['Capsule de cache', '03'],
+		],
+	);
+	const [, sonde] = listing.entries;
+	assert.deepEqual(sonde.pane, { kind: 'note', name: 'Sonde API', title: 'Demander à l’API', text: 'Interroge l’API Anthropic avec votre jeton, en 2,5 s au plus.' });
+	// Entrée vise la pièce.
+	assert.deepEqual(sonde.action, { kind: 'aim', piece: 'sonde-api' });
+	assert.equal(list('pieces ', ficheEn).title, 'Parts');
+	// Dans une Lunette vide, :pieces attend son argument, comme :e.
+	const command = list('', ficheFigure).entries.find((entry) => entry.label === 'pieces');
+	assert.equal(command.action, undefined);
+	assert.equal(command.line, 'pieces ');
+});
+
+test(':pieces filtre les pièces par leur nom, et vise une pièce tapée par son nom ou son numéro', () => {
+	assert.deepEqual(
+		list('pieces cache', ficheFigure).entries.map((entry) => entry.label),
+		['Capsule de cache'],
+	);
+	assert.deepEqual(run('pieces sonde', ficheFigure), { kind: 'aim', piece: 'sonde-api' });
+	assert.deepEqual(run(':pieces 03', ficheFigure), { kind: 'aim', piece: 'capsule-cache' });
+	// Comme une étiquette introuvable de Vim.
+	assert.deepEqual(run('pieces zzz', ficheFigure), { error: 'E426: Tag not found: zzz' });
+});
+
+test(':set lecture=code règle la lecture des notes ; :set view=plain aussi, en anglais comme en français', () => {
+	assert.deepEqual(run(':set lecture=code', ficheFigure), { kind: 'lecture', value: 'code' });
+	assert.deepEqual(run('set lecture=clair', ficheFigure), { kind: 'lecture', value: 'clair' });
+	assert.deepEqual(run('set view=plain', ficheEn), { kind: 'lecture', value: 'clair' });
+	assert.deepEqual(run('set view=code', ficheEn), { kind: 'lecture', value: 'code' });
+	// Le nom de l'autre langue est accepté.
+	assert.deepEqual(run('set view=plain', ficheFigure), { kind: 'lecture', value: 'clair' });
+	assert.deepEqual(run('set lecture=code', ficheEn), { kind: 'lecture', value: 'code' });
+	assert.deepEqual(run('set lecture=gras', ficheFigure), { error: 'E474: Invalid argument: lecture=gras' });
+	// Proposées dans la langue de la page, après la version.
+	const labels = (context) => list('set ', context).entries.map((entry) => entry.label);
+	assert.deepEqual(labels(ficheFigure).slice(-2), ['lecture=clair', 'lecture=code']);
+	assert.deepEqual(labels(ficheEn).slice(-2), ['view=plain', 'view=code']);
+	// Le filtre montre le nom trouvé.
+	assert.deepEqual(
+		list('set view=p', ficheFigure).entries.map((entry) => entry.label),
+		['view=plain'],
+	);
+});
+
+test(':play lance le tour de la règle de temps, :pause l’arrête', () => {
+	assert.deepEqual(run(':play', ficheTemps), { kind: 'tour', play: true });
+	assert.deepEqual(run('pause', ficheTemps), { kind: 'tour', play: false });
+	assert.deepEqual(list('', ficheTemps).entries.find((entry) => entry.label === 'play').action, { kind: 'tour', play: true });
+});
+
 test(':set lang=en ouvre la même page dans l’autre version, et l’inverse', () => {
 	assert.deepEqual(run(':set lang=en', ficheTrekker), { kind: 'go', path: '/en/projects/trekker/' });
 	assert.deepEqual(run('set lang=fr', { page: { kind: 'fiche', slug: 'trekker' }, locale: 'en' }), { kind: 'go', path: '/projets/trekker/' });

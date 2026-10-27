@@ -10,6 +10,13 @@ export const pieces: Piece[] = [
 			en: 'The engraved cadastral map. You pick a parcel by touching it: its ID (IDU) is read from the tile already on screen, with no network call.',
 		},
 		code: { path: 'src/map/layers/PciLayer.tsx', lines: [9, 45] },
+		note: {
+			title: 'Choisir une parcelle',
+			text: 'Un clic lit l’identifiant de la parcelle dans la carte déjà affichée, sans réseau.',
+			tech: ['maplibre', 'react'],
+			clue:'useLayerClick',
+			symbol: 'PciLayer()',
+		},
 	},
 	{
 		id: 'tubage',
@@ -19,6 +26,13 @@ export const pieces: Piece[] = [
 			en: 'One casing for one hole: the selection holds a single parcel at a time.',
 		},
 		code: { path: 'src/stores/selection-store.ts', lines: [3, 20] },
+		note: {
+			title: 'Retenir une seule parcelle',
+			text: 'Une seule parcelle ouverte à la fois, repérée par son code cadastral de 14 caractères.',
+			tech: ['react', 'typescript'],
+			clue:'zustand',
+			symbol: 'SelectionState',
+		},
 	},
 	{
 		id: 'croute',
@@ -28,6 +42,13 @@ export const pieces: Piece[] = [
 			en: 'The first layer to break through: the parcel named by its IDU, from which all the others start.',
 		},
 		code: { path: 'src/api/cadastre.ts', lines: [63, 74] },
+		note: {
+			title: 'Charger la parcelle',
+			text: 'Demande au cadastre de l’IGN la forme et la surface de la parcelle, en une requête.',
+			tech: ['typescript'],
+			clue:'API Carto',
+			symbol: 'loadParcel()',
+		},
 	},
 	{
 		id: 'carottier',
@@ -37,6 +58,13 @@ export const pieces: Piece[] = [
 			en: 'It carries the parcel, taken from the Cadastre cache, down into every stratum. If the crust breaks, it brings nothing back up.',
 		},
 		code: { path: 'src/queries/block.ts', lines: [6, 15] },
+		note: {
+			title: 'Partir de la parcelle',
+			text: 'Chaque bloc part de la parcelle déjà en cache ; si elle manque, tous échouent ensemble.',
+			tech: ['react', 'typescript'],
+			clue:'fetchQuery',
+			symbol: 'parcelBlockQuery()',
+		},
 		master: true,
 	},
 	{
@@ -47,6 +75,13 @@ export const pieces: Piece[] = [
 			en: 'It bites into each source: a GET with a 15 s timeout and a typed error (HTTP, timeout, network, invalid JSON).',
 		},
 		code: { path: 'src/api/fetch-json.ts', lines: [61, 91] },
+		note: {
+			title: 'Interroger chaque source',
+			text: 'Le navigateur appelle les API publiques sans serveur, 15 s au plus par réponse.',
+			tech: ['typescript', 'json'],
+			clue:'fetch',
+			symbol: 'fetchBody()',
+		},
 	},
 	{
 		id: 'viroles',
@@ -56,6 +91,13 @@ export const pieces: Piece[] = [
 			en: 'Six bolted rings, one per block, in the order of the report. Each one loads and fails on its own.',
 		},
 		code: { path: 'src/components/report/blocks.ts', lines: [14, 25] },
+		note: {
+			title: 'Empiler les six blocs',
+			text: 'Cadastre, urbanisme, risques, ventes, bâtiment et DPE : chacun charge et échoue seul.',
+			tech: ['react'],
+			clue:'<Block>Section',
+			symbol: 'BLOCKS',
+		},
 	},
 	{
 		id: 'log',
@@ -65,5 +107,12 @@ export const pieces: Piece[] = [
 			en: 'The summary: it is written from whatever has come up. A lost stratum, or one still loading, leaves its line blank, and the indicator stays lit while any stratum is loading.',
 		},
 		code: { path: 'src/lib/summary/summary.ts', lines: [59, 68] },
+		note: {
+			title: 'Composer la synthèse',
+			text: 'Résume les blocs reçus, écarte ceux en panne et signale ceux qui chargent encore.',
+			tech: ['typescript'],
+			clue:'status',
+			symbol: 'assembleSummary()',
+		},
 	},
 ];

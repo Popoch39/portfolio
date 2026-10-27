@@ -111,6 +111,13 @@ export const pieces: Piece[] = [
 			en: 'The Claude Code hook: reads the event, asks tmux for its window and punches a five-field JSON line at the end of the tape. Always exits with 0.',
 		},
 		code: code('scripts/tmux-notify.sh', [9, 59]),
+		note: {
+			title: 'Écrire l’événement',
+			text: 'À chaque attente ou fin de Claude, ajoute une ligne JSON avec sa fenêtre tmux.',
+			tech: ['claude', 'gnubash'],
+			clue:'tmux-notify.sh',
+			symbol: 'CACHE_FILE',
+		},
 	},
 	{
 		id: 'bobine',
@@ -120,6 +127,13 @@ export const pieces: Piece[] = [
 			en: 'The cache file: at start-up it is truncated beyond 1 MiB, then reading starts from its end.',
 		},
 		code: code(LUA, [149, 162]),
+		note: {
+			title: 'Repartir de la fin',
+			text: 'Au démarrage, vide le fichier s’il dépasse 1 Mio, puis ne lit que les lignes à venir.',
+			tech: ['neovim', 'lua'],
+			clue:'uv.fs_stat',
+			symbol: 'M.config.max_cache_size',
+		},
 	},
 	{
 		id: 'echappement',
@@ -129,6 +143,13 @@ export const pieces: Piece[] = [
 			en: 'libuv’s fs_poll, which checks the file every 1,000 ms.',
 		},
 		code: code(LUA, [164, 170]),
+		note: {
+			title: 'Surveiller le fichier',
+			text: 'Neovim regarde si le fichier a changé toutes les 1000 ms, sans bloquer l’éditeur.',
+			tech: ['neovim', 'lua'],
+			clue:'poll_interval',
+			symbol: 'uv.new_fs_poll()',
+		},
 	},
 	{
 		id: 'lecture',
@@ -138,6 +159,13 @@ export const pieces: Piece[] = [
 			en: 'Reads the bytes past the offset, moves the offset on and decodes each JSON line.',
 		},
 		code: code(LUA, [104, 142]),
+		note: {
+			title: 'Lire les nouvelles lignes',
+			text: 'Lit seulement les octets ajoutés depuis la dernière lecture et décode chaque ligne.',
+			tech: ['lua', 'json'],
+			clue:'state.offset',
+			symbol: 'handle_lines()',
+		},
 	},
 	{
 		id: 'cordon',
@@ -147,6 +175,13 @@ export const pieces: Piece[] = [
 			en: 'Asks tmux whether the event’s window is active; sitting in that window’s jack, the plug holds its flap up.',
 		},
 		code: code(LUA, [64, 74]),
+		note: {
+			title: 'Vérifier la fenêtre active',
+			text: 'Demande à tmux si la fenêtre de Claude est déjà affichée : si oui, pas d’alerte.',
+			tech: ['tmux'],
+			clue:'#{window_active}',
+			symbol: 'window_is_focused()',
+		},
 	},
 	{
 		id: 'volet',
@@ -156,6 +191,13 @@ export const pieces: Piece[] = [
 			en: 'The toast: titled Claude — <window>, with Claude’s message and a level set by the event.',
 		},
 		code: code(LUA, [86, 102]),
+		note: {
+			title: 'Composer l’alerte',
+			text: 'Titre l’alerte « Claude — 2:api-server », en warn s’il attend, en info s’il a fini.',
+			tech: ['neovim'],
+			clue:'warn · info',
+			symbol: 'emit()',
+		},
 		master: true,
 	},
 	{
@@ -166,6 +208,13 @@ export const pieces: Piece[] = [
 			en: 'The notifier: Snacks if it is loaded, otherwise vim.notify at warn or info level.',
 		},
 		code: code(LUA, [76, 84]),
+		note: {
+			title: 'Choisir le notifieur',
+			text: 'Passe par Snacks s’il est installé, sinon par la notification native de Neovim.',
+			tech: ['neovim', 'lua'],
+			clue:'vim.notify',
+			symbol: 'default_notify()',
+		},
 	},
 ];
 

@@ -14,6 +14,7 @@
     "og:capture": "node scripts/capture-og.mjs",
     "favicon:ico": "node scripts/favicon-ico.mjs",
     "signatures": "node scripts/signatures.mjs",
+    "ancres": "node scripts/ancres.mjs",
     "test": "astro build && node --test \"tests/**/*.test.mjs\""
   },
   "dependencies": {

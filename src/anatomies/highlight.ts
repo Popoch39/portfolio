@@ -1,6 +1,6 @@
 // Mise en avant des pièces, commune à toutes les figures : la pièce visée porte `data-on` sur
 // chacun de ses crochets (`[data-piece]`), dans la figure comme dans la nomenclature, et la CSS
-// fait le reste (palette des figures, nomenclature, repère), grain compris, que ce module mesure.
+// fait le reste (palette des figures, nomenclature, notes), grain compris, que ce module mesure.
 // Une seule pièce est visée à la fois ; tant qu'il y en a une, la racine et ses scènes portent
 // `data-aiming` et la pièce maîtresse redevient neutre. Seul ce module écrit `data-on` et
 // `data-aiming` : le mouvement d'une figure n'y touche jamais.
@@ -35,7 +35,7 @@ const pieceOf = (target: EventTarget | null) =>
 
 /**
  * Un pointeur qui quitte une pièce pour le vide la garde visée encore un instant : il traverse un
- * interstice vers la pièce voisine (la maîtresse ne clignote pas entre deux) ou vers le repère, dont
+ * interstice vers la pièce voisine (la maîtresse ne clignote pas entre deux) ou vers sa note, dont
  * il peut ainsi suivre le lien.
  */
 const LINGER = 250;

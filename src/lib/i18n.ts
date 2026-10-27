@@ -141,7 +141,7 @@ export const ui = {
 		en: (total: string) => `${total} contributions · 12 months`,
 	},
 	statusBottom: { fr: 'Bas', en: 'Bot' },
-	// Fiche : héros, en-tête de l'anatomie, nomenclature, repère, règle de temps, autres projets et
+	// Fiche : héros, en-tête de l'anatomie, nomenclature, notes, règle de temps, autres projets et
 	// barre d'état. Les textes de l'anatomie elle-même viennent de son module.
 	ficheFile: {
 		fr: (repo: string) => `~/projets/${repo}.md`,
@@ -164,14 +164,6 @@ export const ui = {
 	codeLink: {
 		fr: (path: string, first: number, last: number) => `Code : ${path}, lignes ${first}–${last} ↗`,
 		en: (path: string, first: number, last: number) => `Code: ${path}, lines ${first}–${last} ↗`,
-	},
-	calloutLines: {
-		fr: (file: string, first: number, last: number) => `${file}, lignes ${first}–${last}`,
-		en: (file: string, first: number, last: number) => `${file}, lines ${first}–${last}`,
-	},
-	calloutTotal: {
-		fr: (lines: number) => ` · ${lines} lignes en tout`,
-		en: (lines: number) => ` · ${lines} lines in total`,
 	},
 	startTour: { fr: 'Lancer le tour', en: 'Start the tour' },
 	otherProjects: { fr: 'Autres projets', en: 'Other projects' },

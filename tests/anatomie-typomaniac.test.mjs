@@ -13,7 +13,7 @@ function anatomy(html, heading) {
 	const [figure = ''] = elements(section, 'figure');
 	const [svg = ''] = elements(section, 'svg').filter((s) => attr(tags(s, 'svg')[0], 'role') === 'img');
 	const byClass = (fragment, name, cls) => elements(fragment, name).filter((el) => new RegExp(`class="[^"]*\\b${cls}\\b`).test(tags(el, name)[0]));
-	const pieces = elements(section, 'li').filter((li) => attr(tags(li, 'li')[0], 'data-piece') !== undefined);
+	const pieces = elements(section, 'li').filter((li) => /^item\b/.test(attr(tags(li, 'li')[0], 'class') ?? ''));
 	return {
 		title: text(figure.match(/class="fig"[^>]*>[^<]*<\/span>\s*<span[^>]*>([^<]*)</)?.[1] ?? ''),
 		releve: text(figure.match(/data-releve[^>]*>([^<]*)</)?.[1] ?? ''),

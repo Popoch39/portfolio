@@ -13,6 +13,13 @@ const carte: Piece = {
 		en: 'The chosen file. A .las or .laz goes off to be baked in a Worker; a .bin already baked opens on the spot.',
 	},
 	code: { path: 'src/hooks/use-bake.ts', lines: [78, 87] },
+	note: {
+		title: 'Choisir le fichier',
+		text: 'Un .las ou un .laz part à la conversion ; un .bin déjà converti s’ouvre aussitôt.',
+		tech: ['react'],
+		clue:'.las / .laz',
+		symbol: 'openFile()',
+	},
 };
 const boitier: Piece = {
 	id: 'boitier',
@@ -22,6 +29,13 @@ const boitier: Piece = {
 		en: 'The Web Worker: it reads the file’s bytes, initialises WebAssembly only once, reports progress and hands back the PCBK by transfer, without a copy.',
 	},
 	code: { path: 'src/workers/bake-worker.ts', lines: [13, 37] },
+	note: {
+		title: 'Travailler en arrière-plan',
+		text: 'Lance la conversion à part, sans figer la page, puis rend le résultat sans le recopier.',
+		tech: ['typescript', 'webassembly'],
+		clue:'Web Worker',
+		symbol: 'self.onmessage',
+	},
 };
 const miroir: Piece = {
 	id: 'miroir',
@@ -31,6 +45,13 @@ const miroir: Piece = {
 		en: 'The Rust bake compiled to WebAssembly: it walks through the points of the LAS/LAZ, re-centres them on the minimum of each axis so they stay precise in f32, then writes the 72-byte header and the planar blocks.',
 	},
 	code: { path: 'webassembly/src/lib.rs', lines: [48, 132] },
+	note: {
+		title: 'Convertir les points',
+		text: 'Rust relit chaque point et le recentre sur le coin du nuage pour rester précis en 32 bits.',
+		tech: ['rust', 'webassembly'],
+		clue:'reader.points()',
+		symbol: 'bake_to_pcbk()',
+	},
 	master: true,
 };
 const disque: Piece = {
@@ -41,6 +62,13 @@ const disque: Piece = {
 		en: 'The in-house format: checks the magic and the version, then lays TypedArray views over the buffer, decoding nothing.',
 	},
 	code: { path: 'src/lib/baked-pointcloud.ts', lines: [41, 91] },
+	note: {
+		title: 'Lire le format maison',
+		text: 'Un en-tête de 72 octets, puis 18 octets par point, lus sur place sans rien décoder.',
+		tech: ['typescript'],
+		clue:'TypedArray',
+		symbol: 'parseBakedPointCloud()',
+	},
 };
 const borne: Piece = {
 	id: 'borne',
@@ -50,6 +78,13 @@ const borne: Piece = {
 		en: 'The anchor: only the World Offset is reprojected (proj4 to WGS84, then Mercator), and the whole cloud is placed around it.',
 	},
 	code: { path: 'src/lib/map-anchor.ts', lines: [22, 46] },
+	note: {
+		title: 'Placer le nuage sur la carte',
+		text: 'Seul le coin du nuage passe du Lambert-93 au GPS ; tous les points s’y accrochent.',
+		tech: ['maplibre'],
+		clue:'proj4',
+		symbol: 'computeAnchor()',
+	},
 };
 const nuage: Piece = {
 	id: 'nuage',
@@ -59,6 +94,13 @@ const nuage: Piece = {
 		en: 'The three.js layer on MapLibre’s WebGL context: positions sent as they are, matrices composed in doubles on every frame.',
 	},
 	code: { path: 'src/lib/pointcloud-layer.ts', lines: [25, 121] },
+	note: {
+		title: 'Dessiner les points',
+		text: 'three.js dessine le nuage par-dessus le fond de carte, en un seul envoi au GPU.',
+		tech: ['threedotjs', 'maplibre'],
+		clue:'custom layer',
+		symbol: 'PointCloudLayer',
+	},
 };
 const roue: Piece = {
 	id: 'roue',
@@ -68,6 +110,13 @@ const roue: Piece = {
 		en: 'The colour mode (RGB, intensity, classification, altitude): one uniform changes, the geometry stays.',
 	},
 	code: { path: 'src/lib/pointcloud-shaders.ts', lines: [127, 156] },
+	note: {
+		title: 'Changer les couleurs',
+		text: 'RGB, intensité, classe ou altitude : une seule valeur change, les points restent.',
+		tech: ['threedotjs', 'webgl'],
+		clue:'uniform',
+		symbol: 'createPointsMaterial()',
+	},
 };
 
 export const PIECES: Pieces = { carte, boitier, miroir, disque, borne, nuage, roue };

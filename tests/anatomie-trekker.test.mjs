@@ -26,7 +26,7 @@ function anatomyOf(html) {
 	const section = elements(html, 'section').find((s) => tags(s, 'svg').some((t) => attr(t, 'role') === 'img')) ?? '';
 	const [figure] = elements(section, 'figure');
 	const svg = tags(section, 'svg').find((t) => attr(t, 'role') === 'img') ?? '';
-	const items = elements(section, 'li').filter((li) => attr(tags(li, 'li')[0], 'data-piece') !== undefined);
+	const items = elements(section, 'li').filter((li) => /^item\b/.test(attr(tags(li, 'li')[0], 'class') ?? ''));
 	const [hero] = elements(html, 'section');
 	const head = headOf(html);
 	return {

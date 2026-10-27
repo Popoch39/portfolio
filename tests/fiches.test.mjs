@@ -35,10 +35,12 @@ const VERSIONS = [
 ];
 
 const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-/** Le SVG de la figure : le seul `<svg role="img">` de la section. */
-const figureSvgIn = (section) => elements(section, 'svg').filter((svg) => attr(tags(svg, 'svg')[0], 'role') === 'img');
-/** Lignes de la nomenclature : les `<li>` qui portent un crochet de pièce. */
-const piecesIn = (section) => elements(section, 'li').filter((li) => attr(tags(li, 'li')[0], 'data-piece') !== undefined);
+/** Le SVG de la figure : le seul `<svg class="iso-svg" role="img">` de la section (les logos des notes sont aussi des images). */
+const figureSvgIn = (section) =>
+	elements(section, 'svg').filter((svg) => attr(tags(svg, 'svg')[0], 'role') === 'img' && /\biso-svg\b/.test(attr(tags(svg, 'svg')[0], 'class') ?? ''));
+/** Lignes de la nomenclature : ses `<li class="item">`, qui portent un crochet de pièce comme les notes de la figure. */
+const piecesIn = (section) =>
+	elements(section, 'li').filter((li) => attr(tags(li, 'li')[0], 'data-piece') !== undefined && /^item\b/.test(attr(tags(li, 'li')[0], 'class') ?? ''));
 const hooksOf = (svg) => tags(svg, 'g').filter((g) => attr(g, 'data-piece') !== undefined);
 
 for (const version of VERSIONS) {

@@ -1,11 +1,11 @@
 // Relève la signature du code de chaque pièce : ses premières lignes de code, hors lignes vides et
 // commentaires, lues au commit de l'anatomie (`AnatomyContent.sha`) → src/anatomies/<slug>/signatures.json.
-// Le repère de la fiche les affiche au survol. Lancé à la main (`pnpm signatures`) quand un commit lu
+// Les notes de la fiche les affichent en lecture code. Lancé à la main (`pnpm signatures`) quand un commit lu
 // ou une plage de lignes change, pas au build : le build n'a pas besoin du réseau.
 import { writeFileSync } from 'node:fs';
 import { projects } from '../src/data/profile.ts';
 
-/** Lignes d'une signature : assez pour reconnaître le code, peu pour tenir dans le repère. */
+/** Lignes d'une signature : assez pour reconnaître le code, peu pour tenir dans une note. */
 const LINES = 4;
 
 /** Commentaire de ligne selon l'extension : `--` en Lua, `#` en shell, `//` et `/* … *\/` ailleurs. */

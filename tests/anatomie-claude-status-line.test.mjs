@@ -24,7 +24,7 @@ test('en : la fiche montre la rampe à cadran en anglais : titres, accroche, con
 	const { section, figure } = card(html);
 	const [hero] = elements(html, 'section');
 	const svg = elements(section, 'svg').find((s) => attr(tags(s, 'svg')[0], 'role') === 'img') ?? '';
-	const pieces = elements(section, 'li').filter((li) => attr(tags(li, 'li')[0], 'data-piece') !== undefined);
+	const pieces = elements(section, 'li').filter((li) => /^item\b/.test(attr(tags(li, 'li')[0], 'class') ?? ''));
 	assert.equal(pieces.length, 8);
 	const texts = {
 		title: text(elements(html, 'title')[0] ?? ''),

@@ -4,6 +4,7 @@
 import { githubRepoUrl, type Project } from '../data/profile';
 import type { Locale } from '../lib/i18n';
 import type { Anatomy, AnatomyContent, Consignes, Piece, RestFigure, Signature, Text } from './contract.ts';
+import type { Anchors } from './anchors.ts';
 
 const modules = import.meta.glob<Anatomy>('./*/index.ts', { eager: true, import: 'anatomy' });
 const folderOf = (path: string) => path.split('/')[1];
@@ -15,6 +16,10 @@ const signatures = new Map(
 	Object.entries(import.meta.glob<Signatures>('./*/signatures.json', { eager: true, import: 'default' })).map(
 		([path, byPiece]) => [folderOf(path), byPiece] as const,
 	),
+);
+
+const anchorsBySlug = new Map(
+	Object.entries(import.meta.glob<Anchors>('./*/anchors.json', { eager: true, import: 'default' })).map(([path, anchors]) => [folderOf(path), anchors] as const),
 );
 
 /** Les dossiers qui ont un module de mouvement : le chargeur les découvre par le même motif. */
@@ -31,6 +36,8 @@ export interface ProjectAnatomy {
 	signatureOf: (piece: Piece<'page'>) => Signature;
 	/** Le dossier du module de mouvement, que la scène confie au chargeur (`data-motion`). */
 	motion: string;
+	/** Où les notes touchent les pièces, relevé par `pnpm ancres` (`annotate` vérifie qu'il est à jour). */
+	anchors?: Anchors;
 }
 
 const permalink = (repo: string, sha: string) => (piece: Piece<'page'>) =>
@@ -55,6 +62,7 @@ export function anatomyOf(project: Project, locale: Locale): ProjectAnatomy {
 		codeUrl: permalink(project.repo, content.sha),
 		signatureOf: (piece) => byPiece[piece.id],
 		motion: project.slug,
+		anchors: anchorsBySlug.get(project.slug),
 	};
 }
 
@@ -106,10 +114,16 @@ function assertContract(slug: string, content: AnatomyContent<'page'>) {
 	if (pieces.length < 5 || pieces.length > 8) fail(`${pieces.length} pièces, il en faut 5 à 8`);
 	if (new Set(pieces.map((piece) => piece.id)).size !== pieces.length) fail('deux pièces ont le même identifiant');
 	if (pieces.filter((piece) => piece.master).length !== 1) fail('il faut exactement une pièce maîtresse');
-	for (const { id, code } of pieces) {
+	for (const { id, code, note } of pieces) {
 		const [first, last] = code.lines;
 		if (!(Number.isInteger(first) && Number.isInteger(last) && first >= 1 && last >= first)) {
 			fail(`plage de lignes invalide pour la pièce « ${id} »`);
 		}
+		// Les notes tiennent dans leur gabarit autour de la figure (contrat : `Note`).
+		const limits = { title: 28, text: 90, clue: 18, symbol: 26 } as const;
+		for (const [field, max] of Object.entries(limits) as [keyof typeof limits, number][]) {
+			if (!note[field].trim() || note[field].length > max) fail(`note de la pièce « ${id} » : ${field} vide ou de plus de ${max} caractères`);
+		}
+		if (note.tech.length < 1 || note.tech.length > 2) fail(`note de la pièce « ${id} » : une ou deux technologies`);
 	}
 	if (/\s/.test(content.lede.emphasis.trim())) fail('l’accroche ne met qu’un seul mot en emphase');}

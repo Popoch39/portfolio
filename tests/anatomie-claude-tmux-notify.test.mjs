@@ -31,7 +31,7 @@ test('en : la fiche montre le tableau en anglais : titre, consignes, relevé au 
 	assert.deepEqual(byClass(figure, 'span', 'consigne').map(text), [EN.pointer, EN.touch]);
 	assert.equal(releveOf(figure), EN.releve);
 	const names = elements(section, 'li')
-		.filter((li) => attr(tags(li, 'li')[0], 'data-piece') !== undefined)
+		.filter((li) => /^item\b/.test(attr(tags(li, 'li')[0], 'class') ?? ''))
 		.map((li) => text(byClass(li, 'span', 'name')[0] ?? ''));
 	assert.deepEqual(names, EN.parts);
 	assert.match(text(elements(section, 'figcaption')[0]), /every 1,000 ms, Neovim reads/);

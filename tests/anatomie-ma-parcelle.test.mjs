@@ -33,7 +33,7 @@ function anatomyTexts(html) {
 		caption: text(elements(section, 'figcaption')[0] ?? '').replace(/^Fig\. 1 — /, ''),
 		label: attr(svg, 'aria-label'),
 		pieces: elements(section, 'li')
-			.filter((li) => attr(tags(li, 'li')[0], 'data-piece') !== undefined)
+			.filter((li) => /^item\b/.test(attr(tags(li, 'li')[0], 'class') ?? ''))
 			.flatMap((li) => [text(byClass(li, 'span', 'name')[0] ?? ''), text((byClass(li, 'span', 'role')[0] ?? '').replace(/<a\b[\s\S]*<\/a>/, ''))]),
 	};
 }

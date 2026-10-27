@@ -46,6 +46,48 @@ export interface CodeRef {
 	lines: readonly [number, number];
 }
 
+/** Technologie d'une note, dessinée par son logo (`src/vendor/simple-icons/<clé>.svg`). */
+export type Tech =
+	| 'anthropic'
+	| 'bun'
+	| 'claude'
+	| 'drizzle'
+	| 'gnubash'
+	| 'json'
+	| 'lua'
+	| 'maplibre'
+	| 'neovim'
+	| 'nestjs'
+	| 'nodedotjs'
+	| 'postgresql'
+	| 'react'
+	| 'rust'
+	| 'threedotjs'
+	| 'tmux'
+	| 'typescript'
+	| 'vite'
+	| 'webassembly'
+	| 'webgl'
+	| 'zod';
+
+/**
+ * La note d'une pièce, posée autour de la figure de la fiche et reliée à elle par un trait. Elle se
+ * lit de deux façons : en clair (ce que fait la pièce, sans la métaphore de la machine) ou en code
+ * (le symbole qui la porte et sa signature).
+ */
+export interface Note {
+	/** Ce que fait la pièce, en commençant par un verbe : « Choisir la source ». 28 caractères au plus. */
+	title: string;
+	/** Une phrase en clair, concrète, sans le vocabulaire de la machine. 90 caractères au plus. */
+	text: string;
+	/** Les technologies en jeu, une ou deux, dessinées par leur logo. */
+	tech: readonly Tech[];
+	/** Indice technique court, en mono, à côté des logos : `stdin`, `fetch`. 18 caractères au plus. */
+	clue: string;
+	/** Le symbole qui porte la pièce, titre de la lecture code : `resolveRateLimits()`. 26 caractères au plus. */
+	symbol: string;
+}
+
 /** Élément nommé de la machine, lié à un élément du code. Vis, pieds et graduations n'en sont pas. */
 export interface Piece<S extends Side = 'module'> {
 	/**
@@ -57,13 +99,15 @@ export interface Piece<S extends Side = 'module'> {
 	/** Une phrase : ce que la pièce fait dans la machine, donc dans le code. */
 	role: Text<S>;
 	code: CodeRef;
+	/** Sa note autour de la figure de la fiche. */
+	note: Note;
 	/** La pièce maîtresse, seule en bleu au repos : une seule par anatomie. */
 	master?: true;
 }
 
 /**
  * Signature du code d'une pièce : ses premières lignes de code (1 à 4), hors lignes vides et
- * commentaires, avec leur numéro dans le fichier. Le repère de la fiche l'affiche.
+ * commentaires, avec leur numéro dans le fichier. La note de la pièce l'affiche, en lecture code.
  */
 export type Signature = readonly (readonly [line: number, text: string])[];
 

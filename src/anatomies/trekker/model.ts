@@ -110,6 +110,13 @@ export const pieces: Piece[] = [
 		name: { fr: 'Fente à serrure', en: 'Lock slot' },
 		role: { fr: 'Reçoit la fiche de demande ; la serrure exige une session.', en: 'Takes in the request card; the lock demands a session.' },
 		code: { path: 'apps/api/src/modules/treks/treks.controller.ts', lines: [8, 24] },
+		note: {
+			title: 'Recevoir la demande',
+			text: 'Reçoit la demande de liste ; sans session ouverte, l’API répond 401.',
+			tech: ['nestjs'],
+			clue:'GET /api/v1/treks',
+			symbol: 'TreksController',
+		},
 	},
 	{
 		id: 'gabarit',
@@ -119,6 +126,13 @@ export const pieces: Piece[] = [
 			en: 'Checks every field of the request card, and its interlocks, before letting it through.',
 		},
 		code: { path: 'packages/contracts/src/treks.ts', lines: [126, 185] },
+		note: {
+			title: 'Vérifier chaque paramètre',
+			text: 'Un seul contrat pour l’API, le web et le mobile : filtres, position, 100 par page.',
+			tech: ['zod', 'typescript'],
+			clue:'pageSize ≤ 100',
+			symbol: 'trekListQuerySchema',
+		},
 		master: true,
 	},
 	{
@@ -126,6 +140,13 @@ export const pieces: Piece[] = [
 		name: { fr: 'Bac de rejet', en: 'Reject tray' },
 		role: { fr: 'Recueille la fiche refusée, avec le détail des champs fautifs.', en: 'Catches the refused card, with the details of the faulty fields.' },
 		code: { path: 'apps/api/src/common/filters/problem-details.filter.ts', lines: [52, 61] },
+		note: {
+			title: 'Refuser une demande fausse',
+			text: 'Répond 422 avec la liste des champs fautifs, au format standard RFC 9457.',
+			tech: ['nestjs', 'zod'],
+			clue:'422',
+			symbol: 'ZodValidationException',
+		},
 	},
 	{
 		id: 'tige',
@@ -135,6 +156,13 @@ export const pieces: Piece[] = [
 			en: 'Holds the cards in name, id order; the follower sets twenty apart, after those of the earlier drawers.',
 		},
 		code: { path: 'apps/api/src/modules/treks/treks.service.ts', lines: [127, 151] },
+		note: {
+			title: 'Découper une page',
+			text: 'Trie par nom puis id, saute les pages précédentes et garde 20 itinéraires.',
+			tech: ['drizzle'],
+			clue:'limit / offset',
+			symbol: 'toLimitOffset()',
+		},
 	},
 	{
 		id: 'totalisateur',
@@ -144,24 +172,52 @@ export const pieces: Piece[] = [
 			en: 'Counts every matching card while the drawer slides out, and works out the number of pages.',
 		},
 		code: { path: 'apps/api/src/modules/treks/treks.service.ts', lines: [152, 160] },
+		note: {
+			title: 'Compter les résultats',
+			text: 'Compte tous les résultats en même temps : 100 itinéraires donnent 5 pages.',
+			tech: ['drizzle', 'postgresql'],
+			clue:'Promise.all',
+			symbol: '$count()',
+		},
 	},
 	{
 		id: 'fiche-resume',
 		name: { fr: 'Fiche résumé', en: 'Summary card' },
 		role: { fr: 'Ce qui sort du tiroir : la fiche sans son tracé, qui reste au fond.', en: 'What comes out of the drawer: the card without its track, which stays at the bottom.' },
 		code: { path: 'packages/contracts/src/treks.ts', lines: [49, 74] },
+		note: {
+			title: 'Alléger chaque résultat',
+			text: 'Sert nom, distance et dénivelé sans la trace GPS, trop lourde pour une liste.',
+			tech: ['zod'],
+			clue:'toSummary()',
+			symbol: 'trekSummarySchema',
+		},
 	},
 	{
 		id: 'glissieres',
 		name: { fr: 'Glissières à billes', en: 'Ball-bearing runners' },
 		role: { fr: 'Font sortir le tiroir sans qu’on trie le meuble.', en: 'Bring the drawer out without sorting the whole cabinet.' },
 		code: { path: 'packages/db/src/schema/treks.ts', lines: [142, 148] },
+		note: {
+			title: 'Accélérer le tri',
+			text: 'Un index sur nom puis id : 0,9 ms au lieu de 130 ms par page, sur 2 442 itinéraires.',
+			tech: ['drizzle', 'postgresql'],
+			clue:'index(name, id)',
+			symbol: 'treks_name_id_idx',
+		},
 	},
 	{
 		id: 'corps',
 		name: { fr: 'Corps à tiroirs', en: 'Cabinet body' },
 		role: { fr: 'Le meuble lui-même : chaque fiche y est rangée une fois.', en: 'The cabinet itself: each card is filed in it once.' },
 		code: { path: 'packages/db/src/schema/treks.ts', lines: [57, 91] },
+		note: {
+			title: 'Stocker les itinéraires',
+			text: 'Une table Postgres : une ligne par itinéraire, avec sa trace et son départ.',
+			tech: ['drizzle', 'postgresql'],
+			clue:'pgTable(\'treks\')',
+			symbol: 'treks',
+		},
 	},
 ];
 

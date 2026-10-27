@@ -15,6 +15,13 @@ export const pieces: Piece[] = [
 			en: 'Rotary plug with a lever and three detents, stdin, API and cache: it picks where the limits come from on every render.',
 		},
 		code: code([211, 227]),
+		note: {
+			title: 'Choisir la source',
+			text: 'Prend les limites de Claude Code, sinon de l’API, sinon du cache.',
+			tech: ['claude'],
+			clue:'stdin',
+			symbol: 'resolveRateLimits()',
+		},
 	},
 	{
 		id: 'sonde-api',
@@ -24,6 +31,13 @@ export const pieces: Piece[] = [
 			en: 'Spring plunger with a 2.5 s timer ring: it asks for a single token and comes back with the anthropic-ratelimit-unified-* headers.',
 		},
 		code: code([157, 209]),
+		note: {
+			title: 'Demander à l’API',
+			text: 'Interroge l’API Anthropic avec votre jeton, en 2,5 s au plus.',
+			tech: ['anthropic'],
+			clue:'fetch',
+			symbol: 'readOAuthToken()',
+		},
 	},
 	{
 		id: 'capsule-cache',
@@ -33,6 +47,13 @@ export const pieces: Piece[] = [
 			en: 'Turned capsule screwed under the head: struck on every write, it shows its contents through a witness window and is only read back as a last resort.',
 		},
 		code: code([115, 145]),
+		note: {
+			title: 'Garder une copie',
+			text: 'Range les dernières limites dans un fichier JSON de secours.',
+			tech: ['json'],
+			clue:'~/.claude',
+			symbol: 'readCache()',
+		},
 	},
 	{
 		id: 'rampe',
@@ -42,6 +63,13 @@ export const pieces: Piece[] = [
 			en: 'Section that carries the segments in order, model, folder, then the two windows, parted by three ‘·’ studs: it puts out a single line.',
 		},
 		code: code([231, 254]),
+		note: {
+			title: 'Assembler la ligne',
+			text: 'Modèle · dossier · 5h · sem, sur une seule ligne de terminal.',
+			tech: ['bun', 'typescript'],
+			clue:'render()',
+			symbol: 'render()',
+		},
 	},
 	{
 		id: 'peignes',
@@ -51,6 +79,13 @@ export const pieces: Piece[] = [
 			en: 'One module per window, 5h then sem: a comb of ten blades, one per cell of the bar. With no percentage, all ten blades stay down.',
 		},
 		code: code([103, 109]),
+		note: {
+			title: 'Dessiner les barres',
+			text: 'Dix cases par fenêtre : 68 % donne sept cases pleines.',
+			tech: ['typescript'],
+			clue:'bar()',
+			symbol: 'windowSegment()',
+		},
 	},
 	{
 		id: 'cadran',
@@ -60,6 +95,13 @@ export const pieces: Piece[] = [
 			en: 'Scale from 0 to 100% in three zones, under 50, 50 to 80 and above: it clamps, rounds and judges each percentage, long needle for 5h, short for the week.',
 		},
 		code: code([52, 69]),
+		note: {
+			title: 'Colorer selon l’usage',
+			text: 'Vert sous 50 %, jaune jusqu’à 80 %, rouge au-delà.',
+			tech: ['typescript'],
+			clue:'colorFor()',
+			symbol: 'colorFor()',
+		},
 		master: true,
 	},
 	{
@@ -70,6 +112,13 @@ export const pieces: Piece[] = [
 			en: 'Counters set in the face of each module: the time left before the reset in days, hours and minutes, or minutes, ‘—’ with no percentage.',
 		},
 		code: code([73, 85]),
+		note: {
+			title: 'Compter jusqu’au reset',
+			text: 'Le temps avant la remise à zéro : 3j, 2h14 ou 14m.',
+			tech: ['typescript'],
+			clue:'fmtReset()',
+			symbol: 'fmtReset()',
+		},
 	},
 	{
 		id: 'volant',
@@ -79,6 +128,13 @@ export const pieces: Piece[] = [
 			en: 'One turn of the handwheel is sixty steps of the Geneva drive: one status line render per step, every 60 seconds of refreshInterval.',
 		},
 		code: code([280, 285]),
+		note: {
+			title: 'Recommencer chaque minute',
+			text: 'Claude Code relance le binaire toutes les 60 secondes.',
+			tech: ['claude'],
+			clue:'refreshInterval',
+			symbol: 'settings.statusLine',
+		},
 	},
 ];
 

@@ -12,6 +12,16 @@ export const defaultLocale: Locale = 'fr';
 export type Localized<T> = Record<Locale, T>;
 
 /**
+ * Une valeur composée dans chaque langue, comme le relevé au repos d'une figure. Déclarée sans effet
+ * de bord : un mouvement qui importe un modèle sans lire ce qu'elle y compose ne garde ni l'appel,
+ * ni elle-même dans le chargeur.
+ */
+/* @__NO_SIDE_EFFECTS__ */
+export function localize<T>(of: (locale: Locale) => T): Localized<T> {
+	return { fr: of('fr'), en: of('en') };
+}
+
+/**
  * La langue d'une page, d'après `Astro.currentLocale`. Astro la déduit du préfixe de l'URL et
  * retombe sur la langue par défaut sans préfixe : une autre valeur est une erreur de config.
  */

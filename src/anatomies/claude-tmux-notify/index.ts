@@ -1,5 +1,6 @@
 // Anatomie de claude-tmux-notify.nvim : un tableau d'annonciateur à volets, mural. Les textes sont
 // ceux de la fiche de concept validée (`concept.md`, section 8).
+import { localize } from '../../lib/i18n.ts';
 import type { Anatomy } from '../contract.ts';
 import { renderRest } from './geometry.ts';
 import { NVIM, pieces, relevesOf, SHA } from './model.ts';
@@ -28,7 +29,7 @@ export const anatomy: Anatomy = {
 				en: 'Tap a window to make Claude wait, a dropped flap to plug into its jack',
 			},
 		},
-		releve: { fr: relevesOf('fr').rest(NVIM), en: relevesOf('en').rest(NVIM) },
+		releve: localize((locale) => relevesOf(locale).rest(NVIM)),
 		caption: {
 			fr: 'Le crochet Notification ou Stop de Claude Code ajoute une ligne JSON au fichier de cache ; toutes les 1000 ms, Neovim lit ce qui dépasse son décalage et lève un toast, sauf si la fenêtre tmux de Claude est déjà au premier plan.',
 			en: 'Claude Code’s Notification or Stop hook appends a JSON line to the cache file; every 1,000 ms, Neovim reads whatever lies past its offset and raises a toast, unless Claude’s tmux window is already the active one.',

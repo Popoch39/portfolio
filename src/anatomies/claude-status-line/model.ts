@@ -6,7 +6,7 @@
 // `refreshInterval` secondes (60), donc un rendu par minute entière. Fonction pure de `t` : revenir
 // en arrière rejoue exactement le même état, comme le code, sans état en mémoire hors du cache.
 
-import type { Locale, Localized } from '../../lib/i18n.ts';
+import { localize, type Locale, type Localized } from '../../lib/i18n.ts';
 import type { Timeline } from '../contract.ts';
 
 export const SHA = 'f77fa09f17d4781dbdefbff2542ae951852b67d0';
@@ -276,7 +276,7 @@ export function releveOf(source: Source, five: Shown, week: Shown, locale: Local
 
 export const restPose = poseAt(REST);
 const restReleve = (locale: Locale) => releveOf(SOURCES[restPose.lever], restPose.output.five, restPose.output.week, locale);
-export const releve: Localized<string> = { fr: restReleve('fr'), en: restReleve('en') };
+export const releve = localize(restReleve);
 
 // --- Règle de temps -------------------------------------------------------------------------------
 
@@ -296,7 +296,8 @@ export const timeline: Timeline = {
 	rest: REST,
 	events: EVENTS,
 	tick: 5,
-	marks: [0, 30, 60, 90, 120, 150].map((at) => ({ at, text: { fr: hourLabel(at, 'fr'), en: hourLabel(at, 'en') } })),
+	// Annotée pure : sans quoi le bundler la garde, et `localize` avec, dans le morceau du mouvement.
+	marks: /* @__PURE__ */ [0, 30, 60, 90, 120, 150].map((at) => ({ at, text: localize((locale) => hourLabel(at, locale)) })),
 	reading: minuteReading,
 	consignes: {
 		pointer: {

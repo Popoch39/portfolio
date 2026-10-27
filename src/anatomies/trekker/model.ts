@@ -1,7 +1,7 @@
 // Modèle du meuble à fiches : les vrais chiffres de trekker au commit lu, et le contrôle de la
 // fiche de demande par le gabarit. Le relevé, la course des tiroirs et les encoches de la fiche
 // en découlent ; il tourne au build, sous Node (audit) et dans le navigateur (mouvement).
-import type { Locale, Localized } from '../../lib/i18n.ts';
+import { localize, type Locale, type Localized } from '../../lib/i18n.ts';
 import type { Piece } from '../contract.ts';
 
 /** Commit lu de Popoch39/trekker : tous les liens vers le code y sont figés. */
@@ -102,7 +102,7 @@ export function releveOf(request: Request, locale: Locale) {
 
 /** Au repos : le tiroir 1 sorti, sa page servie. */
 export const REST_PAGE = 1;
-export const releve: Localized<string> = { fr: releveOf(pageRequest(REST_PAGE), 'fr'), en: releveOf(pageRequest(REST_PAGE), 'en') };
+export const releve = localize((locale) => releveOf(pageRequest(REST_PAGE), locale));
 
 export const pieces: Piece[] = [
 	{

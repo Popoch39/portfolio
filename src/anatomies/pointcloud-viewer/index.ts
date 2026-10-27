@@ -1,5 +1,6 @@
 // Anatomie de pointcloud-viewer : un scanner laser sur trépied relit `sample.laz` et dépose son
 // nuage en spirale sur quatre dalles d'orthophoto. Fiche de concept : `concept.md`.
+import { localize } from '../../lib/i18n.ts';
 import type { Anatomy, Piece } from '../contract.ts';
 import { renderRest, type Pieces } from './geometry.ts';
 import { releveOf, SHA } from './model.ts';
@@ -95,7 +96,7 @@ export const anatomy: Anatomy = {
 				en: 'Touch the ground: the head turns as far as the point · tap the wheel: colour',
 			},
 		},
-		releve: { fr: releveOf('fr').rest, en: releveOf('en').rest },
+		releve: localize((locale) => releveOf(locale).rest),
 		caption: {
 			fr: 'Le scanner relit sample.laz, le fichier d’essai du dépôt : 100 000 points en spirale autour d’une station du 6ᵉ arrondissement, en Lambert-93. Chaque tour de tête lit 628 points. Le miroir, c’est-à-dire le bake Rust compilé en WebAssembly dans un Web Worker, recentre chaque point sur la borne d’angle, le minimum du nuage, pour qu’il reste précis en f32. Le disque reçoit alors le PCBK : 72 octets d’en-tête au moyeu, puis 18 octets par point, en quatre secteurs, un par bloc. Le bake fini, three.js pose tout le nuage d’un coup sur le fond IGN, et la roue en change les couleurs sans toucher à la géométrie. Un point dessiné en représente 40, et l’instrument n’est pas à l’échelle du terrain.',
 			en: 'The scanner rereads sample.laz, the repository’s test file: 100,000 points in a spiral around a station in Paris’s 6th arrondissement, in Lambert-93. Each turn of the head reads 628 points. The mirror, that is the Rust bake compiled to WebAssembly in a Web Worker, re-centres every point on the corner marker, the cloud’s minimum, so that it stays precise in f32. The disc then receives the PCBK: a 72-byte header at the hub, then 18 bytes per point, in four sectors, one per block. Once the bake is done, three.js lays the whole cloud at once on the IGN base map, and the wheel changes its colours without touching the geometry. Each drawn point stands for 40, and the instrument is not to the scale of the ground.',

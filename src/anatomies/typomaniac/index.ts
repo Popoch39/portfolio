@@ -1,5 +1,6 @@
 // Anatomie de typomaniac : un banc de duel. Deux claviers datent chaque frappe, deux câbles les
 // portent à une tour d'arbitrage qui les filtre au guichet, juge les manches et fait bouger le mât.
+import { localize } from '../../lib/i18n.ts';
 import type { Anatomy, RestFigure } from '../contract.ts';
 import { renderRest } from './geometry.ts';
 import { releveOf, restDuel } from './model.ts';
@@ -35,7 +36,7 @@ export const anatomy: Anatomy = {
 				en: 'Tap keyboard A: each press sends a letter to the tower.',
 			},
 		},
-		releve: { fr: releveOf(restDuel(TEXTS, 'fr')), en: releveOf(restDuel(TEXTS, 'en')) },
+		releve: localize((locale) => releveOf(restDuel(TEXTS, locale))),
 		caption: {
 			fr: 'Chaque frappe part datée du clavier, par lots de 50 ms. La tour la refuse si sa date précède le départ, suit son arrivée, recule, ou dépasse les 30 s de la manche (400 ms de tolérance). Elle juge la manche au score puis à la précision, et le premier à deux manches gagnées fait bouger les TP ; le MMR, lui, reste caché.',
 			en: 'Each keystroke leaves its keyboard timestamped, in 50 ms batches. The tower rejects it if its timestamp comes before the start or after its arrival, goes backwards, or runs past the round’s 30 s (with 400 ms of tolerance). It judges each round on score, then on accuracy, and the first to win two rounds moves the TP; the MMR stays hidden.',

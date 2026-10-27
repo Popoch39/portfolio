@@ -37,9 +37,15 @@ const sourceOf = (font) => readFileSync(new URL(`../src/vendor/fonts/${FONTS[fon
 const servedCmap = Object.fromEntries(Object.entries(FONTS).map(([font, { file }]) => [font, cmap(readDist(file, null))]));
 const sourceCmap = Object.fromEntries(Object.keys(FONTS).map((font) => [font, cmap(sourceOf(font))]));
 
+/** Les entités nommées qu'Astro et le contenu écrivent ; une entité inconnue reste lue telle quelle. */
+const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: String.fromCharCode(0xa0) };
+
 /** Les caractères qu'un texte fait dessiner (hors caractères de contrôle), capitales comprises pour `text-transform: uppercase`. */
 function drawn(content, { capitals = true } = {}) {
-	const decoded = content.replace(/&#x([\da-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16))).replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number(dec)));
+	// Une seule passe : `&#38;lt;` s'affiche `&lt;`, pas `<`.
+	const decoded = content.replace(/&(?:#x([\da-f]+)|#(\d+)|(\w+));/gi, (entity, hex, dec, name) =>
+		hex ? String.fromCodePoint(parseInt(hex, 16)) : dec ? String.fromCodePoint(Number(dec)) : (ENTITIES[name] ?? entity),
+	);
 	const chars = new Set([...decoded].filter((char) => !/\p{Cc}/u.test(char)));
 	if (capitals) for (const char of [...chars]) for (const upper of char.toUpperCase()) chars.add(upper);
 	return chars;
@@ -88,6 +94,11 @@ test('chaque caractère en italique (emphase de l’accroche, diplômes de l’a
 test('un caractère ajouté hors des polices fait échouer la couverture, avec la commande qui les régénère', () => {
 	assert.deepEqual(uncovered('romaine', new Set('aő')), [`« ő » U+0151 absent(s) de la romaine : lancer ${REGENERATE}`]);
 	assert.match(uncovered('mono', new Set('☃'))[0], /absent\(s\) de la source FragmentMono-Regular\.ttf/);
+});
+
+test('les caractères lus sont ceux que dessine le navigateur : entités numériques et nommées décodées', () => {
+	const chars = drawn('&#x2014;&#8217;&amp;&lt;&gt;&quot;&apos;&nbsp;&#38;lt;', { capitals: false });
+	assert.deepEqual([...chars], ['—', '’', '&', '<', '>', '"', "'", String.fromCharCode(0xa0), 'l', 't', ';']);
 });
 
 test('les caractères tolérés manquent bien à la source de leur police', () => {

@@ -76,10 +76,11 @@ export const formats: Localized<{ intl: string; ogLocale: string; lang: string }
  * entrée est un texte, ou une fonction quand le texte compose des valeurs ; chacune a ses deux langues.
  */
 export const ui = {
-	// Héros : l'accroche, son mot en bleu, et les faits.
+	// Héros : l'accroche, son mot en bleu, et les faits. L'accent est aussi la devise de la Plongée, en
+	// deux lignes coupées après `mottoBreak` mots : déclarée ici, elle ne peut pas diverger de lui.
 	heroLede: {
-		fr: { before: 'Je conçois des applications web ', emphasis: 'de bout en bout', after: ' — l’API, l’interface, et les outils qui rendent le tout agréable à développer.' },
-		en: { before: 'I build web applications ', emphasis: 'end to end', after: ' — the API, the interface, and the tooling that makes it all a pleasure to work on.' },
+		fr: { before: 'Je conçois des applications web ', emphasis: 'de bout en bout', mottoBreak: 2, after: ' — l’API, l’interface, et les outils qui rendent le tout agréable à développer.' },
+		en: { before: 'I build web applications ', emphasis: 'end to end', mottoBreak: 1, after: ' — the API, the interface, and the tooling that makes it all a pleasure to work on.' },
 	},
 	role: { fr: 'Rôle', en: 'Role' },
 	languages: { fr: 'Langages', en: 'Languages' },

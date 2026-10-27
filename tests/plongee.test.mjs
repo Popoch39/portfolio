@@ -4,7 +4,7 @@
 // réduit, dans un navigateur qui sait la jouer, sur le compositeur.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROJECTS, attr, blocks, css, elementAt, readFiche, readHome, tags, text, withoutBlocks } from './helpers/dist.mjs';
+import { PROJECTS, attr, blocks, css, elementAt, elements, readFiche, readHome, tags, text, withoutBlocks } from './helpers/dist.mjs';
 
 const MOTION = /@media \(prefers-reduced-motion:\s*no-preference\)/;
 const SUPPORTED = /@supports [^{]*\(animation-timeline:\s*view\(\)\)/;
@@ -12,6 +12,9 @@ const SUPPORTED = /@supports [^{]*\(animation-timeline:\s*view\(\)\)/;
 const PLAYED = /@keyframes\s+dive-|\banimation[\w-]*\s*:[^;{}]*\bdive-|\b(?:animation-timeline|animation-range|view-timeline|timeline-scope)\s*:|--dive\b/;
 /** Les seules propriétés que le compositeur anime seul. */
 const COMPOSITED = new Set(['transform', 'translate', 'scale', 'opacity']);
+
+/** La devise de chaque langue, ligne à ligne (spec #70) : l'accent de l'accroche, coupé à un endroit naturel. */
+const MOTTO = { fr: ['de bout', 'en bout'], en: ['end', 'to end'] };
 
 /** L'élément de la scène : celui qui s'épingle, l'en-tête et le héros dedans. */
 const sceneOf = (html) => elementAt(html, html.search(/<div class="dive-scene\b/));
@@ -38,6 +41,25 @@ for (const { locale, projects } of [
 		assert.ok(blue, 'bleu absent de la scène');
 		assert.equal(attr(blue, 'aria-hidden'), 'true');
 		assert.equal(text(elementAt(scene, scene.indexOf(blue))), '');
+	});
+
+	test(`${locale} : la devise sur le bleu est l’accent de l’accroche, en deux lignes, décorative`, () => {
+		const scene = sceneOf(html) ?? '';
+		const opening = tags(scene, 'div').find((tag) => /\bclass="dive-motto\b/.test(tag));
+		assert.ok(opening, 'devise absente de la scène');
+		assert.equal(attr(opening, 'aria-hidden'), 'true');
+		const motto = elementAt(scene, scene.indexOf(opening));
+		const lines = [...motto.matchAll(/<span class="dive-line\b[^>]*>([\s\S]*?)<\/span>/g)].map((m) => text(m[1]));
+		assert.deepEqual(lines, ['-- INSERT --', ...MOTTO[locale]]);
+		const emphasis = text(elements(html, 'p').find((p) => /\bclass="lede\b/.test(p)).match(/<em\b[^>]*>([\s\S]*?)<\/em>/)[1]);
+		assert.equal(MOTTO[locale].join(' '), emphasis, 'devise différente de l’accent de l’accroche');
+	});
+
+	test(`${locale} : en mouvement réduit ou sans prise en charge, la devise reste cachée`, () => {
+		for (const outside of [withoutBlocks(styles, MOTION), withoutBlocks(styles, SUPPORTED)]) {
+			const hidden = [...outside.matchAll(/([^{}]*)\{display:none\}/g)].flatMap(([, selector]) => selector.split(','));
+			assert.ok(hidden.some((selector) => /^\.dive-motto\b/.test(selector.trim())), 'devise visible');
+		}
 	});
 
 	test(`${locale} : la Plongée ne joue qu’en mouvement non réduit, dans un navigateur qui sait la jouer`, () => {

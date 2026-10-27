@@ -1,28 +1,33 @@
 // L'écouteur de la Lunette (ADR 0007), importé par le module de chaque page : c'est tout ce qu'elle coûte
 // avant la première commande. Il ouvre la Lunette sur `:`, Ctrl/Cmd+K et les boutons de la barre d'état,
-// et joue les séquences du mode normal ; la Lunette n'est importée qu'à sa première ouverture.
-import { motions, normalMode, type Sequences } from './normal.ts';
+// et joue les séquences du mode normal ; la Lunette n'est importée qu'à sa première ouverture, ou au
+// premier `yy`, qui lui laisse la copie et son écho.
+import { modified, motions, normalMode, type Sequences } from './normal.ts';
 
 let lunette: Promise<typeof import('./lunette.ts')> | undefined;
 
 /** La frappe tapée pendant le premier chargement de la Lunette (`:e t` d'un trait), qu'elle reprend. */
 let typed: string | undefined;
 
-/** Ouvre la Lunette ; avec une séquence du mode normal (`gd`), la lui passe pour qu'elle la joue. */
-function open(sequence?: string) {
+/**
+ * Appelle l'export `name` de la Lunette, importée à la première commande qui en a besoin. Par son nom,
+ * pas par une fonction : chaque octet de l'écouteur part avec chaque page.
+ */
+const load = (name: 'open' | 'yank' | 'gd') =>
+	(lunette ??= import('./lunette.ts')).then(
+		(module) => module[name](typed),
+		// Hors ligne, par exemple : la prochaine commande retentera l'import.
+		() => (lunette = undefined),
+	);
+
+function open() {
 	if (typed !== undefined) return;
 	typed = '';
-	void (lunette ??= import('./lunette.ts'))
-		.then(
-			({ open }) => open(typed, sequence),
-			// Hors ligne, par exemple : la prochaine ouverture retentera l'import.
-			() => (lunette = undefined),
-		)
-		.finally(() => (typed = undefined));
+	void load('open').finally(() => (typed = undefined));
 }
 
 /** Les séquences du mode normal : une séquence s'ajoute ici, sans toucher à l'écouteur. */
-const sequences: Sequences = { ':': open, gd: () => open('gd'), ...motions };
+const sequences: Sequences = { ':': open, yy: () => load('yank'), gd: () => load('gd'), ...motions };
 
 const showcmd = document.querySelector('[data-showcmd]');
 
@@ -43,7 +48,7 @@ addEventListener('keydown', (event) => {
 		event.preventDefault();
 		return open();
 	}
-	if (event.ctrlKey || event.metaKey || event.altKey || typing(event.target)) return;
+	if (modified(event) || typing(event.target)) return;
 	if (typed !== undefined) {
 		if (key.length === 1) {
 			event.preventDefault();
@@ -55,5 +60,4 @@ addEventListener('keydown', (event) => {
 	if (key !== 'Shift' && press(key)) event.preventDefault();
 });
 
-// Sans l'événement du clic, qui passerait pour une séquence.
-for (const button of document.querySelectorAll('[data-lunette]')) button.addEventListener('click', () => open());
+for (const button of document.querySelectorAll('[data-lunette]')) button.addEventListener('click', open);

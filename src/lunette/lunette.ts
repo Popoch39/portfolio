@@ -255,6 +255,19 @@ function recall(step: number) {
 	if (at < history.length) recalled = at;
 }
 
+/**
+ * Le presse-papiers manque hors contexte sécurisé, et refuse sans geste récent du visiteur ou sans
+ * permission : l'écho d'erreur donne alors l'adresse à copier à la main.
+ */
+async function copy({ text, copied, failed }: Extract<Action, { kind: 'yank' }>) {
+	try {
+		await navigator.clipboard.writeText(text);
+		echo(copied);
+	} catch {
+		echo(failed, 'error');
+	}
+}
+
 function act(action: Action) {
 	if (action.kind === 'show') {
 		show(action.pane);
@@ -264,6 +277,9 @@ function act(action: Action) {
 	}
 	// Fermée d'abord : le focus qu'elle rend à la page déviserait une pièce visée avant lui.
 	dialog.close();
+	if (action.kind === 'yank') return void copy(action);
+	// Sans `opener`, l'onglet ouvert ne peut pas toucher à celui du site.
+	if (action.kind === 'open') return void window.open(action.url, '_blank', 'noopener');
 	// Un simple changement d'adresse : la transition lettre à lettre (ADR 0004) joue d'elle-même.
 	if (action.kind === 'go') location.assign(action.path);
 	else if (action.kind === 'aim') aim(action.piece);
@@ -292,18 +308,6 @@ function aim(piece: string) {
 		?.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion)').matches ? 'instant' : 'smooth' });
 }
 
-/** Les séquences du mode normal que l'écouteur laisse à la Lunette, pour ne rien peser avant elle. */
-const sequences: Record<string, () => void> = {
-	// Le code de la pièce visée, à l'adresse de sa note en code ; sans pièce visée, la liste des pièces.
-	// Sans figure, la réponse de Vim à un `gd` sans rien sous le curseur.
-	gd: () => {
-		const code = document.querySelector<HTMLAnchorElement>('.note[data-on] a.ref');
-		if (code) act({ kind: 'go', path: code.href });
-		else if (context.figure) open('pieces ');
-		else echo('E349: No identifier under cursor', 'error');
-	},
-};
-
 /**
  * Entrée : la commande qui attend son argument y passe ; sinon le résultat sélectionné, ou la ligne
  * entière, est lancé et entre dans l'historique. Une ligne qui ne résout rien ferme la Lunette sur son
@@ -313,7 +317,10 @@ function enter() {
 	const entry = listing.entries[selected];
 	if (entry && !entry.action) return write(entry.line);
 	remember((entry?.line ?? line()).trim());
-	const result = entry?.action ?? run(line(), context);
+	perform(entry?.action ?? run(line(), context));
+}
+
+function perform(result: Action | { error: string }) {
 	if ('kind' in result) return act(result);
 	dialog.close();
 	echo(result.error, 'error');
@@ -386,12 +393,8 @@ dialog.addEventListener('close', () => {
 	if (showcmd) showcmd.textContent = '';
 });
 
-/**
- * Ouvre la Lunette, avec la frappe déjà tapée ; déjà ouverte, lui rend le focus. Avec une séquence du
- * mode normal (`gd`), la joue à la place.
- */
-export function open(typed = '', sequence?: string) {
-	if (sequence) return sequences[sequence]?.();
+/** Ouvre la Lunette, avec la frappe déjà tapée ; déjà ouverte, lui rend le focus. */
+export function open(typed = '') {
 	if (dialog.open) return input.focus();
 	if (!dialog.isConnected) {
 		document.head.append(el('style', '', css));
@@ -404,4 +407,18 @@ export function open(typed = '', sequence?: string) {
 	bar?.setAttribute('data-mode', 'command');
 	// Modale : la page est inerte, Échap ferme, et le focus revient où il était.
 	dialog.showModal();
+}
+
+/** Le `yy` du mode normal : `:yank mail`, sans ouvrir la Lunette ni entrer dans son historique. */
+export const yank = () => perform(run('yank mail', context));
+
+/**
+ * Le `gd` du mode normal : le code de la pièce visée, à l'adresse de sa note en code ; sans pièce visée,
+ * la liste des pièces. Sans figure, la réponse de Vim à un `gd` sans rien sous le curseur.
+ */
+export function gd() {
+	const code = document.querySelector<HTMLAnchorElement>('.note[data-on] a.ref');
+	if (code) act({ kind: 'go', path: code.href });
+	else if (context.figure) open('pieces ');
+	else echo('E349: No identifier under cursor', 'error');
 }

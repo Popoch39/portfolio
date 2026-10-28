@@ -44,8 +44,11 @@ const modeOf = (footer) => elementAt(footer, footer.search(/<span class="seg mod
 const moduleOf = (html) => attr(tags(html, 'script').find((t) => attr(t, 'type') === 'module') ?? '', 'src') ?? '';
 /** Les morceaux qu'un code importe à la demande (`import("./y.js")`), en chemins servis. */
 const onDemand = (code) => [...code.matchAll(/import\(\s*["'`]\.\/([\w.-]+\.js)["'`]\s*\)/g)].map((m) => `/_astro/${m[1]}`);
+/** La Traîne (ADR 0012) : elle teste aussi les lignes de temps, pour se taire sous le repli. */
+const isTrail = (path) => readDist(path.slice(1)).includes('[data-trail]');
 /** Le repli de Firefox : ce que le module de la page importe à la demande pour jouer les scènes sans ligne de temps. */
-const fallbacksOf = (html) => onDemand(moduleGraph(moduleOf(html)).code).filter((path) => readDist(path.slice(1)).includes('animation-timeline'));
+const fallbacksOf = (html) =>
+	onDemand(moduleGraph(moduleOf(html)).code).filter((path) => readDist(path.slice(1)).includes('animation-timeline') && !isTrail(path));
 /** Les scènes que la page déclare au repli : la balise de chaque piste, sa ligne de temps et le préfixe de ses animations. */
 const scenesOf = (html) =>
 	(html.match(/<[a-z]+\b[^>]*\sdata-timeline=[^>]*>/g) ?? []).map((tag) => ({ tag, timeline: attr(tag, 'data-timeline'), prefix: attr(tag, 'data-prefix') }));
@@ -290,11 +293,11 @@ for (const { locale, projects } of [
 /** Les modules que les morceaux du site demandent, en chemins servis ; le repli n'est pas exécuté. */
 const requested = [];
 const fallbackFiles = new Set(fallbacksOf(readHome()).map((path) => path.slice('/_astro/'.length)));
-// La Traîne de la Visite (ADR 0012), demandée par le même module, n'est pas exécutée : elle lirait le
-// document du faux navigateur d'un test suivant.
+// La Traîne (ADR 0012), demandée par le même module, n'est pas exécutée : elle lirait le document du
+// faux navigateur d'un test suivant.
 const trailFiles = new Set(
 	onDemand(moduleGraph(moduleOf(readHome())).code)
-		.filter((path) => readDist(path.slice(1)).includes('visit-track'))
+		.filter(isTrail)
 		.map((path) => path.slice('/_astro/'.length)),
 );
 registerHooks({

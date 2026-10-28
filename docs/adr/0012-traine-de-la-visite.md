@@ -6,6 +6,8 @@ Lancée d'un grand geste puis lâchée, la Visite de l'Atome (ADR 0011) s'arrêt
 
 Pour que la Frise du Parcours (spec #98) hérite de la même inertie sans dupliquer le module, la Traîne ne cible plus la Visite par sa classe : elle suit toute piste qui la déclare (`data-trail`), chacune avec son défilement montré, son observateur et ses images, et la piste de la Visite porte la déclaration. Le comportement ne change pas (τ 160 ms, retard plafonné à un tiers d'écran, sommeil loin de la section ou là où la scène ne joue pas) et le module garde son poids (647 octets bruts, 390 en brotli). Une scène tenue par une translation qui compense le défilement, comme Projets en Plongée, ne doit pas la déclarer (ci-dessous).
 
+La Frise est jouée dans Firefox par le repli des scènes (ADR 0009), qui affiche sa piste mais ne lit pas sa marge : la Traîne s'y réveillait pour rien (ADR 0014, #103). Elle ne suit donc aucune piste là où la CSS ne joue pas les scènes, au même test `CSS.supports` que celui qui demande le repli (`Projects.astro`) : dans Firefox, ni décalage de piste, ni mise en page par image, ni inertie. Le module passe de 647 à 749 octets bruts, de 390 à 443 en Brotli.
+
 ## Considered Options
 
 - **Régler les animations depuis le script** (`currentTime` de chacune à chaque image, comme le repli de Firefox) : écarté. Les quelque 300 animations de l'Atome passeraient par le thread principal à chaque image.

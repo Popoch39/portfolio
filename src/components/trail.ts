@@ -43,10 +43,10 @@ function follow(track: HTMLElement) {
 		{ passive: true },
 	);
 
-	// Loin de la section, ou là où la scène ne joue pas (sa piste n'y est affichée que sous ses
-	// conditions, celles de la Visite : mouvement non réduit, écran assez haut, navigateur qui sait la
-	// jouer), la piste reste à sa place : la décaler relancerait la mise en page de l'accueil à chaque
-	// image, pour rien.
+	// Loin de la section, ou là où sa scène ne joue pas, la piste reste à sa place : la décaler relancerait
+	// la mise en page de l'accueil à chaque image, pour rien. Chaque scène n'affiche sa piste que sous ses
+	// propres conditions (mouvement non réduit, et pour la Visite un écran assez haut) : une piste cachée
+	// suffit à le savoir, sans que la Traîne connaisse les scènes.
 	new IntersectionObserver(
 		([entry]) => {
 			near = entry.isIntersecting && getComputedStyle(track).display != 'none';
@@ -60,7 +60,12 @@ function follow(track: HTMLElement) {
 	).observe(track.parentElement!);
 }
 
-document.querySelectorAll<HTMLElement>('[data-trail]').forEach(follow);
+// Là où la CSS ne joue pas les scènes (Firefox), leur repli (ADR 0009) affiche la piste mais règle les
+// animations d'après `scrollY`, sans lire sa marge : la décaler n'y ferait qu'une mise en page par image.
+// La condition est celle du `@supports` des scènes et du repli (`Projects.astro`) ; le nom de la ligne de
+// temps n'y change rien.
+if (CSS.supports('(animation-timeline:view()) and (animation-range:entry) and (timeline-scope:--trail)'))
+	document.querySelectorAll<HTMLElement>('[data-trail]').forEach(follow);
 
 // Un module, importé pour ses effets : ses noms ne débordent pas sur ceux de la page.
 export {};

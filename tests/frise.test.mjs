@@ -138,9 +138,10 @@ for (const { locale, id } of [
 		return [parseFloat(first || '0'), parseFloat(last || '100')];
 	};
 	/** L'opacité d'une @keyframes d'opacité à un instant de la scène (en %), sur la plage d'une règle, remplissage `both`. */
+	const keyframes = keyframesOf(styles);
 	const opacityAt = (body, at) => {
 		const name = body.match(/\banimation\s*:[^;]*?\b(frise-[\w-]+)/)[1];
-		const steps = [...(keyframesOf(styles).get(name) ?? '').matchAll(/((?:[\d.]+%|from|to)(?:,(?:[\d.]+%|from|to))*)\{opacity:([\d.]+)\}/g)]
+		const steps = [...(keyframes.get(name) ?? '').matchAll(/((?:[\d.]+%|from|to)(?:,(?:[\d.]+%|from|to))*)\{[^{}]*?\bopacity:([\d.]+)[^{}]*\}/g)]
 			.flatMap(([, offsets, value]) => offsets.split(',').map((o) => [o === 'from' ? 0 : o === 'to' ? 100 : parseFloat(o), Number(value)]))
 			.sort((a, b) => a[0] - b[0]);
 		const [start, end] = rangeOf(body);
@@ -210,7 +211,7 @@ for (const { locale, id } of [
 		const cases = [
 			// [Commit, instant en % de la scène, opacité de la planche]
 			[1, 0, 0.33],
-			[2, 2.424, 0.295],
+			[2, 2.424 - 0.002, 0.295],
 			[3, 6.061, 0],
 			[1, 2.424 + 0.001, 1],
 			[1, 6.06, 1],
@@ -234,6 +235,29 @@ for (const { locale, id } of [
 		}
 	});
 
+	// Décision de Louis : sur écran large, l'étiquette pâle d'une bifurcation (`lea`, `access-code`, `cda`),
+	// basse sur son poteau replié, croise celle du Commit de `main` actif juste avant elle (constaté en
+	// 1280 × 720 et 1920 × 1080). Elle reste éteinte tant que ce Commit est actif, puis reprend la courbe.
+	test(`${locale} : sur écran large, l’étiquette à venir qui croiserait celle du Commit actif reste éteinte tant qu’il l’est`, () => {
+		const label = (n) => playing(new RegExp(`\\.commit:nth-child\\(${n}\\) \\.label$`))[0];
+		for (const n of [2, 4, 7]) {
+			const [from, to] = [PASSAGE[n - 2], PASSAGE[n - 1]];
+			for (let t = from + 0.002; t < to - 0.001; t += (to - from) / 50) assert.equal(opacityAt(label(n), t), 0, `Commit ${n} allumé à ${t.toFixed(3)} %`);
+			assert.ok(opacityAt(label(n), from - 0.002) > 0.25, `Commit ${n} : plus pâle de la planche avant le Commit actif`);
+			assert.equal(opacityAt(label(n), to + 0.002), 1, `Commit ${n} pas plein à son passage`);
+		}
+		// Les autres étiquettes à venir, qui ne croisent rien, gardent la planche.
+		for (const [n, at, expected] of [
+			[3, 27.879 - 0.03, 0.4],
+			[5, 41.576 - 0.03, 0.4],
+			[8, 60 - 0.03, 0.4],
+			[9, 67.879 - 0.03, 0.4],
+		]) {
+			const value = opacityAt(label(n), at);
+			assert.ok(Math.abs(value - expected) < 0.01, `Commit ${n} à ${at} % : ${value}, attendu ${expected}`);
+		}
+	});
+
 	// #102 : la scène est un conteneur de taille ; sur un écran étroit ou bas, ses requêtes resserrent la courbe.
 	test(`${locale} : sur un écran étroit ou bas, une requête de conteneur de la scène reprend chaque étiquette`, () => {
 		assert.match(styles, /\.frise-scene\b[^{}]*\{[^{}]*\bcontainer(?:-name)?\s*:\s*frise\b/, 'scène sans nom de conteneur');
@@ -246,9 +270,10 @@ for (const { locale, id } of [
 		PASSAGE.forEach((_, i) => assert.equal(playing(new RegExp(`\\.commit:nth-child\\(${i + 1}\\) \\.label$`), compact.join('')).length, 1, `Commit ${i + 1}`));
 	});
 
-	// Resserrée : aucune étiquette à venir ; celle de HEAD s'allume à son passage, dans l'ordre de la Frise, et
-	// la précédente s'éteint vite. Au plus deux étiquettes allumées, dont une seule pleine : rien ne se chevauche.
-	test(`${locale} : sur un écran étroit ou bas, seules les voisines de HEAD restent allumées, Commit après Commit`, () => {
+	// Resserrée : aucune étiquette à venir, pas même la voisine (écart à la spec, ADR 0014) ; celle du Commit
+	// actif s'allume à son passage, dans l'ordre de la Frise, et la précédente s'éteint vite. Au plus deux
+	// étiquettes allumées, dont une seule pleine : rien ne se chevauche.
+	test(`${locale} : sur un écran étroit ou bas, aucune étiquette à venir n’est allumée ; celle du Commit actif est pleine, la précédente s’éteint vite`, () => {
 		const label = (n) => playing(new RegExp(`\\.commit:nth-child\\(${n}\\) \\.label$`), compact.join(''))[0];
 		const at = (t) => PASSAGE.map((_, i) => opacityAt(label(i + 1), t));
 		PASSAGE.forEach((passage, i) => {
@@ -290,26 +315,57 @@ for (const { locale, id } of [
 		assert.match(steps[1], /\blea\b/, 'Branche absente du bloc');
 	});
 
+	const step = (n) => {
+		const rules = playing(new RegExp(`\\.frise-step:nth-child\\(${n}\\)$`));
+		assert.equal(rules.length, 1, `bloc ${n} : une animation, et une seule`);
+		return rules[0];
+	};
+
 	test(`${locale} : le Commit actif en grand change exactement quand HEAD passe un Commit, dans les deux sens`, () => {
-		const step = (n) => {
-			const rules = playing(new RegExp(`\\.frise-step:nth-child\\(${n}\\)$`));
-			assert.equal(rules.length, 1, `bloc ${n} : une animation d’opacité, et une seule`);
-			return rules[0];
-		};
 		assert.equal(opacityAt(step(1), 0), 1, 'aucun Commit actif au départ');
 		PASSAGE.forEach((passage, i) => {
 			if (i === 0) return;
 			const [current, previous] = [step(i + 1), step(i)];
-			// Juste avant le passage : le Commit précédent seul ; juste après, le fondu a commencé.
+			// Juste avant le passage : le Commit précédent seul ; juste après, il commence à s'effacer.
 			assert.equal(opacityAt(current, passage - 0.002), 0, `bloc ${i + 1} avant son passage`);
 			assert.equal(opacityAt(previous, passage - 0.002), 1, `bloc ${i} avant le passage suivant`);
-			assert.ok(opacityAt(current, passage + 0.002) > 0, `bloc ${i + 1} pas encore là au passage`);
 			assert.ok(opacityAt(previous, passage + 0.002) < 1, `bloc ${i} encore plein au passage suivant`);
 			// Le fondu fini, avant le passage d'après.
 			const settled = i + 1 < PASSAGE.length ? PASSAGE[i + 1] - 0.002 : 100;
 			assert.equal(opacityAt(current, settled), 1, `bloc ${i + 1} à ${settled} %`);
 			assert.equal(opacityAt(previous, settled), 0, `bloc ${i} à ${settled} %`);
 		});
+	});
+
+	// Décision de Louis : l'ancien bloc s'efface d'abord, puis le nouveau apparaît en glissant ; jamais deux
+	// blocs visibles à la fois.
+	test(`${locale} : le Commit actif en grand passe d’un bloc à l’autre en fondu séquencé, jamais deux à la fois`, () => {
+		const blocks = PASSAGE.map((_, i) => step(i + 1));
+		for (let t = 0; t <= 100; t += 0.01) {
+			const visible = blocks.map((block) => opacityAt(block, t)).filter((v) => v > 0);
+			assert.ok(visible.length <= 1, `à ${t.toFixed(2)} % : ${visible.length} blocs visibles`);
+		}
+		PASSAGE.forEach((passage, i) => {
+			if (i === 0) return;
+			// Au passage, l'ancien s'efface et le nouveau attend qu'il ait disparu.
+			assert.equal(opacityAt(step(i + 1), passage + 0.002), 0, `bloc ${i + 1} déjà là pendant que le bloc ${i} s’efface`);
+			const name = step(i + 1).match(/\banimation\s*:[^;]*?\b(frise-[\w-]+)/)[1];
+			const block = keyframesOf(styles).get(name);
+			// Il apparaît en glissant vers sa place.
+			assert.match(block, /^@keyframes [\w-]+\{(?:0%|from)\{[^{}]*\btranslate:0 [1-9][\d.]*px\b/, `${name} sans glissement`);
+			assert.match(block, /\btranslate:0 0\b|\btranslate:none\b/, `${name} ne revient pas à sa place`);
+		});
+	});
+
+	// Le titre du Commit actif suit la taille de la scène ; sa date et son lieu aussi, sans passer sous un
+	// corps lisible.
+	test(`${locale} : la date et le lieu du Commit actif suivent les unités de la scène, avec un plancher`, () => {
+		for (const name of ['frise-when', 'frise-place']) {
+			const size = blocks(styles, SUPPORTED)
+				.join('')
+				.match(new RegExp(`\\.${name}\\b[^{}]*\\{[^{}]*\\bfont-size:([^;}]*)`))?.[1];
+			assert.match(size ?? '', /^max\((?:1[1-9]|[2-9]\d)px,min\(\d+px,[\d.]+cqh,[\d.]+cqw\)\)$/, `${name} : ${size}`);
+		}
 	});
 
 	test(`${locale} : les missions sont masquées à l’écran dans la scène, lues par les lecteurs d’écran, visibles dans le git log`, () => {

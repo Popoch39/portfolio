@@ -193,12 +193,70 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 				animation-range: contain 0% contain 4%;
 			}
 
+			/* Sur téléphone, l'en-tête (155 px à 390 de large) mangerait un écran déjà court pendant toute la
+			   scène : il remonte hors de l'écran au premier geste, le héros monte d'autant (`100 %` de sa couche
+			   vaut l'en-tête) puis jusqu'à montrer son bas, et le curseur grandit sur tout l'écran. L'en-tête
+			   revient d'un coup sous l'aplat (58 %), à sa place pour le repli dans le carré de « 01 ». Hors de
+			   l'écran, il quitte la tabulation. */
+			@media (max-width: 599px), (max-height: 499px) {
+				/* Un geste du pouce parcourt un écran ou plus : à 4,5 écrans, le curseur ne grandissait
+				   qu'après un écran entier de défilement. */
+				.dive {
+					--dive-length: 320svh;
+				}
+
+				.dive-head {
+					animation:
+						auto dive-head-away linear,
+						auto dive-hide linear;
+					animation-timeline: --dive;
+					animation-range:
+						contain 0% contain 58%,
+						contain 4% contain 58%;
+				}
+
+				.dive-hero {
+					animation:
+						auto dive-out linear both,
+						auto dive-cover linear both,
+						auto dive-up linear both;
+					animation-timeline: --dive;
+					animation-range:
+						contain 33.8% contain 34%,
+						contain 33.8% contain 34%,
+						contain 0% contain 4%;
+				}
+
+				/* L'en-tête parti, le héros n'a plus à le compter dans sa remontée. */
+				.dive-hero > :global(*) {
+					margin-top: 0;
+					padding-top: 0;
+				}
+			}
+
 			/* Les enveloppes du texte, pas le texte : le Lancement anime l'accroche, les informations et les
 			   actions, et une liste `animation` remplace l'autre au lieu de s'y ajouter. */
 			.dive-hero :global(.topline > *) {
 				animation: auto dive-away cubic-bezier(0.5, 0, 0.9, 0.5) both;
 				animation-timeline: --dive;
 				animation-range: contain 4% contain 17%;
+			}
+
+			@media (max-width: 599px), (max-height: 499px) {
+				/* La ligne du mode part avec l'en-tête : sur un écran peu haut, la remontée du héros la
+				   coupait en haut de l'écran. */
+				.dive-hero :global(.topline > *) {
+					animation-range: contain 0% contain 4%;
+				}
+			}
+
+			/* En paysage sur téléphone, le héros fait près de deux écrans : remonté jusqu'à son bas, il
+			   sortait le nom de l'écran et le curseur grandissait hors champ. Il reste en haut, le nom à
+			   l'écran ; son bas s'efface sans avoir été vu. */
+			@media (max-height: 499px) {
+				.dive-hero > :global(*) {
+					animation: none;
+				}
 			}
 
 			/* Effacées, les actions (« Écrire », GitHub) quittent la tabulation au même instant. */
@@ -419,6 +477,20 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 			@keyframes dive-lift {
 				to {
 					translate: 0 min(0px, 100svh - 100%);
+				}
+			}
+
+			@keyframes dive-up {
+				to {
+					translate: 0 -100%;
+				}
+			}
+
+			/* Parti de 0 à 4 % de la scène, soit 4/58 de sa plage, puis tenu hors de l'écran jusqu'à l'aplat. */
+			@keyframes dive-head-away {
+				6.9%,
+				to {
+					translate: 0 -100%;
 				}
 			}
 

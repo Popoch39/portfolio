@@ -11,6 +11,7 @@ const formattersOf = (intl: string) => ({
 	decimal: new Intl.NumberFormat(intl, { maximumFractionDigits: 1 }),
 	day: new Intl.DateTimeFormat(intl, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }),
 	shortDay: new Intl.DateTimeFormat(intl, { day: 'numeric', month: 'short', timeZone: 'UTC' }),
+	shortMonth: new Intl.DateTimeFormat(intl, { month: 'short', timeZone: 'UTC' }),
 	list: new Intl.ListFormat(intl, { type: 'conjunction' }),
 	plural: new Intl.PluralRules(intl),
 });
@@ -52,6 +53,12 @@ interface ActivityCopy {
 	conclusion: (activeWeeks: string, gap: string) => string;
 	/** Description de la figure ; `pauses` est déjà une liste formatée, vide s'il n'y en a pas. */
 	figureLabel: (from: string, to: string, activeDays: string, activeWeeks: string, mean: string, pauses: string[]) => string;
+	/** Note du premier temps du Tri ; `record` est la plus forte journée. */
+	oneColour: (record: string) => string;
+	/** Note du tassement ; `mean` est la moyenne de Jours actifs par Semaine active. */
+	packed: (mean: string) => string;
+	/** Graduation de l'échelle du tassement : « 7 j ». */
+	scale: (days: string) => string;
 }
 
 const copy: Localized<ActivityCopy> = {
@@ -70,6 +77,9 @@ const copy: Localized<ActivityCopy> = {
 		figureLabel: (from, to, activeDays, activeWeeks, mean, pauses) =>
 			`Activité GitHub semaine par semaine, du ${from} au ${to} : ${activeDays}, ${activeWeeks}, ${mean} jours actifs par semaine active en moyenne.` +
 			(pauses.length === 0 ? '' : ` ${pauses.length === 1 ? 'Pause : semaine' : 'Pauses : semaines'} ${formatters.fr.list.format(pauses.map((p) => `du ${p}`))}.`),
+		oneColour: (record) => `Une seule couleur : un jour actif compte autant qu’un autre, 1 contribution ou ${record}.`,
+		packed: (mean) => `Chaque semaine tassée vers le bas : ${mean} jours actifs par semaine active en moyenne.`,
+		scale: (days) => `${days} j`,
 	},
 	en: {
 		noContribution: 'no contributions',
@@ -86,6 +96,9 @@ const copy: Localized<ActivityCopy> = {
 		figureLabel: (from, to, activeDays, activeWeeks, mean, pauses) =>
 			`GitHub activity week by week, from ${from} to ${to}: ${activeDays}, ${activeWeeks}, ${mean} active days per active week on average.` +
 			(pauses.length === 0 ? '' : ` ${pauses.length === 1 ? 'Pause: week' : 'Pauses: weeks'} of ${formatters.en.list.format(pauses)}.`),
+		oneColour: (record) => `One colour: an active day counts as much as any other, 1 contribution or ${record}.`,
+		packed: (mean) => `Each week packed to the bottom: ${mean} active days per active week on average.`,
+		scale: (days) => `${days} d`,
 	},
 };
 
@@ -144,8 +157,26 @@ export function activityStats(snapshot: ContributionSnapshot): ActivityStats {
 	return { total, activeDays, longestStreak, record: { count: recordCount, date: dayOf(snapshot, recordIndex) } };
 }
 
+/** Bornes basses des paliers 1 à 4 de la heatmap GitHub ; le palier 0 est « aucune contribution ». */
+const LEVEL_THRESHOLDS = [1, 5, 15, 50];
+
+/** Un jour du calendrier, dans la colonne de sa semaine. */
+export interface TriDay {
+	/** Palier de couleur de la heatmap, de 0 à 4 : 0 pour un jour sans contribution. */
+	level: number;
+	/** Rang d'origine, du dimanche (0) au samedi (6). */
+	row: number;
+	/**
+	 * Rang une fois la semaine tassée : les Jours actifs en bas, dans l'ordre des dates, les jours vides
+	 * au-dessus, dans l'ordre des dates aussi.
+	 */
+	packed: number;
+}
+
 /** Une semaine du Tri : une colonne de 7 jours du calendrier, du dimanche au samedi. */
 export interface TriWeek {
+	/** Ses jours ; la dernière semaine de l'instantané peut en compter moins de 7. */
+	days: TriDay[];
 	/** Jours actifs de la semaine, de 0 à 7 : la taille de son nœud sur `main`. */
 	activeDays: number;
 	contributions: number;
@@ -179,6 +210,14 @@ export interface Tri {
 	conclusion: string;
 	/** Description de la figure : période, Jours actifs, Semaines actives, moyenne et pauses. */
 	figureLabel: string;
+	/** Le compteur du départ de la scène : « 232 jours actifs sur 365 ». */
+	start: string;
+	/** Les notes des deux premiers temps : une seule couleur, puis le tassement. */
+	notes: [oneColour: string, packed: string];
+	/** L'échelle du tassement, du haut de la colonne au bas : « 7 j », « 4 j », « 1 j ». */
+	scale: string[];
+	/** Les mois du calendrier, chacun au-dessus de la semaine où il commence. */
+	months: { label: string; week: number }[];
 }
 
 export function tri(snapshot: ContributionSnapshot, locale: Locale): Tri {
@@ -194,7 +233,13 @@ export function tri(snapshot: ContributionSnapshot, locale: Locale): Tri {
 		const total = week.reduce((sum, count) => sum + count, 0);
 		const label = text.week(format.shortDay.format(start));
 		const previous = weeks.at(-1);
+		let [sunk, risen] = [7 - active, 0];
 		weeks.push({
+			days: week.map((count, row) => ({
+				level: LEVEL_THRESHOLDS.filter((low) => count >= low).length,
+				row,
+				packed: count > 0 ? sunk++ : risen++,
+			})),
 			activeDays: active,
 			contributions: total,
 			date: formatDay(start, locale),
@@ -215,6 +260,11 @@ export function tri(snapshot: ContributionSnapshot, locale: Locale): Tri {
 	const activeWeeks = weeks.filter((week) => week.activeDays > 0).length;
 	const meanActiveDays = activeWeeks === 0 ? 0 : activeDayCount / activeWeeks;
 	const count = text.activeWeeks(formatNumber(activeWeeks, locale), formatNumber(weeks.length, locale));
+	const mean = format.decimal.format(meanActiveDays);
+	const months = counts.flatMap((_, i) => {
+		const date = dayOf(snapshot, i);
+		return date.getUTCDate() === 1 ? [{ label: format.shortMonth.format(date), week: Math.floor(i / 7) }] : [];
+	});
 
 	return {
 		weeks,
@@ -230,8 +280,12 @@ export function tri(snapshot: ContributionSnapshot, locale: Locale): Tri {
 			formatDay(dayOf(snapshot, counts.length - 1), locale),
 			text.outOf(activeDays(activeDayCount, locale), formatNumber(counts.length, locale)),
 			count,
-			format.decimal.format(meanActiveDays),
+			mean,
 			weeks.filter((week) => week.activeDays === 0).map((week) => week.date),
 		),
+		start: text.outOf(activeDays(activeDayCount, locale), formatNumber(counts.length, locale)),
+		notes: [text.oneColour(formatNumber(Math.max(...counts), locale)), text.packed(mean)],
+		scale: [7, 4, 1].map((n) => text.scale(formatNumber(n, locale))),
+		months,
 	};
 }

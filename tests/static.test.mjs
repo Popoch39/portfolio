@@ -12,7 +12,9 @@
 // La Plongée (ADR 0009) ajoute à l'accueil seulement ses `@keyframes` `dive-` et ses animations, sur ses
 // éléments `.dive…`, toutes en mouvement non réduit et sous `@supports` (vérifié par plongee.test.mjs). La
 // Visite de l'Atome (ADR 0011) y ajoute ses `@keyframes` `visit-` et ses animations, dans la section Stack
-// (`.stack…`) et l'Atome (`.atom…`), aux mêmes conditions (vérifié par visite.test.mjs).
+// (`.stack…`) et l'Atome (`.atom…`), aux mêmes conditions (vérifié par visite.test.mjs). La Frise et le Tri
+// font de même avec leurs `@keyframes` `frise-` et `tri-`, sur leurs éléments (vérifié par frise.test.mjs et
+// tri.test.mjs).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PROJECTS, readFiche, readHome, tags, attr, elements, css, launchGate, withoutBlocks } from './helpers/dist.mjs';
@@ -85,10 +87,10 @@ test('la CSS livrée n’a ni :hover ni transition hors des notes de la figure, 
 				(name) =>
 					!name.startsWith('iso-') &&
 					!name.startsWith('vt-') &&
-					!(page.home && (name.startsWith('launch-') || name.startsWith('dive-') || name.startsWith('visit-') || name.startsWith('frise-'))),
+					!(page.home && (name.startsWith('launch-') || name.startsWith('dive-') || name.startsWith('visit-') || name.startsWith('frise-') || name.startsWith('tri-'))),
 			),
 			[],
-			`${page.name} : @keyframes hors du kit, de la transition, du lancement, de la Plongée, de la Visite et de la Frise`,
+			`${page.name} : @keyframes hors du kit, de la transition, du lancement, de la Plongée, de la Visite, de la Frise et du Tri`,
 		);
 		// Les étapes des `@keyframes vt-…`, `launch-…`, `dive-…` et `visit-…` portent `animation-timing-function`.
 		const animated = [...withoutBlocks(pageStyles, /@keyframes\s+(vt|launch|dive|visit)-/).matchAll(/([^{}]+)\{[^{}]*\banimation(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap(
@@ -97,11 +99,11 @@ test('la CSS livrée n’a ni :hover ni transition hors des notes de la figure, 
 		const allowed = (selector) =>
 			selector.startsWith('.iso') ||
 			selector.startsWith('::view-transition-') ||
-			(page.home && (selector.startsWith(':root[data-launch]') || selector.startsWith('.dive') || /^\.(?:stack|atom|frise)\b/.test(selector)));
+			(page.home && (selector.startsWith(':root[data-launch]') || selector.startsWith('.dive') || /^\.(?:stack|atom|frise|tri)\b/.test(selector)));
 		assert.deepEqual(
 			animated.map((selector) => selector.trim()).filter((selector) => !allowed(selector)),
 			[],
-			`${page.name} : animation hors de la CSS du kit, de la transition, du lancement, de la Plongée, de la Visite et de la Frise`,
+			`${page.name} : animation hors de la CSS du kit, de la transition, du lancement, de la Plongée, de la Visite, de la Frise et du Tri`,
 		);
 	}
 });

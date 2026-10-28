@@ -2,69 +2,102 @@
 import SectionHeader from './SectionHeader.astro';
 import { identity, sections } from '../data/profile';
 import { githubSnapshot } from '../data/github-snapshot';
-import { formatNumber, tri } from '../lib/activity';
+import { formatNumber, tri, type TriDay } from '../lib/activity';
 import { localeOf, ui } from '../lib/i18n';
+import { triSheet } from '../lib/tri';
 
 const locale = localeOf(Astro.currentLocale);
 const { id, label } = sections.activity;
-const { weeks, count, conclusion, figureLabel } = tri(githubSnapshot, locale);
+const sorted = tri(githubSnapshot, locale);
+const { weeks, count, conclusion, figureLabel, start, notes, scale, months } = sorted;
+/** Une case et, si le tassement la déplace, son rang tassé : une case qui ne bouge pas n'est pas animée. */
+const cell = (day: TriDay) => (day.packed === day.row ? `r${day.row}` : `r${day.row} k${day.packed}`);
 ---
 
-{/* Le Tri (spec #107) : ici son état final, ce que montrent le mouvement réduit et les navigateurs sans
-    scène, et l'image sur laquelle la scène finit. */}
+<style is:inline set:html={triSheet(sorted)}></style>
+{/* Le Tri (spec #107) : hors de la scène, son état final, ce que montrent le mouvement réduit et les
+    navigateurs sans scène, et l'image sur laquelle la scène finit. La section s'étend sur toute la page,
+    pour que la vue de la planche prenne toute la largeur ; son contenu garde la colonne de la page. */}
 <section id={id[locale]} class="activity">
+	<span class="tri-track" aria-hidden="true"></span>
 	<div class="tri-scene">
-		<SectionHeader
-			number={3}
-			title={label[locale]}
-			note={`${identity.github.profile} ↗`}
-			noteHref={identity.links.github}
-		/>
-		<div class="tri-body">
-			<p class="tri-count">{count}</p>
-			<p class="mono tri-command">{ui.triCommand[locale].map((part) => <span>{part}</span>)}</p>
-			<figure class="tri-figure">
-				{/* Une image pour les lecteurs d'écran, qui lisent sa description et le tableau ; les étiquettes de
-				    pause doublent le tableau dans les extraits de recherche. */}
-				<div class="tri-main" role="img" aria-label={figureLabel} data-nosnippet>
-					{
-						weeks.map((week, i) => (
-							<span class="tri-week" data-days={week.activeDays} data-link={week.link} title={week.title}>
-								<span class="tri-node" />
-								{/* Dans la seconde moitié de l'année, l'étiquette part vers la gauche pour rester dans la page ;
-								    une pause sur deux descend d'une ligne, pour que deux étiquettes proches ne se chevauchent pas. */}
-								{week.pause && (
-									<span class:list={['mono', 'tri-pause', { end: i >= weeks.length / 2, low: weeks.slice(0, i).filter((w) => w.pause).length % 2 === 1 }]}>
-										{week.pause}
-									</span>
-								)}
-							</span>
-						))
-					}
+		<div class="container">
+			<SectionHeader
+				number={3}
+				title={label[locale]}
+				note={`${identity.github.profile} ↗`}
+				noteHref={identity.links.github}
+			/>
+			<div class="tri-body">
+				{/* Le compteur du départ de la scène double l'instantané que décrit la figure. */}
+				<div class="tri-counts">
+					<p class="tri-count">{count}</p>
+					<p class="tri-start" aria-hidden="true" data-nosnippet>{start}</p>
 				</div>
-				<figcaption class="tri-conclusion">{conclusion}</figcaption>
-			</figure>
-			<table class="sr-only">
-				<caption>{ui.triTable[locale]}</caption>
-				<thead>
-					<tr>
-						<th scope="col">{ui.weekOf[locale]}</th>
-						<th scope="col">{ui.activeDaysHeader[locale]}</th>
-						<th scope="col">{ui.contributions[locale]}</th>
-					</tr>
-				</thead>
-				<tbody>
-					{
-						weeks.map((week) => (
-							<tr>
-								<th scope="row">{week.date}</th>
-								<td>{formatNumber(week.activeDays, locale)}</td>
-								<td>{formatNumber(week.contributions, locale)}</td>
-							</tr>
-						))
-					}
-				</tbody>
-			</table>
+				<p class="mono tri-command">{ui.triCommand[locale].map((part) => <span>{part}</span>)}</p>
+				<figure class="tri-figure">
+					{/* Une image pour les lecteurs d'écran, qui lisent sa description et le tableau ; les étiquettes de
+					    pause doublent le tableau dans les extraits de recherche. */}
+					<div class="tri-main" role="img" aria-label={figureLabel} data-nosnippet>
+						{
+							weeks.map((week, i) => (
+								<span class="tri-week" data-days={week.activeDays} data-link={week.link} title={week.title}>
+									<span class="tri-node" />
+									{/* Dans la seconde moitié de l'année, l'étiquette part vers la gauche pour rester dans la page ;
+									    une pause sur deux descend d'une ligne, pour que deux étiquettes proches ne se chevauchent pas. */}
+									{week.pause && (
+										<span class:list={['mono', 'tri-pause', { end: i >= weeks.length / 2, low: weeks.slice(0, i).filter((w) => w.pause).length % 2 === 1 }]}>
+											{week.pause}
+										</span>
+									)}
+								</span>
+							))
+						}
+					</div>
+					<figcaption class="tri-conclusion">{conclusion}</figcaption>
+				</figure>
+				<table class="sr-only">
+					<caption>{ui.triTable[locale]}</caption>
+					<thead>
+						<tr>
+							<th scope="col">{ui.weekOf[locale]}</th>
+							<th scope="col">{ui.activeDaysHeader[locale]}</th>
+							<th scope="col">{ui.contributions[locale]}</th>
+						</tr>
+					</thead>
+					<tbody>
+						{
+							weeks.map((week) => (
+								<tr>
+									<th scope="row">{week.date}</th>
+									<td>{formatNumber(week.activeDays, locale)}</td>
+									<td>{formatNumber(week.contributions, locale)}</td>
+								</tr>
+							))
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+		{/* La vue de la planche : le calendrier et ce qui l'accompagne, un dessin qui double le tableau. Trois
+		    calques de cases, une colonne par semaine : les niveaux, immobiles, qui se fondent dans le calque
+		    d'une seule couleur ; ce calque et celui des jours vides, où chaque case qui change de rang glisse vers
+		    son rang tassé. */}
+		<div class="tri-stage" aria-hidden="true" data-nosnippet>
+			<div class="tri-view">
+				<div class="mono tri-months">{months.map((month) => <span>{month.label}</span>)}</div>
+				<div class="mono tri-scale">{scale.map((graduation) => <span>{graduation}</span>)}</div>
+				<div class="tri-grid tri-move tri-empty">
+					{weeks.map((week) => <span>{week.days.filter((day) => day.level === 0).map((day) => <i class={cell(day)} />)}</span>)}
+				</div>
+				<div class="tri-grid tri-move tri-flat">
+					{weeks.map((week) => <span>{week.days.filter((day) => day.level > 0).map((day) => <i class={cell(day)} />)}</span>)}
+				</div>
+				<div class="tri-grid tri-levels">
+					{weeks.map((week) => <span>{week.days.filter((day) => day.level > 0).map((day) => <i class={`r${day.row} l${day.level}`} />)}</span>)}
+				</div>
+				{notes.map((note) => <p class="mono tri-note">{note}</p>)}
+			</div>
 		</div>
 	</div>
 </section>
@@ -74,6 +107,12 @@ const { weeks, count, conclusion, figureLabel } = tri(githubSnapshot, locale);
 		padding-top: clamp(64px, 8vw, 120px);
 	}
 
+	.tri-track,
+	.tri-start,
+	.tri-stage {
+		display: none;
+	}
+
 	.tri-body {
 		display: flex;
 		flex-direction: column;
@@ -81,7 +120,8 @@ const { weeks, count, conclusion, figureLabel } = tri(githubSnapshot, locale);
 		padding-top: 40px;
 	}
 
-	.tri-count {
+	/* Le compteur, et dans la scène celui du départ, à sa place. */
+	.tri-counts > p {
 		margin: 0;
 		font-size: clamp(32px, 4.4vw, 60px);
 		line-height: 1;
@@ -203,5 +243,299 @@ const { weeks, count, conclusion, figureLabel } = tri(githubSnapshot, locale);
 		overflow: hidden;
 		clip-path: inset(50%);
 		white-space: nowrap;
+	}
+
+	/* Le Tri joué (ADR 0015) : la section s'épingle le temps de trois écrans de défilement ; les niveaux
+	   se fondent en une seule couleur (6–22 %), puis chaque semaine tasse ses Jours actifs vers le bas
+	   (28–56 %), en vague. Les bornes sont celles de la planche H2 ; la plage de chaque semaine et la place
+	   des mois sont tirées de l'instantané dans `src/lib/tri.ts`. Chaque raccourci `animation` porte la
+	   durée `auto` : sans elle, le minifieur replie `animation-timeline` dans le raccourci, que Chrome refuse. */
+	@media (prefers-reduced-motion: no-preference) {
+		@supports (animation-timeline: view()) and (animation-range: entry) and (timeline-scope: --tri) {
+			/* La scène voit la ligne de temps de sa piste, sa sœur. Pas sur la racine : `html` porte déjà celle
+			   de la Frise, et deux déclarations sur le même élément s'écraseraient. */
+			.activity {
+				--tri-length: 300svh;
+				timeline-scope: --tri;
+			}
+
+			/* La course de l'épingle, sous la scène haute d'un écran (comme la Frise). */
+			.activity::after {
+				content: '';
+				display: block;
+				height: var(--tri-length);
+			}
+
+			.tri-track {
+				display: block;
+				position: absolute;
+				width: 1px;
+				height: calc(var(--tri-length) + 100dvh);
+				view-timeline: --tri block;
+				view-timeline-inset: 0;
+			}
+
+			/* L'en-tête, le compteur et la commande en haut, dans la colonne de la page ; la vue de la planche
+			   dans toute la place qui reste au-dessus de la barre d'état. */
+			.tri-scene {
+				position: sticky;
+				top: 0;
+				height: 100dvh;
+				overflow: clip;
+				display: flex;
+				flex-direction: column;
+				padding: 36px 0 var(--status-height);
+			}
+
+			/* Dans la colonne flexible, les marges automatiques de la colonne de page la rétréciraient. */
+			.tri-scene > .container {
+				width: 100%;
+			}
+
+			.tri-body {
+				padding-top: 24px;
+			}
+
+			/* Les deux compteurs l'un sur l'autre : le départ, puis les Semaines actives, qui viennent avec
+			   `main`. Celle-ci et la phrase restent lues, pas vues, tant qu'elles n'ont pas de temps à elles. */
+			.tri-counts {
+				display: grid;
+			}
+
+			.tri-counts > p {
+				grid-area: 1 / 1;
+			}
+
+			.tri-start {
+				display: block;
+			}
+
+			.tri-count {
+				opacity: 0;
+			}
+
+			.tri-figure {
+				position: absolute;
+				opacity: 0;
+				pointer-events: none;
+			}
+
+			/* La commande se complète à chaque temps, de la couleur de la scène. */
+			.tri-command > span:nth-child(n + 2) {
+				color: var(--accent);
+			}
+
+			.tri-command > span:nth-child(2) {
+				animation: auto tri-show cubic-bezier(0.65, 0, 0.35, 1) both;
+				animation-timeline: --tri;
+				animation-range: contain 6% contain 22%;
+			}
+
+			.tri-command > span:nth-child(3) {
+				animation: auto tri-show linear both;
+				animation-timeline: --tri;
+				animation-range: contain 28% contain 33.6%;
+			}
+
+			.tri-command > span:nth-child(4) {
+				opacity: 0;
+			}
+
+			.tri-stage {
+				display: block;
+				position: relative;
+				flex: 1;
+				min-height: 0;
+				container: tri / size;
+			}
+
+			/* La vue de la planche, du haut des mois au bas des notes (1 280 × 360), centrée et mise à
+			   l'échelle de la place qu'elle a ; à 1 280 × 800, elle est à la taille de la planche. */
+			.tri-view {
+				position: absolute;
+				left: 50%;
+				top: 50%;
+				width: 1280px;
+				height: 360px;
+				margin: -180px 0 0 -640px;
+				scale: min(tan(atan2(100cqh, 360px)), tan(atan2(100cqw, 1280px)));
+			}
+
+			.tri-months,
+			.tri-scale {
+				font-size: 11px;
+				line-height: 1;
+				color: var(--muted);
+			}
+
+			.tri-months > span {
+				position: absolute;
+				top: 0;
+			}
+
+			.tri-months {
+				animation: auto tri-hide linear both;
+				animation-timeline: --tri;
+				animation-range: contain 28% contain 36.4%;
+			}
+
+			/* L'échelle, à gauche des semaines tassées : la hauteur d'une colonne y dit ses Jours actifs. */
+			.tri-scale {
+				position: absolute;
+				top: 28px;
+				left: 62px;
+				width: 36px;
+				text-align: right;
+				animation: auto tri-scale linear both;
+				animation-timeline: --tri;
+				animation-range: contain 42% contain 70.8%;
+			}
+
+			.tri-scale > span {
+				position: absolute;
+				right: 0;
+			}
+
+			.tri-scale > :nth-child(2) {
+				top: 60px;
+			}
+
+			.tri-scale > :nth-child(3) {
+				top: 120px;
+			}
+
+			/* Une colonne par semaine, au pas de la planche ; chaque case à son rang du jour, du dimanche en
+			   haut au samedi en bas. */
+			.tri-grid {
+				position: absolute;
+				top: 26px;
+				left: 110px;
+				display: flex;
+				gap: 4px;
+			}
+
+			.tri-grid > span {
+				position: relative;
+				flex: none;
+				width: 16px;
+				height: 136px;
+			}
+
+			.tri-grid i {
+				position: absolute;
+				top: calc(var(--r) * 20px);
+				width: 16px;
+				height: 16px;
+				border-radius: 2px;
+			}
+
+			.r0 { --r: 0; }
+			.r1 { --r: 1; }
+			.r2 { --r: 2; }
+			.r3 { --r: 3; }
+			.r4 { --r: 4; }
+			.r5 { --r: 5; }
+			.r6 { --r: 6; }
+			.k0 { --k: 0; }
+			.k1 { --k: 1; }
+			.k2 { --k: 2; }
+			.k3 { --k: 3; }
+			.k4 { --k: 4; }
+			.k5 { --k: 5; }
+			.k6 { --k: 6; }
+
+			.tri-empty i {
+				background: var(--heat-0);
+			}
+
+			.tri-flat i {
+				background: var(--accent);
+			}
+
+			.l1 { background: var(--heat-1); }
+			.l2 { background: var(--heat-2); }
+			.l3 { background: var(--heat-3); }
+			.l4 { background: var(--heat-4); }
+
+			/* Une seule couleur : les niveaux, posés sur le calque d'une seule couleur, s'effacent. */
+			.tri-levels {
+				animation: auto tri-hide cubic-bezier(0.65, 0, 0.35, 1) both;
+				animation-timeline: --tri;
+				animation-range: contain 6% contain 22%;
+			}
+
+			/* Les jours vides s'estompent à moitié pendant le tassement. */
+			.tri-empty {
+				animation: auto tri-dim linear both;
+				animation-timeline: --tri;
+				animation-range: contain 28% contain 56%;
+			}
+
+			.tri-note {
+				position: absolute;
+				top: 276px;
+				left: 110px;
+				width: 760px;
+				margin: 0;
+				font-size: 13px;
+				line-height: 20px;
+				color: var(--muted);
+				animation: auto tri-note linear both;
+				animation-timeline: --tri;
+				animation-range: contain 12% contain 32%;
+			}
+
+			.tri-note + .tri-note {
+				animation-range: contain 44% contain 64%;
+			}
+
+			@keyframes tri-show {
+				from {
+					opacity: 0;
+				}
+			}
+
+			@keyframes tri-hide {
+				to {
+					opacity: 0;
+				}
+			}
+
+			@keyframes tri-dim {
+				to {
+					opacity: 0.5;
+				}
+			}
+
+			@keyframes tri-note {
+				from,
+				to {
+					opacity: 0;
+				}
+				40%,
+				75% {
+					opacity: 1;
+				}
+			}
+
+			/* Apparue avec la seconde moitié du tassement, effacée avant `main` (62–70,8 %). */
+			@keyframes tri-scale {
+				from,
+				to {
+					opacity: 0;
+				}
+				48.6%,
+				69.4% {
+					opacity: 1;
+				}
+			}
+
+			/* Chaque case glisse de son rang d'origine à son rang tassé. */
+			@keyframes tri-pack {
+				to {
+					translate: 0 calc((var(--k) - var(--r)) * 20px);
+				}
+			}
+		}
 	}
 </style>

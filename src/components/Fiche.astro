@@ -92,6 +92,18 @@ const sourceCode = {
 	// retarder, et avant d'attendre la transition : la molette sert dès que la fiche est là.
 	requestAnimationFrame(() => setTimeout(() => void import('../lib/glide.ts')));
 
+	// La lecture des notes, recopiée du bouton coché sur la carte, où la CSS la lit : un `:has()` sur la
+	// bascule restylait la carte à chaque image de la figure (ADR 0003). Relue au branchement, au cas où
+	// la bascule a servi avant ce module.
+	const annot = document.querySelector<HTMLElement>('.annot');
+	const lecture = annot?.querySelector('.lecture');
+	const readLecture = () => {
+		const checked = lecture?.querySelector<HTMLInputElement>(':checked');
+		if (annot && checked) annot.dataset.lecture = checked.value;
+	};
+	lecture?.addEventListener('change', readLecture);
+	readLecture();
+
 	const scene = document.querySelector<HTMLElement>('[data-motion]');
 	const svg = scene?.querySelector('svg');
 	const card = scene?.closest('figure');

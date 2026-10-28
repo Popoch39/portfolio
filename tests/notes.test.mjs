@@ -1,7 +1,7 @@
 // Notes de la figure : autour de la figure de chaque fiche, une note par pièce, reliée à elle par un
 // trait. Elle se lit en clair (un verbe, une phrase, les technologies) ou en code (le symbole, sa
 // signature et le lien vers lui) ; la ligne de commande de la carte bascule entre les deux lectures,
-// sans script. La géométrie (place des notes, traits, viseurs) est écrite au build dans la CSS.
+// que le module de la page recopie sur la carte pour la CSS. La géométrie (place des notes, traits, viseurs) est écrite au build dans la CSS.
 // Chaque version dit tout dans sa langue : notes, ligne de commande, barre d'état et libellés.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -116,8 +116,15 @@ for (const version of VERSIONS) {
 			assert.equal(new Set(radios.map((r) => attr(r, 'name'))).size, 1, `${repo} : un seul groupe`);
 			assert.deepEqual(radios.map((r) => hasAttr(r, 'checked')), [true, false], `${repo} : lecture en clair au repos`);
 			assert.match(text(fieldset.replace(legend, '')), version.command, repo);
-			// La bascule est de la CSS : elle lit l'état du bouton coché.
-			assert.match(css(html), /:has\([^)]*:checked\)/, `${repo} : la CSS ne lit pas la bascule`);
+			// La CSS lit la lecture sur un attribut de la carte, que le module de la page recopie du bouton
+			// coché : un `:has()` sur la bascule restylait la carte à chaque image de la figure (ADR 0003).
+			const [annot] = tags(card, 'div').filter((t) => /class="annot\b/.test(t));
+			assert.equal(attr(annot, 'data-lecture'), 'clair', `${repo} : lecture en clair au repos, sans script`);
+			const styles = css(html);
+			assert.match(styles, /\.annot(?:\[[^\]]*\])*\[data-lecture=["']?code["']?\]/, `${repo} : la CSS ne lit pas la lecture`);
+			assert.doesNotMatch(styles, /:has\([^)]*:checked\)/, `${repo} : la CSS lit encore la bascule par :has()`);
+			const [loader] = tags(html, 'script').filter((t) => attr(t, 'type') === 'module');
+			assert.match(moduleGraph(attr(loader, 'src') ?? '').code, /\.lecture\s*=/, `${repo} : le module ne recopie pas la lecture`);
 		}
 	});
 

@@ -39,8 +39,9 @@ const stats = activityStats(githubSnapshot);
 		</Dive>
 		{/* Après Projets et non sous le héros : la Plongée relie le héros à Projets (spec #68). */}
 		<Marquee />
+		{/* La Frise tient sa colonne elle-même : sa scène couvre toute la largeur de la page. */}
+		<Career />
 		<div class="container">
-			<Career />
 			<Activity stats={stats} />
 			<Stack />
 			<Contact />

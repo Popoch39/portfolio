@@ -31,8 +31,8 @@ const { number, title, note, noteHref } = Astro.props;
 
 	.title {
 		margin: 0;
-		font-size: clamp(52px, 8vw, 120px);
-		line-height: 0.84;
+		font-size: var(--section-title);
+		line-height: var(--section-title-leading);
 		font-weight: 800;
 		font-stretch: 62%;
 		text-transform: uppercase;

@@ -37,7 +37,7 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 		display: none;
 	}
 
-	/* La chronologie de la planche, en part de la scène (3,6 écrans de défilement) :
+	/* La chronologie de la planche, en part de la scène (4,5 écrans de défilement) :
 	   0–4 %       le héros plus haut que l'écran remonte sous l'en-tête jusqu'à montrer son bas (la
 	               planche s'y arrête) ;
 	   4–17 %      le texte d'accroche, les informations et les actions s'effacent en descendant ;
@@ -56,9 +56,9 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 	@media (prefers-reduced-motion: no-preference) {
 		@supports (animation-timeline: view()) and (animation-range: entry) and (timeline-scope: --dive) {
 			.dive {
-				/* 3,6 écrans : aux 1,9 écran de la planche (1 500 px pour 800 de haut), la scène filait sous
+				/* 4,5 écrans : aux 1,9 écran de la planche (1 500 px pour 800 de haut), la scène filait sous
 				   la molette. */
-				--dive-length: 360svh;
+				--dive-length: 450svh;
 				/* Le bord gauche du contenu (`.container`), `100%` valant la largeur de la page. */
 				--content-left: calc(max(0px, (100% - var(--container)) / 2) + var(--page-margin));
 			}

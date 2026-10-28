@@ -210,7 +210,7 @@ for (const { locale, id } of [
 		const cases = [
 			// [Commit, instant en % de la scène, opacité de la planche]
 			[1, 0, 0.33],
-			[2, 2.424, 0.295],
+			[2, 2.424 - 0.002, 0.295],
 			[3, 6.061, 0],
 			[1, 2.424 + 0.001, 1],
 			[1, 6.06, 1],
@@ -229,6 +229,29 @@ for (const { locale, id } of [
 			[13, 100, 1],
 		];
 		for (const [n, at, expected] of cases) {
+			const value = opacityAt(label(n), at);
+			assert.ok(Math.abs(value - expected) < 0.01, `Commit ${n} à ${at} % : ${value}, attendu ${expected}`);
+		}
+	});
+
+	// Décision de Louis : sur écran large, l'étiquette pâle d'une bifurcation (`lea`, `access-code`, `cda`),
+	// basse sur son poteau replié, croise celle du Commit de `main` actif juste avant elle (constaté en
+	// 1280 × 720 et 1920 × 1080). Elle reste éteinte tant que ce Commit est actif, puis reprend la courbe.
+	test(`${locale} : sur écran large, l’étiquette à venir qui croiserait celle du Commit actif reste éteinte tant qu’il l’est`, () => {
+		const label = (n) => playing(new RegExp(`\\.commit:nth-child\\(${n}\\) \\.label$`))[0];
+		for (const n of [2, 4, 7]) {
+			const [from, to] = [PASSAGE[n - 2], PASSAGE[n - 1]];
+			for (let t = from + 0.002; t < to - 0.001; t += (to - from) / 50) assert.equal(opacityAt(label(n), t), 0, `Commit ${n} allumé à ${t.toFixed(3)} %`);
+			assert.ok(opacityAt(label(n), from - 0.002) > 0.25, `Commit ${n} : plus pâle de la planche avant le Commit actif`);
+			assert.equal(opacityAt(label(n), to + 0.002), 1, `Commit ${n} pas plein à son passage`);
+		}
+		// Les autres étiquettes à venir, qui ne croisent rien, gardent la planche.
+		for (const [n, at, expected] of [
+			[3, 27.879 - 0.03, 0.4],
+			[5, 41.576 - 0.03, 0.4],
+			[8, 60 - 0.03, 0.4],
+			[9, 67.879 - 0.03, 0.4],
+		]) {
 			const value = opacityAt(label(n), at);
 			assert.ok(Math.abs(value - expected) < 0.01, `Commit ${n} à ${at} % : ${value}, attendu ${expected}`);
 		}

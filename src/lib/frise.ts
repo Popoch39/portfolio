@@ -57,14 +57,10 @@ const range = (from: number, to = 100) => `animation-range:contain ${percent(fro
 /** Une courbe d'étiquette : son opacité selon HEAD, et les instants où elle change de pente ou saute. */
 type Curve = (commit: Commit, next: number) => { opacity: (head: number, left?: boolean) => number; turns: number[] };
 
-/**
- * Où en est HEAD par rapport au Commit (`reached`) et au suivant (`passed`). `left` donne l'état juste avant
- * `head`, de l'autre côté d'un saut.
- */
-const phase = (commit: Commit, next: number, head: number, left: boolean) => {
-	const past = (at: number) => (left ? head > at : head >= at);
-	return { reached: past(commit.at), passed: past(next) };
-};
+/** Si HEAD a atteint une date ; `left` donne l'état juste avant `head`, de l'autre côté d'un saut. */
+const past = (head: number, at: number, left: boolean) => (left ? head > at : head >= at);
+/** Où en est HEAD par rapport au Commit (`reached`) et au suivant (`passed`). */
+const phase = (commit: Commit, next: number, head: number, left: boolean) => ({ reached: past(head, commit.at, left), passed: past(head, next, left) });
 
 const PALE = 0.4;
 const NEAR = 0.35;
@@ -73,16 +69,58 @@ const DIM = 0.25;
 /**
  * L'opacité de l'étiquette d'un Commit selon HEAD sur un écran large (planche D) : à venir, pâle et de plus en
  * plus quand HEAD approche ; pleine de son passage à celui du Commit suivant (il est alors le Commit actif) ;
- * passée, estompée avec l'écart, jamais sous 0,25.
+ * passée, estompée avec l'écart, jamais sous 0,25. À venir, elle reste éteinte pendant les intervalles `dark`,
+ * où elle croiserait l'étiquette du Commit actif.
  */
-const wide: Curve = (commit, next) => ({
-	opacity(head, left = false) {
-		const { reached, passed } = phase(commit, next, head, left);
-		if (!reached) return Math.max(0, PALE - NEAR * (commit.at - head));
-		return passed ? Math.max(DIM, 1 - FADE * (head - commit.at)) : 1;
-	},
-	turns: [commit.at - PALE / NEAR, commit.at, next, commit.at + (1 - DIM) / FADE],
-});
+const wide =
+	(dark: [number, number][]): Curve =>
+	(commit, next) => ({
+		opacity(head, left = false) {
+			const { reached, passed } = phase(commit, next, head, left);
+			if (!reached && dark.some(([from, to]) => past(head, from, left) && !past(head, to, left))) return 0;
+			if (!reached) return Math.max(0, PALE - NEAR * (commit.at - head));
+			return passed ? Math.max(DIM, 1 - FADE * (head - commit.at)) : 1;
+		},
+		turns: [commit.at - PALE / NEAR, commit.at, next, commit.at + (1 - DIM) / FADE, ...dark.flat()],
+	});
+
+/**
+ * La vue de la planche, comme la pose Career.astro : le plan tourné (`rotateX(58deg) rotateZ(-22deg)`), vu
+ * à 1 100 px depuis (40, −190) px de HEAD, et l'étiquette redressée, large de 230 px, dont le texte (la date,
+ * un titre sur deux lignes) tient sur `TEXT` px au-dessus de son poteau et de 10 px de marge. Avant le passage
+ * de HEAD, le poteau est replié à 18 px.
+ */
+const [TILT, TURN] = [58, -22].map((deg) => (deg * Math.PI) / 180);
+const PERSPECTIVE = 1100;
+const VANISH = [40, -190];
+const LABEL = 230;
+const TEXT = 62;
+const pole = (commit: Commit, risen: boolean) => (risen ? (commit.branch === 'main' ? 138 : 88) : 18) + 10;
+
+/** Le rectangle du texte d'une étiquette à l'écran, en pixels de la vue, HEAD à une date. */
+function caption(commit: Commit, head: number, risen: boolean) {
+	const [x, y] = [xOf(commit.at) - xOf(head), yOf(commit)];
+	const [u, v] = [x * Math.cos(TURN) - y * Math.sin(TURN), x * Math.sin(TURN) + y * Math.cos(TURN)];
+	const [w, z] = [v * Math.cos(TILT), v * Math.sin(TILT)];
+	const s = PERSPECTIVE / (PERSPECTIVE - z);
+	const [left, bottom] = [VANISH[0] + (u - VANISH[0]) * s, VANISH[1] + (w - VANISH[1]) * s - pole(commit, risen) * s];
+	return { left, right: left + LABEL * s, top: bottom - TEXT * s, bottom };
+}
+
+/**
+ * Les intervalles où l'étiquette à venir d'un Commit croiserait, basse sur son poteau replié, celle d'un
+ * Commit actif avant lui, dressée : en début et en fin d'activité de ce dernier, le plan glissant sous HEAD.
+ */
+function darkOf(i: number): [number, number][] {
+	return commits.slice(0, i).flatMap((active, k) => {
+		const until = commits[k + 1].at;
+		const crosses = [active.at, until].some((head) => {
+			const [a, b] = [caption(active, head, true), caption(commits[i], head, false)];
+			return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+		});
+		return crosses ? [[active.at, until] as [number, number]] : [];
+	});
+}
 
 /**
  * La courbe resserrée d'un écran étroit ou bas (#102) : sur le plan réduit, une étiquette à venir, posée bas
@@ -131,7 +169,7 @@ const choreography = (commit: Commit, i: number) => {
 	const nth = `.frise .commit:nth-child(${i + 1})`;
 	const passage = share(commit.at);
 	const rise = `${timeline};${range(passage, share(commit.at + RISE))}`;
-	const label = labelKeyframes(`frise-label-${i + 1}`, commit, commits[i + 1]?.at ?? Infinity, wide);
+	const label = labelKeyframes(`frise-label-${i + 1}`, commit, commits[i + 1]?.at ?? Infinity, wide(darkOf(i)));
 	return [
 		label.keyframes,
 		`${nth} .label{animation:auto frise-label-${i + 1} linear both;${timeline};${label.range}}`,

@@ -40,7 +40,9 @@ La scène est le conteneur de taille `frise`. Aucun JS : tout passe par ses requ
 
 La requête est écrite deux fois : dans la feuille générée (`src/lib/frise.ts`), et dans la CSS scopée de `Career.astro`, dont les sélecteurs (spécificité 0,4,0) l'emporteraient sur une règle globale. Un test vérifie que les deux seuils sont identiques.
 
-Écartée : la courbe resserrée sur tous les écrans. La planche montre les étiquettes à venir, pâles, et l'écran large a la place de les lire. Reste un cas, hérité de la planche et de #101 : en écran large, l'étiquette pâle d'une bifurcation (`lea`, `access-code`, `cda`), encore basse, croise celle du Commit de `main` qui la précède tant que ce dernier est actif, soit quelques pourcents de la scène. Ce cas est à trancher par Louis.
+Écartée : la courbe resserrée sur tous les écrans. La planche montre les étiquettes à venir, pâles, et l'écran large a la place de les lire. Reste un cas, hérité de la planche et de #101 : en écran large, l'étiquette pâle d'une bifurcation (`lea`, `access-code`, `cda`), encore basse, croise celle du Commit de `main` qui la précède tant que ce dernier est actif, soit quelques pourcents de la scène.
+
+**Décision de Louis : l'étiquette à venir qui chevaucherait est éteinte.** Sur écran large, elle reste à 0 tant que le Commit actif qu'elle croiserait l'est, puis reprend la courbe de la planche (pleine à son passage). Les chevauchements sont déduits au build de la géométrie de la vue (`darkOf` dans `src/lib/frise.ts`) : le rectangle du texte de chaque étiquette est projeté comme le pose Career.astro (plan tourné, perspective, poteau dressé pour le Commit actif, replié pour l'étiquette à venir, texte de la date et d'un titre sur deux lignes), en début et en fin d'activité. Aucune liste n'est écrite : la géométrie retrouve les trois bifurcations, `lea`, `access-code` et `cda`, chacune pendant le Commit de `main` qui la précède. Plages littérales, opacité seule, dans les mêmes `@keyframes frise-label-` ; un test le tient. Si l'on change la vue, la largeur des étiquettes ou la taille de leur texte dans Career.astro, ces constantes sont à reporter.
 
 ## Firefox et Traîne (#103)
 

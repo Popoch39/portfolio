@@ -182,6 +182,56 @@ for (const version of VERSIONS) {
 		assert.deepEqual(still, [], 'case animée qui garde son rang');
 	});
 
+	/** La plage posée sur un sélecteur exact par une règle de la scène (liste de sélecteurs comprise). */
+	const rangeAt = (selector) => {
+		const scene = blocks(styles, SUPPORTED).join('');
+		const rule = [...scene.matchAll(/([^{}]+)\{([^{}]*\banimation-range\s*:[^{}]*)\}/g)].findLast(([, s]) => s.split(',').some((one) => one.trim() === selector));
+		return rule?.[2].match(/\banimation-range\s*:([^;}]*)/)[1];
+	};
+
+	// Planche H2 : `main` à 62–84 %, la semaine w sur 5/8 du temps, à partir de 62 % + 22 × 3/8 × w/53. Ses
+	// cases rejoignent son nœud, ses jours vides s'effacent, son nœud grandit, son trait se trace et son
+	// étiquette de pause apparaît, tous sur sa plage.
+	test(`${locale} : les semaines tassées deviennent \`main\` en vague, de la première à la dernière`, () => {
+		const parse = (range = '') => range.match(/^contain ([\d.]+)% contain ([\d.]+)%$/)?.slice(1).map(Number);
+		for (let w = 0; w < 53; w++) {
+			const n = w + 1;
+			const from = 62 + (8.25 * w) / 53;
+			const elements = [`.tri-move>:nth-child(${n})`, `.tri-week:nth-child(${n})>*`];
+			if (w > 0) elements.push(`.tri-week:nth-child(${n})::before`);
+			for (const selector of elements) {
+				const range = parse(rangeAt(selector));
+				assert.ok(range, `${selector} sans plage`);
+				assert.ok(Math.abs(range[0] - from) < 0.001, `${selector} : départ ${range[0]} %`);
+				assert.ok(Math.abs(range[1] - from - 13.75) < 0.002, `${selector} : durée ${range[1] - range[0]} %`);
+			}
+		}
+		assert.ok(parse(rangeAt('.tri-week:nth-child(53)>*'))[1] <= 84, '`main` au-delà de 84 %');
+	});
+
+	// La scène finit sur le socle : ce qui naît avec `main` part de rien et finit à sa place (aucune étape
+	// `to`), ce qui disparaît finit à rien.
+	test(`${locale} : chaque élément de \`main\` finit dans l’état du socle`, () => {
+		const keyframes = keyframesOf(styles);
+		const played = (selector) => {
+			const scene = blocks(styles, SUPPORTED).join('');
+			const rule = [...scene.matchAll(/([^{}]+)\{([^{}]*\banimation\s*:[^{}]*)\}/g)].find(([, s]) => s.split(',').some((one) => one.trim().replace(/\[data-astro-cid-\w+\]/g, '') === selector));
+			const name = rule?.[2].match(/\banimation\s*:[^;}]*?\b(tri-[\w-]+)/)?.[1];
+			assert.ok(name, `${selector} sans animation`);
+			return keyframes.get(name);
+		};
+		const born = (selector, step) => {
+			const block = played(selector);
+			assert.match(block, new RegExp(`(?:from|0%)(?:,[\\d.]+%)*\\{${step}\\}`), selector);
+			assert.doesNotMatch(block, /(?:to|100%)\{/, `${selector} ne finit pas à sa place`);
+		};
+		born('.tri-node', 'scale:0');
+		born('.tri-week[data-link]::before', 'scale:0 1');
+		born('.tri-pause', 'opacity:0');
+		assert.match(played('.tri-flat>span'), /(?:to|100%)\{scale:0\}/, 'les Jours actifs ne rejoignent pas leur nœud');
+		assert.match(played('.tri-empty>span'), /(?:to|100%)\{opacity:0\}/, 'les jours vides restent');
+	});
+
 	/** Les éléments complets de la section dont la balise ouvrante porte la classe `name`. */
 	const withClass = (name) =>
 		[...section.matchAll(new RegExp(`<[a-z]+\\b[^>]*\\sclass="(?:[^"]*\\s)?${name}(?:\\s[^"]*)?"[^>]*>`, 'g'))].map((m) => elementAt(section, m.index));
@@ -238,6 +288,18 @@ for (const version of VERSIONS) {
 		assert.equal(rangeOf(/^\.tri-months\b/, 'tri-hide'), 'contain 28% contain 36.4%');
 		assert.equal(rangeOf(/^\.tri-empty\b/, 'tri-dim'), 'contain 28% contain 56%');
 		assert.match(keyframesOf(styles).get('tri-dim') ?? '', /\{opacity:\.5\}/);
+	});
+
+	// Planche H2 : la commande gagne ` | uniq` au début de `main`, le compteur change d'unité pendant que
+	// les nœuds arrivent, la phrase vient à 88–97 %.
+	test(`${locale} : le compteur passe aux Semaines actives pendant \`main\`, puis la phrase arrive`, () => {
+		assert.equal(rangeOf(/^\.tri-command>span:nth-child\(4\)/, 'tri-show'), 'contain 62% contain 66.4%');
+		const [hide, show] = [rangeOf(/^\.tri-start\b/, 'tri-hide'), rangeOf(/^\.tri-count\b/, 'tri-show')];
+		assert.ok(hide, 'le compteur de départ reste');
+		assert.equal(show, hide, 'les deux compteurs ne se croisent pas');
+		const [, from, to] = hide.match(/^contain ([\d.]+)% contain ([\d.]+)%$/).map(Number);
+		assert.ok(from >= 62 && to <= 84, `compteur hors de \`main\` : ${hide}`);
+		assert.equal(rangeOf(/^\.tri-conclusion\b/, 'tri-show'), 'contain 88% contain 97%');
 	});
 }
 

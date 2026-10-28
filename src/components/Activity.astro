@@ -301,8 +301,8 @@ const cell = (day: TriDay) => (day.packed === day.row ? `r${day.row}` : `r${day.
 				padding-top: 24px;
 			}
 
-			/* Les deux compteurs l'un sur l'autre : le départ, puis les Semaines actives, qui viennent avec
-			   `main`. Celle-ci et la phrase restent lues, pas vues, tant qu'elles n'ont pas de temps à elles. */
+			/* Les deux compteurs l'un sur l'autre : le départ, puis les Semaines actives, en fondu quand les
+			   nœuds de `main` sont presque tous là (73–79 %). */
 			.tri-counts {
 				display: grid;
 			}
@@ -316,14 +316,37 @@ const cell = (day: TriDay) => (day.packed === day.row ? `r${day.row}` : `r${day.
 				display: block;
 			}
 
-			.tri-count {
-				opacity: 0;
+			.tri-start {
+				animation: auto tri-hide linear both;
+				animation-timeline: --tri;
+				animation-range: contain 73% contain 79%;
 			}
 
+			.tri-count {
+				animation: auto tri-show linear both;
+				animation-timeline: --tri;
+				animation-range: contain 73% contain 79%;
+			}
+
+			/* `main` sous le calendrier, une colonne de 20 px par semaine : le centre de chaque nœud est à
+			   l'aplomb de la colonne de ses cases (x = 118 + 20 × semaine), sa ligne à y = 179, sous la
+			   dernière case (162). La phrase dessous, à la taille du socle à 1 280 px de large. */
 			.tri-figure {
 				position: absolute;
-				opacity: 0;
-				pointer-events: none;
+				left: 108px;
+				top: 170px;
+				width: 1060px;
+				max-width: none;
+				margin: 0;
+				padding: 0;
+				gap: 24px;
+			}
+
+			.tri-conclusion {
+				font-size: 30px;
+				animation: auto tri-show linear both;
+				animation-timeline: --tri;
+				animation-range: contain 88% contain 97%;
 			}
 
 			/* La commande se complète à chaque temps, de la couleur de la scène. */
@@ -344,7 +367,9 @@ const cell = (day: TriDay) => (day.packed === day.row ? `r${day.row}` : `r${day.
 			}
 
 			.tri-command > span:nth-child(4) {
-				opacity: 0;
+				animation: auto tri-show linear both;
+				animation-timeline: --tri;
+				animation-range: contain 62% contain 66.4%;
 			}
 
 			.tri-stage {
@@ -354,7 +379,7 @@ const cell = (day: TriDay) => (day.packed === day.row ? `r${day.row}` : `r${day.
 				container: tri / size;
 			}
 
-			/* La vue de la planche, du haut des mois au bas des notes (1 280 × 360), centrée et mise à
+			/* La vue de la planche, du haut des mois au bas de la phrase (1 280 × 360), centrée et mise à
 			   l'échelle de la place qu'elle a ; à 1 280 × 800, elle est à la taille de la planche. */
 			.tri-view {
 				position: absolute;
@@ -419,11 +444,18 @@ const cell = (day: TriDay) => (day.packed === day.row ? `r${day.row}` : `r${day.
 				gap: 4px;
 			}
 
+			/* Une colonne rétrécit vers le nœud de sa semaine, à 153 px sous son haut (y = 179). */
 			.tri-grid > span {
 				position: relative;
 				flex: none;
 				width: 16px;
 				height: 136px;
+				transform-origin: 8px 153px;
+			}
+
+			/* Le trait se trace depuis le nœud précédent. */
+			.tri-week::before {
+				transform-origin: 0 50%;
 			}
 
 			.tri-grid i {
@@ -539,6 +571,22 @@ const cell = (day: TriDay) => (day.packed === day.row ? `r${day.row}` : `r${day.
 			@keyframes tri-pack {
 				to {
 					translate: 0 calc((var(--k) - var(--r)) * 20px);
+				}
+			}
+
+			/* `main` : la colonne des Jours actifs se ramasse dans le nœud de sa semaine, qui grandit jusqu'à
+			   sa taille du socle. Le trait vers la semaine précédente s'allonge par un `scale` par segment
+			   (`tri-draw`, tirée de la vague dans `src/lib/tri.ts`) : `clip-path` ne serait pas joué par le
+			   compositeur. */
+			@keyframes tri-gather {
+				to {
+					scale: 0;
+				}
+			}
+
+			@keyframes tri-grow {
+				from {
+					scale: 0;
 				}
 			}
 		}

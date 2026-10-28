@@ -1,7 +1,8 @@
 // La Frise (spec #98, ticket #100, ADR 0014) : en défilant jusqu'au Parcours, la section s'épingle et un
 // plan incliné, sur le bleu plein cadre, fait glisser le git graph sous HEAD. Le mouvement se vérifie à la
 // main ; ici, ce que la page livre : la piste et sa ligne de temps, une CSS qui ne joue qu'en mouvement non
-// réduit, dans un navigateur qui sait la jouer, sur le compositeur, et un tracé plein qui suit HEAD.
+// réduit, dans un navigateur qui sait la jouer, sur le compositeur, et un tracé plein qui suit HEAD. Puis
+// (#101) la chorégraphie de chaque Commit au passage de HEAD, et le Commit actif en grand.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PROJECTS, attr, blocks, css, elementAt, readFiche, readHome, tags, withoutBlocks } from './helpers/dist.mjs';
@@ -121,6 +122,169 @@ for (const { locale, id } of [
 		assert.ok(bar, 'barre absente');
 		assert.match(bar, /\bfrise-progress\s+linear\b/);
 		assert.equal(bar.match(/\banimation-range\s*:([^;}]*)/)?.[1], player('frise-rail')[0].match(/\banimation-range\s*:([^;}]*)/)?.[1]);
+	});
+
+	/** Les corps des règles qui jouent une animation sur un sélecteur (un Commit, une de ses parties). */
+	const playing = (selector) =>
+		[...styles.matchAll(/([^{}]+)\{([^{}]*\banimation\s*:[^{}]*)\}/g)]
+			.filter(([, selectors]) => selectors.split(',').some((one) => selector.test(one.trim())))
+			.map(([, , body]) => body);
+	/** La plage `contain` d'une règle, en % de la scène : `contain 30%` vaut 30–100 %, `contain contain 40%` 0–40 %. */
+	const rangeOf = (body) => {
+		const [, first, last] = (body.match(/\banimation-range\s*:([^;}]*)/)?.[1] ?? '').split(/\s*contain\s*/);
+		return [parseFloat(first || '0'), parseFloat(last || '100')];
+	};
+	/** L'opacité d'une @keyframes d'opacité à un instant de la scène (en %), sur la plage d'une règle, remplissage `both`. */
+	const opacityAt = (body, at) => {
+		const name = body.match(/\banimation\s*:[^;]*?\b(frise-[\w-]+)/)[1];
+		const steps = [...(keyframesOf(styles).get(name) ?? '').matchAll(/((?:[\d.]+%|from|to)(?:,(?:[\d.]+%|from|to))*)\{opacity:([\d.]+)\}/g)]
+			.flatMap(([, offsets, value]) => offsets.split(',').map((o) => [o === 'from' ? 0 : o === 'to' ? 100 : parseFloat(o), Number(value)]))
+			.sort((a, b) => a[0] - b[0]);
+		const [start, end] = rangeOf(body);
+		const t = Math.min(100, Math.max(0, ((at - start) / (end - start)) * 100));
+		const after = steps.findIndex(([o]) => o > t);
+		if (after === 0) return steps[0][1];
+		if (after < 0) return steps.at(-1)[1];
+		const [[o0, v0], [o1, v1]] = [steps[after - 1], steps[after]];
+		return v0 + ((t - o0) / (o1 - o0)) * (v1 - v0);
+	};
+
+	// Planche D : HEAD atteint chaque Commit à ces pourcentages de la course (colonne « HEAD sur le point »).
+	const PASSAGE = [2.424, 6.061, 27.879, 30.909, 41.576, 46.667, 49.697, 60, 67.879, 75.758, 83.636, 91.515, 99.394];
+
+	test(`${locale} : chaque Commit remplit son point quand HEAD l’atteint, dans l’ordre de la Frise`, () => {
+		const kinds = tags(section, 'li').filter((t) => /\bclass="commit\b/.test(t)).map((t) => attr(t, 'data-kind'));
+		assert.equal(kinds.length, PASSAGE.length);
+		PASSAGE.forEach((passage, i) => {
+			for (const part of ['::?before', '::?after']) {
+				const [dot] = playing(new RegExp(`\\.commit:nth-child\\(${i + 1}\\)${part}$`));
+				assert.ok(dot, `Commit ${i + 1} : ${part} sans animation`);
+				const [start, end] = rangeOf(dot);
+				assert.ok(Math.abs(start - passage) < 0.002, `Commit ${i + 1} : rempli à ${start} %, HEAD y passe à ${passage} %`);
+				assert.equal(end, 100, `Commit ${i + 1} : se vide avant la fin de la scène`);
+				// D'un coup, au passage, et dans les deux sens : rien avant la plage, tenu après.
+				assert.match(dot, /\bstep-start\b/);
+				assert.match(dot, /\bforwards\b/);
+			}
+		});
+		// La fusion reste un anneau : son disque plein n'est pas dessiné dans la scène.
+		const scene = blocks(styles, SUPPORTED).join('');
+		assert.match(scene, /\.commit(?:\[[^\]]*\])*\[data-kind=["']?merge["']?\](?:\[[^\]]*\])*::?after[^{}]*\{[^{}]*\bdisplay:none\b/, 'fusion remplie');
+		assert.ok(kinds.includes('merge'));
+	});
+
+	// Planche D : le poteau a fini de monter 0,18 an après le passage de HEAD (colonne « poteau fini »),
+	// borné à la fin de la scène pour HEAD.
+	const RISEN = [4.606, 8.242, 30.061, 33.091, 43.758, 48.848, 51.879, 62.182, 70.061, 77.939, 85.818, 93.697, 100];
+
+	test(`${locale} : au passage de HEAD, le poteau monte en échelle et soulève l’étiquette`, () => {
+		PASSAGE.forEach((passage, i) => {
+			for (const [part, property] of [
+				['\\.label::?after', 'scale'],
+				['\\.caption', 'translate'],
+			]) {
+				const [rise] = playing(new RegExp(`\\.commit:nth-child\\(${i + 1}\\) ${part}$`));
+				assert.ok(rise, `Commit ${i + 1} : ${part} immobile`);
+				const [start, end] = rangeOf(rise);
+				assert.ok(Math.abs(start - passage) < 0.002, `Commit ${i + 1} : ${part} part à ${start} %, HEAD passe à ${passage} %`);
+				assert.ok(Math.abs(end - RISEN[i]) < 0.002, `Commit ${i + 1} : ${part} finit à ${end} %, attendu ${RISEN[i]} %`);
+				const name = rise.match(/\banimation\s*:[^;]*?\b(frise-[\w-]+)/)[1];
+				assert.match(keyframesOf(styles).get(name), new RegExp(`\\{${property}:`), `${name} n’anime pas ${property}`);
+			}
+		});
+		// Le texte de l'étiquette est au-dessus du poteau, dans l'étiquette redressée.
+		assert.match(section, /<div class="label\b[^>]*><div class="caption\b/);
+	});
+
+	// Planche D, en années de HEAD : à venir, 0,4 − 0,35 × l'écart (0 au-delà) ; actif, de son passage à celui
+	// du suivant, 1 ; passé, 1 − 0,5 × l'écart, jamais sous 0,25.
+	test(`${locale} : l’étiquette est pâle avant HEAD, pleine quand son Commit est actif, puis s’estompe`, () => {
+		const label = (n) => {
+			const rules = playing(new RegExp(`\\.commit:nth-child\\(${n}\\) \\.label$`));
+			assert.equal(rules.length, 1, `Commit ${n} : une animation d’opacité, et une seule`);
+			return rules[0];
+		};
+		const cases = [
+			// [Commit, instant en % de la scène, opacité de la planche]
+			[1, 0, 0.33],
+			[2, 2.424, 0.295],
+			[3, 6.061, 0],
+			[1, 2.424 + 0.001, 1],
+			[1, 6.06, 1],
+			[1, 6.061 + 0.001, 0.85],
+			[1, 27.879, 0.25],
+			[2, 27.879 - 0.001, 1],
+			[2, 27.879 + 0.001, 0.25],
+			[3, 27.879 - 0.03, 0.4],
+			[3, 27.879 + 0.001, 1],
+			[3, 30.909 + 0.001, 0.875],
+			[3, 49.697, 0.25],
+			[8, 66, 1],
+			[8, 67.879 + 0.001, 0.675],
+			[13, 99.39, 0.4],
+			[13, 99.394 + 0.001, 1],
+			[13, 100, 1],
+		];
+		for (const [n, at, expected] of cases) {
+			const value = opacityAt(label(n), at);
+			assert.ok(Math.abs(value - expected) < 0.01, `Commit ${n} à ${at} % : ${value}, attendu ${expected}`);
+		}
+	});
+
+	// Un doublon visuel : ni lu par les lecteurs d'écran, ni repris dans les extraits ; le texte complet reste
+	// une seule fois, dans la liste.
+	test(`${locale} : le Commit actif en grand double la liste sans être lu ni indexé`, () => {
+		const start = section.search(/<div class="frise-active\b/);
+		assert.ok(start >= 0, 'Commit actif absent');
+		const active = elementAt(section, start);
+		const tag = active.match(/^<div\b[^>]*>/)[0];
+		assert.equal(attr(tag, 'aria-hidden'), 'true');
+		assert.match(tag, /\sdata-nosnippet\b/);
+		const list = elementAt(section, section.indexOf('<ol class="frise'));
+		assert.ok(!list.includes('frise-active'), 'doublon dans la liste');
+		const titles = [...list.matchAll(/<h3 class="title\b[^>]*>([^<]*)<\/h3>/g)].map((m) => m[1]);
+		const steps = active.split(/<div class="frise-step\b/).slice(1);
+		assert.equal(steps.length, titles.length, 'un bloc par Commit');
+		const places = [...list.matchAll(/<p class="place\b[^>]*>([^<]*)<\/p>/g)].map((m) => m[1]);
+		titles.forEach((title, i) => {
+			assert.ok(steps[i].includes(`>${title}<`), `bloc ${i + 1} sans « ${title} »`);
+			assert.ok(steps[i].includes(`>${places[i]}<`), `bloc ${i + 1} sans « ${places[i]} »`);
+		});
+		assert.equal(new Set(titles).size, titles.length, 'titre répété dans la liste');
+		assert.match(steps[1], /\blea\b/, 'Branche absente du bloc');
+	});
+
+	test(`${locale} : le Commit actif en grand change exactement quand HEAD passe un Commit, dans les deux sens`, () => {
+		const step = (n) => {
+			const rules = playing(new RegExp(`\\.frise-step:nth-child\\(${n}\\)$`));
+			assert.equal(rules.length, 1, `bloc ${n} : une animation d’opacité, et une seule`);
+			return rules[0];
+		};
+		assert.equal(opacityAt(step(1), 0), 1, 'aucun Commit actif au départ');
+		PASSAGE.forEach((passage, i) => {
+			if (i === 0) return;
+			const [current, previous] = [step(i + 1), step(i)];
+			// Juste avant le passage : le Commit précédent seul ; juste après, le fondu a commencé.
+			assert.equal(opacityAt(current, passage - 0.002), 0, `bloc ${i + 1} avant son passage`);
+			assert.equal(opacityAt(previous, passage - 0.002), 1, `bloc ${i} avant le passage suivant`);
+			assert.ok(opacityAt(current, passage + 0.002) > 0, `bloc ${i + 1} pas encore là au passage`);
+			assert.ok(opacityAt(previous, passage + 0.002) < 1, `bloc ${i} encore plein au passage suivant`);
+			// Le fondu fini, avant le passage d'après.
+			const settled = i + 1 < PASSAGE.length ? PASSAGE[i + 1] - 0.002 : 100;
+			assert.equal(opacityAt(current, settled), 1, `bloc ${i + 1} à ${settled} %`);
+			assert.equal(opacityAt(previous, settled), 0, `bloc ${i} à ${settled} %`);
+		});
+	});
+
+	test(`${locale} : les missions sont masquées à l’écran dans la scène, lues par les lecteurs d’écran, visibles dans le git log`, () => {
+		const list = elementAt(section, section.indexOf('<ol class="frise'));
+		assert.ok(tags(list, 'li').filter((t) => /\bclass="mission\b/.test(t)).length > 0, 'missions absentes de la liste');
+		// Masquées comme `.sr-only` : hors du rendu visible, pas de l'arbre d'accessibilité.
+		const hidden = (body) => ['position:absolute', 'width:1px', 'height:1px', 'overflow:hidden', 'clip-path:inset(50%)'].every((d) => body.split(';').includes(d));
+		const hides = (css) =>
+			[...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].some(([, selector, body]) => /\.missions\b/.test(selector) && (hidden(body) || /\bdisplay:none\b/.test(body)));
+		assert.ok(hides(blocks(styles, SUPPORTED).join('')), 'missions affichées dans la scène');
+		assert.ok(!hides(withoutBlocks(styles, MOTION)), 'missions masquées dans le git log vertical');
 	});
 
 	// Le plan, le tracé, les fondus et la barre sont des dessins : le texte de la Frise reste la liste.

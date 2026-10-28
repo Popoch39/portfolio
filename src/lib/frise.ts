@@ -63,27 +63,52 @@ const PALE = 0.4;
 const NEAR = 0.35;
 const FADE = 0.5;
 const DIM = 0.25;
-function opacity(commit: Commit, next: number, head: number, left = false) {
-	const reached = left ? head > commit.at : head >= commit.at;
-	const passed = left ? head > next : head >= next;
-	if (!reached) return Math.max(0, PALE - NEAR * (commit.at - head));
-	return passed ? Math.max(DIM, 1 - FADE * (head - commit.at)) : 1;
-}
+/** Une courbe d'étiquette : son opacité selon HEAD, et les instants où elle change de pente ou saute. */
+type Curve = (commit: Commit, next: number) => { opacity: (head: number, left?: boolean) => number; turns: number[] };
+
+const planche: Curve = (commit, next) => ({
+	opacity(head, left = false) {
+		const reached = left ? head > commit.at : head >= commit.at;
+		const passed = left ? head > next : head >= next;
+		if (!reached) return Math.max(0, PALE - NEAR * (commit.at - head));
+		return passed ? Math.max(DIM, 1 - FADE * (head - commit.at)) : 1;
+	},
+	turns: [commit.at - PALE / NEAR, commit.at, next, commit.at + (1 - DIM) / FADE],
+});
+
+/**
+ * La courbe resserrée d'un écran étroit ou bas (#102) : sur le plan réduit, une étiquette à venir, posée bas
+ * sur son poteau replié, croiserait celle du Commit actif. Rien n'est donc allumé avant HEAD ; l'étiquette
+ * passée retombe à `DROP` au passage du suivant et s'éteint en `OUT` an, moins que l'écart le plus serré entre
+ * deux Commits (0,25 an) : au plus deux étiquettes allumées, une seule pleine. Le Commit actif en grand porte la lecture.
+ */
+const DROP = 0.3;
+const OUT = 0.15;
+const tight: Curve = (commit, next) => ({
+	opacity(head, left = false) {
+		const reached = left ? head > commit.at : head >= commit.at;
+		const passed = left ? head > next : head >= next;
+		if (!reached) return 0;
+		return passed ? Math.max(0, DROP * (1 - (head - next) / OUT)) : 1;
+	},
+	turns: [commit.at - OUT, commit.at, next, next + OUT],
+});
 
 /**
  * La courbe d'opacité d'une étiquette en une @keyframes, sur la plage où elle change. Un saut est une
  * marche d'un millième de la plage, qui finit sur l'instant exact où HEAD passe.
  */
-function labelKeyframes(name: string, commit: Commit, next: number) {
-	const from = Math.max(COURSE[0], commit.at - PALE / NEAR);
-	const to = Math.min(COURSE[1], Math.max(next, commit.at + (1 - DIM) / FADE));
+function labelKeyframes(name: string, commit: Commit, next: number, curve: Curve) {
+	const { opacity, turns } = curve(commit, next);
+	const from = Math.max(COURSE[0], Math.min(...turns));
+	const to = Math.min(COURSE[1], Math.max(...turns));
 	const offset = (at: number) => ((share(at) - share(from)) / (share(to) - share(from))) * 100;
 	const css = (value: number) => +value.toFixed(3);
-	const steps = [from, commit.at, next, commit.at + (1 - DIM) / FADE, to]
+	const steps = [from, ...turns, to]
 		.filter((at, k, all) => at >= from && at <= to && all.indexOf(at) === k)
 		.sort((a, b) => a - b)
 		.flatMap((at) => {
-			const [before, after] = [opacity(commit, next, at, true), opacity(commit, next, at)];
+			const [before, after] = [opacity(at, true), opacity(at)];
 			const step = `${+offset(at).toFixed(4)}%{opacity:${css(after)}}`;
 			return css(before) === css(after) || at === from ? [step] : [`${+(offset(at) - 0.001).toFixed(4)}%{opacity:${css(before)}}`, step];
 		});
@@ -99,7 +124,7 @@ const choreography = (commit: Commit, i: number) => {
 	const nth = `.frise .commit:nth-child(${i + 1})`;
 	const passage = share(commit.at);
 	const rise = `${timeline};${range(passage, share(commit.at + RISE))}`;
-	const label = labelKeyframes(`frise-label-${i + 1}`, commit, commits[i + 1]?.at ?? Infinity);
+	const label = labelKeyframes(`frise-label-${i + 1}`, commit, commits[i + 1]?.at ?? Infinity, planche);
 	return [
 		label.keyframes,
 		`${nth} .label{animation:auto frise-label-${i + 1} linear both;${timeline};${label.range}}`,
@@ -129,7 +154,20 @@ const activeStep = (commit: Commit, i: number) => {
 };
 
 /**
- * La place de chaque Commit sur le plan, sa chorégraphie, le Commit actif en grand, et les trois translations de la scène. HEAD reste
+ * La scène d'un écran étroit ou bas (#102) : la même requête que la caméra de Career.astro, qui la répète.
+ * Elle reprend l'animation de chaque étiquette, plus loin dans la feuille, avec la courbe resserrée.
+ */
+const COMPACT = '@container frise (width<640px) or (height<560px)';
+const tightLabels = () => {
+	const labels = commits.map((commit, i) => labelKeyframes(`frise-tight-${i + 1}`, commit, commits[i + 1]?.at ?? Infinity, tight));
+	return [
+		...labels.map((label) => label.keyframes),
+		`${COMPACT}{${labels.map((label, i) => `.frise .commit:nth-child(${i + 1}) .label{animation:auto frise-tight-${i + 1} linear both;${timeline};${label.range}}`).join('')}}`,
+	].join('');
+};
+
+/**
+ * La place de chaque Commit sur le plan, sa chorégraphie (resserrée sur un écran étroit ou bas), le Commit actif en grand, et les trois translations de la scène. HEAD reste
  * à l'origine du plan : le rail recule de sa position. L'enveloppe du tracé plein, large de `REVEAL`, finit
  * sur HEAD ; le tracé qu'elle contient recule d'autant, et reste donc à sa place sur le rail.
  */
@@ -138,6 +176,7 @@ export const friseSheet = played(
 		...commits.map((commit, i) => `.frise .commit:nth-child(${i + 1}){left:${xOf(commit.at)}px;top:${yOf(commit)}px}`),
 		...commits.map(choreography),
 		...commits.map(activeStep),
+		tightLabels(),
 		`@keyframes frise-rail{from{translate:${-start}px}to{translate:${-end}px}}`,
 		`@keyframes frise-reveal{from{translate:${start - REVEAL}px}to{translate:${end - REVEAL}px}}`,
 		`@keyframes frise-built{from{translate:${REVEAL - start}px}to{translate:${REVEAL - end}px}}`,

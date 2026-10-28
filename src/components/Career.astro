@@ -297,7 +297,7 @@ const branchOf = (commit: Commit) => (commit.kind === 'head' ? `HEAD → ${commi
 				top: 0;
 				height: 100dvh;
 				overflow: clip;
-				container-type: size;
+				container: frise / size;
 				background: var(--frise-blue);
 			}
 
@@ -622,6 +622,53 @@ const branchOf = (commit: Commit) => (commit.kind === 'head' ? `HEAD → ${commi
 			@keyframes frise-on {
 				to {
 					opacity: 1;
+				}
+			}
+
+			/* Un écran étroit ou bas (#102), au seuil de la courbe resserrée de `src/lib/frise.ts` : seule
+			   l'étiquette de HEAD y reste allumée, la vue peut donc grossir, la largeur n'y comptant que pour
+			   480 px. */
+			@container frise (width < 640px) or (height < 560px) {
+				.frise-view {
+					scale: min(tan(atan2(100cqh, 720px)), tan(atan2(100cqw, 480px)));
+				}
+
+				/* Sur un écran bas, l'en-tête tient sur une ligne et le Commit actif descend vers la barre
+				   d'état : l'étiquette de HEAD, debout sur son poteau, passe entre les deux, la hauteur ne
+				   comptant que pour 600 px. Le plan s'efface sous le Commit actif, que le tracé traverserait. */
+				@container frise (height < 560px) {
+					.frise-view {
+						scale: min(tan(atan2(100cqh, 600px)), tan(atan2(100cqw, 480px)));
+					}
+
+					.frise-fade {
+						background:
+							linear-gradient(to top, var(--frise-blue) 24%, transparent 40%),
+							linear-gradient(to top right, transparent 55%, var(--frise-blue) 88%),
+							linear-gradient(to right, var(--frise-blue), transparent 18%);
+					}
+
+					.frise-scene > .container {
+						--section-title: clamp(28px, 10cqh, 52px);
+						padding-top: 16px;
+					}
+
+					.frise-scene > .container > :global(.section-header .number) {
+						grid-column: span 1;
+					}
+
+					.frise-scene > .container > :global(.section-header .title) {
+						grid-column: span 8;
+					}
+
+					.frise-scene > .container > :global(.section-header .note) {
+						grid-column: span 3;
+						text-align: right;
+					}
+
+					.frise-active {
+						bottom: calc(var(--status-height) + 16px);
+					}
 				}
 			}
 		}

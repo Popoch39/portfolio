@@ -1,50 +1,87 @@
 ---
 import SectionHeader from './SectionHeader.astro';
-import { career, careerSummary, education, sections } from '../data/profile';
-import { formats, localeOf, ui } from '../lib/i18n';
+import { careerSummary, commits, sections, type Commit } from '../data/profile';
+import { localeOf } from '../lib/i18n';
+import { REVEAL, friseGraph, friseSheet } from '../lib/frise';
 
 const locale = localeOf(Astro.currentLocale);
 const { id, label } = sections.career;
+
+const branchOf = (commit: Commit) => (commit.kind === 'head' ? `HEAD → ${commit.branch}` : commit.branch);
 ---
 
+<style is:inline set:html={friseSheet}></style>
+{/* La section s'étend sur toute la page : le bleu de la scène est plein cadre. Son contenu garde la
+    colonne de la page. */}
 <section id={id[locale]} class="career">
-	<SectionHeader number={2} title={label[locale]} note={careerSummary[locale]} />
-	<div class="grid steps">
-		{
-			career.map((p) => (
-				<article class:list={['step', { current: p.current }]}>
-					<span class="year" aria-hidden="true">{p.year}</span>
-					<span class="mono when">{p.period[locale]} · {p.city}</span>
-					<h3 class="company">{p.company}</h3>
-					<p class="role">{p.role[locale]}</p>
-					<ul class="missions">
-						{p.missions.map((m) => (
-							<li class="mission">
-								<span class="dash" aria-hidden="true">—</span>
-								<span>{m[locale]}</span>
-							</li>
-						))}
-					</ul>
-				</article>
-			))
-		}
-	</div>
-	<div class="grid education">
-		<h3 class="mono education-title">{ui.education[locale]}</h3>
-		<ol class="degrees">
+	{/* La piste se déclare au repli de Firefox (`dive.ts`) : sa ligne de temps et le préfixe de ses
+	    animations ; et à la Traîne (`trail.ts`, ADR 0012), la scène étant collée par la CSS. */}
+	<span class="frise-track" aria-hidden="true" data-timeline="--frise" data-prefix="frise-" data-trail></span>
+	<div class="frise-scene">
+		<div class="container">
+			<SectionHeader number={2} title={label[locale]} note={careerSummary[locale]} />
+			{/* Le plan incliné : la vue, qui le met à l'échelle de l'écran ; le plan, posé une fois pour
+			    toutes ; le rail, qui glisse sous HEAD. Hors de la scène, ce ne sont que des boîtes. */}
+			<div class="frise-view">
+				<div class="frise-plane">
+					<div class="frise-rail">
+						<span class="frise-grid" aria-hidden="true"></span>
+						<span class="frise-dotted" aria-hidden="true">
+							<svg width={REVEAL} height="400" viewBox={`0 -300 ${REVEAL} 400`}><path d={friseGraph}></path></svg>
+						</span>
+						<span class="frise-reveal" aria-hidden="true">
+							<span class="frise-built">
+								<svg width={REVEAL} height="400" viewBox={`0 -300 ${REVEAL} 400`}><path d={friseGraph}></path></svg>
+							</span>
+						</span>
+						{/* La Frise en git log vertical. Chaque Commit porte sa Branche, son genre et sa position ;
+						    dans la scène, il est l'étiquette posée sur le plan. */}
+						<ol class="frise">
+							{
+								commits.map((commit) => (
+									<li class="commit" data-branch={commit.branch} data-kind={commit.kind} data-at={commit.at}>
+										<div class="label">
+											<div class="caption">
+												<p class="mono when">
+													{commit.date[locale]}
+													<span class="branch"> · {branchOf(commit)}</span>
+												</p>
+												<h3 class="title">{commit.title[locale]}</h3>
+												<p class="place">{commit.place[locale]}</p>
+											</div>
+										</div>
+										{commit.missions && (
+											<ul class="missions">
+												{commit.missions.map((m) => (
+													<li class="mission">{m[locale]}</li>
+												))}
+											</ul>
+										)}
+									</li>
+								))
+							}
+						</ol>
+					</div>
+				</div>
+			</div>
+		</div>
+		<span class="frise-fade" aria-hidden="true"></span>
+		{/* Le Commit actif, en grand : un bloc par Commit, empilés, chacun révélé quand HEAD atteint le sien.
+		    Il double la liste : ni lu, ni repris dans les extraits de recherche. */}
+		<div class="frise-active" aria-hidden="true" data-nosnippet>
 			{
-				education.map((f) => (
-					<li class="degree">
-						{/* Les `{' '}` font lire « 2018 Baccalauréat … » et non « 2018Baccalauréat… ». Hors du
-						    français, l'équivalent est suivi du nom d'origine, en italique comme tout terme
-						    étranger, et lu en français. */}
-						<span class="mono degree-when">{f.period}</span>{' '}
-						<span class="degree-title">{f.degree[locale]}{locale !== 'fr' && <> — <i lang={formats.fr.lang}>{f.degree.fr}</i></>}</span>{' '}
-						<span class="degree-school">{f.school}</span>
-					</li>
+				commits.map((commit) => (
+					<div class="frise-step">
+						<p class="mono frise-when">
+							{commit.date[locale]} · {branchOf(commit)}
+						</p>
+						<p class="frise-title">{commit.title[locale]}</p>
+						<p class="frise-place">{commit.place[locale]}</p>
+					</div>
 				))
 			}
-		</ol>
+		</div>
+		<span class="frise-progress" aria-hidden="true"><span class="frise-bar"></span></span>
 	</div>
 </section>
 
@@ -53,45 +90,131 @@ const { id, label } = sections.career;
 		padding-top: clamp(64px, 8vw, 120px);
 	}
 
-	.steps {
-		row-gap: 48px;
-		padding-top: 40px;
+	.frise-track,
+	.frise-grid,
+	.frise-dotted,
+	.frise-reveal,
+	.frise-fade,
+	.frise-active,
+	.frise-progress {
+		display: none;
 	}
 
-	.step {
+	/* Le rail de `main` passe par le centre des points de `main` ; les Branches courent à côté,
+	   décalées de --branch. --dot-y est le centre des points, au milieu de la ligne de date. */
+	.frise {
+		--rail: 2px;
+		--dot: 12px;
+		--dot-y: 9px;
+		--branch: 20px;
+		--main-x: calc((var(--dot) - var(--rail)) / 2);
+		margin: 40px 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.commit {
+		--x: 0px;
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
+		padding: 0 0 36px calc(var(--x) + var(--dot) + 22px);
+		background: linear-gradient(var(--ink), var(--ink)) var(--main-x) 0 / var(--rail) 100% no-repeat;
+	}
+
+	.commit:not([data-branch='main']) {
+		--x: var(--branch);
+	}
+
+	/* `main` part du premier point et s'arrête à HEAD. */
+	.commit:first-child {
+		background-position-y: var(--dot-y);
+	}
+
+	.commit[data-kind='head'] {
+		padding-bottom: 0;
+		background-size: var(--rail) var(--dot-y);
+	}
+
+	.commit::before {
+		content: '';
+		position: absolute;
+		z-index: 1;
+		top: calc(var(--dot-y) - var(--dot) / 2);
+		left: var(--x);
+		width: var(--dot);
+		height: var(--dot);
+		border: var(--rail) solid var(--ink);
+		border-radius: 50%;
+		background: var(--ink);
+	}
+
+	/* Une fusion reste un anneau, comme sur la planche ; HEAD prend l'accent. */
+	.commit[data-kind='merge']::before {
+		background: var(--bg);
+	}
+
+	.commit[data-kind='head']::before {
+		border-color: var(--accent);
+		background: var(--accent);
+	}
+
+	/* Le trait d'une Branche : il bifurque de `main` en haut de son premier Commit, et revient sur
+	   `main` au point de la fusion. */
+	.commit:not([data-branch='main'])::after,
+	.commit[data-kind='merge']::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: var(--main-x);
+		width: calc(var(--branch) + var(--rail));
+		border-right: var(--rail) solid var(--ink);
+	}
+
+	.commit:not([data-branch='main'])::after {
+		bottom: 0;
+	}
+
+	.commit[data-kind='branch']::after {
+		border-top: var(--rail) solid var(--ink);
+		border-top-right-radius: 10px;
+	}
+
+	.commit[data-kind='merge']::after {
+		height: calc(var(--dot-y) + var(--rail) / 2);
+		border-bottom: var(--rail) solid var(--ink);
+		border-bottom-right-radius: 10px;
+	}
+
+	.label {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
 		min-width: 0;
-		padding-top: 18px;
-		border-top: 4px solid var(--ink);
 	}
 
-	.current {
-		border-top-color: var(--accent);
-	}
-
-	.year {
-		font-size: clamp(64px, 7.4vw, 108px);
-		line-height: 0.82;
-		font-weight: 800;
-		font-stretch: 62%;
+	/* Une enveloppe pour la scène, qui y fait monter le texte avec le poteau. */
+	.caption {
+		display: contents;
 	}
 
 	.when {
+		margin: 0;
 		font-size: 12px;
+		line-height: calc(var(--dot-y) * 2);
 		color: var(--muted);
 	}
 
-	.company {
+	.title {
 		margin: 0;
-		font-size: 26px;
+		font-size: 22px;
 		line-height: 1.15;
 		font-weight: 700;
-		letter-spacing: -0.015em;
+		letter-spacing: -0.01em;
 	}
 
-	.role {
+	.place {
 		margin: 0;
 		font-size: 15px;
 		color: var(--muted);
@@ -100,8 +223,8 @@ const { id, label } = sections.career;
 	.missions {
 		display: flex;
 		flex-direction: column;
-		gap: 9px;
-		margin: 6px 0 0;
+		gap: 8px;
+		margin: 0;
 		padding: 0;
 		list-style: none;
 		font-size: 15px;
@@ -113,76 +236,442 @@ const { id, label } = sections.career;
 		gap: 10px;
 	}
 
-	.dash {
+	/* Le tiret est un ornement : texte de remplacement vide pour les lecteurs d'écran. */
+	.mission::before {
+		content: '—' / '';
 		color: var(--muted);
 	}
 
-	.education {
-		row-gap: 14px;
-		margin-top: 72px;
-	}
-
-	.education-title {
-		margin: 0;
-		padding-top: 14px;
-		font-size: 13px;
-		font-weight: 400;
-		color: var(--muted);
-	}
-
-	.degrees {
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-
-	.degree {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
-		gap: 4px 20px;
-		padding: 14px 0;
-		border-top: 1px solid var(--rule);
-		font-size: 17px;
-	}
-
-	.degree-when {
-		flex-shrink: 0;
-		width: 110px;
-		font-size: 13px;
-		color: var(--muted);
-	}
-
-	.degree-title {
-		flex: 1 1 260px;
-		font-weight: 600;
-	}
-
-	.degree-school {
-		color: var(--muted);
-	}
-
-	/* Tablette : le poste actuel en pleine largeur, les deux précédents côte à côte ;
-	   Formation déjà en 3/9. */
-	@media (min-width: 600px) {
-		.step:not(.current) {
-			grid-column: span 6;
-		}
-
-		.education-title {
-			grid-column: span 3;
-		}
-
-		.degrees {
-			grid-column: span 9;
-		}
-	}
-
-	/* Laptop et au-delà : les trois étapes en 4/4/4, comme la maquette. */
+	/* Laptop et au-delà : les missions à droite de leur Commit, sur la ligne du titre. */
 	@media (min-width: 1024px) {
-		.step,
-		.step:not(.current) {
-			grid-column: span 4;
+		.commit {
+			display: grid;
+			grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+			column-gap: var(--gutter);
+		}
+
+		.missions {
+			padding-top: calc(var(--dot-y) * 2 + 4px);
+		}
+	}
+
+	/* La Frise jouée (ADR 0014) : la section s'épingle le temps de quatre écrans de défilement, et le rail
+	   glisse sous HEAD, du premier Commit au dernier. La place de chaque Commit et les translations sont
+	   tirées des Commits dans `src/lib/frise.ts`. Chaque raccourci `animation` porte la durée `auto` :
+	   sans elle, le minifieur replie `animation-timeline` dans le raccourci, que Chrome refuse. */
+	@media (prefers-reduced-motion: no-preference) {
+		@supports (animation-timeline: view()) and (animation-range: entry) and (timeline-scope: --frise) {
+			/* Toute la page voit la ligne de temps. Sur la racine : `body` porte déjà celle de la Plongée. */
+			:global(html) {
+				timeline-scope: --frise;
+			}
+
+			/* Dans le flux, la scène haute d'un écran, puis la course de l'épingle : la scène collante ne
+			   sort pas de la boîte de contenu de son parent. Environ 30svh par Commit. */
+			.career {
+				--frise-length: 400svh;
+			}
+
+			.career::after {
+				content: '';
+				display: block;
+				height: var(--frise-length);
+			}
+
+			/* La ligne de temps : un repère posé en haut de la scène et haut de la course et d'un écran, dont
+			   la plage `contain` est exactement le temps où la scène reste collée. Hors de l'épingle : sous
+			   elle, la ligne de temps s'allongerait de sa course. */
+			.frise-track {
+				display: block;
+				position: absolute;
+				width: 1px;
+				height: calc(var(--frise-length) + 100dvh);
+				view-timeline: --frise block;
+				view-timeline-inset: 0;
+			}
+
+			/* Le bleu plein cadre ; le plan qui en déborde ne fait pas défiler la page en largeur. */
+			.frise-scene {
+				--frise-blue: var(--accent);
+				position: sticky;
+				top: 0;
+				height: 100dvh;
+				overflow: clip;
+				container: frise / size;
+				background: var(--frise-blue);
+			}
+
+			/* L'encre passe au blanc sur le bleu, l'en-tête de section compris. */
+			.frise-scene > .container {
+				--ink: #fff;
+				--bg: var(--frise-blue);
+				--muted: #c5caff;
+				--accent: #fff;
+				padding-top: 36px;
+				color: var(--ink);
+			}
+
+			.frise-scene > .container > :global(.section-header) {
+				position: relative;
+				z-index: 2;
+			}
+
+			/* La vue de la planche (1 280 × 720) : HEAD en (520, 430), la perspective de 1 100 px vue de
+			   (560, 240), le tout à l'échelle de l'écran. Un écran étroit garde des étiquettes lisibles : sa
+			   largeur compte pour 640 px. */
+			.frise-view {
+				position: absolute;
+				left: 40.625%;
+				top: 59.72%;
+				width: 0;
+				height: 0;
+				perspective: 1100px;
+				perspective-origin: 40px -190px;
+				scale: min(tan(atan2(100cqh, 720px)), tan(atan2(100cqw, 640px)));
+			}
+
+			.frise-plane,
+			.frise-rail,
+			.frise {
+				position: absolute;
+				top: 0;
+				left: 0;
+				transform-style: preserve-3d;
+			}
+
+			.frise-plane {
+				transform: rotateX(58deg) rotateZ(-22deg);
+			}
+
+			.frise-rail {
+				animation: auto frise-rail linear both;
+				animation-timeline: --frise;
+				animation-range: contain 0% contain 100%;
+			}
+
+			/* Un carreau d'un quart d'an, qui glisse avec le rail. */
+			.frise-grid {
+				display: block;
+				position: absolute;
+				left: -200px;
+				top: -620px;
+				width: 4400px;
+				height: 900px;
+				background-image:
+					linear-gradient(rgb(255 255 255 / 0.13) 1px, transparent 1px),
+					linear-gradient(90deg, rgb(255 255 255 / 0.13) 1px, transparent 1px);
+				background-size: 110px 110px;
+			}
+
+			/* Le tracé, en coordonnées du plan. Le pointillé annonce la suite ; le plein est révélé derrière
+			   HEAD par une enveloppe qui avance pendant que le tracé qu'elle contient recule d'autant :
+			   `clip-path` ne serait pas joué par le compositeur. */
+			.frise-dotted,
+			.frise-reveal {
+				display: block;
+				position: absolute;
+				left: 0;
+				top: -300px;
+				fill: none;
+			}
+
+			.frise-dotted {
+				stroke: rgb(255 255 255 / 0.35);
+				stroke-width: 2;
+				stroke-dasharray: 3 8;
+			}
+
+			.frise-reveal {
+				overflow: clip;
+				stroke: #fff;
+				stroke-width: 4;
+				stroke-linecap: round;
+				animation: auto frise-reveal linear both;
+				animation-timeline: --frise;
+				animation-range: contain 0% contain 100%;
+			}
+
+			.frise-built {
+				display: block;
+				animation: auto frise-built linear both;
+				animation-timeline: --frise;
+				animation-range: contain 0% contain 100%;
+			}
+
+			.frise-dotted svg,
+			.frise-built svg {
+				display: block;
+			}
+
+			/* Chaque Commit est un point du plan, à sa place (`src/lib/frise.ts`) : son point couché dans le
+			   plan, son étiquette redressée face à l'écran. */
+			.frise {
+				margin: 0;
+			}
+
+			.frise .commit {
+				--pole: 138px;
+				display: block;
+				position: absolute;
+				width: 0;
+				height: 0;
+				padding: 0;
+				background: none;
+				transform-style: preserve-3d;
+			}
+
+			.frise .commit:not([data-branch='main']) {
+				--pole: 88px;
+			}
+
+			/* Le point, couché dans le plan : un anneau pâle tant que HEAD ne l'a pas atteint, puis plein, sauf
+			   la fusion, qui reste un anneau. Le disque plein est une couche à part : seule son opacité change
+			   (`src/lib/frise.ts`). */
+			.frise .commit::before,
+			.frise .commit::after {
+				content: '';
+				position: absolute;
+				top: -9px;
+				left: -9px;
+				width: 18px;
+				height: 18px;
+				border: 3px solid var(--ink);
+				border-radius: 50%;
+			}
+
+			/* Sous le disque plein, qui le couvre une fois rempli. */
+			.frise .commit::before {
+				z-index: auto;
+				background: var(--bg);
+				opacity: 0.4;
+			}
+
+			.frise .commit::after {
+				bottom: auto;
+				background: var(--ink);
+				opacity: 0;
+			}
+
+			.frise .commit[data-kind='merge']::after {
+				display: none;
+			}
+
+			/* L'étiquette, ancrée par le bas au point, tourne de l'inverse exact du plan. Son poteau la tient
+			   au-dessus du point ; un filet borde son texte. Avant le passage de HEAD, le poteau est ramené à
+			   18 px par son échelle, et le texte descend d'autant : seuls `scale` et `translate` bougent
+			   (`src/lib/frise.ts`). */
+			.frise .label {
+				position: absolute;
+				left: 0;
+				bottom: 0;
+				width: 230px;
+				transform-origin: 0 100%;
+				transform: rotateZ(22deg) rotateX(-58deg);
+			}
+
+			.frise .caption {
+				display: flex;
+				flex-direction: column;
+				gap: 4px;
+				position: relative;
+				padding: 0 0 calc(var(--pole) + 10px) 10px;
+			}
+
+			.frise .caption::before,
+			.frise .label::after {
+				content: '';
+				position: absolute;
+				left: 0;
+				width: 1px;
+				background: var(--ink);
+			}
+
+			.frise .caption::before {
+				top: 0;
+				bottom: calc(var(--pole) + 10px);
+			}
+
+			.frise .label::after {
+				bottom: 0;
+				height: var(--pole);
+				transform-origin: 50% 100%;
+			}
+
+			.frise .when {
+				font-size: 11px;
+				line-height: 1.3;
+			}
+
+			.frise .title {
+				font-size: 19px;
+			}
+
+			/* Sur le plan, la date et le titre seuls ; la Branche, le lieu et les missions restent lus par
+			   les lecteurs d'écran et indexés. */
+			.frise .branch,
+			.frise .place,
+			.frise .missions {
+				position: absolute;
+				width: 1px;
+				height: 1px;
+				overflow: hidden;
+				clip-path: inset(50%);
+				white-space: nowrap;
+			}
+
+			/* Les fondus de la planche : la suite, au loin, s'efface en haut à droite ; le passé, à gauche. */
+			.frise-fade {
+				display: block;
+				position: absolute;
+				inset: 0;
+				z-index: 1;
+				pointer-events: none;
+				background:
+					linear-gradient(to top right, transparent 55%, var(--frise-blue) 88%),
+					linear-gradient(to right, var(--frise-blue), transparent 18%);
+			}
+
+			/* Le Commit actif, en bas à gauche, dans la colonne du contenu et au-dessus de la barre de
+			   progression : ses blocs se superposent, et seule leur opacité change (`src/lib/frise.ts`). */
+			.frise-active {
+				display: grid;
+				position: absolute;
+				z-index: 2;
+				left: calc(max(0px, (100% - var(--container)) / 2) + var(--page-margin));
+				bottom: calc(var(--status-height) + 40px);
+				width: min(520px, 100% - 2 * var(--page-margin));
+				color: #fff;
+				pointer-events: none;
+			}
+
+			.frise-step {
+				display: flex;
+				flex-direction: column;
+				justify-content: flex-end;
+				gap: 8px;
+				grid-area: 1 / 1;
+			}
+
+			.frise-step > p {
+				margin: 0;
+			}
+
+			/* La date et le lieu suivent le titre à l'échelle de la scène, sans passer sous un corps lisible. */
+			.frise-when {
+				font-size: max(11px, min(12px, 1.66cqh, 2.45cqw));
+				color: #c5caff;
+			}
+
+			.frise-title {
+				font-size: min(44px, 6.1cqh, 9cqw);
+				line-height: 1;
+				font-weight: 800;
+				font-stretch: 75%;
+				letter-spacing: -0.015em;
+			}
+
+			.frise-place {
+				font-size: max(12px, min(15px, 2.08cqh, 3.07cqw));
+				color: var(--accent-wash);
+			}
+
+			/* La progression dans la Frise, au-dessus de la barre d'état. */
+			.frise-progress {
+				display: block;
+				position: absolute;
+				z-index: 2;
+				right: var(--page-margin);
+				bottom: calc(var(--status-height) + 24px);
+				width: min(220px, 100% - 2 * var(--page-margin));
+				height: 2px;
+				background: rgb(255 255 255 / 0.3);
+			}
+
+			.frise-bar {
+				display: block;
+				height: 100%;
+				background: #fff;
+				transform-origin: 0 50%;
+				animation: auto frise-progress linear both;
+				animation-timeline: --frise;
+				animation-range: contain 0% contain 100%;
+			}
+
+			@keyframes frise-progress {
+				from {
+					scale: 0 1;
+				}
+				to {
+					scale: 1;
+				}
+			}
+
+			@keyframes frise-pole {
+				from {
+					scale: 1 tan(atan2(18px, var(--pole)));
+				}
+			}
+
+			@keyframes frise-lift {
+				from {
+					translate: 0 calc(var(--pole) - 18px);
+				}
+			}
+
+			/* Une étape d'un coup, depuis l'opacité de l'élément : Chromium ne compose pas une animation dont
+			   les étapes sont toutes égales. */
+			@keyframes frise-on {
+				to {
+					opacity: 1;
+				}
+			}
+
+			/* Un écran étroit ou bas (#102), au seuil de la courbe resserrée de `src/lib/frise.ts` : seule
+			   l'étiquette de HEAD y reste allumée, la vue peut donc grossir, la largeur n'y comptant que pour
+			   480 px. */
+			@container frise (width < 640px) or (height < 560px) {
+				.frise-view {
+					scale: min(tan(atan2(100cqh, 720px)), tan(atan2(100cqw, 480px)));
+				}
+
+				/* Sur un écran bas, l'en-tête tient sur une ligne et le Commit actif descend vers la barre
+				   d'état : l'étiquette de HEAD, debout sur son poteau, passe entre les deux, la hauteur ne
+				   comptant que pour 600 px. Le plan s'efface sous le Commit actif, que le tracé traverserait. */
+				@container frise (height < 560px) {
+					.frise-view {
+						scale: min(tan(atan2(100cqh, 600px)), tan(atan2(100cqw, 480px)));
+					}
+
+					.frise-fade {
+						background:
+							linear-gradient(to top, var(--frise-blue) 24%, transparent 40%),
+							linear-gradient(to top right, transparent 55%, var(--frise-blue) 88%),
+							linear-gradient(to right, var(--frise-blue), transparent 18%);
+					}
+
+					.frise-scene > .container {
+						--section-title: clamp(28px, 10cqh, 52px);
+						padding-top: 16px;
+					}
+
+					.frise-scene > .container > :global(.section-header .number) {
+						grid-column: span 1;
+					}
+
+					.frise-scene > .container > :global(.section-header .title) {
+						grid-column: span 8;
+					}
+
+					.frise-scene > .container > :global(.section-header .note) {
+						grid-column: span 3;
+						text-align: right;
+					}
+
+					.frise-active {
+						bottom: calc(var(--status-height) + 16px);
+					}
+				}
+			}
 		}
 	}
 </style>

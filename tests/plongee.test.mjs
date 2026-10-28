@@ -44,8 +44,11 @@ const modeOf = (footer) => elementAt(footer, footer.search(/<span class="seg mod
 const moduleOf = (html) => attr(tags(html, 'script').find((t) => attr(t, 'type') === 'module') ?? '', 'src') ?? '';
 /** Les morceaux qu'un code importe à la demande (`import("./y.js")`), en chemins servis. */
 const onDemand = (code) => [...code.matchAll(/import\(\s*["'`]\.\/([\w.-]+\.js)["'`]\s*\)/g)].map((m) => `/_astro/${m[1]}`);
+/** La Traîne (ADR 0012) : elle teste aussi les lignes de temps, pour se taire sous le repli. */
+const isTrail = (path) => readDist(path.slice(1)).includes('[data-trail]');
 /** Le repli de Firefox : ce que le module de la page importe à la demande pour jouer les scènes sans ligne de temps. */
-const fallbacksOf = (html) => onDemand(moduleGraph(moduleOf(html)).code).filter((path) => readDist(path.slice(1)).includes('animation-timeline'));
+const fallbacksOf = (html) =>
+	onDemand(moduleGraph(moduleOf(html)).code).filter((path) => readDist(path.slice(1)).includes('animation-timeline') && !isTrail(path));
 /** Les scènes que la page déclare au repli : la balise de chaque piste, sa ligne de temps et le préfixe de ses animations. */
 const scenesOf = (html) =>
 	(html.match(/<[a-z]+\b[^>]*\sdata-timeline=[^>]*>/g) ?? []).map((tag) => ({ tag, timeline: attr(tag, 'data-timeline'), prefix: attr(tag, 'data-prefix') }));
@@ -255,18 +258,23 @@ for (const { locale, projects } of [
 		assert.deepEqual(tested.map(bare), [bare(condition)]);
 	});
 
-	// Le repli joue les scènes que la page lui déclare : la Plongée est la seule, et sa piste est bien
-	// l'élément qui porte sa ligne de temps dans la CSS.
-	test(`${locale} : la Plongée est la seule scène déclarée au repli, sur sa piste`, () => {
+	// Le repli joue les scènes que la page lui déclare : la Plongée, puis la Frise (#100), et la piste de
+	// chacune est bien l'élément qui porte sa ligne de temps dans la CSS.
+	test(`${locale} : la Plongée et la Frise sont les scènes déclarées au repli, chacune sur sa piste`, () => {
 		const scenes = scenesOf(html);
 		assert.deepEqual(
 			scenes.map(({ timeline, prefix }) => ({ timeline, prefix })),
-			[{ timeline: '--dive', prefix: 'dive-' }],
+			[
+				{ timeline: '--dive', prefix: 'dive-' },
+				{ timeline: '--frise', prefix: 'frise-' },
+			],
 		);
-		const classes = (attr(scenes[0].tag, 'class') ?? '').split(/\s+/);
-		const tracks = [...styles.matchAll(/([^{}]+)\{[^{}]*\bview-timeline\s*:\s*--dive\b[^{}]*\}/g)].map(([, selector]) => selector);
-		assert.ok(tracks.length > 0, 'ligne de temps de la Plongée absente');
-		for (const selector of tracks) assert.ok(classes.some((name) => new RegExp(`\\.${name}(?![\\w-])`).test(selector)), `piste déclarée hors de ${selector.trim()}`);
+		for (const { tag, timeline } of scenes) {
+			const classes = (attr(tag, 'class') ?? '').split(/\s+/);
+			const tracks = [...styles.matchAll(new RegExp(`([^{}]+)\\{[^{}]*\\bview-timeline\\s*:\\s*${timeline}\\b[^{}]*\\}`, 'g'))].map(([, selector]) => selector);
+			assert.ok(tracks.length > 0, `ligne de temps ${timeline} absente`);
+			for (const selector of tracks) assert.ok(classes.some((name) => new RegExp(`\\.${name}(?![\\w-])`).test(selector)), `piste déclarée hors de ${selector.trim()}`);
+		}
 	});
 
 	// Le repli prend toutes les animations de la scène par leur préfixe, sans liste à tenir, la CSS
@@ -285,11 +293,11 @@ for (const { locale, projects } of [
 /** Les modules que les morceaux du site demandent, en chemins servis ; le repli n'est pas exécuté. */
 const requested = [];
 const fallbackFiles = new Set(fallbacksOf(readHome()).map((path) => path.slice('/_astro/'.length)));
-// La Traîne de la Visite (ADR 0012), demandée par le même module, n'est pas exécutée : elle lirait le
-// document du faux navigateur d'un test suivant.
+// La Traîne (ADR 0012), demandée par le même module, n'est pas exécutée : elle lirait le document du
+// faux navigateur d'un test suivant.
 const trailFiles = new Set(
 	onDemand(moduleGraph(moduleOf(readHome())).code)
-		.filter((path) => readDist(path.slice(1)).includes('visit-track'))
+		.filter(isTrail)
 		.map((path) => path.slice('/_astro/'.length)),
 );
 registerHooks({
@@ -365,9 +373,9 @@ const homeStyles = (extra = '') => elements(readHome(), 'style').map((style) => 
 class FakeAnimation {
 	playState = 'paused';
 	currentTime = null;
-	constructor(animationName, target) {
+	constructor(animationName, target, pseudoElement = null) {
 		this.animationName = animationName;
-		this.effect = { target, pseudoElement: null, updateTiming: (timing) => (this.timing = timing) };
+		this.effect = { target, pseudoElement, updateTiming: (timing) => (this.timing = timing) };
 	}
 }
 
@@ -402,12 +410,14 @@ async function runFallback({ styles, scenes, animations = [], scrollY = 0 }) {
 		scrollTo: (_, y) => scrolledTo.push(y),
 		addEventListener: (type, listener) => (listeners[type] ??= []).push(listener),
 		requestAnimationFrame: (callback) => frames.push(callback),
-		// Une piste calcule sa marge de défilement (`calc(20*36px)`), un élément animé donne ses animations.
-		getComputedStyle: (element) => {
+		// Une piste calcule sa marge de défilement (`calc(20*36px)`), un élément animé, ou l'un de ses
+		// pseudo-éléments (`::before`), donne ses animations.
+		getComputedStyle: (element, pseudoElement) => {
 			const [, share, unit] = element.style?.scrollMarginTop?.match(/^calc\(([\d.]+)\*([\d.]+)px\)$/) ?? [];
+			const { names, ranges } = pseudoElement ? element[pseudoElement] : element;
 			return element.style
 				? { scrollMarginTop: `${share * unit}px` }
-				: { animationName: element.names.join(', '), getPropertyValue: (name) => (name === '--animation-range' ? element.ranges : '') };
+				: { animationName: names.join(', '), getPropertyValue: (name) => (name === '--animation-range' ? ranges : '') };
 		},
 		CSSAnimation: FakeAnimation,
 		document: {
@@ -428,17 +438,18 @@ async function runFallback({ styles, scenes, animations = [], scrollY = 0 }) {
 	};
 }
 
-// Le repli réécrit la CSS de la scène pour la jouer sans ligne de temps ; le reste de la page, même une
-// animation de durée `auto` ou une autre `@supports` sur les lignes de temps, n'est pas à lui.
-test('le repli ne réécrit que la CSS de la Plongée', async () => {
-	const scene = /@supports[^{]*--dive/;
+// Le repli réécrit la CSS des scènes déclarées pour les jouer sans ligne de temps ; le reste de la page,
+// même une animation de durée `auto` ou une autre `@supports` sur les lignes de temps, n'est pas à lui.
+test('le repli ne réécrit que la CSS des scènes déclarées', async () => {
+	const scene = /@supports[^{]*--(?:dive|frise)\b/;
 	const before = homeStyles(FOREIGN);
-	assert.equal(before.filter((styles) => scene.test(styles)).length, 1, 'CSS de la scène introuvable');
-	// Juste assez de navigateur pour que le repli s'exécute : la scène déclarée par la page, pas
+	assert.equal(before.filter((styles) => /@supports[^{]*--dive/.test(styles)).length, 1, 'CSS de la Plongée introuvable');
+	assert.ok(before.some((styles) => /@supports[^{]*--frise\b/.test(styles)), 'CSS de la Frise introuvable');
+	// Juste assez de navigateur pour que le repli s'exécute : les scènes déclarées par la page, pas
 	// d'animation à régler, lecteur en haut.
 	const page = await runFallback({ styles: before, scenes: scenesOf(readHome()) });
 	for (const [i, textContent] of page.styles().entries()) {
-		assert.equal(withoutBlocks(textContent, scene), withoutBlocks(before[i], scene), 'CSS hors de la Plongée réécrite');
+		assert.equal(withoutBlocks(textContent, scene), withoutBlocks(before[i], scene), 'CSS hors des scènes réécrite');
 		for (const block of blocks(textContent, scene)) assert.doesNotMatch(block, /\banimation-timeline\s*:/, 'scène toujours sur une ligne de temps');
 	}
 });
@@ -483,6 +494,29 @@ test('le repli joue une seconde scène d’après sa propre piste', async () => 
 	near(dive.currentTime, 2750, 'Plongée');
 	near(spin.currentTime, 500, 'seconde scène');
 	assert.equal(stranger.currentTime, null, 'animation étrangère avancée');
+});
+
+// La Frise anime aussi des pseudo-éléments (le point d'un Commit, `::before` et `::after` ; son poteau) :
+// chacun a sa propre plage, distincte de celle de l'élément qui le porte.
+test('le repli règle une animation de pseudo-élément d’après la plage du pseudo-élément', async () => {
+	const commit = {
+		names: ['frise-lift'],
+		ranges: 'contain 10% contain 20%',
+		'::after': { names: ['frise-on'], ranges: 'contain 50% contain 100%' },
+	};
+	const lift = new FakeAnimation('frise-lift', commit);
+	const dot = new FakeAnimation('frise-on', commit, '::after');
+	const page = await runFallback({
+		styles: homeStyles(),
+		scenes: [{ timeline: '--frise', prefix: 'frise-', top: 0, height: 5000 }],
+		animations: [lift, dot],
+	});
+	const near = (actual, expected, message) => assert.ok(Math.abs(actual - expected) < 1e-6, `${message} : ${actual} au lieu de ${expected}`);
+	near(lift.timing?.delay, 100, 'délai de l’élément');
+	near(dot.timing?.delay, 500, 'délai du pseudo-élément');
+	near(dot.timing?.duration, 500, 'durée du pseudo-élément');
+	page.scroll(2000);
+	near(dot.currentTime, 500, 'pseudo-élément');
 });
 
 // Arrivé sous une scène (ancre, restauration du défilement), le lecteur y reste quand les scènes

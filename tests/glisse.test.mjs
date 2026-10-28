@@ -40,11 +40,11 @@ test('chaque page demande le même Glissé à la demande, en moins de 1 000 octe
 /** Ce que les modules des pages demandent ; le Glissé, demandé ainsi, n'est pas exécuté. */
 const requested = [];
 const glideFiles = new Set(PAGES.flatMap(({ html }) => glidesOf(html)).map((path) => path.slice('/_astro/'.length)));
-// La Traîne de la Visite (ADR 0012), demandée avec le Glissé sur l'accueil, ne l'est pas non plus : elle
-// lirait le document du faux navigateur d'un test suivant.
+// La Traîne (ADR 0012), demandée avec le Glissé sur l'accueil, ne l'est pas non plus : elle lirait le
+// document du faux navigateur d'un test suivant.
 const trailFiles = new Set(
 	onDemand(moduleGraph(moduleOf(readHome())).code)
-		.filter((path) => readDist(path.slice(1)).includes('visit-track'))
+		.filter((path) => readDist(path.slice(1)).includes('[data-trail]'))
 		.map((path) => path.slice('/_astro/'.length)),
 );
 registerHooks({

@@ -1,11 +1,12 @@
-// La Traîne de la Visite (ADR 0012) : la scène rattrape le défilement au lieu de le suivre exactement,
-// et ne s'arrête pas net quand il s'arrête. Le Glissé (ADR 0013) ne lisse que la molette, cran par cran :
-// lancée puis lâchée, au pavé tactile surtout, la Visite se figeait d'un coup. Aucune animation n'est
-// réglée ici : la piste, dont la ligne de temps pilote toute la Visite, est décalée de l'avance du
-// défilement sur la scène (`margin-top`, sa position dans le flux étant celle d'un élément absolu), et
-// le navigateur joue le reste sur le compositeur. La scène, collée par la CSS, ne bouge pas avec elle :
+// La Traîne (ADR 0012) : une scène pilotée par le défilement rattrape le défilement au lieu de le suivre
+// exactement, et ne s'arrête pas net quand il s'arrête. Le Glissé (ADR 0013) ne lisse que la molette,
+// cran par cran : lancée puis lâchée, au pavé tactile surtout, la scène se figeait d'un coup. Toute
+// scène la demande en déclarant sa piste (`data-trail`), la Visite la première. Aucune animation n'est
+// réglée ici : la piste, dont la ligne de temps pilote toute la scène, est décalée de l'avance du
+// défilement sur elle (`margin-top`, sa position dans le flux étant celle d'un élément absolu), et le
+// navigateur joue le reste sur le compositeur. La scène, collée par la CSS, ne bouge pas avec sa piste :
 // ce qui tenait Projets en Plongée, et l'a fait trembler sous un défilement écrit image par image, n'a
-// pas d'équivalent ici.
+// pas d'équivalent ici ; une scène tenue de la même façon ne doit pas déclarer la Traîne.
 
 // En `TAU` millisecondes, la scène fait 63 % du chemin qui la sépare du défilement : arrêté net, elle
 // le rejoint en une demi-seconde environ.
@@ -23,7 +24,7 @@ function follow(track: HTMLElement) {
 		const elapsed = last ? Math.min(now - last, 100) : 16;
 		last = now;
 		// Au plus un tiers d'écran de retard : une ancre ou la Lunette, qui sautent loin, ne font pas
-		// rejouer toute la Visite, et la piste décalée ne descend pas sous le bas de la page.
+		// rejouer toute la scène, et la piste décalée ne descend pas sous le bas de la page.
 		const reach = innerHeight / 3;
 		shown += (scrollY - shown) * (1 - Math.exp(-elapsed / TAU));
 		shown = Math.max(scrollY - reach, Math.min(scrollY + reach, shown));
@@ -42,9 +43,10 @@ function follow(track: HTMLElement) {
 		{ passive: true },
 	);
 
-	// Loin de la section, ou là où la Visite ne joue pas (la piste n'y est affichée que sous ses
-	// conditions : mouvement non réduit, écran assez haut, navigateur qui sait la jouer), la piste reste à
-	// sa place : la décaler relancerait la mise en page de l'accueil à chaque image, pour rien.
+	// Loin de la section, ou là où sa scène ne joue pas, la piste reste à sa place : la décaler relancerait
+	// la mise en page de l'accueil à chaque image, pour rien. Chaque scène n'affiche sa piste que sous ses
+	// propres conditions (mouvement non réduit, et pour la Visite un écran assez haut) : une piste cachée
+	// suffit à le savoir, sans que la Traîne connaisse les scènes.
 	new IntersectionObserver(
 		([entry]) => {
 			near = entry.isIntersecting && getComputedStyle(track).display != 'none';
@@ -58,8 +60,12 @@ function follow(track: HTMLElement) {
 	).observe(track.parentElement!);
 }
 
-const track = document.querySelector<HTMLElement>('.visit-track');
-if (track) follow(track);
+// Là où la CSS ne joue pas les scènes (Firefox), leur repli (ADR 0009) affiche la piste mais règle les
+// animations d'après `scrollY`, sans lire sa marge : la décaler n'y ferait qu'une mise en page par image.
+// La condition est celle du `@supports` des scènes et du repli (`Projects.astro`) ; le nom de la ligne de
+// temps n'y change rien.
+if (CSS.supports('(animation-timeline:view()) and (animation-range:entry) and (timeline-scope:--trail)'))
+	document.querySelectorAll<HTMLElement>('[data-trail]').forEach(follow);
 
 // Un module, importé pour ses effets : ses noms ne débordent pas sur ceux de la page.
 export {};

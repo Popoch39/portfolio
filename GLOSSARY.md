@@ -31,6 +31,33 @@ Sur tout le site, un cran de molette fait glisser la page avec de l'inertie au l
 _EN_ : Glide
 _Avoid_ : smooth scroll, Lenis, lissage
 
+## Parcours
+
+**Frise** :
+La section Parcours de l'accueil : le chemin de Louis dessiné en git graph, du baccalauréat à HEAD. Sans animation au défilement, elle se lit en git log vertical.
+_EN_ : Timeline
+_Avoid_ : maquette, graph
+
+**Commit** :
+Une étape de la Frise (un diplôme, un poste, une mission marquante), avec sa date, son titre, son lieu et ses missions éventuelles.
+_EN_ : Commit
+_Avoid_ : étape, jalon, poste
+
+**Branche** :
+Une formation suivie à côté de `main` (`lea`, `access-code`, `cda`) : elle bifurque de `main` et y revient par une fusion. Les Branches se déduisent des Commits.
+_EN_ : Branch
+_Avoid_ : couloir, voie
+
+**HEAD** :
+Le dernier Commit de la Frise, « La suite » : là où en est Louis aujourd'hui.
+_EN_ : HEAD
+_Avoid_ : fin, présent
+
+**Commit actif** :
+Pendant que la Frise défile, le dernier Commit que la tête de lecture a atteint, jusqu'à ce qu'elle atteigne le suivant : son étiquette est pleine, et il est repris en grand en bas de l'écran.
+_EN_ : Current commit
+_Avoid_ : étape courante, Commit en cours, HEAD
+
 ## Stack
 
 **Atome** :

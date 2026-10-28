@@ -179,6 +179,62 @@ for (const { locale, projects } of [
 		for (const [, selector, body] of rules) assert.match(body, /\bwill-change\s*:[^;{}]*\btransform\b/, selector.trim());
 	});
 
+	// Une translation qui compense le défilement peut arriver au compositeur une image après lui (Brave
+	// sous Wayland, défilement écrit par un script) : Projets tremblait d'un pas (ADR 0010). Épinglé, il
+	// suit le défilement dans la même image. Ses translations ne font plus que sauter d'un coup, sous le
+	// bleu plein écran.
+	test(`${locale} : aucune animation ne translate Projets au fil du défilement`, () => {
+		const keyframes = new Map(blocks(styles, /@keyframes\s+dive-[\w-]+/).map((block) => [block.match(/@keyframes\s+([\w-]+)/)[1], block]));
+		const holding = animations(styles).filter(({ selector }) => /\.dive-(?:next|pin)\b|\.projects\b/.test(selector));
+		assert.ok(holding.length > 0, 'Projets n’est pas animé par la scène');
+		for (const { selector, played } of holding)
+			for (const { name } of played) {
+				// Chaque étape à son rang (`58%,to` en donne deux) ; une borne absente vaut la place de Projets.
+				const declared = [...(keyframes.get(name) ?? '').matchAll(/([\w.%,\s]+)\{([^{}]*)\}/g)].flatMap(([, offsets, body]) =>
+					offsets.split(',').map((offset) => ({
+						at: { from: 0, to: 100 }[offset.trim()] ?? parseFloat(offset),
+						move: body.match(/\b(?:translate|transform)\s*:([^;}]*)/)?.[1].trim(),
+						timing: body.match(/\banimation-timing-function\s*:([^;}]*)/)?.[1].trim(),
+					})),
+				);
+				const stops = [0, 100].filter((at) => !declared.some((stop) => stop.at === at)).map((at) => ({ at })).concat(declared).sort((a, b) => a.at - b.at);
+				const rule = styles.match(new RegExp(`${selector.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\{[^}]*`))?.[0] ?? '';
+				const whole = rule.match(new RegExp(`\\b${name}\\s+([\\w-]+(?:\\([^)]*\\))?)`))?.[1];
+				for (let i = 1; i < stops.length; i++) {
+					const [from, to] = [stops[i - 1].move ?? '0', stops[i].move ?? '0'];
+					if (from !== to) assert.match(stops[i - 1].timing ?? whole ?? '', /^step|^steps\(/, `${selector.trim()} : ${name} translate Projets de ${from} à ${to} au fil du défilement`);
+				}
+			}
+	});
+
+	// La course de la scène tient en deux temps : la scène seule jusqu'au repli du bleu (58 %), puis la
+	// scène et Projets ensemble, épinglés jusqu'à la fin (100 %). La page sous la scène ne bouge pas.
+	test(`${locale} : Projets est épinglé avec la scène de 58 à 100 % de sa course`, () => {
+		const pinTag = tags(html, 'div').find((tag) => /\bclass="dive-pin\b/.test(tag));
+		assert.ok(pinTag, 'épingle absente');
+		const pin = elementAt(html, html.indexOf(pinTag));
+		assert.ok(pin.includes(`id="${projects}"`), 'Projets hors de l’épingle');
+		assert.ok(sceneOf(html) && pin.includes(sceneOf(html)), 'scène hors de l’épingle');
+		const rule = (selector) => [...styles.matchAll(new RegExp(`(?:^|[{}\\s])${selector}(?:\\[[^\\]]*\\])?\\{([^{}]*)\\}`, 'g'))].map((m) => m[1]).join(';');
+		const value = (body, property) => body.match(new RegExp(`(?:^|;)${property}\\s*:([^;]*)`))?.[1].trim();
+		// Une longueur de la CSS en part de la scène, sur une scène de 1 000 px : `--dive-hold` y vaut
+		// 0,42 de la scène, arrondi au pixel.
+		const hold = value(rule('\\.dive'), '--dive-hold');
+		assert.match(hold ?? '', /^round\(\s*\.42\s*\*\s*var\(--dive-length\)\s*,\s*1px\s*\)$/, 'course de Projets');
+		const share = (length) =>
+			Function(`return ${length.replace(/var\(--dive-hold\)/g, '420').replace(/var\(--dive-length\)/g, '1000').replace(/^calc/, '')}`)() / 1000;
+		const pinned = rule('\\.dive-pin');
+		assert.equal(value(pinned, 'position'), 'sticky', 'épingle non collante');
+		assert.equal(share(value(pinned, 'top')), -0.58, 'épinglée ailleurs qu’au repli du bleu');
+		assert.equal(share(value(rule('\\.dive(?:\\[[^\\]]*\\])?:after'), 'height')), 0.42, 'course de l’épingle');
+		// Décalé d'autant dans la mise en page, Projets garde sa place, et la page sous la scène aussi.
+		const next = rule('\\.dive-next');
+		assert.equal(value(next, 'position'), 'relative', 'Projets déplacé dans la mise en page');
+		assert.equal(share(value(next, 'top')), 0.42, 'Projets déplacé dans la mise en page');
+		// Rien n'épingle la scène sans Projets au-delà du repli : sa cale s'arrête à 58 %.
+		assert.equal(share(value(rule('\\.dive-scene(?:\\[[^\\]]*\\])?:after'), 'height')), 0.58, 'course de la scène seule');
+	});
+
 	// Firefox joue la scène par un repli, que Chrome et Safari ne téléchargent pas : l'accueil garde son
 	// seul module, et le repli n'est ni dans le HTML ni préchargé.
 	test(`${locale} : un seul module au chargement, le repli n’arrive qu’à la demande`, () => {
@@ -319,7 +375,8 @@ let fallbackRuns = 0;
 /**
  * Exécute le repli dans un faux navigateur à l'écran haut de 1 000 px. `styles` : le texte des balises
  * `<style>` ; `scenes` : les pistes déclarées (`timeline`, `prefix`, `top` et `height` de la piste dans
- * la page, `end` : le bas de la scène dans la page, avant puis après que sa CSS la joue) ; `animations` :
+ * la page, `end` : le bas de son enveloppe dans la page, avant puis après que sa CSS la joue,
+ * `pinned` : le bas de la scène, avant, s'il n'est pas `end`) ; `animations` :
  * celles de la page ; `scrollY` : la place du lecteur à l'arrivée. `scroll(y)` défile et rend une image.
  */
 async function runFallback({ styles, scenes, animations = [], scrollY = 0 }) {
@@ -328,12 +385,17 @@ async function runFallback({ styles, scenes, animations = [], scrollY = 0 }) {
 	const listeners = {};
 	const frames = [];
 	const scrolledTo = [];
-	const tracks = scenes.map(({ timeline, prefix, top = 0, height = 0, end = [1e6, 1e6] }) => ({
+	// L'enveloppe de la scène, parent de la piste, finit à `end` ; la scène qu'elle épingle porte la
+	// classe du préfixe.
+	const tracks = scenes.map(({ timeline, prefix, top = 0, height = 0, end = [1e6, 1e6], pinned = end[0] }) => ({
 		dataset: { timeline, prefix },
 		style: {},
 		offsetHeight: height,
 		getBoundingClientRect: () => ({ top: top - globalThis.scrollY }),
-		parentElement: { getBoundingClientRect: () => ({ bottom: end[played() ? 1 : 0] - globalThis.scrollY }) },
+		parentElement: {
+			getBoundingClientRect: () => ({ bottom: end[played() ? 1 : 0] - globalThis.scrollY }),
+			querySelector: (selector) => (selector === `.${prefix}scene` ? { getBoundingClientRect: () => ({ bottom: pinned - globalThis.scrollY }) } : null),
+		},
 	}));
 	Object.assign(globalThis, {
 		scrollY,
@@ -438,6 +500,23 @@ test('le lecteur déjà passé sous des scènes y reste', async () => {
 		[2500, [2500 + 5200]],
 	]) {
 		const page = await runFallback({ styles: homeStyles().map((styles) => styles + tour), scenes, scrollY });
+		assert.deepEqual(page.scrolledTo, expected, `lecteur à ${scrollY} px`);
+	}
+});
+
+// Arrivé sur l'ancre de Projets, que la Plongée épingle avec elle, le lecteur reste sur Projets : la
+// scène est passée dès que ce qu'elle épingle avant Projets l'est, et la page suit ce qui vient après.
+test('le lecteur arrivé sur ce que la scène épingle avec elle y reste', async () => {
+	// L'en-tête et le héros finissent à 800 px ; Projets, épinglé avec eux, va de 800 à 2 000 px, puis
+	// de 4 400 à 5 600 une fois la scène jouée.
+	const scenes = [{ ...scenesOf(readHome())[0], pinned: 800, end: [2000, 5600] }];
+	for (const [scrollY, expected] of [
+		[0, []],
+		[700, []],
+		[800, [800 + 3600]],
+		[1500, [1500 + 3600]],
+	]) {
+		const page = await runFallback({ styles: homeStyles(), scenes, scrollY });
 		assert.deepEqual(page.scrolledTo, expected, `lecteur à ${scrollY} px`);
 	}
 });

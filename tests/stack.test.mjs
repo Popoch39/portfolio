@@ -103,7 +103,7 @@ for (const { locale, categories, tools: toolsLine } of VERSIONS) {
 		const logos = rings.map((ring) => tags(drawn(ring), 'use').map((use) => attr(use, 'href')?.replace(/^#logo-/, '')));
 		assert.deepEqual(logos, LOGOS);
 		assert.equal(logos.flat().length, 29);
-		// Un calque est un SVG, ou, sur la Bague bleue, une enveloppe qui garde aussi son dessin gris.
+		// Un calque est une enveloppe de son SVG, qui garde aussi, sur la Bague bleue, son dessin gris.
 		for (const ring of rings) assert.equal(tags(ring, '(?:svg|span)').filter((t) => /\bclass="[^"]*\blayer\b/.test(t)).length, 5, 'cinq calques par Bague');
 	});
 

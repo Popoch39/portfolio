@@ -68,6 +68,29 @@ for (const locale of ['fr', 'en']) {
 		}
 	});
 
+	// Chrome ne joue pas sur le compositeur la transformation d'un élément SVG dont le zoom n'est pas 1, ce
+	// qu'il est sur tout écran à l'échelle (1,6 chez Louis) : la Visite y retombait sur le thread principal
+	// (#89). Les sans-tête, à l'échelle 1, ne le voient pas : la règle se vérifie donc sur la page livrée.
+	test(`${locale} : la Visite ne transforme aucun élément SVG`, () => {
+		const moving = new Set(
+			[...keyframesOf(styles)].filter(([, block]) => /(?:^|[{;\s])(?:transform|translate|rotate|scale)\s*:/.test(block)).map(([name]) => name),
+		);
+		const rules = [...styles.matchAll(/([^{}]+)\{([^{}]*\banimation(?:-name)?\s*:[^;{}]*\bvisit-[^{}]*)\}/g)];
+		const targets = rules.filter(([, , body]) => (body.match(/\banimation(?:-name)?\s*:([^;}]*)/)?.[1].match(/\bvisit-[\w-]+/g) ?? []).some((n) => moving.has(n)));
+		assert.ok(targets.length > 0, 'aucune transformation de la Visite');
+		const all = tags(html, '[a-z][\\w-]*');
+		for (const [, selector] of targets) {
+			for (const one of selector.split(',')) {
+				if (/::/.test(one)) continue;
+				const last = one.trim().split(/\s+|>/).at(-1).replace(/\[[^\]]*\]/g, '');
+				const classes = [...last.matchAll(/\.([\w-]+)/g)].map((m) => m[1]);
+				const hit = all.filter((t) => classes.every((c) => new RegExp(`\\bclass="[^"]*(?<![\\w-])${c}(?![\\w-])`).test(t)));
+				assert.ok(hit.length > 0, `${one.trim()} ne vise rien`);
+				for (const t of hit) assert.doesNotMatch(t, /^<(?:svg|g|circle|path|use|symbol)\b/i, `${one.trim()} transforme ${t.slice(0, 40)}`);
+			}
+		}
+	});
+
 	// Le minifieur sait replier la ligne de temps dans le raccourci, ou écrire une durée nulle : Chrome
 	// refuse le premier en entier, et la seconde jouerait l'animation d'un coup.
 	test(`${locale} : chaque animation de la Visite suit sa ligne de temps, sous une forme que Chrome accepte`, () => {

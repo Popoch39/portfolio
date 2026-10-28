@@ -35,3 +35,23 @@ Images par seconde, CPU ×6, 16 px par image sur toute la piste, aller et retour
 | Atome posé, sans animation (GPU) | 119 i/s, p95 8,4 ms | – |
 
 La version livrée (échelle des calques, déplacement des Pastilles) reste à tracer sur le GPU : la trace fenêtrée n'a pas abouti avant la fin du ticket. Lighthouse entrelacé contre `main` : pas encore passé.
+
+### Sur le GPU, la version livrée (#89)
+
+Le 2026-10-28, Chromium 155 fenêtré sous Wayland, sur l'écran à 120 Hz de Louis (eDP-1, à l'échelle 1,6), contre `main` (`57fed8f`). La trace fenêtrée n'aboutissait pas parce que Hyprland ouvre la fenêtre sur un espace de travail caché, où `requestAnimationFrame` ne tourne pas : elle est envoyée sur l'espace visible de l'écran. 16 px par image sur la piste, aller et retour, deux passages entrelacés, médiane.
+
+Deux causes :
+
+- **`visit-band` sur le thread principal** (`compositeFailed` 1024, `TransformRelatedPropertyCannotBeAcceleratedOnTarget`), sur les 30 calques des six Bagues grises : Chrome ne joue pas sur le compositeur la transformation d'un élément SVG dont le zoom n'est pas 1, ce qu'il est sur tout écran à l'échelle. Les traces sans tête, à l'échelle 1, ne le voyaient pas. Les calques de la Bague bleue, déjà dans une enveloppe `span`, passaient. Chaque calque est désormais une enveloppe `span` de son SVG, qui porte la profondeur, l'échelle et le fondu ; le dessin ne change pas (poses identiques au pixel à `main`, de 0 à 100 % de la piste, aller et retour, en 1280 × 800 et 390 × 844, en français, en anglais et en mouvement réduit, au bruit près des poses de `main` entre elles : moins de 0,1 % de pixels, au retour sur téléphone). Toutes les animations `visit-` sont composées, aux deux tailles. L'accueil gagne 35 octets en Brotli (12 en anglais).
+- **La Traîne** (ADR 0012), qui est la vraie saccade : sa marge change à chaque image la plage de la ligne de temps `--visit`, et Chrome recalcule alors le style des quelque 210 éléments animés de la Visite (environ 36 ms par image à CPU ×6 sans tête, contre 7 ms quand seul le défilement avance ; une marge, un `top` ou un `view-timeline-inset` coûtent pareil, un `translate` ne coûte rien mais la ligne de temps l'ignore). Sans elle, `main` tient déjà 120 images par seconde : la composition de `visit-band` ne se voit pas dans ces traces, où le défilement écrit par le script fait de toute façon tourner le thread principal à chaque image.
+
+| Visite, GPU | 1280 × 800, CPU ×1 | 1280 × 800, CPU ×6 | 390 × 844, CPU ×1 | 390 × 844, CPU ×6 |
+|---|---|---|---|---|
+| `main` | 88 i/s, p95 16,7 ms | 15 i/s, p95 79 ms | 89 i/s, p95 16,7 ms | 15 i/s, p95 87 ms |
+| calques composés | 85 i/s, p95 14,5 ms | 15 i/s, p95 79 ms | 87 i/s, p95 16,7 ms | 14 i/s, p95 83 ms |
+| `main`, Traîne neutralisée | 120 i/s, p95 8,4 ms | 71 i/s, p95 16,8 ms | 120 i/s, p95 8,4 ms | 68 i/s, p95 16,8–25 ms |
+| calques composés, Traîne neutralisée | 120 i/s, p95 8,4 ms | 71 i/s, p95 16,8 ms | 120 i/s, p95 8,4 ms | 67 i/s, p95 16,8–25 ms |
+
+Lighthouse 12.8.2 entrelacé contre `main`, trois passages, médianes, servi sans compression : mobile, perf 96 des deux côtés, FCP 2 067 / 2 097 ms (`/`) et 2 034 / 2 027 ms (`/en/`), LCP 2 409 / 2 401 et 2 402 / 2 401 ms ; ordinateur, perf 100, FCP 482 ms et LCP 563 ms des deux côtés ; CLS 0, TBT 0 à 9 ms partout. L'accessibilité vaut 96 sur `main` comme sur la branche.
+
+La Traîne est neutralisée pour la mesure seulement (`margin-top: 0 !important` sur la piste). La cible de #89 (p95 ≤ 8,4 ms à CPU ×1, 60 images par seconde à CPU ×6) n'est tenue que sans elle : la garder, la retirer ou la réécrire sans toucher à la plage de la ligne de temps est une décision de Louis, à prendre avant de clore le ticket.

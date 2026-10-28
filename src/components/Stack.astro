@@ -17,7 +17,7 @@ const { id, label } = sections.stack;
 
 <style is:inline set:html={visitSheet}></style>
 <section id={id[locale]} class="stack">
-	<span class="visit-track" aria-hidden="true"></span>
+	<span class="visit-track" aria-hidden="true" data-trail></span>
 	<div class="stage">
 		<div class="lift">
 			<SectionHeader number={4} title={label[locale]} note=":set stack?" />

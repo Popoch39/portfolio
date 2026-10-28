@@ -7,10 +7,12 @@
 // trace son trait et referme un viseur sur elle.
 //
 // Tout est HTML et CSS : la mise en page (`annotate`, au build) arrive en propriétés personnalisées
-// dans la feuille de la page, la bascule est un groupe de boutons radio lu par `:has()`, et chaque
-// mouvement est une transition de `translate`, `scale` ou `opacity`. Trois dispositions selon la
-// largeur de la carte : la liste sous la figure (pastilles numérotées sur les pièces), les bandes
-// au-dessus et au-dessous, ou, pour une figure haute, les colonnes de part et d'autre.
+// dans la feuille de la page, la bascule est un groupe de boutons radio dont le module de la page
+// recopie la valeur dans `data-lecture` (un `:has()` restylait la carte à chaque image de la figure,
+// ADR 0003), et chaque mouvement est une transition de `translate`, `scale` ou `opacity`. Trois
+// dispositions selon la largeur de la carte : la liste sous la figure (pastilles numérotées sur les
+// pièces), les bandes au-dessus et au-dessous, ou, pour une figure haute, les colonnes de part et
+// d'autre.
 import type { Piece, Signature } from '../anatomies/contract';
 import type { AnnotationLayout } from '../anatomies/annotations';
 import { signatureLines } from '../anatomies/signature';
@@ -60,7 +62,7 @@ const geometry = [
 		))
 	}
 </svg>
-<div class:list={['annot', { crop: phoneCrop }]}>
+<div class:list={['annot', { crop: phoneCrop }]} data-lecture="clair">
 	<div class:list={['stage', { tall }]}>
 		<div class="plate">
 			<div class="scene iso anatomy" data-theme="light" data-motion={motion} set:html={svg} />
@@ -938,31 +940,31 @@ const geometry = [
 	/* La face de la lecture choisie est là ; l'autre, cachée, attend d'être tapée : chaque ligne
 	   décalée d'une largeur dans sa boîte, que la frappe ramène d'un bloc. */
 	.face.code,
-	.annot:has(input[value='code']:checked) .face.plain,
+	.annot[data-lecture='code'] .face.plain,
 	.tag-code,
-	.annot:has(input[value='code']:checked) .tag-plain,
+	.annot[data-lecture='code'] .tag-plain,
 	.v.code,
-	.annot:has(input[value='code']:checked) .v.plain {
+	.annot[data-lecture='code'] .v.plain {
 		visibility: hidden;
 		opacity: 0;
 	}
 
-	.annot:has(input[value='code']:checked) :is(.face.code, .tag-code, .v.code) {
+	.annot[data-lecture='code'] :is(.face.code, .tag-code, .v.code) {
 		visibility: visible;
 		opacity: 1;
 	}
 
 	.face.code .ty,
-	.annot:has(input[value='code']:checked) .face.plain .ty {
+	.annot[data-lecture='code'] .face.plain .ty {
 		translate: -100% 0;
 	}
 
 	.face.code .ty > .in,
-	.annot:has(input[value='code']:checked) .face.plain .ty > .in {
+	.annot[data-lecture='code'] .face.plain .ty > .in {
 		translate: 100% 0;
 	}
 
-	.annot:has(input[value='code']:checked) .face.code :is(.ty, .ty > .in) {
+	.annot[data-lecture='code'] .face.code :is(.ty, .ty > .in) {
 		translate: 0 0;
 	}
 
@@ -978,11 +980,11 @@ const geometry = [
 	}
 
 	.face.code .ty::before,
-	.annot:has(input[value='code']:checked) .face.plain .ty::before {
+	.annot[data-lecture='code'] .face.plain .ty::before {
 		opacity: 1;
 	}
 
-	.annot:has(input[value='code']:checked) .face.code .ty::before {
+	.annot[data-lecture='code'] .face.code .ty::before {
 		opacity: 0;
 	}
 
@@ -1000,13 +1002,13 @@ const geometry = [
 	}
 
 	.face.code .last > .in::after,
-	.annot:has(input[value='code']:checked) .face.plain .last > .in::after {
+	.annot[data-lecture='code'] .face.plain .last > .in::after {
 		visibility: visible;
 		opacity: 0;
 		scale: 0.28 1;
 	}
 
-	.annot:has(input[value='code']:checked) .face.code .last > .in::after {
+	.annot[data-lecture='code'] .face.code .last > .in::after {
 		visibility: hidden;
 		opacity: 1;
 		scale: 1 1;
@@ -1060,8 +1062,8 @@ const geometry = [
 		opacity: 0;
 	}
 
-	.annot:has(input[value='code']:checked) :is(.vline.a, .insert.a),
-	.annot:has(input[value='clair']:checked) :is(.vline.b, .insert.b) {
+	.annot[data-lecture='code'] :is(.vline.a, .insert.a),
+	.annot[data-lecture='clair'] :is(.vline.b, .insert.b) {
 		visibility: hidden;
 		opacity: 1;
 	}
@@ -1219,8 +1221,8 @@ const geometry = [
 		opacity: 0;
 	}
 
-	.annot:has(input[value='code']:checked) .msg.a,
-	.annot:has(input[value='clair']:checked) .msg.b {
+	.annot[data-lecture='code'] .msg.a,
+	.annot[data-lecture='clair'] .msg.b {
 		visibility: hidden;
 		opacity: 1;
 	}
@@ -1231,11 +1233,11 @@ const geometry = [
 	   à rebours vers le clair) : V sélectionne la face ligne à ligne, elle s'efface, puis la nouvelle
 	   se tape ligne par ligne en INSERT et le curseur se fait bloc à Échap. */
 	@media (prefers-reduced-motion: no-preference) {
-		.annot:has(input[value='code']:checked) .note {
+		.annot[data-lecture='code'] .note {
 			--d: calc(var(--o) * 70ms);
 		}
 
-		.annot:has(input[value='clair']:checked) .note {
+		.annot[data-lecture='clair'] .note {
 			--d: calc((var(--n) - 1 - var(--o)) * 70ms);
 		}
 
@@ -1263,24 +1265,24 @@ const geometry = [
 		}
 
 		/* La face qui arrive : chaque ligne tapée en 170 ms, l'une après l'autre. */
-		.annot:has(input[value='clair']:checked) .face.plain :is(.ty, .ty > .in),
-		.annot:has(input[value='code']:checked) .face.code :is(.ty, .ty > .in) {
+		.annot[data-lecture='clair'] .face.plain :is(.ty, .ty > .in),
+		.annot[data-lecture='code'] .face.code :is(.ty, .ty > .in) {
 			transition: translate 170ms steps(18, end) calc(var(--d) + 340ms + var(--r, 0) * 180ms);
 		}
 
 		/* La face qui part : ramenée hors de vue une fois cachée. */
-		.annot:has(input[value='code']:checked) .face.plain :is(.ty, .ty > .in),
-		.annot:has(input[value='clair']:checked) .face.code :is(.ty, .ty > .in) {
+		.annot[data-lecture='code'] .face.plain :is(.ty, .ty > .in),
+		.annot[data-lecture='clair'] .face.code :is(.ty, .ty > .in) {
 			transition: translate 0s var(--swap);
 		}
 
-		.annot:has(input[value='code']:checked) .face.plain .ty::before,
-		.annot:has(input[value='clair']:checked) .face.code .ty::before {
+		.annot[data-lecture='code'] .face.plain .ty::before,
+		.annot[data-lecture='clair'] .face.code .ty::before {
 			transition: opacity 0s calc(var(--d) + var(--r, 0) * 55ms);
 		}
 
-		.annot:has(input[value='clair']:checked) .face.plain .last > .in::after,
-		.annot:has(input[value='code']:checked) .face.code .last > .in::after {
+		.annot[data-lecture='clair'] .face.plain .last > .in::after,
+		.annot[data-lecture='code'] .face.code .last > .in::after {
 			--typed: calc(var(--d) + 510ms + var(--r, 0) * 180ms);
 			transition:
 				opacity 0s var(--typed),
@@ -1288,20 +1290,20 @@ const geometry = [
 				visibility 0s calc(var(--typed) + 1000ms);
 		}
 
-		.annot:has(input[value='code']:checked) .vline.a,
-		.annot:has(input[value='clair']:checked) .vline.b {
+		.annot[data-lecture='code'] .vline.a,
+		.annot[data-lecture='clair'] .vline.b {
 			transition: visibility 0s 320ms;
 		}
 
-		.annot:has(input[value='code']:checked) .insert.a,
-		.annot:has(input[value='clair']:checked) .insert.b {
+		.annot[data-lecture='code'] .insert.a,
+		.annot[data-lecture='clair'] .insert.b {
 			transition:
 				opacity 0s 320ms,
 				visibility 0s 1580ms;
 		}
 
-		.annot:has(input[value='code']:checked) .msg.a,
-		.annot:has(input[value='clair']:checked) .msg.b {
+		.annot[data-lecture='code'] .msg.a,
+		.annot[data-lecture='clair'] .msg.b {
 			transition:
 				opacity 0s 1600ms,
 				visibility 0s 4200ms;

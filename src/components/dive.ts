@@ -6,7 +6,9 @@
 // sa ligne de temps ; `data-prefix`, celui de ses animations).
 
 // La piste de chaque scène : un repère haut de la scène et d'un écran, dont la plage `contain` est le
-// temps où la scène reste collée. Elle est posée dans la scène, son parent.
+// temps où la scène reste collée. Elle est posée dans l'enveloppe de la scène, son parent, qui tient
+// aussi ce que la scène épingle avec elle (Projets, sous la Plongée), mais hors de l'épingle : une
+// ligne de temps sous une épingle s'allongerait de sa course.
 const scenes = [...document.querySelectorAll<HTMLElement>('[data-timeline]')].map((track) => ({
 	track,
 	prefix: track.dataset.prefix!,
@@ -16,8 +18,13 @@ const scenes = [...document.querySelectorAll<HTMLElement>('[data-timeline]')].ma
 type Scene = (typeof scenes)[number];
 
 // La place du lecteur, relevée avant que les scènes ne prennent la leur dans la page : la dernière
-// qu'il a déjà passée (ancre, restauration du défilement), et son bas.
-const passed = scenes.filter(({ track }) => track.parentElement!.getBoundingClientRect().bottom < 1).pop()?.track.parentElement;
+// qu'il a déjà passée (ancre, restauration du défilement), c'est-à-dire dont la scène, qui porte la
+// classe de son préfixe (`dive-scene`), est au-dessus de l'écran, même s'il est encore dans ce qu'elle
+// épingle avec elle ; et le bas de son enveloppe. Lui seul ne bouge qu'avec les scènes : ce qui est
+// épinglé se décale selon le défilement.
+const passed = scenes
+	.filter(({ track, prefix }) => track.parentElement!.querySelector(`.${prefix}scene`)!.getBoundingClientRect().bottom < 1)
+	.pop()?.track.parentElement;
 const bottom = passed?.getBoundingClientRect().bottom;
 
 // La CSS des scènes, et elle seule (chaque `@supports` qui nomme la ligne de temps d'une scène), est

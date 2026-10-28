@@ -2,8 +2,9 @@
 // La Plongée (planche 16 · Plongée dans le curseur, ADR 0009), entre le héros et Projets sur l'accueil :
 // en défilant depuis le haut, la scène (l'en-tête du site et le héros) s'épingle, le texte s'efface, le
 // curseur du nom grandit jusqu'à couvrir l'écran, puis le bleu se replie dans le carré de « 01 » de
-// Projets, qui suit la scène dans le flux. Tout est en CSS pilotée par le défilement ; en mouvement réduit
-// ou dans un navigateur qui ne sait pas la jouer, ces enveloppes ne changent rien à la page.
+// Projets, qui suit la scène dans le flux et s'épingle avec elle pendant le repli. Tout est en CSS
+// pilotée par le défilement ; en mouvement réduit ou dans un navigateur qui ne sait pas la jouer, ces
+// enveloppes ne changent rien à la page.
 import { localeOf, ui } from '../lib/i18n';
 
 // La devise sur le bleu : l'accent de l'accroche, coupé en deux lignes là où sa langue le déclare.
@@ -13,21 +14,23 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 ---
 
 <div class="dive">
-	<div class="dive-scene">
-		{/* La piste se déclare au repli de Firefox (`dive.ts`) : sa ligne de temps et le préfixe de ses animations. */}
-		<span class="dive-track" aria-hidden="true" data-timeline="--dive" data-prefix="dive-"></span>
-		<div class="dive-stage">
-			<div class="dive-head"><slot name="head" /></div>
-			<div class="dive-hero"><slot name="hero" /></div>
-			<div class="dive-blue" aria-hidden="true"></div>
-			{/* Elle double l'accroche : ni lue, ni reprise dans les extraits de recherche. */}
-			<div class="dive-motto" aria-hidden="true" data-nosnippet>
-				<span class="dive-mask"><span class="dive-line mono">-- INSERT --</span></span>
-				<span class="dive-words">{motto.map((line) => <span class="dive-mask"><span class="dive-line">{line}</span></span>)}</span>
+	{/* La piste se déclare au repli de Firefox (`dive.ts`) : sa ligne de temps et le préfixe de ses animations. */}
+	<span class="dive-track" aria-hidden="true" data-timeline="--dive" data-prefix="dive-"></span>
+	<div class="dive-pin">
+		<div class="dive-scene">
+			<div class="dive-stage">
+				<div class="dive-head"><slot name="head" /></div>
+				<div class="dive-hero"><slot name="hero" /></div>
+				<div class="dive-blue" aria-hidden="true"></div>
+				{/* Elle double l'accroche : ni lue, ni reprise dans les extraits de recherche. */}
+				<div class="dive-motto" aria-hidden="true" data-nosnippet>
+					<span class="dive-mask"><span class="dive-line mono">-- INSERT --</span></span>
+					<span class="dive-words">{motto.map((line) => <span class="dive-mask"><span class="dive-line">{line}</span></span>)}</span>
+				</div>
 			</div>
 		</div>
+		<div class="dive-next"><slot /></div>
 	</div>
-	<div class="dive-next"><slot /></div>
 </div>
 
 <style>
@@ -47,9 +50,9 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 	   30–34 %     l'en-tête s'efface dans le bleu qui l'entoure ;
 	   33,6–34 %   l'aplat bleu prend le relais du curseur ; sous lui, le héros s'efface ;
 	   34,75–57,5 % sur le bleu, « -- INSERT -- » puis les deux lignes de la devise montent et repartent ;
-	   58–88 %     le bleu se replie dans le carré de « 01 », Projets, tenu à sa place, se pose d'un léger
-	               zoom en arrière ;
-	   88–100 %    le bleu s'efface sur le vrai carré ; Projets reste tenu jusqu'à la fin de la scène.
+	   58–88 %     le bleu se replie dans le carré de « 01 », Projets, épinglé avec la scène, se pose d'un
+	               léger zoom en arrière ;
+	   88–100 %    le bleu s'efface sur le vrai carré ; Projets reste épinglé jusqu'à la fin de la scène.
 	   Ce qu'un fondu ou le bleu plein écran cache sort de la tabulation (`visibility`) : le focus ne
 	   s'y arrête pas sans être vu.
 	   Chaque raccourci `animation` porte la durée `auto`, comme la planche : sans elle, le minifieur
@@ -60,6 +63,10 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 				/* 4,5 écrans : aux 1,9 écran de la planche (1 500 px pour 800 de haut), la scène filait sous
 				   la molette. */
 				--dive-length: 450svh;
+				/* La course de Projets épinglé, du repli du bleu (58 %) à la fin de la scène, au pixel près :
+				   fractionnaire (1 134,34 px à 390 × 844), elle posait Projets entre deux pixels, son texte
+				   rééchantillonné. */
+				--dive-hold: round(0.42 * var(--dive-length), 1px);
 				/* Le bord gauche du contenu (`.container`), `100%` valant la largeur de la page. */
 				--content-left: calc(max(0px, (100% - var(--container)) / 2) + var(--page-margin));
 			}
@@ -69,19 +76,42 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 				timeline-scope: --dive;
 			}
 
-			/* L'épingle. Dans le flux, la scène ne compte que l'en-tête et sa course : le héros est posé sous
-			   l'en-tête, hors du flux. Projets, qui la suit, arrive ainsi sous l'en-tête à la fin de la scène,
-			   à sa place. */
+			/* Deux épingles, sans translation qui suive le défilement : le navigateur les applique dans la
+			   même image que lui, même écrit par un script (ADR 0009, 0013). La scène s'épingle seule de 0 à
+			   58 % de sa course ; puis l'épingle de l'enveloppe la tient avec Projets jusqu'à 100 %. Dans le
+			   flux, la scène ne compte que l'en-tête et sa course : le héros est posé sous l'en-tête, hors du
+			   flux. Projets, qui la suit, a donc sa place de toujours, sous l'en-tête à la fin de la scène :
+			   l'ancre `#projets`, la restauration du défilement et le focus la visent, avant même que les
+			   animations ne jouent. */
 			.dive-scene {
 				position: relative;
 			}
 
-			/* La course de l'épingle : une cale dans le flux, l'élément collant ne sortant pas de la boîte de
-			   contenu de son parent (une marge interne n'y compte pas). */
+			/* La course de la scène seule : une cale dans le flux, l'élément collant ne sortant pas de la
+			   boîte de contenu de son parent (une marge interne n'y compte pas). */
 			.dive-scene::after {
 				content: '';
 				display: block;
-				height: var(--dive-length);
+				height: calc(var(--dive-length) - var(--dive-hold));
+			}
+
+			/* L'enveloppe porte la piste, hors de l'épingle : sous elle, la ligne de temps s'allongerait de
+			   sa course. Sa cale est la course de l'épingle. */
+			.dive {
+				position: relative;
+			}
+
+			.dive::after {
+				content: '';
+				display: block;
+				height: var(--dive-hold);
+			}
+
+			/* Collée à 58 % de la scène (son haut à 58 % de la course au-dessus de l'écran), elle descend
+			   avec le défilement jusqu'au bout de sa cale. */
+			.dive-pin {
+				position: sticky;
+				top: calc(var(--dive-hold) - var(--dive-length));
 			}
 
 			/* La ligne de temps : un repère haut de la scène et d'un écran, dont la plage `contain` est
@@ -415,17 +445,27 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 					contain calc(51% + var(--k) * 1.5%) contain calc(56% + var(--k) * 1.5%);
 			}
 
-			/* Projets, juste après la scène : quand le bleu se replie, une translation qui compense le
-			   défilement le tient à sa place de fin de scène, sous l'en-tête ; elle s'annule avec la scène,
-			   sans rien laisser derrière elle (ni contexte d'empilement, ni bloc conteneur). Sous le bleu
-			   plein écran, il reste à sa place dans le flux, hors de l'écran : un lien atteint au clavier y
-			   fait défiler la page, comme d'habitude. Zoomé, il déborde de l'écran : rogné en largeur, il ne
-			   fait pas défiler la page de côté. */
+			/* Projets, dans l'épingle, décalé de la course qu'elle lui fera parcourir : il garde sa place de
+			   toujours, dans la mise en page. Sous le bleu plein écran, il reste à cette place, hors de
+			   l'écran : un lien atteint au clavier y fait défiler la page, comme d'habitude. Au repli du bleu
+			   (58 %), il remonte d'un coup de cette course, sous l'en-tête, et y reste : l'épingle, qui le
+			   descend d'autant, le tient alors, puis le rend au défilement. Le saut a lieu sous le bleu, et
+			   l'animation reste jouée jusqu'au bout : une animation sur un parent pendant le zoom empêche
+			   Chrome de garder Projets tramé à une échelle du zoom, flou une fois posé. Zoomé, il déborde de
+			   l'écran : rogné en largeur, il ne fait pas défiler la page de côté. */
 			.dive-next {
+				position: relative;
+				top: var(--dive-hold);
 				overflow-x: clip;
-				animation: auto dive-hold linear;
+				animation: auto dive-leap linear both;
 				animation-timeline: --dive;
-				animation-range: contain 58% contain 100%;
+				animation-range: contain 0% contain 100%;
+			}
+
+			/* L'aperçu A3, collé en haut de l'écran pendant que la liste défile : son épingle se calcule sur
+			   la mise en page, sans le saut de Projets, qu'elle compte donc en plus de sa marge. */
+			.dive-next :global(.preview) {
+				top: calc(var(--preview-top) + var(--dive-hold));
 			}
 
 			/* Une seule animation, que le compositeur joue, et sans remplissage : avant la scène, l'ancre
@@ -540,10 +580,15 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 				}
 			}
 
-			/* Du repli du bleu à la fin de la scène, 42 % de sa longueur. */
-			@keyframes dive-hold {
+			/* D'un coup au repli du bleu (58 %), de la course de l'épingle, 42 % de la scène. */
+			@keyframes dive-leap {
 				from {
-					translate: 0 calc(-0.42 * var(--dive-length));
+					translate: 0 0;
+					animation-timing-function: step-end;
+				}
+				58%,
+				to {
+					translate: 0 calc(-1 * var(--dive-hold));
 				}
 			}
 

@@ -2,7 +2,7 @@
 // de l'accueil. Les textes des anatomies de l'aperçu (machine, consigne, relevé) restent en français.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { FIGURE, PROJECTS, moduleGraph, readDist, readFiche, readHome, tags, attr, hasAttr, elements, text } from './helpers/dist.mjs';
+import { FIGURE, PROJECTS, css, moduleGraph, readDist, readFiche, readHome, tags, attr, hasAttr, elements, text } from './helpers/dist.mjs';
 
 const VERSIONS = [
 	{
@@ -106,6 +106,14 @@ for (const version of VERSIONS) {
 			assert.match(attr(image, 'width') ?? '', /^\d+$/, `${slug} : largeur`);
 			assert.match(attr(image, 'height') ?? '', /^\d+$/, `${slug} : hauteur`);
 		});
+	});
+
+	// Masqué par `visibility`, un panneau inactif ferait quand même demander et analyser son SVG au repos
+	// sur le thread principal, au milieu de la Plongée : hors du rendu, l'image différée n'est pas demandée.
+	test(`${locale} : l’image au repos d’un panneau inactif est retirée du rendu, celle du panneau actif non`, () => {
+		const styles = css(html);
+		const hidden = [...styles.matchAll(/([^{}]*)\{([^{}]*)\}/g)].filter(([, selector, body]) => /:not\(\[data-active\]\)[^,]*\bimg\b/.test(selector) && /display:\s*none/.test(body));
+		assert.equal(hidden.length, 1, 'une règle retire l’image des panneaux inactifs');
 	});
 
 	test(`${locale} : le projet 01 est sélectionné dès le build : sa ligne et son panneau, eux seuls`, () => {

@@ -23,12 +23,13 @@ const label = typeof number === 'number' ? String(number).padStart(2, '0') : num
 		gap: 8px;
 		height: fit-content;
 		font-size: 13px;
+		line-height: var(--section-number-line);
 	}
 
 	.dot {
 		flex-shrink: 0;
-		width: 9px;
-		height: 9px;
+		width: var(--section-dot);
+		height: var(--section-dot);
 		background: var(--accent);
 	}
 </style>

@@ -122,14 +122,45 @@ export function moduleGraph(src) {
 	return { paths: [...seen.keys()], code: [...seen.values()].join('\n') };
 }
 
+/**
+ * L'élément complet qui s'ouvre à la position `at` du HTML, de sa balise ouvrante à sa balise fermante,
+ * éléments du même nom imbriqués compris (ce que `elements` ne sait pas faire), ou `undefined`.
+ */
+export function elementAt(html, at) {
+	const name = at >= 0 ? html.slice(at).match(/^<([a-z][\w-]*)/i)?.[1] : undefined;
+	if (!name) return undefined;
+	const tag = new RegExp(`<(/?)${name}\\b[^>]*>`, 'gi');
+	tag.lastIndex = at;
+	for (let depth = 0, m = tag.exec(html); m; m = tag.exec(html)) {
+		depth += m[1] ? -1 : 1;
+		if (depth === 0) return html.slice(at, tag.lastIndex);
+	}
+	return undefined;
+}
+
+/** La fin du bloc CSS dont l'en-tête commence à `at` : l'indice qui suit son accolade fermante. */
+function blockEnd(styles, at) {
+	let end = styles.indexOf('{', at);
+	for (let depth = 1; depth > 0; ) depth += styles[++end] === '{' ? 1 : styles[end] === '}' ? -1 : 0;
+	return end + 1;
+}
+
+/** Les blocs de la CSS dont l'en-tête répond à `opening` (ex. `/@keyframes\s+dive-/`), en-tête et contenu compris. */
+export function blocks(styles, opening) {
+	const found = [];
+	const pattern = new RegExp(opening.source, opening.flags.replace('g', '') + 'g');
+	for (let m = pattern.exec(styles); m; m = pattern.exec(styles)) {
+		const end = blockEnd(styles, m.index);
+		found.push(styles.slice(m.index, end));
+		pattern.lastIndex = end;
+	}
+	return found;
+}
+
 /** La CSS sans les blocs dont l'en-tête répond à `opening` (ex. `/@keyframes\s+vt-/`), contenu compris. */
 export function withoutBlocks(styles, opening) {
 	let rest = styles;
-	for (let at = rest.search(opening); at >= 0; at = rest.search(opening)) {
-		let end = rest.indexOf('{', at);
-		for (let depth = 1; depth > 0; ) depth += rest[++end] === '{' ? 1 : rest[end] === '}' ? -1 : 0;
-		rest = rest.slice(0, at) + rest.slice(end + 1);
-	}
+	for (let at = rest.search(opening); at >= 0; at = rest.search(opening)) rest = rest.slice(0, at) + rest.slice(blockEnd(rest, at));
 	return rest;
 }
 

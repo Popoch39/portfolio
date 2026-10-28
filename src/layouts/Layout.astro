@@ -112,6 +112,14 @@ const jsonLd = JSON.stringify(structuredData).replaceAll('<', '\\u003c');
 		--gutter: 24px;
 		--status-height: 30px;
 
+		/* La marge haute de Projets et l'en-tête de section (titre, ligne du numéro, carré) : la Plongée
+		   en déduit la place du carré de « 01 » (ADR 0009), qui suit donc la mise en page. */
+		--projects-top: clamp(56px, 7vw, 108px);
+		--section-title: clamp(52px, 8vw, 120px);
+		--section-title-leading: 0.84;
+		--section-number-line: 19.5px;
+		--section-dot: 9px;
+
 		--font-sans: var(--font-archivo);
 	}
 

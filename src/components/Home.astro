@@ -3,6 +3,7 @@
 // la langue vient de l'URL, par `Astro.currentLocale`.
 import Layout from '../layouts/Layout.astro';
 import Launch from './Launch.astro';
+import Dive from './Dive.astro';
 import SiteHeader from './SiteHeader.astro';
 import Hero from './Hero.astro';
 import Marquee from './Marquee.astro';
@@ -22,23 +23,30 @@ const stats = activityStats(githubSnapshot);
 
 <Layout page={home}>
 	<Launch />
-	<div class="container">
-		<SiteHeader page={home} />
-	</div>
 	<main>
-		<div class="container">
-			<Hero />
-		</div>
+		{/* La Plongée épingle l'en-tête et le héros ensemble : l'en-tête entre dans <main>, où le h1 doit
+		    rester (ADR 0009). */}
+		<Dive>
+			<div class="container" slot="head">
+				<SiteHeader page={home} />
+			</div>
+			<div class="container" slot="hero">
+				<Hero />
+			</div>
+			<div class="container">
+				<Projects />
+			</div>
+		</Dive>
+		{/* Après Projets et non sous le héros : la Plongée relie le héros à Projets (spec #68). */}
 		<Marquee />
 		<div class="container">
-			<Projects />
 			<Career />
 			<Activity stats={stats} />
 			<Stack />
 			<Contact />
 		</div>
 	</main>
-	<StatusBar secondary={ui.statusContributions[locale](formatNumber(stats.total, locale))} />
+	<StatusBar secondary={ui.statusContributions[locale](formatNumber(stats.total, locale))} dive />
 </Layout>
 
 <style is:global>

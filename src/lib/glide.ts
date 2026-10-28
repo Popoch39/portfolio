@@ -1,9 +1,10 @@
 // Le Glissé (ADR 0013) : un cran de molette lance un glissé amorti d'une seconde environ au lieu de
 // faire sauter la page. Le défilement natif avance d'un cran en un éclair puis s'arrête net, et la
-// Plongée, qui suit exactement le défilement, avançait par à-coups ; le défilement lisse du navigateur,
-// lui, repart presque de l'arrêt à chaque cran. Le glissé est donc écrit image par image : Projets,
-// épinglé par la CSS (ADR 0009), ne dépend plus d'une translation qui compense le défilement et que le
-// compositeur recevait parfois une image en retard (Brave sous Wayland).
+// Plongée, qui suit exactement le défilement, avancerait par à-coups ; le défilement lisse du navigateur
+// n'a pas d'élan d'un cran à l'autre. Le glissé est donc écrit image par image, ce que permet Projets
+// épinglé par la CSS (ADR 0009) : le navigateur applique l'épingle dans la même image que le défilement
+// écrit par le script, quand une translation qui le compenserait arrive parfois une image en retard au
+// compositeur (Brave sous Wayland).
 
 // En `TAU` millisecondes, la page fait 63 % du chemin vers sa cible : un dixième par image à 60 Hz, et un
 // cran arrive en neuf dixièmes de seconde. Amorti sur le temps écoulé, l'élan dure pareil à tout taux
@@ -14,12 +15,15 @@ const TAU = 160;
 let target = NaN;
 // La page telle que la boucle l'a écrite, au pixel près : le navigateur peut l'arrondir.
 let shown = 0;
+// La page telle que le navigateur l'a posée après cette écriture, arrondie ou non.
+let seen = 0;
 let last = 0;
 let frame = 0;
 
-// Un défilement venu d'ailleurs (clavier, ancre, Lunette, barre de défilement) a mené la page loin
-// d'où la boucle l'a laissée.
-const moved = () => Math.abs(scrollY - shown) > 1;
+// Un défilement venu d'ailleurs (clavier, ancre, Lunette, barre de défilement) a bougé la page depuis
+// que la boucle l'a posée. Le moindre écart compte : le défilement lisse du navigateur ne la mène parfois
+// que d'une fraction de pixel avant l'image suivante, que la boucle réécrirait par-dessus.
+const moved = () => scrollY != seen;
 
 const step = (now: number) => {
 	frame = 0;
@@ -29,6 +33,7 @@ const step = (now: number) => {
 	if (Math.abs(target - shown) < 0.5) shown = target;
 	// `instant` : un `scroll-behavior: smooth` rendrait chaque image au défilement lisse du navigateur.
 	scrollTo({ top: shown, behavior: 'instant' });
+	seen = scrollY;
 	if (shown != target) frame = requestAnimationFrame(step);
 };
 
@@ -76,7 +81,7 @@ addEventListener(
 		const gliding = frame && !moved();
 		const from = gliding && (target - shown) * event.deltaY > 0 ? target : scrollY;
 		if (!gliding) {
-			shown = scrollY;
+			shown = seen = scrollY;
 			last = event.timeStamp;
 		}
 		target = Math.max(0, Math.min(document.documentElement.scrollHeight - innerHeight, from + event.deltaY));

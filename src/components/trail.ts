@@ -1,5 +1,5 @@
 // La Traîne de la Visite (ADR 0012) : la scène rattrape le défilement au lieu de le suivre exactement,
-// et ne s'arrête pas net quand il s'arrête. Le Glissé (ADR 0010) ne lisse que la molette, cran par cran :
+// et ne s'arrête pas net quand il s'arrête. Le Glissé (ADR 0013) ne lisse que la molette, cran par cran :
 // lancée puis lâchée, au pavé tactile surtout, la Visite se figeait d'un coup. Aucune animation n'est
 // réglée ici : la piste, dont la ligne de temps pilote toute la Visite, est décalée de l'avance du
 // défilement sur la scène (`margin-top`, sa position dans le flux étant celle d'un élément absolu), et

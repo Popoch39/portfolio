@@ -1,7 +1,8 @@
 // Notes de la figure : autour de la figure de chaque fiche, une note par pièce, reliée à elle par un
 // trait. Elle se lit en clair (un verbe, une phrase, les technologies) ou en code (le symbole, sa
 // signature et le lien vers lui) ; la ligne de commande de la carte bascule entre les deux lectures,
-// que le module de la page recopie sur la carte pour la CSS. La géométrie (place des notes, traits, viseurs) est écrite au build dans la CSS.
+// que le module de la page recopie sur la carte pour la CSS. La géométrie (place des notes, traits,
+// viseurs) est écrite au build dans la CSS.
 // Chaque version dit tout dans sa langue : notes, ligne de commande, barre d'état et libellés.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -36,6 +37,33 @@ const faceOf = (note, reading) => note.match(new RegExp(`<div class="face ${read
 /** Le titre et la phrase d'une note en clair. */
 const plainOf = (note) => elements(faceOf(note, 'plain'), 'p').map(text);
 const escape = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Le corps `{…}` qui suit la position `at` du code, accolades imbriquées comprises. */
+const bodyAfter = (code, at) => {
+	const start = code.indexOf('{', at);
+	if (start < 0) return '';
+	let end = start;
+	for (let depth = 1; depth > 0 && end < code.length; ) depth += code[++end] === '{' ? 1 : code[end] === '}' ? -1 : 0;
+	return code.slice(start, end + 1);
+};
+
+/**
+ * Le gestionnaire que le module de la page branche sur l'évènement `change` de la bascule `.lecture`,
+ * en ligne ou nommé, ou `undefined`. Le module importe d'autres morceaux et attend au sommet : on ne
+ * l'exécute pas, on suit dans son code l'élément `.lecture` jusqu'à son écoute.
+ */
+const lectureHandler = (code) => {
+	const quote = '["\'`]';
+	const toggle = code.match(new RegExp(`([\\w$]+)\\s*=\\s*[\\w$]+\\??\\.querySelector\\(\\s*${quote}\\.lecture${quote}\\s*\\)`))?.[1];
+	if (!toggle) return undefined;
+	const listen = new RegExp(`(?<![\\w$])${escape(toggle)}\\??\\.addEventListener\\(\\s*${quote}change${quote}\\s*,\\s*`).exec(code);
+	if (!listen) return undefined;
+	const at = listen.index + listen[0].length;
+	const name = code.slice(at).match(/^([\w$]+)\s*[,)]/)?.[1];
+	if (!name) return bodyAfter(code, at);
+	const definition = new RegExp(`(?<![\\w$.])(?:${escape(name)}\\s*=|function\\s+${escape(name)}\\s*\\()`).exec(code);
+	return definition ? bodyAfter(code, definition.index) : undefined;
+};
 
 const notesIn = (locale) => {
 	const { anatomy } = VERSIONS.find((version) => version.locale === locale);
@@ -124,7 +152,9 @@ for (const version of VERSIONS) {
 			assert.match(styles, /\.annot(?:\[[^\]]*\])*\[data-lecture=["']?code["']?\]/, `${repo} : la CSS ne lit pas la lecture`);
 			assert.doesNotMatch(styles, /:has\([^)]*:checked\)/, `${repo} : la CSS lit encore la bascule par :has()`);
 			const [loader] = tags(html, 'script').filter((t) => attr(t, 'type') === 'module');
-			assert.match(moduleGraph(attr(loader, 'src') ?? '').code, /\.lecture\s*=/, `${repo} : le module ne recopie pas la lecture`);
+			const handler = lectureHandler(moduleGraph(attr(loader, 'src') ?? '').code);
+			assert.ok(handler, `${repo} : le module n'écoute pas la bascule`);
+			assert.match(handler, /\.dataset\.lecture\s*=(?!=)|\.setAttribute\(\s*["'`]data-lecture["'`]/, `${repo} : le module ne recopie pas la lecture sur la carte`);
 		}
 	});
 

@@ -9,9 +9,10 @@
 // Tout est HTML et CSS : la mise en page (`annotate`, au build) arrive en propriétés personnalisées
 // dans la feuille de la page, la bascule est un groupe de boutons radio dont le module de la page
 // recopie la valeur dans `data-lecture` (un `:has()` restylait la carte à chaque image de la figure,
-// ADR 0003), et chaque mouvement est une transition de `translate`, `scale` ou `opacity`. Trois dispositions selon la
-// largeur de la carte : la liste sous la figure (pastilles numérotées sur les pièces), les bandes
-// au-dessus et au-dessous, ou, pour une figure haute, les colonnes de part et d'autre.
+// ADR 0003), et chaque mouvement est une transition de `translate`, `scale` ou `opacity`. Trois
+// dispositions selon la largeur de la carte : la liste sous la figure (pastilles numérotées sur les
+// pièces), les bandes au-dessus et au-dessous, ou, pour une figure haute, les colonnes de part et
+// d'autre.
 import type { Piece, Signature } from '../anatomies/contract';
 import type { AnnotationLayout } from '../anatomies/annotations';
 import { signatureLines } from '../anatomies/signature';

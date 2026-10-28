@@ -111,7 +111,7 @@ for (const { locale, id } of [
 			assert.equal(body.match(/\banimation-range\s*:([^;}]*)/)?.[1], bodies[0].match(/\banimation-range\s*:([^;}]*)/)?.[1], 'plages différentes');
 		}
 		assert.match(styles, /\.frise-reveal\b[^{}]*\{[^{}]*\boverflow\s*:\s*(?:clip|hidden)\b/, 'enveloppe sans masque');
-		assert.doesNotMatch(styles.match(/@keyframes\s+frise-[\s\S]*/)?.[0] ?? '', /clip-path/, 'clip-path animé');
+		assert.doesNotMatch([...keyframesOf(styles).values()].join(''), /clip-path/, 'clip-path animé');
 	});
 
 	test(`${locale} : une fine barre de progression va de 0 à 1 sur la même ligne de temps`, () => {

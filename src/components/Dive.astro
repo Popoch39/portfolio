@@ -14,7 +14,8 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 
 <div class="dive">
 	<div class="dive-scene">
-		<span class="dive-track" aria-hidden="true"></span>
+		{/* La piste se déclare au repli de Firefox (`dive.ts`) : sa ligne de temps et le préfixe de ses animations. */}
+		<span class="dive-track" aria-hidden="true" data-timeline="--dive" data-prefix="dive-"></span>
 		<div class="dive-stage">
 			<div class="dive-head"><slot name="head" /></div>
 			<div class="dive-hero"><slot name="hero" /></div>

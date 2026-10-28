@@ -31,8 +31,20 @@ Chaque Commit a ses plages, générées au build dans `src/lib/frise.ts`, en pou
 
 Environ 80 animations de plus sur la scène, toutes d'opacité, d'échelle ou de translation. À vérifier en trace : pas de mise en page ni de peinture par image, et le coût de ce nombre au compositeur.
 
+## Caméra adaptative (#102)
+
+La scène est le conteneur de taille `frise`. Aucun JS : tout passe par ses requêtes et ses unités (`cqw`, `cqh`). Au-dessus des seuils, la vue suit la planche. Sous l'un d'eux, `@container frise (width < 640px) or (height < 560px)` (téléphone en portrait ou en paysage, petite fenêtre), la scène se resserre :
+
+- **Courbe resserrée des étiquettes.** Sur le plan, une étiquette à venir reste basse sur son poteau replié, et croise celle du Commit actif dressée à côté. Aucune étiquette n'est donc allumée avant HEAD. Celle du Commit actif est pleine. Au passage du suivant, elle retombe à 0,3 et s'éteint en 0,15 an, moins que l'écart le plus serré entre deux Commits (0,25 an). Il y a ainsi au plus deux étiquettes allumées, dont une seule pleine, et le Commit actif en grand porte la lecture. Ce sont 13 `@keyframes frise-tight-` générées au build, en pourcentages littéraux comme les autres. Elles reprennent l'animation de chaque étiquette dans la requête, plus loin dans la feuille. Seule l'opacité change.
+- **Vue plus grande.** Puisque seule l'étiquette de HEAD est allumée, la largeur ne compte que pour 480 px au lieu de 640 (sur un écran de 390 px, les titres passent de 12 à 15 px). Sur un écran bas (`height < 560px`), la hauteur compte pour 600 px au lieu de 720. L'en-tête de section tient alors sur une ligne, son titre réduit à `clamp(28px, 10cqh, 52px)` : c'est ce qui chevauchait les étiquettes du haut en 844 × 390. Le Commit actif descend vers la barre d'état, et un fondu bas efface le plan sous lui.
+
+La requête est écrite deux fois : dans la feuille générée (`src/lib/frise.ts`), et dans la CSS scopée de `Career.astro`, dont les sélecteurs (spécificité 0,4,0) l'emporteraient sur une règle globale. Un test vérifie que les deux seuils sont identiques.
+
+Écartée : la courbe resserrée sur tous les écrans. La planche montre les étiquettes à venir, pâles, et l'écran large a la place de les lire. Reste un cas, hérité de la planche et de #101 : en écran large, l'étiquette pâle d'une bifurcation (`lea`, `access-code`, `cda`), encore basse, croise celle du Commit de `main` qui la précède tant que ce dernier est actif, soit quelques pourcents de la scène. Ce cas est à trancher par Louis.
+
 ## Mesures
 
 À compléter : poids de l'accueil, Lighthouse, trace de performance dans un Chromium fenêtré sur le GPU (pas de mise en page ni de peinture par image), captures en 390 × 844, 768 × 1024, 1280 × 720 et 1920 × 1080, émulation du mouvement réduit, recette de Louis (Firefox, Safari, téléphone).
 
-- Poids de l'accueil (HTML, polices préchargées et module, Brotli qualité 4), mesuré au build : 81 979 → 83 424 octets en français, 81 690 → 82 967 en anglais (budget 90 000). Avec la chorégraphie (#101) : 83 426 → 84 981 en français, 82 970 → 84 562 en anglais.
+- Poids de l'accueil (HTML, polices préchargées et module, Brotli qualité 4), mesuré au build : 81 979 → 83 424 octets en français, 81 690 → 82 967 en anglais (budget 90 000). Avec la chorégraphie (#101) : 83 426 → 84 981 en français, 82 970 → 84 562 en anglais. Avec la caméra adaptative (#102) : 84 979 → 85 417 en français, 84 559 → 85 106 en anglais.
+- Captures (#102), Chromium headless sur `astro preview`, la page dans un cadre de taille fixe défilé dans la scène, en 390 × 844, 844 × 390, 768 × 1024, 1280 × 720, 1440 × 900 et 1920 × 1080 : pas de débordement horizontal, et le Commit actif reste lisible. En écran étroit ou bas, aucune étiquette ne se chevauche, ni avec une autre ni avec l'en-tête. En écran large, il reste le croisement des bifurcations décrit plus haut.

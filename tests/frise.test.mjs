@@ -124,9 +124,12 @@ for (const { locale, id } of [
 		assert.equal(bar.match(/\banimation-range\s*:([^;}]*)/)?.[1], player('frise-rail')[0].match(/\banimation-range\s*:([^;}]*)/)?.[1]);
 	});
 
+	/** La scène sur un écran large, et ses requêtes de conteneur (#102), qui la resserrent sur un écran étroit ou bas. */
+	const wide = withoutBlocks(styles, /@container\b/);
+	const compact = blocks(blocks(styles, SUPPORTED).join(''), /@container\b/);
 	/** Les corps des règles qui jouent une animation sur un sélecteur (un Commit, une de ses parties). */
-	const playing = (selector) =>
-		[...styles.matchAll(/([^{}]+)\{([^{}]*\banimation\s*:[^{}]*)\}/g)]
+	const playing = (selector, source = wide) =>
+		[...source.matchAll(/([^{}]+)\{([^{}]*\banimation\s*:[^{}]*)\}/g)]
 			.filter(([, selectors]) => selectors.split(',').some((one) => selector.test(one.trim())))
 			.map(([, , body]) => body);
 	/** La plage `contain` d'une règle, en % de la scène : `contain 30%` vaut 30–100 %, `contain contain 40%` 0–40 %. */
@@ -228,6 +231,39 @@ for (const { locale, id } of [
 		for (const [n, at, expected] of cases) {
 			const value = opacityAt(label(n), at);
 			assert.ok(Math.abs(value - expected) < 0.01, `Commit ${n} à ${at} % : ${value}, attendu ${expected}`);
+		}
+	});
+
+	// #102 : la scène est un conteneur de taille ; sur un écran étroit ou bas, ses requêtes resserrent la courbe.
+	test(`${locale} : sur un écran étroit ou bas, une requête de conteneur de la scène reprend chaque étiquette`, () => {
+		assert.match(styles, /\.frise-scene\b[^{}]*\{[^{}]*\bcontainer(?:-name)?\s*:\s*frise\b/, 'scène sans nom de conteneur');
+		assert.ok(compact.length > 0, 'aucune requête de conteneur dans la scène jouée');
+		// La courbe (générée) et la caméra (Career.astro) se resserrent au même seuil.
+		const [query, ...others] = compact.map((block) => block.match(/^@container[^{]*/)[0].trim());
+		for (const other of others) assert.equal(other, query, 'seuils différents');
+		assert.match(query, /^@container\s+frise\b/, query);
+		assert.match(query, /\bwidth\s*<\s*\d+px\b[^{]*\bor\b[^{]*\bheight\s*<\s*\d+px\b/, query);
+		PASSAGE.forEach((_, i) => assert.equal(playing(new RegExp(`\\.commit:nth-child\\(${i + 1}\\) \\.label$`), compact.join('')).length, 1, `Commit ${i + 1}`));
+	});
+
+	// Resserrée : aucune étiquette à venir ; celle de HEAD s'allume à son passage, dans l'ordre de la Frise, et
+	// la précédente s'éteint vite. Au plus deux étiquettes allumées, dont une seule pleine : rien ne se chevauche.
+	test(`${locale} : sur un écran étroit ou bas, seules les voisines de HEAD restent allumées, Commit après Commit`, () => {
+		const label = (n) => playing(new RegExp(`\\.commit:nth-child\\(${n}\\) \\.label$`), compact.join(''))[0];
+		const at = (t) => PASSAGE.map((_, i) => opacityAt(label(i + 1), t));
+		PASSAGE.forEach((passage, i) => {
+			const [before, after] = [at(passage - 0.002), at(passage + 0.002)];
+			assert.equal(before[i], 0, `Commit ${i + 1} allumé avant son passage`);
+			assert.equal(after[i], 1, `Commit ${i + 1} éteint à son passage`);
+			after.forEach((value, k) => k > i && assert.equal(value, 0, `Commit ${k + 1} allumé au passage du Commit ${i + 1}`));
+			after.forEach((value, k) => k < i - 1 && assert.equal(value, 0, `Commit ${k + 1} allumé au passage du Commit ${i + 1}`));
+			if (i > 0) assert.ok(after[i - 1] < 0.5, `Commit ${i} encore plein au passage du suivant`);
+			if (PASSAGE[i + 1]) assert.equal(at(PASSAGE[i + 1] - 0.002)[i - 1] ?? 0, 0, `Commit ${i} pas éteint avant le passage d’après`);
+		});
+		for (let t = 0; t <= 100; t += 0.05) {
+			const values = at(t);
+			assert.ok(values.filter((v) => v > 0.01).length <= 2, `à ${t.toFixed(2)} % : ${values}`);
+			assert.ok(values.filter((v) => v > 0.5).length <= 1, `à ${t.toFixed(2)} % : ${values}`);
 		}
 	});
 

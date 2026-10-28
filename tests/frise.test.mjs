@@ -270,9 +270,10 @@ for (const { locale, id } of [
 		PASSAGE.forEach((_, i) => assert.equal(playing(new RegExp(`\\.commit:nth-child\\(${i + 1}\\) \\.label$`), compact.join('')).length, 1, `Commit ${i + 1}`));
 	});
 
-	// Resserrée : aucune étiquette à venir ; celle de HEAD s'allume à son passage, dans l'ordre de la Frise, et
-	// la précédente s'éteint vite. Au plus deux étiquettes allumées, dont une seule pleine : rien ne se chevauche.
-	test(`${locale} : sur un écran étroit ou bas, seules les voisines de HEAD restent allumées, Commit après Commit`, () => {
+	// Resserrée : aucune étiquette à venir, pas même la voisine (écart à la spec, ADR 0014) ; celle du Commit
+	// actif s'allume à son passage, dans l'ordre de la Frise, et la précédente s'éteint vite. Au plus deux
+	// étiquettes allumées, dont une seule pleine : rien ne se chevauche.
+	test(`${locale} : sur un écran étroit ou bas, aucune étiquette à venir n’est allumée ; celle du Commit actif est pleine, la précédente s’éteint vite`, () => {
 		const label = (n) => playing(new RegExp(`\\.commit:nth-child\\(${n}\\) \\.label$`), compact.join(''))[0];
 		const at = (t) => PASSAGE.map((_, i) => opacityAt(label(i + 1), t));
 		PASSAGE.forEach((passage, i) => {

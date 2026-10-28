@@ -54,7 +54,7 @@ const geometry = [
 <svg class="sprite" aria-hidden="true" focusable="false">
 	{
 		techs.map((tech) => (
-			<symbol id={`tech-${tech}`} viewBox="0 0 24 24">
+			<symbol id={`tech-${tech}`} viewBox={logoOf(tech).viewBox}>
 				<path d={logoOf(tech).path} />
 			</symbol>
 		))

@@ -10,7 +10,9 @@
 // qu'à la première commande. Le lancement (ADR 0008) ajoute à l'accueil sa porte en ligne, ses
 // `@keyframes` `launch-` et ses animations, toutes sous `:root[data-launch]` (vérifié par lancement.test.mjs).
 // La Plongée (ADR 0009) ajoute à l'accueil seulement ses `@keyframes` `dive-` et ses animations, sur ses
-// éléments `.dive…`, toutes en mouvement non réduit et sous `@supports` (vérifié par plongee.test.mjs).
+// éléments `.dive…`, toutes en mouvement non réduit et sous `@supports` (vérifié par plongee.test.mjs). La
+// Visite de l'Atome (ADR 0011) y ajoute ses `@keyframes` `visit-` et ses animations, dans la section Stack
+// (`.stack…`) et l'Atome (`.atom…`), aux mêmes conditions (vérifié par visite.test.mjs).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PROJECTS, readFiche, readHome, tags, attr, elements, css, launchGate, withoutBlocks } from './helpers/dist.mjs';
@@ -80,23 +82,26 @@ test('la CSS livrée n’a ni :hover ni transition hors des notes de la figure, 
 		const keyframes = [...pageStyles.matchAll(/@keyframes\s+([\w-]+)/gi)].map((m) => m[1]);
 		assert.deepEqual(
 			keyframes.filter(
-				(name) => !name.startsWith('iso-') && !name.startsWith('vt-') && !(page.home && (name.startsWith('launch-') || name.startsWith('dive-'))),
+				(name) =>
+					!name.startsWith('iso-') &&
+					!name.startsWith('vt-') &&
+					!(page.home && (name.startsWith('launch-') || name.startsWith('dive-') || name.startsWith('visit-'))),
 			),
 			[],
-			`${page.name} : @keyframes hors du kit, de la transition, du lancement et de la Plongée`,
+			`${page.name} : @keyframes hors du kit, de la transition, du lancement, de la Plongée et de la Visite`,
 		);
-		// Les étapes des `@keyframes vt-…`, `launch-…` et `dive-…` portent `animation-timing-function`.
-		const animated = [...withoutBlocks(pageStyles, /@keyframes\s+(vt|launch|dive)-/).matchAll(/([^{}]+)\{[^{}]*\banimation(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap(
+		// Les étapes des `@keyframes vt-…`, `launch-…`, `dive-…` et `visit-…` portent `animation-timing-function`.
+		const animated = [...withoutBlocks(pageStyles, /@keyframes\s+(vt|launch|dive|visit)-/).matchAll(/([^{}]+)\{[^{}]*\banimation(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap(
 			(m) => m[1].split(/,(?![^(]*\))/),
 		);
 		const allowed = (selector) =>
 			selector.startsWith('.iso') ||
 			selector.startsWith('::view-transition-') ||
-			(page.home && (selector.startsWith(':root[data-launch]') || selector.startsWith('.dive')));
+			(page.home && (selector.startsWith(':root[data-launch]') || selector.startsWith('.dive') || /^\.(?:stack|atom)\b/.test(selector)));
 		assert.deepEqual(
 			animated.map((selector) => selector.trim()).filter((selector) => !allowed(selector)),
 			[],
-			`${page.name} : animation hors de la CSS du kit, de la transition, du lancement et de la Plongée`,
+			`${page.name} : animation hors de la CSS du kit, de la transition, du lancement, de la Plongée et de la Visite`,
 		);
 	}
 });

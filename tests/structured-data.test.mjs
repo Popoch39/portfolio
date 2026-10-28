@@ -49,6 +49,18 @@ for (const { locale, jobTitle, skill } of VERSIONS) {
 		for (const known of ['TypeScript', 'PHP', 'Rust', skill]) assert.ok(person.knowsAbout.includes(known), `${known} absent`);
 	});
 
+	test(`${locale} : les compétences de la stack suivent l’ordre de la section Stack (planche 34)`, () => {
+		assert.deepEqual(person.knowsAbout.slice(person.knowsAbout.indexOf('TypeScript')), [
+			...['TypeScript', 'Rust', 'PHP', 'SQL', 'Go', 'Lua'],
+			...['PostgreSQL', 'Redis', 'Prisma', 'Drizzle'],
+			...['NestJS', 'Laravel', 'Axum', 'Elysia', 'Node', 'GraphQL', 'REST'],
+			...['React', 'Next.js', 'Vue', 'Vite', 'Tailwind'],
+			...['OpenLayers', 'MapLibre GL', 'PostGIS', 'Three.js'],
+			...['Docker', 'CI/CD', 'Cloudflare', 'AWS', 'Sentry'],
+			...['Bun', 'Monorepo', 'Git', 'Neovim', 'tmux', 'Agile/Scrum'],
+		]);
+	});
+
 	test(`${locale} : aucune donnée personnelle sensible : ni téléphone, ni adresse, ni date de naissance`, () => {
 		const json = JSON.stringify(person);
 		for (const key of ['telephone', 'address', 'streetAddress', 'postalCode', 'birthDate', 'birthPlace']) {

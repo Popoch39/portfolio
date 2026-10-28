@@ -7,8 +7,8 @@ import assert from 'node:assert/strict';
 import { brotliCompressSync, constants } from 'node:zlib';
 import { PROJECTS, attr, moduleGraph, readDist, readFiche, readHome, tags } from './helpers/dist.mjs';
 
-/** Seuils en kilo-octets (1 Ko = 1 000 o). */
-const BUDGET = { accueil: 80_000, fiche: 130_000 };
+/** Seuils en kilo-octets (1 Ko = 1 000 o). L'accueil passe de 80 à 90 Ko pour l'Atome (ADR 0011). */
+const BUDGET = { accueil: 90_000, fiche: 130_000 };
 
 const brotli = (content) => brotliCompressSync(content, { params: { [constants.BROTLI_PARAM_QUALITY]: 4 } }).length;
 
@@ -28,7 +28,7 @@ const pages = [
 	...PROJECTS.map(({ slug }) => ({ name: `fiche anglaise ${slug}`, budget: BUDGET.fiche, html: readFiche(slug, 'en') })),
 ];
 
-test('chaque page tient son budget : accueil 80 Ko, fiche 130 Ko, en Brotli', () => {
+test('chaque page tient son budget : accueil 90 Ko, fiche 130 Ko, en Brotli', () => {
 	for (const { name, budget, html } of pages) {
 		const { total, parts } = weigh(html);
 		const detail = parts.map(({ file, size }) => `${file} ${size} o`).join(', ');

@@ -2,6 +2,7 @@
 // la page à jour. Règle de contenu : ni téléphone, ni adresse, ni date de naissance.
 // Chaque texte affiché a ses deux langues côte à côte (`Localized`), le français au-dessus ;
 // les faits (années, stack, dépôts, entreprises, villes, liens) restent écrits une seule fois.
+import type { Tech } from '../anatomies/contract.ts';
 import { defaultLocale, fiche, home, pathOf, type Locale, type Localized, type Page } from '../lib/i18n.ts';
 
 export interface Employer {
@@ -40,20 +41,201 @@ export interface Identity {
 	};
 }
 
-export interface StackCategory {
-	label: Localized<string>;
-	items: string[];
+/** Orientation d'une Bague, en degrés : `rotateZ`, puis `rotateX`, puis `rotateZ`. */
+export type Tilt = readonly [number, number, number];
+
+/**
+ * La Bague d'une famille dans l'Atome, reprise telle quelle de la planche 34 (`34-atome-visite`). La Visite
+ * va de l'état « gyroscope » (Bagues emboîtées) à l'état « fin », qui est la pose finale ; les plages sont
+ * en pourcentage de la piste de la scène (`contain`).
+ */
+export interface Ring {
+	/** Rayon en pixels, au gyroscope, à mi-course et en fin de Visite. */
+	radius: { gyro: number; mid: number; end: number };
+	/** Orientation au gyroscope, à mi-course et en fin de Visite. */
+	tilt: { gyro: Tilt; mid: Tilt; end: Tilt };
+	/** Profondeur en pixels (`translateZ`). */
+	depth: number;
+	/**
+	 * Tour fait par les Pastilles sur la Bague pendant la Visite, en degrés : son signe fixe aussi le sens
+	 * de la Révolution, et sa valeur sa vitesse (un tour en 60 s × 300° / |tour|).
+	 */
+	turn: number;
+	/** Plage de montage : de l'emboîtement en gyroscope à la Bague posée. */
+	assembly: readonly [number, number];
+	/** Décalage de la famille dans la Visite, quand elle s'allume. */
+	offset: number;
+	/** Fin de l'apparition de la ligne de la famille dans la légende. */
+	legend: number;
+	/** La Bague passe en bleu : la cartographie (SIG) est la spécialité de Louis. */
+	accent?: true;
 }
 
-/** Stack par catégorie, dans l'ordre d'affichage (section Stack, et compétences du JSON-LD). */
+/** La Pastille d'une technologie sur la Bague de sa famille : son logo, toujours de face. */
+export interface Pastille {
+	logo: Tech;
+	/** Couleur de marque ; sans elle, le logo prend l'encre de la Pastille (blanche sur une Pastille bleue). */
+	color?: string;
+	/** Place sur la Bague, en degrés, avant le tour de la Visite. */
+	angle: number;
+}
+
+export interface StackItem {
+	name: string;
+	/** Seulement si la technologie a un logo : sinon elle n'est que dans la légende. */
+	pastille?: Pastille;
+}
+
+export interface StackCategory {
+	label: Localized<string>;
+	items: StackItem[];
+	ring: Ring;
+}
+
+/** L'orientation des Bagues emboîtées en gyroscope, commune à toutes. */
+const gyro: Tilt = [0, 60, 45];
+
+/**
+ * Stack par famille, dans l'ordre d'affichage (section Stack, et compétences du JSON-LD) : celui de la
+ * planche 34, de la Bague du dehors à celle du dedans.
+ */
 export const stack: StackCategory[] = [
-	{ label: { fr: 'Langages', en: 'Languages' }, items: ['TypeScript', 'Rust', 'PHP', 'SQL', 'Go', 'Lua'] },
-	{ label: { fr: 'Back-end', en: 'Back-end' }, items: ['NestJS', 'Laravel', 'Axum', 'Elysia', 'Node', 'GraphQL', 'REST'] },
-	{ label: { fr: 'Front-end', en: 'Front-end' }, items: ['React', 'Next.js', 'Vue', 'Vite', 'Tailwind'] },
-	{ label: { fr: 'Data', en: 'Data' }, items: ['PostgreSQL', 'Redis', 'Prisma', 'Drizzle'] },
-	{ label: { fr: 'DevOps', en: 'DevOps' }, items: ['Docker', 'CI/CD', 'Cloudflare', 'AWS', 'Sentry'] },
-	{ label: { fr: 'Outils', en: 'Tooling' }, items: ['Bun', 'Monorepo', 'Git', 'Neovim', 'tmux', 'Agile/Scrum'] },
-	{ label: { fr: 'Carto & 3D', en: 'Mapping & 3D' }, items: ['OpenLayers', 'MapLibre GL', 'PostGIS', 'Three.js'] },
+	{
+		label: { fr: 'Langages', en: 'Languages' },
+		items: [
+			{ name: 'TypeScript', pastille: { logo: 'typescript', color: '#3178c6', angle: 20 } },
+			{ name: 'Rust', pastille: { logo: 'rust', angle: 92 } },
+			{ name: 'PHP', pastille: { logo: 'php', color: '#777bb4', angle: 164 } },
+			{ name: 'SQL' },
+			{ name: 'Go', pastille: { logo: 'go', color: '#00add8', angle: 236 } },
+			{ name: 'Lua', pastille: { logo: 'lua', color: '#2c2d72', angle: 308 } },
+		],
+		ring: {
+			radius: { gyro: 170, mid: 160, end: 150 },
+			tilt: { gyro, mid: [20, 70, 140], end: [0, 68, 225] },
+			depth: -340,
+			turn: -300,
+			assembly: [6, 56],
+			offset: 0,
+			legend: 30,
+		},
+	},
+	{
+		label: { fr: 'Data', en: 'Data' },
+		items: [
+			{ name: 'PostgreSQL', pastille: { logo: 'postgresql', color: '#4169e1', angle: 40 } },
+			{ name: 'Redis', pastille: { logo: 'redis', color: '#ff4438', angle: 130 } },
+			{ name: 'Prisma', pastille: { logo: 'prisma', color: '#2d3748', angle: 220 } },
+			{ name: 'Drizzle', pastille: { logo: 'drizzle', color: '#7a9a1f', angle: 310 } },
+		],
+		ring: {
+			radius: { gyro: 148, mid: 141, end: 134 },
+			tilt: { gyro, mid: [20, 70, 200], end: [0, 68, 405] },
+			depth: -340,
+			turn: 340,
+			assembly: [7, 57],
+			offset: 4,
+			legend: 33,
+		},
+	},
+	{
+		label: { fr: 'Back-end', en: 'Back-end' },
+		items: [
+			{ name: 'NestJS', pastille: { logo: 'nestjs', color: '#e0234e', angle: 10 } },
+			{ name: 'Laravel', pastille: { logo: 'laravel', color: '#ff2d20', angle: 100 } },
+			{ name: 'Axum' },
+			{ name: 'Elysia' },
+			{ name: 'Node', pastille: { logo: 'nodedotjs', color: '#5fa04e', angle: 190 } },
+			{ name: 'GraphQL', pastille: { logo: 'graphql', color: '#e10098', angle: 280 } },
+			{ name: 'REST' },
+		],
+		ring: {
+			radius: { gyro: 126, mid: 122, end: 118 },
+			tilt: { gyro, mid: [20, 70, 80], end: [0, 68, -135] },
+			depth: -340,
+			turn: -380,
+			assembly: [8, 58],
+			offset: 8,
+			legend: 36,
+		},
+	},
+	{
+		label: { fr: 'Front-end', en: 'Front-end' },
+		items: [
+			{ name: 'React', pastille: { logo: 'react', color: '#1fa9cf', angle: 60 } },
+			{ name: 'Next.js', pastille: { logo: 'nextdotjs', angle: 132 } },
+			{ name: 'Vue', pastille: { logo: 'vuedotjs', color: '#42b883', angle: 204 } },
+			{ name: 'Vite', pastille: { logo: 'vite', color: '#646cff', angle: 276 } },
+			{ name: 'Tailwind', pastille: { logo: 'tailwindcss', color: '#06b6d4', angle: 348 } },
+		],
+		ring: {
+			radius: { gyro: 104, mid: 127, end: 150 },
+			tilt: { gyro, mid: [80, -55, 250], end: [60, 68, 405] },
+			depth: 0,
+			turn: 420,
+			assembly: [9, 59],
+			offset: 12,
+			legend: 39,
+		},
+	},
+	{
+		label: { fr: 'Carto & 3D', en: 'Mapping & 3D' },
+		items: [
+			{ name: 'OpenLayers', pastille: { logo: 'openlayers', color: '#1f6b75', angle: 30 } },
+			{ name: 'MapLibre GL', pastille: { logo: 'maplibre', color: '#396cb2', angle: 150 } },
+			{ name: 'PostGIS' },
+			{ name: 'Three.js', pastille: { logo: 'threedotjs', angle: 270 } },
+		],
+		ring: {
+			radius: { gyro: 82, mid: 108, end: 134 },
+			tilt: { gyro, mid: [80, -55, 60], end: [60, 68, 225] },
+			depth: 0,
+			turn: -460,
+			assembly: [10, 60],
+			offset: 16,
+			legend: 42,
+			accent: true,
+		},
+	},
+	{
+		label: { fr: 'DevOps', en: 'DevOps' },
+		items: [
+			{ name: 'Docker', pastille: { logo: 'docker', color: '#2496ed', angle: 0 } },
+			{ name: 'CI/CD' },
+			{ name: 'Cloudflare', pastille: { logo: 'cloudflare', color: '#f38020', angle: 90 } },
+			{ name: 'AWS', pastille: { logo: 'aws', color: '#232f3e', angle: 180 } },
+			{ name: 'Sentry', pastille: { logo: 'sentry', color: '#362d59', angle: 270 } },
+		],
+		ring: {
+			radius: { gyro: 60, mid: 105, end: 150 },
+			tilt: { gyro, mid: [140, 80, 300], end: [120, 68, 585] },
+			depth: 340,
+			turn: 500,
+			assembly: [11, 61],
+			offset: 20,
+			legend: 45,
+		},
+	},
+	{
+		label: { fr: 'Outils', en: 'Tooling' },
+		items: [
+			{ name: 'Bun', pastille: { logo: 'bun', angle: 45 } },
+			{ name: 'Monorepo' },
+			{ name: 'Git', pastille: { logo: 'git', color: '#f05032', angle: 135 } },
+			{ name: 'Neovim', pastille: { logo: 'neovim', color: '#57a143', angle: 225 } },
+			{ name: 'tmux', pastille: { logo: 'tmux', color: '#1bb91f', angle: 315 } },
+			{ name: 'Agile/Scrum' },
+		],
+		ring: {
+			radius: { gyro: 38, mid: 86, end: 134 },
+			tilt: { gyro, mid: [140, 80, 120], end: [120, 68, -135] },
+			depth: 340,
+			turn: -540,
+			assembly: [12, 62],
+			offset: 24,
+			legend: 48,
+		},
+	},
 ];
 
 export interface DailyTool {
@@ -73,7 +255,7 @@ const givenName = 'Louis';
 const familyName = 'Pocheron';
 const languages = ['TypeScript', 'PHP', 'Rust'];
 const sideLanguages = ['Go', 'Lua'];
-const stackItems = stack.flatMap((category) => category.items);
+const stackItems = stack.flatMap((category) => category.items.map((item) => item.name));
 // L'identifiant GitHub est la seule source : profil, liens et dépôts en dérivent.
 const githubHandle = 'Popoch39';
 const githubProfile = `github.com/${githubHandle}`;

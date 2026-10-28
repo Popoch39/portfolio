@@ -1,73 +1,138 @@
 ---
+// Section 04 · Stack (planche 34 · Atome, visite guidée, spec #80) : l'Atome à gauche, sa légende à droite,
+// les outils du quotidien dessous ; sous 900 px de large, l'Atome passe au-dessus de la légende. La
+// légende est la liste de définitions lue par les lecteurs d'écran ; l'Atome, décoratif, en est le dessin.
+// En défilant, la section s'épingle et la Visite s'y joue (ADR 0011) : tout est en CSS pilotée par le
+// défilement ; en mouvement réduit, sur un écran bas ou dans un navigateur qui ne sait pas la jouer, la
+// piste et les enveloppes ne changent rien à la pose.
 import SectionHeader from './SectionHeader.astro';
+import Atom from './Atom.astro';
 import { identity, stack, dailyTools, sections } from '../data/profile';
 import { localeOf, ui } from '../lib/i18n';
+import { visitSheet } from '../lib/visit';
 
 const locale = localeOf(Astro.currentLocale);
 const { id, label } = sections.stack;
 ---
 
+<style is:inline set:html={visitSheet}></style>
 <section id={id[locale]} class="stack">
-	<SectionHeader number={4} title={label[locale]} note=":set stack?" />
-	<dl class="categories">
-		{
-			stack.map((category) => (
-				<div class="grid category">
-					<dt class="mono label">{category.label[locale]}</dt>
-					<dd class="items">
-						{/* Espace insécable avant « / » : la barre ne commence jamais une ligne. Les
-						   vrais espaces hors du séparateur masqué gardent les mots distincts à l'oral. */}
-						{category.items.map((item, i) => (
-							<Fragment>
-								{i > 0 && (
-									<Fragment>
-										{' '}
-										<span class="sep" aria-hidden="true">/</span>{' '}
-									</Fragment>
-								)}
-								<span>{item}</span>
-							</Fragment>
-						))}
-					</dd>
+	<span class="visit-track" aria-hidden="true"></span>
+	<div class="stage">
+		<div class="lift">
+			<SectionHeader number={4} title={label[locale]} note=":set stack?" />
+			<div class="board">
+				<div class="scene">
+					<div class="atom-box">
+						<Atom />
+					</div>
+					<dl class="legend">
+						{
+							stack.map((category, k) => (
+								<div class:list={['line', `line-${k}`, { accent: category.ring.accent }]}>
+									<dt class="mono family">
+										<span class="number" aria-hidden="true">
+											{String(k + 1).padStart(2, '0')}
+										</span>
+										{category.label[locale]}
+									</dt>
+									<dd class="items">
+										{/* Espace insécable avant « / » : la barre ne commence jamais une ligne. Les
+										   vrais espaces hors du séparateur masqué gardent les mots distincts à l'oral. */}
+										{category.items.map((item, i) => (
+											<Fragment>
+												{i > 0 && (
+													<Fragment>
+														{' '}
+														<span class="sep" aria-hidden="true">/</span>{' '}
+													</Fragment>
+												)}
+												<span>{item.name}</span>
+											</Fragment>
+										))}
+									</dd>
+								</div>
+							))
+						}
+					</dl>
 				</div>
-			))
-		}
-	</dl>
-	<p class="mono tools">
-		{dailyTools.map((tool) => ui.dailyTool[locale](tool.role[locale], tool.name)).join(' · ')} —{' '}
-		<a href={identity.links.nvimConfig}>{ui.configOnGitHub[locale]}</a>
-	</p>
+				<p class="mono tools">
+					{dailyTools.map((tool) => ui.dailyTool[locale](tool.role[locale], tool.name)).join(' · ')} —{' '}
+					<a href={identity.links.nvimConfig}>{ui.configOnGitHub[locale]}</a>
+				</p>
+			</div>
+		</div>
+	</div>
 </section>
 
 <style>
 	.stack {
-		padding-top: clamp(64px, 8vw, 120px);
+		--stack-top: clamp(64px, 8vw, 120px);
+		padding-top: var(--stack-top);
 	}
 
-	.categories {
+	.visit-track {
+		display: none;
+	}
+
+	/* L'Atome posé tient dans 330 × 300 px autour de son centre. Plus étroite, la colonne le réduit à sa
+	   largeur : `tan(atan2(a, b))` est le seul quotient de deux longueurs que la CSS sache écrire partout. */
+	.scene {
+		container-type: inline-size;
+	}
+
+	/* Les boîtes des Bagues, des carrés tournés en 3D, débordent le dessin : coupées en largeur, elles ne
+	   font pas défiler la page de côté. */
+	.atom-box {
+		--atom-scale: min(1, tan(atan2(100cqw, 330px)));
+		position: relative;
+		overflow-x: clip;
+		height: calc(300px * var(--atom-scale));
+		margin: 28px 0 12px;
+	}
+
+	.atom-box > :global(.atom) {
+		left: 50%;
+		top: 50%;
+		scale: var(--atom-scale);
+	}
+
+	.legend {
 		margin: 0;
 	}
 
-	.category {
-		row-gap: 6px;
-		align-items: baseline;
-		padding: 22px 0;
-		border-bottom: 1px solid var(--rule);
+	/* Le numéro sort de la colonne du texte, à gauche, comme sur la planche. */
+	.line {
+		position: relative;
+		padding: 8px 0 9px 34px;
+		border-top: 0.5px solid var(--stack-sep);
 	}
 
-	.label {
-		font-size: 13px;
-		letter-spacing: 0.04em;
+	.number {
+		position: absolute;
+		left: 0;
+		font-size: 11px;
+		line-height: 16px;
+		letter-spacing: 0;
+	}
+
+	.family {
+		font-size: 10px;
+		line-height: 16px;
+		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color: var(--muted);
 	}
 
+	.accent .family {
+		color: var(--accent);
+	}
+
 	.items {
 		margin: 0;
-		font-size: clamp(22px, 2.4vw, 34px);
-		line-height: 1.22;
-		font-weight: 500;
-		letter-spacing: -0.015em;
+		font-size: 15px;
+		line-height: 21px;
+		letter-spacing: -0.005em;
 	}
 
 	.sep {
@@ -75,19 +140,229 @@ const { id, label } = sections.stack;
 	}
 
 	.tools {
-		margin: 22px 0 0;
-		font-size: 13px;
+		margin: 18px 0 0;
+		font-size: 12px;
+		line-height: 18px;
 		color: var(--muted);
 	}
 
-	/* Tablette et au-delà : la grille 3/9 de la maquette. */
-	@media (min-width: 600px) {
-		.label {
-			grid-column: span 3;
+	/* La mise en page de la planche, en 1280 × 800 : l'Atome centré à 340 px du bord (ou au milieu de sa
+	   colonne si elle est plus étroite), à 290 px sous le filet ; la légende de 440 px à droite. */
+	@media (min-width: 900px) {
+		.scene {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) 440px;
+			min-height: 589px;
+		}
+
+		.atom-box {
+			height: auto;
+			margin: 0;
+		}
+
+		.atom-box > :global(.atom) {
+			left: min(340px, 50%);
+			top: 290px;
+		}
+
+		.legend {
+			margin-top: 22px;
+		}
+
+		.line {
+			padding: 10px 0 11px 34px;
+		}
+
+		.number {
+			line-height: 18px;
 		}
 
 		.items {
-			grid-column: span 9;
+			font-size: 16px;
+			line-height: 22px;
+		}
+
+		.tools {
+			margin: 0;
+			text-align: right;
+		}
+	}
+
+	/* La Visite (ADR 0011). La section s'épingle le temps de quatre écrans de défilement : aux 1,9 écran de
+	   la planche, la Visite filerait sous la molette, comme la Plongée avant elle. Sur moins de 500 px de
+	   haut, la scène ne tiendrait pas dans l'écran, et sur un téléphone de moins de 640 px de haut, l'Atome
+	   n'y aurait pas le tiers de sa taille : la section reste posée. L'Atome et chaque ligne de la
+	   légende se règlent dans Atom.astro et `src/lib/visit.ts` ; ici, l'épingle et la légende. */
+	@media (prefers-reduced-motion: no-preference) and (min-height: 500px) and ((min-width: 900px) or (min-height: 640px)) {
+		@supports (animation-timeline: view()) and (animation-range: entry) and (timeline-scope: --visit) {
+			/* La section voit la ligne de temps de sa piste. Dans le flux, elle compte la scène, haute d'un
+			   écran, puis la course de l'épingle : la scène collante ne sort pas de la boîte de contenu de
+			   son parent. Le haut de la scène passe dans la scène, pour que l'en-tête ne colle pas au bord. */
+			.stack {
+				--visit-length: 400svh;
+				timeline-scope: --visit;
+				padding-top: calc(var(--stack-top) - 36px);
+			}
+
+			.stack::after {
+				content: '';
+				display: block;
+				height: var(--visit-length);
+			}
+
+			/* La ligne de temps : un repère posé en haut de la scène (sa place dans le flux) et haut de la
+			   course et d'un écran, dont la plage `contain` est exactement le temps où la scène reste collée.
+			   Les plages de la planche s'y lisent telles quelles. */
+			.visit-track {
+				display: block;
+				position: absolute;
+				width: 1px;
+				height: calc(var(--visit-length) + 100dvh);
+				view-timeline: --visit block;
+				view-timeline-inset: 0;
+			}
+
+			.stage {
+				position: sticky;
+				top: 0;
+			}
+
+			.lift {
+				padding-top: 36px;
+			}
+
+			/* Sur un écran d'au moins 900 × 800 px, la scène tient avec son en-tête, comme sur la planche. Les
+			   outils restent au-dessus de la barre d'état tant qu'elle est collée : de 900 à 1 023 px de large,
+			   où l'en-tête est plus haut, la place réservée à l'Atome, vide sous la légende, les accueille. */
+			@media (min-width: 900px) and (min-height: 800px) {
+				.tools {
+					position: sticky;
+					bottom: calc(var(--status-height) + 22px);
+				}
+			}
+
+			/* Ailleurs (téléphone, portable peu haut), la scène ne tient pas avec l'en-tête : de 0 à 4 %, là où
+			   la planche ne fait rien, elle remonte de l'en-tête, qui sort par le haut, et le plateau (Atome,
+			   légende, outils) occupe l'écran au-dessus de la barre d'état. L'Atome y prend la place que lui
+			   laissent la légende et les outils, quels que soient l'écran et la langue : sa boîte est un
+			   conteneur, dont il lit la taille. Elle contient tout son dessin pendant la Visite (356 × 378 px à
+			   l'échelle 1, le centre à 147 px du haut : le gyroscope descend plus bas que l'Atome posé, jusqu'à
+			   231 px sous le centre quand la première ligne de la légende apparaît, à 22 %), si bien que les
+			   Bagues ne passent jamais sur la légende ni hors de l'écran. */
+			@media (max-width: 899px), (max-height: 799px) {
+				.stage {
+					height: 100svh;
+				}
+
+				.stack .lift {
+					animation: auto visit-lift linear forwards;
+					animation-timeline: --visit;
+					animation-range: contain 0% contain 4%;
+				}
+
+				/* Sa marge haute garde l'Atome du bord de l'écran. */
+				.board {
+					display: flex;
+					flex-direction: column;
+					height: calc(100svh - var(--status-height) - 22px);
+					padding-top: 16px;
+				}
+
+				.scene {
+					flex: 1;
+					min-height: 0;
+				}
+
+				.atom-box {
+					--atom-scale: min(1, tan(atan2(100cqw, 356px)), tan(atan2(100cqh, 378px)));
+					min-height: 0;
+					container-type: size;
+				}
+
+				.atom-box > :global(.atom) {
+					top: calc(147px * var(--atom-scale));
+				}
+			}
+
+			/* Sur téléphone, l'Atome au-dessus de la légende. */
+			@media (max-width: 899px) {
+				.scene {
+					display: flex;
+					flex-direction: column;
+				}
+
+				.atom-box {
+					flex: 1;
+					height: auto;
+					margin-top: 12px;
+				}
+			}
+
+			/* Sur un téléphone peu haut (375 × 667, 360 × 740), la légende se resserre pour laisser à l'Atome
+			   plus que le tiers de sa taille. */
+			@media (max-width: 899px) and (max-height: 799px) {
+				.atom-box {
+					margin: 0 0 8px;
+				}
+
+				.line {
+					padding: 5px 0 6px 34px;
+				}
+
+				.number,
+				.family {
+					line-height: 14px;
+				}
+
+				.items {
+					font-size: 14px;
+					line-height: 18px;
+				}
+
+				.tools {
+					margin-top: 10px;
+				}
+			}
+
+			/* L'opacité estompée de la légende : son texte ne descend qu'à 35 % de l'estompe de l'Atome. */
+			.legend {
+				--lo: 0.441;
+			}
+
+			/* Le trait bleu de la famille allumée, à gauche de sa ligne. */
+			.line::after {
+				content: '';
+				position: absolute;
+				left: -16px;
+				top: 12px;
+				bottom: 12px;
+				width: 2px;
+				background: var(--accent);
+				transform-origin: 50% 0;
+				scale: 1 0;
+			}
+
+			/* Le plateau au-dessus de la barre d'état, l'en-tête au-dessus de l'écran : un pixel de plus, pour
+			   que son filet, à une fraction de pixel du bord, n'y reste pas. */
+			@keyframes visit-lift {
+				to {
+					translate: 0 calc(100svh - var(--status-height) - 22px - 100% - 1px);
+				}
+			}
+
+			@keyframes visit-show {
+				from {
+					opacity: 0;
+					translate: 0 8px;
+				}
+			}
+
+			@keyframes visit-bar {
+				22%,
+				78% {
+					scale: 1;
+				}
+			}
 		}
 	}
 </style>

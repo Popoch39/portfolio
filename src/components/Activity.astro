@@ -19,7 +19,7 @@ const cell = (day: TriDay) => (day.packed === day.row ? `r${day.row}` : `r${day.
     navigateurs sans scène, et l'image sur laquelle la scène finit. La section s'étend sur toute la page,
     pour que la vue de la planche prenne toute la largeur ; son contenu garde la colonne de la page. */}
 <section id={id[locale]} class="activity">
-	<span class="tri-track" aria-hidden="true"></span>
+	<span class="tri-track" aria-hidden="true" data-timeline="--tri" data-prefix="tri-"></span>
 	<div class="tri-scene">
 		<div class="container">
 			<SectionHeader

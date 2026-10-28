@@ -105,22 +105,14 @@ export const ui = {
 		en: (repo: string) => `Open the ${repo} project page`,
 	},
 	// Activité.
-	activityTotal: { fr: 'contributions sur GitHub, ces 12 derniers mois', en: 'contributions on GitHub in the last 12 months' },
-	activeDays: {
-		fr: (days: string) => `jours actifs, sur ${days}`,
-		en: (days: string) => `active days, out of ${days}`,
+	// La commande du Tri, en morceaux : la scène les ajoute un à un, à chaque temps.
+	triCommand: {
+		fr: ['$ git log --date-order', ' --format=%ad', ' | group-by semaine', ' | uniq'],
+		en: ['$ git log --date-order', ' --format=%ad', ' | group-by week', ' | uniq'],
 	},
-	longestStreak: { fr: 'plus longue série', en: 'longest streak' },
-	recordDay: {
-		fr: (day: string) => `record, le ${day}`,
-		en: (day: string) => `best day, ${day}`,
-	},
-	perDay: { fr: 'Contributions par jour', en: 'Contributions per day' },
-	hoverCell: { fr: 'survolez une case', en: 'hover over a square' },
-	perDayLegend: { fr: 'contributions / jour', en: 'contributions / day' },
-	perMonth: { fr: 'Contributions par mois', en: 'Contributions per month' },
-	monthlyData: { fr: 'Voir les données par mois', en: 'Show monthly data' },
-	month: { fr: 'Mois', en: 'Month' },
+	triTable: { fr: 'Jours actifs et contributions, semaine par semaine', en: 'Active days and contributions, week by week' },
+	weekOf: { fr: 'Semaine du', en: 'Week of' },
+	activeDaysHeader: { fr: 'Jours actifs', en: 'Active days' },
 	contributions: { fr: 'Contributions', en: 'Contributions' },
 	// Stack.
 	dailyTool: {

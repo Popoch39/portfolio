@@ -2,131 +2,70 @@
 import SectionHeader from './SectionHeader.astro';
 import { identity, sections } from '../data/profile';
 import { githubSnapshot } from '../data/github-snapshot';
-import { days, formatDay, formatNumber, heatmap, heatmapLegend, monthlyTotals, type ActivityStats } from '../lib/activity';
+import { formatNumber, tri } from '../lib/activity';
 import { localeOf, ui } from '../lib/i18n';
 
-interface Props {
-	/** Statistiques de `githubSnapshot`, partagées avec la barre d'état. */
-	stats: ActivityStats;
-}
-
-const { stats } = Astro.props;
 const locale = localeOf(Astro.currentLocale);
 const { id, label } = sections.activity;
-const heat = heatmap(githubSnapshot, stats, locale);
-const monthly = monthlyTotals(githubSnapshot, locale);
-// Une case d'étiquette par semaine : l'étiquette déborde à droite sur les semaines vides,
-// sans avoir à placer de colonne en style inline.
-const weekLabels = Array.from(
-	{ length: heat.weeks },
-	(_, week) => heat.monthLabels.find((m) => m.column === week + 1)?.label ?? '',
-);
+const { weeks, count, conclusion, figureLabel } = tri(githubSnapshot, locale);
 ---
 
+{/* Le Tri (spec #107) : ici son état final, ce que montrent le mouvement réduit et les navigateurs sans
+    scène, et l'image sur laquelle la scène finit. */}
 <section id={id[locale]} class="activity">
-	<SectionHeader
-		number={3}
-		title={label[locale]}
-		note={`${identity.github.profile} ↗`}
-		noteHref={identity.links.github}
-	/>
-	<div class="grid body">
-		<div class="summary">
-			<p class="total">
-				<span class="total-value">{formatNumber(stats.total, locale)}</span>{' '}
-				<span class="total-caption">{ui.activityTotal[locale]}</span>
-			</p>
-			<dl class="stats">
-				<div class="stat">
-					<dt>{ui.activeDays[locale](formatNumber(githubSnapshot.counts.length, locale))}</dt>
-					<dd>{formatNumber(stats.activeDays, locale)}</dd>
-				</div>
-				<div class="stat">
-					<dt>{ui.longestStreak[locale]}</dt>
-					<dd>{days(stats.longestStreak, locale)}</dd>
-				</div>
-				<div class="stat">
-					<dt>{ui.recordDay[locale](formatDay(stats.record.date, locale))}</dt>
-					<dd>{formatNumber(stats.record.count, locale)}</dd>
-				</div>
-			</dl>
-		</div>
-
-		<figure class="chart heatmap">
-			<figcaption class="caption">
-				<span class="caption-title">{ui.perDay[locale]}</span>{' '}
-				<span class="mono caption-note">{heat.period} · {ui.hoverCell[locale]}</span>
-			</figcaption>
-			{/* Zone en sens de lecture inversé, contenu en sens normal : sans JS, elle s'ouvre
-			    sur sa fin, donc sur les mois les plus récents quand elle défile. */}
-			<div class="scroll scroll-from-end">
-				<div class="heatmap-frame">
-					<div class="mono months" aria-hidden="true">
-						{weekLabels.map((label) => <span class="month">{label}</span>)}
-					</div>
-					<div class="cells" role="img" aria-label={heat.ariaLabel}>
-						{heat.cells.map((cell) => <span class:list={['cell', `level-${cell.level}`]} title={cell.title} />)}
-					</div>
-				</div>
-			</div>
-			<div class="mono legend">
-				<span>{ui.perDayLegend[locale]}</span>
-				{
-					heatmapLegend(locale).map(({ level, label }) => (
-						<>
-							{' '}
-							<span class="legend-item">
-								<span class:list={['swatch', `level-${level}`]} aria-hidden="true" />
-								{label}
+	<div class="tri-scene">
+		<SectionHeader
+			number={3}
+			title={label[locale]}
+			note={`${identity.github.profile} ↗`}
+			noteHref={identity.links.github}
+		/>
+		<div class="tri-body">
+			<p class="tri-count">{count}</p>
+			<p class="mono tri-command">{ui.triCommand[locale].map((part) => <span>{part}</span>)}</p>
+			<figure class="tri-figure">
+				{/* Une image pour les lecteurs d'écran, qui lisent sa description et le tableau ; les étiquettes de
+				    pause doublent le tableau dans les extraits de recherche. */}
+				<div class="tri-main" role="img" aria-label={figureLabel} data-nosnippet>
+					{
+						weeks.map((week, i) => (
+							<span class="tri-week" data-days={week.activeDays} data-link={week.link} title={week.title}>
+								<span class="tri-node" />
+								{/* Dans la seconde moitié de l'année, l'étiquette part vers la gauche pour rester dans la page ;
+								    une pause sur deux descend d'une ligne, pour que deux étiquettes proches ne se chevauchent pas. */}
+								{week.pause && (
+									<span class:list={['mono', 'tri-pause', { end: i >= weeks.length / 2, low: weeks.slice(0, i).filter((w) => w.pause).length % 2 === 1 }]}>
+										{week.pause}
+									</span>
+								)}
 							</span>
-						</>
-					))
-				}
-			</div>
-		</figure>
-
-		<figure class="chart months-chart">
-			<figcaption class="caption">
-				<span class="caption-title">{ui.perMonth[locale]}</span>{' '}
-				<span class="mono caption-note">{monthly.partialNote}</span>
-			</figcaption>
-			<div class="scroll">
-				<div class="bars-frame">
-					<div class="bars" role="img" aria-label={monthly.ariaLabel}>
-						{
-							monthly.months.map((m) => (
-								<span class="bar" title={m.title}>
-									{m.showValue && <span class="mono bar-value">{formatNumber(m.value, locale)}</span>}
-									{/* La hauteur passe par l'attribut du SVG : aucun style inline. */}
-									<svg class="bar-fill" height={m.height} aria-hidden="true" focusable="false" />
-								</span>
-							))
-						}
-					</div>
-					<div class="mono bar-labels" aria-hidden="true">
-						{monthly.months.map((m) => <span>{m.label}</span>)}
-					</div>
+						))
+					}
 				</div>
-			</div>
-			<details class="mono data">
-				<summary>{ui.monthlyData[locale]}</summary>
-				<table>
-					<thead>
-						<tr><th class="month-cell">{ui.month[locale]}</th><th class="value-cell">{ui.contributions[locale]}</th></tr>
-					</thead>
-					<tbody>
-						{
-							monthly.months.map((m) => (
-								<tr>
-									<td class="month-cell">{m.name}</td>
-									<td class="value-cell">{formatNumber(m.value, locale)}</td>
-								</tr>
-							))
-						}
-					</tbody>
-				</table>
-			</details>
-		</figure>
+				<figcaption class="tri-conclusion">{conclusion}</figcaption>
+			</figure>
+			<table class="sr-only">
+				<caption>{ui.triTable[locale]}</caption>
+				<thead>
+					<tr>
+						<th scope="col">{ui.weekOf[locale]}</th>
+						<th scope="col">{ui.activeDaysHeader[locale]}</th>
+						<th scope="col">{ui.contributions[locale]}</th>
+					</tr>
+				</thead>
+				<tbody>
+					{
+						weeks.map((week) => (
+							<tr>
+								<th scope="row">{week.date}</th>
+								<td>{formatNumber(week.activeDays, locale)}</td>
+								<td>{formatNumber(week.contributions, locale)}</td>
+							</tr>
+						))
+					}
+				</tbody>
+			</table>
+		</div>
 	</div>
 </section>
 
@@ -135,290 +74,134 @@ const weekLabels = Array.from(
 		padding-top: clamp(64px, 8vw, 120px);
 	}
 
-	.body {
-		row-gap: 56px;
-		align-items: start;
+	.tri-body {
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
 		padding-top: 40px;
 	}
 
-	.summary {
-		display: flex;
-		flex-direction: column;
-		gap: 24px;
-	}
-
-	.total {
+	.tri-count {
 		margin: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-
-	.total-value {
-		font-size: clamp(96px, 11vw, 168px);
-		line-height: 0.82;
+		font-size: clamp(32px, 4.4vw, 60px);
+		line-height: 1;
 		font-weight: 800;
 		font-stretch: 62%;
-		letter-spacing: -0.02em;
+		letter-spacing: -0.01em;
 	}
 
-	.total-caption {
-		font-size: 17px;
-	}
-
-	.stats {
+	.tri-command {
 		margin: 0;
-		display: flex;
-		flex-direction: column;
-	}
-
-	.stat {
-		display: flex;
-		align-items: baseline;
-		justify-content: space-between;
-		gap: 16px;
-		padding: 14px 0;
-		border-top: 1px solid var(--rule);
-	}
-
-	.stat:last-child {
-		border-bottom: 1px solid var(--rule);
-	}
-
-	.stat dt {
-		font-size: 15px;
+		font-size: max(11px, min(13px, 3vw));
 		color: var(--muted);
+		overflow-wrap: anywhere;
 	}
 
-	.stat dd {
-		margin: 0;
-		font-size: 30px;
-		line-height: 1;
-		font-weight: 700;
-		font-stretch: 75%;
-	}
-
-	/* Tablette : les trois statistiques côte à côte, au-dessus de la heatmap pleine largeur. */
-	@media (min-width: 600px) and (max-width: 1023px) {
-		.stats {
-			display: grid;
-			grid-template-columns: repeat(3, minmax(0, 1fr));
-			column-gap: var(--gutter);
-		}
-
-		.stat {
-			flex-direction: column;
-			align-items: flex-start;
-			gap: 8px;
-			border-bottom: 1px solid var(--rule);
-		}
-	}
-
-	/* Laptop et au-delà : chiffres sur 4 colonnes, heatmap sur 8, comme la maquette. */
-	@media (min-width: 1024px) {
-		.summary {
-			grid-column: 1 / span 4;
-		}
-
-		.heatmap {
-			grid-column: 5 / span 8;
-		}
-	}
-
-	.chart {
-		margin: 0;
+	.tri-figure {
+		margin: 24px 0 0;
 		display: flex;
 		flex-direction: column;
-		gap: 14px;
+		gap: 40px;
 	}
 
-	.caption {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
-		justify-content: space-between;
-		gap: 8px;
-	}
-
-	.caption-title {
-		font-size: 17px;
-		font-weight: 600;
-	}
-
-	.caption-note {
-		font-size: 12px;
-		color: var(--muted);
-	}
-
-	.scroll {
-		overflow-x: auto;
-	}
-
-	.scroll-from-end {
-		direction: rtl;
-	}
-
-	.heatmap .scroll {
-		padding: 2px;
-	}
-
-	.heatmap-frame {
-		direction: ltr;
-		min-width: 640px;
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
-
-	/* Colonnes implicites : autant que de semaines dans l'instantané. */
-	.months,
-	.cells {
+	/* Une colonne par semaine, sans gouttière : le trait d'une semaine mesure exactement une colonne. Le
+	   plus gros nœud tient dans sa colonne, jusqu'à 18 px. */
+	.tri-main {
+		--node: min(18px, 100%);
 		display: grid;
 		grid-auto-flow: column;
 		grid-auto-columns: minmax(0, 1fr);
-		gap: 3px;
+		/* La place des étiquettes de pause, posées sous la ligne. */
+		padding-bottom: 32px;
 	}
 
-	.months {
-		height: 16px;
-		font-size: 11px;
-		line-height: 16px;
-		color: var(--muted);
-	}
-
-	.month {
-		white-space: nowrap;
-	}
-
-	.cells {
-		grid-template-rows: repeat(7, auto);
-	}
-
-	.cell {
-		aspect-ratio: 1 / 1;
-		border-radius: 2px;
-	}
-
-	.legend {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 8px 16px;
-		font-size: 12px;
-		color: var(--muted);
-	}
-
-	.legend-item {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-	}
-
-	.swatch {
-		width: 12px;
-		height: 12px;
-		border-radius: 2px;
-	}
-
-	.level-0 {
-		background: var(--heat-0);
-	}
-
-	.level-1 {
-		background: var(--heat-1);
-	}
-
-	.level-2 {
-		background: var(--heat-2);
-	}
-
-	.level-3 {
-		background: var(--heat-3);
-	}
-
-	.level-4 {
-		background: var(--heat-4);
-	}
-
-	.bars-frame {
-		min-width: 560px;
-	}
-
-	.bars,
-	.bar-labels {
+	.tri-week {
+		position: relative;
 		display: grid;
-		grid-auto-flow: column;
-		grid-auto-columns: minmax(0, 1fr);
-		gap: 8px;
+		place-items: center;
+		height: 18px;
 	}
 
-	.bars {
-		align-items: end;
-		height: 230px;
-		border-bottom: 1px solid var(--ink);
-	}
+	/* La taille d'un nœud suit ses Jours actifs : un tiers du plus gros pour un jour, entier pour sept. */
+	.tri-week[data-days='1'] { --days: 1; }
+	.tri-week[data-days='2'] { --days: 2; }
+	.tri-week[data-days='3'] { --days: 3; }
+	.tri-week[data-days='4'] { --days: 4; }
+	.tri-week[data-days='5'] { --days: 5; }
+	.tri-week[data-days='6'] { --days: 6; }
+	.tri-week[data-days='7'] { --days: 7; }
 
-	.bar {
-		height: 100%;
-		display: flex;
-		flex-direction: column;
-		justify-content: flex-end;
-		align-items: center;
-		gap: 6px;
-	}
-
-	.bar-value {
-		font-size: 12px;
-	}
-
-	.bar-fill {
-		display: block;
-		width: min(24px, 70%);
-		border-radius: 4px 4px 0 0;
+	.tri-node {
+		position: relative;
+		z-index: 1;
+		width: calc(var(--node) * (2 + var(--days, 0)) / 9);
+		aspect-ratio: 1;
+		border-radius: 50%;
 		background: var(--accent);
 	}
 
-	.bar-labels {
-		padding-top: 8px;
-		font-size: 11.5px;
+	/* Une pause : un nœud creux, du fond de la page pour couper le pointillé qui le traverse. */
+	.tri-week[data-days='0'] .tri-node {
+		width: calc(var(--node) * 0.6);
+		border: 1.5px solid var(--accent);
+		background: var(--bg);
+	}
+
+	/* Le trait vers la semaine précédente, d'un centre de nœud à l'autre. */
+	.tri-week[data-link]::before {
+		content: '';
+		position: absolute;
+		top: calc(50% - 1px);
+		right: 50%;
+		width: 100%;
+		height: 2px;
+		background: var(--accent);
+	}
+
+	.tri-week[data-link='dotted']::before {
+		background: repeating-linear-gradient(to right, var(--accent) 0 3px, transparent 3px 6px);
+	}
+
+	.tri-pause {
+		position: absolute;
+		top: calc(100% + 8px);
+		left: 50%;
+		font-size: 11px;
+		line-height: 1;
+		white-space: nowrap;
 		color: var(--muted);
-		text-align: center;
 	}
 
-	.data {
-		font-size: 13px;
+	.tri-pause.end {
+		left: auto;
+		right: 50%;
 	}
 
-	.data summary {
-		min-height: 44px;
-		display: flex;
-		align-items: center;
-		cursor: pointer;
+	/* Sur téléphone, les colonnes sont trop étroites pour que deux étiquettes tiennent sur une ligne. */
+	@media (max-width: 599px) {
+		.tri-main {
+			padding-bottom: 48px;
+		}
+
+		.tri-pause.low {
+			top: calc(100% + 24px);
+		}
 	}
 
-	.data table {
-		border-collapse: collapse;
-		margin-top: 8px;
+	.tri-conclusion {
+		max-width: 34ch;
+		font-size: clamp(20px, 2.4vw, 32px);
+		line-height: 1.2;
+		font-weight: 600;
+		text-wrap: balance;
 	}
 
-	.data th {
-		padding: 6px 0;
-		border-bottom: 1px solid var(--ink);
-		font-weight: 500;
-	}
-
-	.data td {
-		padding: 5px 0;
-		border-bottom: 1px solid var(--rule);
-	}
-
-	.month-cell {
-		padding-right: 28px;
-		text-align: left;
-	}
-
-	.value-cell {
-		text-align: right;
-		font-variant-numeric: tabular-nums;
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
 	}
 </style>

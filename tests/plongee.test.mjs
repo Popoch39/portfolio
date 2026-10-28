@@ -177,8 +177,18 @@ for (const { locale, projects } of [
 		assert.ok(!html.includes(fallbacks[0].slice('/_astro/'.length)), 'repli dans le HTML');
 	});
 
-	// Les tickets de la Plongée ajoutent chacun leurs animations : le repli les prend toutes par leur
-	// préfixe, sans liste à tenir, et reste de quelques centaines d'octets sur le réseau (Brotli qualité
+	// Une condition plus large que celle de la CSS laisserait un navigateur sans scène ni repli ; plus
+	// étroite, elle ferait télécharger le repli à un navigateur qui joue déjà la scène.
+	test(`${locale} : le repli est demandé sous la condition même de la CSS de la scène`, () => {
+		const condition = styles.match(new RegExp(`${SUPPORTED.source}[^{]*`))?.[0].replace(/^@supports\s*/, '');
+		assert.ok(condition, 'condition de la scène absente');
+		const tested = [...moduleGraph(moduleOf(html)).code.matchAll(/CSS\.supports\(\s*(["'`])(.*?)\1\s*\)/g)].map((m) => m[2]);
+		const bare = (text) => text.replace(/\s+/g, '');
+		assert.deepEqual(tested.map(bare), [bare(condition)]);
+	});
+
+	// Le repli prend toutes les animations de la scène par leur préfixe, sans liste à tenir, la CSS
+	// restant leur seule source ; il reste de quelques centaines d'octets sur le réseau (Brotli qualité
 	// 4, comme le budget des pages).
 	test(`${locale} : le repli règle les animations dive- sans en nommer aucune, en moins de 1 000 octets`, () => {
 		const code = readDist(fallbacksOf(html)[0]?.slice(1) ?? '');
@@ -254,6 +264,37 @@ test('le repli n’est demandé que sans animations pilotées par le défilement
 	assert.equal(firefox.loaded(), false, 'demandé avant que la première image soit peinte');
 	await new Promise((resolve) => setTimeout(resolve, 20));
 	assert.equal(firefox.loaded(), true, 'repli jamais demandé');
+});
+
+// Le repli réécrit la CSS de la scène pour la jouer sans ligne de temps ; le reste de la page, même une
+// animation de durée `auto` ou une autre `@supports` sur les lignes de temps, n'est pas à lui.
+test('le repli ne réécrit que la CSS de la Plongée', async () => {
+	const scene = /@supports[^{]*--dive/;
+	const foreign = '@supports (animation-timeline:view()){.x{animation:auto x linear;animation-timeline:scroll()}}.y{animation:auto y;animation-range:0 1px}';
+	const page = elements(readHome(), 'style').map((style) => ({ textContent: foreign + style.replace(/^<style\b[^>]*>|<\/style>$/gi, '') + foreign }));
+	const before = page.map(({ textContent }) => textContent);
+	assert.equal(before.filter((styles) => scene.test(styles)).length, 1, 'CSS de la scène introuvable');
+	// Juste assez de navigateur pour que le repli s'exécute : pas d'animation à régler, lecteur en haut.
+	const box = { style: {}, offsetTop: 0, offsetHeight: 0, getBoundingClientRect: () => ({ top: 1 }) };
+	Object.assign(globalThis, {
+		scrollY: 0,
+		scrollTo() {},
+		addEventListener() {},
+		requestAnimationFrame: () => 1,
+		getComputedStyle: () => ({ scrollMarginTop: '0px', animationName: '', getPropertyValue: () => '' }),
+		CSSAnimation: class {},
+		document: {
+			documentElement: { clientHeight: 0 },
+			querySelector: () => box,
+			querySelectorAll: (selector) => (selector === 'style' ? page : []),
+			getAnimations: () => [],
+		},
+	});
+	await import(new URL(`../dist${fallbacksOf(readHome())[0]}`, import.meta.url).href);
+	for (const [i, { textContent }] of page.entries()) {
+		assert.equal(withoutBlocks(textContent, scene), withoutBlocks(before[i], scene), 'CSS hors de la Plongée réécrite');
+		for (const block of blocks(textContent, scene)) assert.doesNotMatch(block, /\banimation-timeline\s*:/, 'scène toujours sur une ligne de temps');
+	}
 });
 
 test('les fiches restent sans Plongée', () => {

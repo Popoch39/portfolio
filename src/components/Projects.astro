@@ -78,21 +78,26 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 
 	// Par sa classe : l'ancre de la section change avec la langue.
 	const section = document.querySelector<HTMLElement>('section.projects');
-	const a3 = matchMedia(section?.querySelector('[data-panel] source')?.getAttribute('media') ?? 'not all');
+	const a3 = matchMedia(section?.querySelector<HTMLSourceElement>('[data-panel] source')?.media || 'not all');
 	if (section) {
 		// Tout de suite en A3, ou quand une fenêtre élargie après coup y passe.
 		const wake = () => {
 			if (!a3.matches) return;
-			a3.removeEventListener('change', wake);
+			a3.onchange = null;
 			void import('./preview.ts').then((module) => module.preview(section));
 		};
-		a3.addEventListener('change', wake);
+		a3.onchange = wake;
 		wake();
 	}
 
-	// La Plongée sans animations pilotées par le défilement (Firefox) : son repli, jamais en mouvement
-	// réduit, n'est demandé qu'une fois la première image peinte, pour ne pas la retarder (ADR 0009).
-	if (!CSS.supports('animation-timeline:view()') && !matchMedia('(prefers-reduced-motion)').matches)
+	// La Plongée là où sa CSS ne joue pas (Firefox) : son repli, jamais en mouvement réduit, n'est demandé
+	// qu'une fois la première image peinte, pour ne pas la retarder (ADR 0009). La condition est celle
+	// du `@supports` de la scène, mot pour mot : aucun navigateur ne reste sans l'une ni l'autre. Il passe
+	// par ce module, le seul de l'accueil (ADR 0007) : un script dans la Plongée en ferait un second.
+	if (
+		!CSS.supports('(animation-timeline:view()) and (animation-range:entry) and (timeline-scope:--dive)') &&
+		!matchMedia('(prefers-reduced-motion)').matches
+	)
 		requestAnimationFrame(() => setTimeout(() => import('./dive.ts')));
 </script>
 

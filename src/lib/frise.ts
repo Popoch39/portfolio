@@ -2,9 +2,9 @@
 // Le plan est en pixels de la planche (1 280 × 720) ; la scène le met à l'échelle de l'écran.
 import { commits, type Commit } from '../data/profile';
 
-/** Pixels du plan par an, et place du couloir des Branches (au-dessus de `main`). */
+/** Pixels du plan par an, et place des Branches sur le plan (au-dessus de `main`). */
 const YEAR = 440;
-const LANE = -180;
+const BRANCH = -180;
 /** Les poignées des courbes de bifurcation et de retour. */
 const HANDLE = 90;
 /** Le retour d'une Branche commence un quart d'an avant sa fusion. */
@@ -19,11 +19,11 @@ export const REVEAL = 4000;
 
 const round = (n: number) => Math.round(n * 10) / 10;
 const xOf = (at: number) => round((at - 2018) * YEAR);
-const yOf = (commit: Commit) => (commit.branch === 'main' ? 0 : LANE);
+const yOf = (commit: Commit) => (commit.branch === 'main' ? 0 : BRANCH);
 
 /**
  * Le tracé du git graph : `main` du premier Commit à HEAD, puis chaque Branche, qui part du Commit de
- * `main` précédant sa bifurcation, longe le couloir et revient à la fusion suivante.
+ * `main` précédant sa bifurcation, court parallèle à `main` et revient à la fusion suivante.
  */
 function graph() {
 	const head = commits[commits.length - 1];
@@ -34,7 +34,7 @@ function graph() {
 		const merge = commits.slice(i).find((c) => c.kind === 'merge')!;
 		const [a, b, e, m] = [from.at, commit.at, merge.at - RETURN, merge.at].map(xOf);
 		paths.push(
-			`M${a} 0C${a + HANDLE} 0 ${b - HANDLE} ${LANE} ${b} ${LANE}H${e}C${e + HANDLE} ${LANE} ${m - HANDLE} 0 ${m} 0`,
+			`M${a} 0C${a + HANDLE} 0 ${b - HANDLE} ${BRANCH} ${b} ${BRANCH}H${e}C${e + HANDLE} ${BRANCH} ${m - HANDLE} 0 ${m} 0`,
 		);
 	});
 	return paths.join('');
@@ -54,22 +54,30 @@ const percent = (n: number) => `${+n.toFixed(3)}%`;
 const timeline = 'animation-timeline:--frise';
 const range = (from: number, to = 100) => `animation-range:contain ${percent(from)} contain ${percent(to)}`;
 
+/** Une courbe d'étiquette : son opacité selon HEAD, et les instants où elle change de pente ou saute. */
+type Curve = (commit: Commit, next: number) => { opacity: (head: number, left?: boolean) => number; turns: number[] };
+
 /**
- * L'opacité de l'étiquette d'un Commit selon HEAD (planche D) : à venir, pâle et de plus en plus quand HEAD
- * approche ; pleine de son passage à celui du Commit suivant (il est alors le Commit actif) ; passée,
- * estompée avec l'écart, jamais sous 0,25. `left` donne la valeur juste avant `head`, de l'autre côté d'un saut.
+ * Où en est HEAD par rapport au Commit (`reached`) et au suivant (`passed`). `left` donne l'état juste avant
+ * `head`, de l'autre côté d'un saut.
  */
+const phase = (commit: Commit, next: number, head: number, left: boolean) => {
+	const past = (at: number) => (left ? head > at : head >= at);
+	return { reached: past(commit.at), passed: past(next) };
+};
+
 const PALE = 0.4;
 const NEAR = 0.35;
 const FADE = 0.5;
 const DIM = 0.25;
-/** Une courbe d'étiquette : son opacité selon HEAD, et les instants où elle change de pente ou saute. */
-type Curve = (commit: Commit, next: number) => { opacity: (head: number, left?: boolean) => number; turns: number[] };
-
-const planche: Curve = (commit, next) => ({
+/**
+ * L'opacité de l'étiquette d'un Commit selon HEAD sur un écran large (planche D) : à venir, pâle et de plus en
+ * plus quand HEAD approche ; pleine de son passage à celui du Commit suivant (il est alors le Commit actif) ;
+ * passée, estompée avec l'écart, jamais sous 0,25.
+ */
+const wide: Curve = (commit, next) => ({
 	opacity(head, left = false) {
-		const reached = left ? head > commit.at : head >= commit.at;
-		const passed = left ? head > next : head >= next;
+		const { reached, passed } = phase(commit, next, head, left);
 		if (!reached) return Math.max(0, PALE - NEAR * (commit.at - head));
 		return passed ? Math.max(DIM, 1 - FADE * (head - commit.at)) : 1;
 	},
@@ -86,8 +94,7 @@ const DROP = 0.3;
 const OUT = 0.15;
 const tight: Curve = (commit, next) => ({
 	opacity(head, left = false) {
-		const reached = left ? head > commit.at : head >= commit.at;
-		const passed = left ? head > next : head >= next;
+		const { reached, passed } = phase(commit, next, head, left);
 		if (!reached) return 0;
 		return passed ? Math.max(0, DROP * (1 - (head - next) / OUT)) : 1;
 	},
@@ -124,7 +131,7 @@ const choreography = (commit: Commit, i: number) => {
 	const nth = `.frise .commit:nth-child(${i + 1})`;
 	const passage = share(commit.at);
 	const rise = `${timeline};${range(passage, share(commit.at + RISE))}`;
-	const label = labelKeyframes(`frise-label-${i + 1}`, commit, commits[i + 1]?.at ?? Infinity, planche);
+	const label = labelKeyframes(`frise-label-${i + 1}`, commit, commits[i + 1]?.at ?? Infinity, wide);
 	return [
 		label.keyframes,
 		`${nth} .label{animation:auto frise-label-${i + 1} linear both;${timeline};${label.range}}`,

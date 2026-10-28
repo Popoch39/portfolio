@@ -100,13 +100,13 @@ const branchOf = (commit: Commit) => (commit.kind === 'head' ? `HEAD → ${commi
 		display: none;
 	}
 
-	/* Le rail de `main` passe par le centre des points de `main` ; les Branches courent dans un couloir
-	   décalé de --lane. --dot-y est le centre des points, au milieu de la ligne de date. */
+	/* Le rail de `main` passe par le centre des points de `main` ; les Branches courent à côté,
+	   décalées de --branch. --dot-y est le centre des points, au milieu de la ligne de date. */
 	.frise {
 		--rail: 2px;
 		--dot: 12px;
 		--dot-y: 9px;
-		--lane: 20px;
+		--branch: 20px;
 		--main-x: calc((var(--dot) - var(--rail)) / 2);
 		margin: 40px 0 0;
 		padding: 0;
@@ -124,7 +124,7 @@ const branchOf = (commit: Commit) => (commit.kind === 'head' ? `HEAD → ${commi
 	}
 
 	.commit:not([data-branch='main']) {
-		--x: var(--lane);
+		--x: var(--branch);
 	}
 
 	/* `main` part du premier point et s'arrête à HEAD. */
@@ -160,7 +160,7 @@ const branchOf = (commit: Commit) => (commit.kind === 'head' ? `HEAD → ${commi
 		background: var(--accent);
 	}
 
-	/* Le couloir d'une Branche : il bifurque de `main` en haut de son premier Commit, et revient sur
+	/* Le trait d'une Branche : il bifurque de `main` en haut de son premier Commit, et revient sur
 	   `main` au point de la fusion. */
 	.commit:not([data-branch='main'])::after,
 	.commit[data-kind='merge']::after {
@@ -168,7 +168,7 @@ const branchOf = (commit: Commit) => (commit.kind === 'head' ? `HEAD → ${commi
 		position: absolute;
 		top: 0;
 		left: var(--main-x);
-		width: calc(var(--lane) + var(--rail));
+		width: calc(var(--branch) + var(--rail));
 		border-right: var(--rail) solid var(--ink);
 	}
 

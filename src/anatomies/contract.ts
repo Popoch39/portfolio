@@ -46,26 +46,44 @@ export interface CodeRef {
 	lines: readonly [number, number];
 }
 
-/** Technologie d'une note, dessinée par son logo (`src/vendor/simple-icons/<clé>.svg`). */
+/**
+ * Technologie d'une note ou d'une Pastille de l'Atome, dessinée par son logo
+ * (`src/vendor/simple-icons/<clé>.svg`, ou `src/vendor/aws/aws.svg`).
+ */
 export type Tech =
 	| 'anthropic'
+	| 'aws'
 	| 'bun'
 	| 'claude'
+	| 'cloudflare'
+	| 'docker'
 	| 'drizzle'
+	| 'git'
 	| 'gnubash'
+	| 'go'
+	| 'graphql'
 	| 'json'
+	| 'laravel'
 	| 'lua'
 	| 'maplibre'
 	| 'neovim'
 	| 'nestjs'
+	| 'nextdotjs'
 	| 'nodedotjs'
+	| 'openlayers'
+	| 'php'
 	| 'postgresql'
+	| 'prisma'
 	| 'react'
+	| 'redis'
 	| 'rust'
+	| 'sentry'
+	| 'tailwindcss'
 	| 'threedotjs'
 	| 'tmux'
 	| 'typescript'
 	| 'vite'
+	| 'vuedotjs'
 	| 'webassembly'
 	| 'webgl'
 	| 'zod';

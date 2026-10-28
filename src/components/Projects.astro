@@ -204,6 +204,16 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 		visibility: hidden;
 	}
 
+	/* Masquée par `visibility`, l'image au repos d'un panneau inactif serait chargée quand même, et
+	   chaque SVG au repos est analysé sur le thread principal (90 ms pour les six à CPU ×1, 560 ms à
+	   CPU ×6) au milieu de la Plongée. Hors du rendu, une image différée n'est pas demandée : seule
+	   celle du panneau actif l'est, les autres arrivent insérées par le script de l'aperçu. La scène
+	   garde ses dimensions par son rapport 4:3. Le sélecteur est plus précis que le `display: block`
+	   de la carte, qui l'emporterait sinon. */
+	.preview .panel:not([data-active]) :global(.scene img) {
+		display: none;
+	}
+
 	.preview-desc {
 		margin: 0;
 		font-size: 17px;

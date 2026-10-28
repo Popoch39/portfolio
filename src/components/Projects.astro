@@ -95,12 +95,15 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 	// image peinte, pour ne pas la retarder. La condition du repli est celle du `@supports` de la scène,
 	// mot pour mot : aucun navigateur ne reste sans la scène ni son repli. Ils passent par ce module, le
 	// seul de l'accueil (ADR 0007) : un script dans la Plongée en ferait un second.
+	// La Traîne de la Visite (ADR 0012) passe par le même chemin ; elle ne décale sa piste que là où la
+	// Visite joue.
 	const fallback =
 		!CSS.supports('(animation-timeline:view()) and (animation-range:entry) and (timeline-scope:--dive)') &&
 		!matchMedia('(prefers-reduced-motion)').matches;
 	requestAnimationFrame(() =>
 		setTimeout(() => {
 			void import('../lib/glide.ts');
+			void import('./trail.ts');
 			if (fallback) void import('./dive.ts');
 		}),
 	);

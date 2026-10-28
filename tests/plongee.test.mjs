@@ -229,11 +229,19 @@ for (const { locale, projects } of [
 /** Les modules que les morceaux du site demandent, en chemins servis ; le repli n'est pas exécuté. */
 const requested = [];
 const fallbackFiles = new Set(fallbacksOf(readHome()).map((path) => path.slice('/_astro/'.length)));
+// La Traîne de la Visite (ADR 0012), demandée par le même module, n'est pas exécutée : elle lirait le
+// document du faux navigateur d'un test suivant.
+const trailFiles = new Set(
+	onDemand(moduleGraph(moduleOf(readHome())).code)
+		.filter((path) => readDist(path.slice(1)).includes('visit-track'))
+		.map((path) => path.slice('/_astro/'.length)),
+);
 registerHooks({
 	resolve(specifier, context, next) {
 		if (!context.parentURL?.includes('/dist/_astro/')) return next(specifier, context);
 		requested.push(specifier);
-		return fallbackFiles.has(specifier.replace(/^\.\//, '')) ? { url: 'data:text/javascript,', shortCircuit: true } : next(specifier, context);
+		const file = specifier.replace(/^\.\//, '');
+		return fallbackFiles.has(file) || trailFiles.has(file) ? { url: 'data:text/javascript,', shortCircuit: true } : next(specifier, context);
 	},
 });
 

@@ -58,6 +58,23 @@ Pendant que la Frise défile, le dernier Commit que la tête de lecture a attein
 _EN_ : Current commit
 _Avoid_ : étape courante, Commit en cours, HEAD
 
+## Activité
+
+**Jour actif** :
+Un jour avec au moins une contribution GitHub (commit, pull request, issue ou revue).
+_EN_ : Active day
+_Avoid_ : jour de code, jour travaillé
+
+**Semaine active** :
+Une colonne du calendrier GitHub (de dimanche à samedi) qui compte au moins un Jour actif.
+_EN_ : Active week
+_Avoid_ : semaine de code
+
+**Tri** :
+Le défilement où la section Activité s'arrête : le calendrier passe à une seule couleur, chaque semaine tasse ses Jours actifs vers le bas, puis devient un nœud sur `main`, les semaines sans Jour actif restant des pauses. Il se rejoue à l'envers en remontant ; sans animation, la section montre directement `main`.
+_EN_ : Sort
+_Avoid_ : heatmap animée, animation au scroll
+
 ## Stack
 
 **Atome** :

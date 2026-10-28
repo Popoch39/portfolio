@@ -370,9 +370,9 @@ const homeStyles = (extra = '') => elements(readHome(), 'style').map((style) => 
 class FakeAnimation {
 	playState = 'paused';
 	currentTime = null;
-	constructor(animationName, target) {
+	constructor(animationName, target, pseudoElement = null) {
 		this.animationName = animationName;
-		this.effect = { target, pseudoElement: null, updateTiming: (timing) => (this.timing = timing) };
+		this.effect = { target, pseudoElement, updateTiming: (timing) => (this.timing = timing) };
 	}
 }
 
@@ -407,12 +407,14 @@ async function runFallback({ styles, scenes, animations = [], scrollY = 0 }) {
 		scrollTo: (_, y) => scrolledTo.push(y),
 		addEventListener: (type, listener) => (listeners[type] ??= []).push(listener),
 		requestAnimationFrame: (callback) => frames.push(callback),
-		// Une piste calcule sa marge de défilement (`calc(20*36px)`), un élément animé donne ses animations.
-		getComputedStyle: (element) => {
+		// Une piste calcule sa marge de défilement (`calc(20*36px)`), un élément animé, ou l'un de ses
+		// pseudo-éléments (`::before`), donne ses animations.
+		getComputedStyle: (element, pseudoElement) => {
 			const [, share, unit] = element.style?.scrollMarginTop?.match(/^calc\(([\d.]+)\*([\d.]+)px\)$/) ?? [];
+			const { names, ranges } = pseudoElement ? element[pseudoElement] : element;
 			return element.style
 				? { scrollMarginTop: `${share * unit}px` }
-				: { animationName: element.names.join(', '), getPropertyValue: (name) => (name === '--animation-range' ? element.ranges : '') };
+				: { animationName: names.join(', '), getPropertyValue: (name) => (name === '--animation-range' ? ranges : '') };
 		},
 		CSSAnimation: FakeAnimation,
 		document: {
@@ -489,6 +491,29 @@ test('le repli joue une seconde scène d’après sa propre piste', async () => 
 	near(dive.currentTime, 2750, 'Plongée');
 	near(spin.currentTime, 500, 'seconde scène');
 	assert.equal(stranger.currentTime, null, 'animation étrangère avancée');
+});
+
+// La Frise anime aussi des pseudo-éléments (le point d'un Commit, `::before` et `::after` ; son poteau) :
+// chacun a sa propre plage, distincte de celle de l'élément qui le porte.
+test('le repli règle une animation de pseudo-élément d’après la plage du pseudo-élément', async () => {
+	const commit = {
+		names: ['frise-lift'],
+		ranges: 'contain 10% contain 20%',
+		'::after': { names: ['frise-on'], ranges: 'contain 50% contain 100%' },
+	};
+	const lift = new FakeAnimation('frise-lift', commit);
+	const dot = new FakeAnimation('frise-on', commit, '::after');
+	const page = await runFallback({
+		styles: homeStyles(),
+		scenes: [{ timeline: '--frise', prefix: 'frise-', top: 0, height: 5000 }],
+		animations: [lift, dot],
+	});
+	const near = (actual, expected, message) => assert.ok(Math.abs(actual - expected) < 1e-6, `${message} : ${actual} au lieu de ${expected}`);
+	near(lift.timing?.delay, 100, 'délai de l’élément');
+	near(dot.timing?.delay, 500, 'délai du pseudo-élément');
+	near(dot.timing?.duration, 500, 'durée du pseudo-élément');
+	page.scroll(2000);
+	near(dot.currentTime, 500, 'pseudo-élément');
 });
 
 // Arrivé sous une scène (ancre, restauration du défilement), le lecteur y reste quand les scènes

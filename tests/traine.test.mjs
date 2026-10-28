@@ -45,9 +45,9 @@ test('la piste de la Frise déclare la Traîne', () => {
 let runs = 0;
 /**
  * Exécute la Traîne sur `count` pistes déclarées, chacune affichée ou non (`played`), sa section à
- * l'écran ou non.
+ * l'écran ou non, dans un navigateur qui sait jouer les scènes en CSS ou non (`css`).
  */
-async function trail({ played = true, count = 1 } = {}) {
+async function trail({ played = true, count = 1, css = true } = {}) {
 	const listeners = {};
 	const frames = new Map();
 	const observed = new Map();
@@ -65,6 +65,7 @@ async function trail({ played = true, count = 1 } = {}) {
 		requestAnimationFrame: (callback) => (frames.set(++id, callback), id),
 		cancelAnimationFrame: (frame) => frames.delete(frame),
 		getComputedStyle: () => ({ display: played ? 'block' : 'none' }),
+		CSS: { supports: (condition) => css && /\(animation-timeline:\s*view\(\)\)/.test(condition) && /\(animation-range:\s*entry\)/.test(condition) },
 		IntersectionObserver: class {
 			constructor(callback) {
 				this.callback = callback;
@@ -78,7 +79,7 @@ async function trail({ played = true, count = 1 } = {}) {
 	await import(`${new URL(`../dist${trailsOf(readHome())[0]}`, import.meta.url)}?${++runs}`);
 	const offsetOf = (track) => parseFloat(track.style.marginTop || '0');
 	return {
-		near: (isIntersecting = true, index = 0) => observed.get(tracks[index])(isIntersecting),
+		near: (isIntersecting = true, index = 0) => observed.get(tracks[index])?.(isIntersecting),
 		offsets: () => tracks.map(offsetOf),
 		scroll(y) {
 			globalThis.scrollY = y;
@@ -152,6 +153,19 @@ test('loin de la section, ou là où la Visite ne joue pas, la piste reste à sa
 	left.frames(1);
 	left.near(false);
 	assert.equal(left.offset(), 0, 'piste laissée décalée en quittant la section');
+});
+
+// Firefox : le repli des scènes (ADR 0009) affiche la piste et règle les animations d'après `scrollY`,
+// sans lire la marge de la piste (ADR 0014, #103). Décaler la piste n'y ferait qu'une mise en page par image.
+test('dans un navigateur où la CSS ne joue pas les scènes (repli), la piste reste à sa place et aucune image n’est demandée', async () => {
+	const page = await trail({ css: false });
+	page.near();
+	page.scroll(300);
+	assert.equal(page.frames(1), false, 'image demandée sous le repli');
+	assert.equal(page.offset(), 0);
+	page.scroll(5000);
+	assert.equal(page.frames(10), false, 'image demandée sous le repli');
+	assert.equal(page.offset(), 0);
 });
 
 test('la Traîne suit chaque piste déclarée, seule celle dont la section est à l’écran', async () => {

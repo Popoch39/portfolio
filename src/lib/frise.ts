@@ -179,21 +179,28 @@ const choreography = (commit: Commit, i: number) => {
 	].join('');
 };
 
-/** Le fondu d'un bloc du Commit actif, en % de la scène : plus court que l'écart le plus serré entre deux Commits. */
+/**
+ * Le passage d'un bloc du Commit actif au suivant, en % de la scène : plus court que l'écart le plus serré entre
+ * deux Commits (3 %), et borné à la fin de la scène pour HEAD. L'ancien s'efface sur sa première moitié, le
+ * nouveau apparaît sur la seconde, en remontant de `SLIDE`.
+ */
 const SHOW = 1;
+const SLIDE = '12px';
+const half = (passage: number) => Math.min(SHOW, 100 - passage) / 2;
 
 /**
- * Le bloc d'un Commit dans le Commit actif en grand : il apparaît en fondu dès que HEAD atteint son Commit,
- * et s'efface dès que HEAD atteint le suivant, pendant que celui du suivant apparaît. Le premier est là dès
- * le début de la scène, le dernier jusqu'à la fin.
+ * Le bloc d'un Commit dans le Commit actif en grand : au passage de HEAD sur le Commit suivant, il s'efface,
+ * puis seulement celui du suivant apparaît, pour qu'on ne lise jamais deux blocs superposés. Le premier est là
+ * dès le début de la scène, le dernier jusqu'à la fin.
  */
 const activeStep = (commit: Commit, i: number) => {
 	const name = `frise-active-${i + 1}`;
-	const from = i === 0 ? 0 : share(commit.at);
+	const passage = share(commit.at);
+	const from = i === 0 ? 0 : passage + half(passage);
 	const next = commits[i + 1] && share(commits[i + 1].at);
-	const to = next === undefined ? 100 : Math.min(100, next + SHOW);
-	const offset = (at: number) => `${+Math.min(100, ((at - from) / (to - from)) * 100).toFixed(4)}%`;
-	const steps = [i === 0 ? '0%{opacity:1}' : `0%{opacity:0}${offset(from + SHOW)}{opacity:1}`];
+	const to = next === undefined ? 100 : next + half(next);
+	const offset = (at: number) => `${+(((at - from) / (to - from)) * 100).toFixed(4)}%`;
+	const steps = [i === 0 ? '0%{opacity:1}' : `0%{opacity:0;translate:0 ${SLIDE}}${offset(from + half(passage))}{opacity:1;translate:0 0}`];
 	if (next !== undefined) steps.push(`${offset(next)}{opacity:1}100%{opacity:0}`);
 	return `@keyframes ${name}{${steps.join('')}}.frise-step:nth-child(${i + 1}){animation:auto ${name} linear both;${timeline};${range(from, to)}}`;
 };

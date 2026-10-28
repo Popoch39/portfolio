@@ -167,6 +167,15 @@ for (const { locale, projects } of [
 		}
 	});
 
+	// Zoomé pendant le repli du bleu, Projets porte l'aperçu A3 : plus de 1 400 tracés SVG. Sans couche
+	// à lui, Chrome les redessinait à chaque image à l'échelle du moment : 48 images par seconde au lieu
+	// de 120 sur un écran dense (ADR 0009).
+	test(`${locale} : Projets, zoomé pendant la scène, a sa propre couche`, () => {
+		const rules = [...styles.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(([selector, , body]) => /\.projects\b/.test(selector) && /\banimation\s*:[^;{}]*\bdive-/.test(body));
+		assert.ok(rules.length > 0, 'Projets n’est pas animé par la scène');
+		for (const [, selector, body] of rules) assert.match(body, /\bwill-change\s*:[^;{}]*\btransform\b/, selector.trim());
+	});
+
 	// Firefox joue la scène par un repli, que Chrome et Safari ne téléchargent pas : l'accueil garde son
 	// seul module, et le repli n'est ni dans le HTML ni préchargé.
 	test(`${locale} : un seul module au chargement, le repli n’arrive qu’à la demande`, () => {

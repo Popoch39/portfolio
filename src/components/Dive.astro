@@ -370,8 +370,11 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 			}
 
 			/* Une seule animation, que le compositeur joue, et sans remplissage : avant la scène, l'ancre
-			   `#projets` vise sa boîte, qu'un zoom fausserait. */
+			   `#projets` vise sa boîte, qu'un zoom fausserait. Sa propre couche, gardée à une échelle fixe :
+			   sans elle, Chrome redessinait à chaque image l'aperçu A3 et ses 1 400 tracés à l'échelle du
+			   moment, et la scène tombait de 120 à 48 images par seconde sur un écran dense. */
 			.dive-next :global(.projects) {
+				will-change: transform, opacity;
 				transform-origin: 5% 20%;
 				animation: auto dive-settle cubic-bezier(0.3, 0, 0.2, 1);
 				animation-timeline: --dive;

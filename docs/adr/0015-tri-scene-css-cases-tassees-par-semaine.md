@@ -13,6 +13,14 @@ Le rang d'origine et le rang tassé de chaque jour sont calculés au build (`tri
 
 La ligne de temps `--tri` est visible de la section (`timeline-scope` sur `.activity`, comme la Visite sur `.stack`), et non de toute la page comme le demandait la spec : `html` porte déjà celle de la Frise, et deux déclarations sur le même élément s'écraseraient. Seules la piste et la scène, sœurs dans la section, en ont besoin.
 
+`main` et la phrase (#110) :
+
+- **`main` (62–84 %)**, en vague comme le tassement (chaque semaine sur 5/8 du temps) : la figure du socle (`main` et la phrase) est posée dans la vue, sous le calendrier (une colonne de 20 px par semaine, le centre de chaque nœud à l'aplomb des cases de sa semaine), et non plus hors de la scène ; la planche décorative (mois, échelle, cases, notes) est sa sœur, cachée aux lecteurs d'écran. La colonne des Jours actifs de chaque semaine rétrécit (`scale`, origine au centre du nœud) jusqu'à rien, les jours vides s'effacent par colonne, le nœud grandit (`scale`) jusqu'à sa taille du socle, l'étiquette de pause apparaît. La commande gagne ` | uniq` (62–66,4 %), le compteur passe en fondu à « 51 semaines actives sur 53 » (73–79 %).
+- **Phrase (88–97 %)** : un fondu.
+- **Le trait sans `clip-path`** : un `scale: 0 1 → 1` par segment, depuis le nœud précédent (`::before` de chaque semaine). Chaque segment se trace dans le pas de la vague qui le sépare du précédent, à mi-plage de sa semaine (`tri-draw`, générée dans `src/lib/tri.ts`) : les segments se suivent bout à bout et le trait avance d'un seul tenant. L'enveloppe translatée de la Frise est écartée : elle couperait aussi les nœuds au front de la vague.
+
+Toutes ces animations finissent sur l'état du socle (rien n'a d'étape `to` sauf ce qui disparaît) : la fin de la scène est la figure du socle, à la taille de la vue.
+
 ## Considered Options
 
 - **La boucle `requestAnimationFrame` de la planche** (lecture automatique, molette capturée, curseur, SVG réécrit à chaque image) : écartée, comme pour la Frise. Le défilement reste natif et le mouvement est joué par le compositeur.
@@ -36,4 +44,9 @@ En portrait, la vue paysage est encore réduite à la largeur de l'écran (envir
   - **CPU ×4** : **régression pendant le tassement**. Entre 30 et 50 % de la scène, l'image médiane passe de 8,3 ms sans les animations des cases à 16,7 ms avec (120 → 60 images par seconde, pire image 25 ms), 57 images sur 67 au-delà de 10 ms contre aucune. Sur toute la scène : p95 41,7 ms dans les deux cas, 52 à 59 images au-delà de 20 ms sur environ 400 contre 43. Le surcoût par image : environ 1 ms de recalcul de style et 1,2 ms de commit du thread principal, pour les 243 cases animées. Avant de ne garder que les cases qui bougent (365 animées), le surcoût de commit était d'environ 1,6 ms par image.
   - **Décision de Louis (2026-10-28)** : il garde les cases réelles, qui glissent une à une, au prix de 60 images par seconde à CPU ×4 le temps du tassement (fluide à CPU ×1). Le mouvement par colonne reste le compromis de repli.
 - **Sans Traîne (décision de Louis, 2026-10-28)** : la piste du Tri ne porte pas `data-trail`. Avec la Traîne, l'image médiane passe de 8,3 à 16,6 ms à CPU ×1, et de 8,4 à 50–58 ms à CPU ×4 : chaque image de rattrapage recalcule le style des 251 animations de la scène (ADR 0012). Le suivi est l'issue #115.
+- **`main` (#110)**, même protocole, 2 passes à CPU ×4 entrelacées avec #109, 1 à CPU ×1 ; 468 animations `tri-`, toutes composées. Poids : 87 469 o (fr), 87 093 o (en).
+  - **CPU ×1** : image médiane 8,3 ms partout, aucune au-delà de 20 ms ; 1 à 8 images en retard par dixième de la scène contre aucune.
+  - **CPU ×4** : **régression**. Entre 60 et 90 % de la scène, l'image médiane passe de 8,3 ms à 16,7, 25 puis 33 ms ; 97 images au-delà de 20 ms contre 50–54, et le tassement lui-même ralentit (8,3 → 16,6 ms entre 10 et 20 %), chaque animation ajoutée coûtant au commit de chaque image (2,6 → 5 ms par image). Pas de mise en page par image ; les peintures (environ 950 contre 195) sont la première peinture de chaque élément animé quand il prend sa couche, deux fois par élément sur l'aller-retour, pas une peinture par image.
+  - Sans les jours vides par colonne ni les traits (363 animations) : 16,7 ms entre 60 et 90 %, comme le tassement. Sans les animations des cases (mouvement par colonne, 225 animations) : 8,3 ms entre 60 et 70 %, 16,7 ms ensuite.
+  - **À trancher par Louis.**
 - À compléter (#113) : CPU ×1 et ×4 en 390 × 844, avant/après sur `main`, Lighthouse, captures aux cinq tailles.

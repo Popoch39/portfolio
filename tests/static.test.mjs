@@ -97,7 +97,7 @@ test('la CSS livrée n’a ni :hover ni transition hors des notes de la figure, 
 		const allowed = (selector) =>
 			selector.startsWith('.iso') ||
 			selector.startsWith('::view-transition-') ||
-			(page.home && (selector.startsWith(':root[data-launch]') || selector.startsWith('.dive') || /^\.(?:stack|atom)\b|^\.frise-/.test(selector)));
+			(page.home && (selector.startsWith(':root[data-launch]') || selector.startsWith('.dive') || /^\.(?:stack|atom|frise)\b/.test(selector)));
 		assert.deepEqual(
 			animated.map((selector) => selector.trim()).filter((selector) => !allowed(selector)),
 			[],

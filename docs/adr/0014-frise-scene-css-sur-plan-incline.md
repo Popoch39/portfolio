@@ -20,10 +20,19 @@ La section Parcours sort de la colonne de l'accueil pour que la scène couvre to
 
 Le plan est rendu en 3D par le compositeur : la grille (4 400 × 900 px du plan) et les deux tracés (4 000 × 400 px) sont de grandes couches, pixellisées une fois, à l'échelle de la vue ; le texte des étiquettes, redressé dans une scène en perspective, peut y être pixellisé à une autre échelle que celle de l'écran. À vérifier à l'œil et en trace.
 
-La chorégraphie par Commit (point, poteau, étiquette, Commit actif en grand) est l'objet de #101 ; ici, les étiquettes sont posées sur le plan, toutes visibles, poteau à sa hauteur finale.
+## Chorégraphie des Commits (#101)
+
+Chaque Commit a ses plages, générées au build dans `src/lib/frise.ts`, en pourcentages littéraux de la scène, toutes calées sur l'instant où HEAD (et donc le bord du tracé plein) l'atteint : `(date − 2018,25) / 8,25`. La planche activait un Commit 0,03 an avant ; ici, tout change exactement au passage, dans les deux sens.
+
+- **Point** : un anneau à 0,4 d'opacité, et un disque plein, couche à part à 0 ; au passage, les deux passent à 1 d'un coup (`frise-on`, `step-start forwards`). La fusion n'a pas de disque : elle reste un anneau. Pas de `background` animé : il serait repeint.
+- **Poteau** : à sa hauteur finale dans la mise en page, ramené à 18 px par `scale` vertical, il remonte à 1 en 0,18 an, en sortie cubique (`frise-pole`). Le texte de l'étiquette, dans une enveloppe `.caption` (`display: contents` dans le git log vertical), descend d'autant et remonte avec lui (`frise-lift`, `translate`). Le `translate` de l'étiquette redressée elle-même ne convenait pas : il s'applique avant sa rotation, donc dans le plan. Pour HEAD, la montée est bornée à la fin de la scène (la planche la laissait inachevée).
+- **Étiquette** : la courbe de la planche (à venir `0,4 − 0,35 × écart`, actif 1, passé `1 − 0,5 × écart` jamais sous 0,25) en une seule `@keyframes` d'opacité par Commit, posée sur l'étiquette redressée, qui n'est pas `preserve-3d`. Les sauts (au passage, puis au passage du Commit suivant) sont des marches d'un millième de la plage, qui finissent sur l'instant exact : deux étapes au même pourcentage se fondraient en une.
+- **Commit actif en grand** : un bloc par Commit (date et Branche, titre, lieu), hors de la liste, `aria-hidden` et `data-nosnippet`, empilés dans une même case de grille. Chacun apparaît en fondu sur 1 % de la scène dès le passage de son Commit, et s'efface sur le même 1 % dès le passage du suivant : l'écart le plus serré entre deux Commits est de 3 %. Le premier est là dès le début de la scène, comme sur la planche.
+
+Environ 80 animations de plus sur la scène, toutes d'opacité, d'échelle ou de translation. À vérifier en trace : pas de mise en page ni de peinture par image, et le coût de ce nombre au compositeur.
 
 ## Mesures
 
 À compléter : poids de l'accueil, Lighthouse, trace de performance dans un Chromium fenêtré sur le GPU (pas de mise en page ni de peinture par image), captures en 390 × 844, 768 × 1024, 1280 × 720 et 1920 × 1080, émulation du mouvement réduit, recette de Louis (Firefox, Safari, téléphone).
 
-- Poids de l'accueil (HTML, polices préchargées et module, Brotli qualité 4), mesuré au build : 81 979 → 83 424 octets en français, 81 690 → 82 967 en anglais (budget 90 000).
+- Poids de l'accueil (HTML, polices préchargées et module, Brotli qualité 4), mesuré au build : 81 979 → 83 424 octets en français, 81 690 → 82 967 en anglais (budget 90 000). Avec la chorégraphie (#101) : 83 426 → 84 981 en français, 82 970 → 84 562 en anglais.

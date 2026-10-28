@@ -1,7 +1,8 @@
 // Notes de la figure : autour de la figure de chaque fiche, une note par pièce, reliée à elle par un
 // trait. Elle se lit en clair (un verbe, une phrase, les technologies) ou en code (le symbole, sa
 // signature et le lien vers lui) ; la ligne de commande de la carte bascule entre les deux lectures,
-// que le module de la page recopie sur la carte pour la CSS. La géométrie (place des notes, traits, viseurs) est écrite au build dans la CSS.
+// que le module de la page recopie sur la carte pour la CSS. La géométrie (place des notes, traits,
+// viseurs) est écrite au build dans la CSS.
 // Chaque version dit tout dans sa langue : notes, ligne de commande, barre d'état et libellés.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

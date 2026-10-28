@@ -1,24 +1,12 @@
-// Le Glissé (ADR 0010) : un cran de molette fait glisser la page avec de l'inertie au lieu de la faire
-// sauter. Le défilement natif avance d'un cran en un éclair puis s'arrête net, et la Plongée, qui suit
-// exactement le défilement, avançait par à-coups. Seul le défilement est lissé : les animations restent
-// à la CSS et au compositeur.
+// Le Glissé (ADR 0010) : un cran de molette fait glisser la page au lieu de la faire sauter. Le
+// défilement natif avance d'un cran en un éclair puis s'arrête net, et la Plongée, qui suit exactement
+// le défilement, avançait par à-coups. Le glissé lui-même est un défilement lisse que le navigateur
+// anime sur le compositeur, comme celui de la molette : écrit image par image depuis le script, il
+// arrivait parfois au compositeur une image après la scène, et Projets, tenu par une translation qui
+// compense le défilement, tremblait (Brave sous Wayland).
 
-// Un dixième de l'écart rattrapé par image à 60 images par seconde, quelle que soit la cadence de
-// l'écran : la page est posée en une demi-seconde environ.
-const RATE = -60 * Math.log(0.9);
-
-let target = 0;
-let position = 0;
-let last = 0;
-let frame = 0;
-
-const step = (now: number) => {
-	position += (target - position) * (1 - Math.exp((-RATE * Math.max(0, now - last)) / 1000));
-	last = now;
-	if (Math.abs(target - position) < 0.5) position = target;
-	scrollTo(0, position);
-	frame = position == target ? 0 : requestAnimationFrame(step);
-};
+// La cible du glissé en cours ; aucune avant le premier cran.
+let target = NaN;
 
 // Un cran de molette se reconnaît à `wheelDeltaY`, qui compte 120 par cran dans tous les navigateurs ;
 // un pavé tactile y met une fraction de cran, ou, sur Mac, trois fois son delta.
@@ -59,29 +47,14 @@ addEventListener(
 		)
 			return;
 		event.preventDefault();
-		if (!frame) {
-			target = position = scrollY;
-			// L'heure du cran, sur l'horloge des images : la première compte depuis lui.
-			last = event.timeStamp;
-			frame = requestAnimationFrame(step);
-		}
-		target = Math.max(0, Math.min(document.documentElement.scrollHeight - innerHeight, target + event.deltaY));
+		// Les crans enchaînés s'ajoutent à la cible tant que la page n'y est pas ; en changeant de sens, ou
+		// mené au-delà par un autre défilement (une ancre, la Lunette), le cran repart de la page.
+		const from = (target - scrollY) * event.deltaY > 0 ? target : scrollY;
+		target = Math.max(0, Math.min(document.documentElement.scrollHeight - innerHeight, from + event.deltaY));
+		scrollTo({ top: target, behavior: 'smooth' });
 	},
 	{ passive: false },
 );
-
-const stop = () => {
-	cancelAnimationFrame(frame);
-	frame = 0;
-};
-
-// Ailleurs que là où le glissé l'a posée (clavier, barre de défilement, ancre, Lunette), la page est à
-// qui l'a déplacée : le glissé s'arrête au lieu de la ramener vers sa cible.
-addEventListener('scroll', () => frame && Math.abs(scrollY - position) > 1 && stop(), { passive: true });
-// Un défilement lisse (flèches, `j` dans la Lunette) peut n'avoir pas bougé d'un pixel à l'image
-// suivante, que le glissé écraserait : la touche ou le clic qui le lance arrête le glissé avant lui.
-addEventListener('keydown', stop);
-addEventListener('pointerdown', stop, { passive: true });
 
 // Un module, importé pour ses effets : ses noms ne débordent pas sur ceux de la page.
 export {};

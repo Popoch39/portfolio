@@ -556,8 +556,9 @@ const branchOf = (commit: Commit) => (commit.kind === 'head' ? `HEAD → ${commi
 				margin: 0;
 			}
 
+			/* La date et le lieu suivent le titre à l'échelle de la scène, sans passer sous un corps lisible. */
 			.frise-when {
-				font-size: 12px;
+				font-size: max(11px, min(12px, 1.66cqh, 2.45cqw));
 				color: #c5caff;
 			}
 
@@ -570,7 +571,7 @@ const branchOf = (commit: Commit) => (commit.kind === 'head' ? `HEAD → ${commi
 			}
 
 			.frise-place {
-				font-size: 15px;
+				font-size: max(12px, min(15px, 2.08cqh, 3.07cqw));
 				color: var(--accent-wash);
 			}
 

@@ -357,6 +357,17 @@ for (const { locale, id } of [
 		});
 	});
 
+	// Le titre du Commit actif suit la taille de la scène ; sa date et son lieu aussi, sans passer sous un
+	// corps lisible.
+	test(`${locale} : la date et le lieu du Commit actif suivent les unités de la scène, avec un plancher`, () => {
+		for (const name of ['frise-when', 'frise-place']) {
+			const size = blocks(styles, SUPPORTED)
+				.join('')
+				.match(new RegExp(`\\.${name}\\b[^{}]*\\{[^{}]*\\bfont-size:([^;}]*)`))?.[1];
+			assert.match(size ?? '', /^max\((?:1[1-9]|[2-9]\d)px,min\(\d+px,[\d.]+cqh,[\d.]+cqw\)\)$/, `${name} : ${size}`);
+		}
+	});
+
 	test(`${locale} : les missions sont masquées à l’écran dans la scène, lues par les lecteurs d’écran, visibles dans le git log`, () => {
 		const list = elementAt(section, section.indexOf('<ol class="frise'));
 		assert.ok(tags(list, 'li').filter((t) => /\bclass="mission\b/.test(t)).length > 0, 'missions absentes de la liste');

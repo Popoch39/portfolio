@@ -25,17 +25,19 @@ const step = (now: number) => {
 // Propriété héritée, absente des types du DOM.
 const notch = (event: WheelEvent) => {
 	const ticks = (event as WheelEvent & { wheelDeltaY: number }).wheelDeltaY;
-	return ticks && ticks % 120 == 0 && ticks != -3 * event.deltaY;
+	return ticks != 0 && ticks % 120 == 0 && ticks != -3 * event.deltaY;
 };
 
-// Sous le pointeur, ce qui défile en propre (la liste de la Lunette) ou retient le défilement de la page
-// (son voile, en `overscroll-behavior: contain`) garde la molette.
+// Sous le pointeur, ce qui défile encore en propre dans le sens du cran (la liste de la Lunette) ou
+// retient le défilement de la page (son voile, en `overscroll-behavior: contain`) garde la molette ; en
+// bout de course, la liste passerait le cran à la page, qui sauterait.
 const held = (event: WheelEvent) =>
 	event.composedPath().some((node) => {
 		if ((node as Node).nodeType != 1) return false;
 		const element = node as Element;
 		const { overflowY, overscrollBehaviorY } = getComputedStyle(element);
-		return overscrollBehaviorY != 'auto' || (/auto|scroll/.test(overflowY) && element.scrollHeight > element.clientHeight);
+		const room = event.deltaY > 0 ? element.scrollHeight - element.clientHeight - element.scrollTop : element.scrollTop;
+		return overscrollBehaviorY != 'auto' || (/auto|scroll/.test(overflowY) && room > 0);
 	});
 
 // Suivi plutôt que lu une fois : le réglage peut changer, page ouverte.
@@ -68,18 +70,18 @@ addEventListener(
 	{ passive: false },
 );
 
+const stop = () => {
+	cancelAnimationFrame(frame);
+	frame = 0;
+};
+
 // Ailleurs que là où le glissé l'a posée (clavier, barre de défilement, ancre, Lunette), la page est à
 // qui l'a déplacée : le glissé s'arrête au lieu de la ramener vers sa cible.
-addEventListener(
-	'scroll',
-	() => {
-		if (frame && Math.abs(scrollY - position) > 1) {
-			cancelAnimationFrame(frame);
-			frame = 0;
-		}
-	},
-	{ passive: true },
-);
+addEventListener('scroll', () => frame && Math.abs(scrollY - position) > 1 && stop(), { passive: true });
+// Un défilement lisse (flèches, `j` dans la Lunette) peut n'avoir pas bougé d'un pixel à l'image
+// suivante, que le glissé écraserait : la touche ou le clic qui le lance arrête le glissé avant lui.
+addEventListener('keydown', stop);
+addEventListener('pointerdown', stop, { passive: true });
 
 // Un module, importé pour ses effets : ses noms ne débordent pas sur ceux de la page.
 export {};

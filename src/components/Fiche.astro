@@ -90,7 +90,7 @@ const sourceCode = {
 
 	// Le Glissé de la molette (ADR 0010), demandé une fois la première image peinte pour ne pas la
 	// retarder, et avant d'attendre la transition : la molette sert dès que la fiche est là.
-	requestAnimationFrame(() => setTimeout(() => import('../lib/glide.ts')));
+	requestAnimationFrame(() => setTimeout(() => void import('../lib/glide.ts')));
 
 	const scene = document.querySelector<HTMLElement>('[data-motion]');
 	const svg = scene?.querySelector('svg');

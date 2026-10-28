@@ -29,7 +29,7 @@ Le repli (#73) joue la scène dans les navigateurs sans animations pilotées par
 
 ## Mesures
 
-Recette (#74), mesurée le 2026-10-28 contre `main` (`1d2dd23`), après la revue de la branche (en-tête au-dessus du héros, tabulation, condition du repli, repli limité à la scène, jetons de l'en-tête de section). Chromium 155 sans tête ; Lighthouse 12.8, trois passes entrelacées par langue et par profil, français et anglais confondus (valeurs identiques d'une langue à l'autre) :
+Recette (#74), mesurée le 2026-10-28 contre `main` (`1d2dd23`), après la revue de la branche (en-tête au-dessus du héros, tabulation, condition du repli, repli limité à la scène, jetons de l'en-tête de section), la scène longue alors de `190svh` : toutes les mesures de cet ADR précèdent son allongement à `450svh` (ADR 0010). Chromium 155 sans tête ; Lighthouse 12.8, trois passes entrelacées par langue et par profil, français et anglais confondus (valeurs identiques d'une langue à l'autre) :
 
 | | Mobile, `main` | Mobile, branche | Ordinateur, `main` | Ordinateur, branche |
 |---|---|---|---|---|

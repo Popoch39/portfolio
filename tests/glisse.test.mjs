@@ -157,6 +157,11 @@ async function glide({ reduced = false } = {}) {
 
 test('un cran de molette fait glisser la page jusqu’à sa cible, en une demi-seconde environ', async () => {
 	const page = await glide();
+	// Passif, l'écouteur ne pourrait pas annuler le saut natif : Chromium l'ignorerait.
+	assert.deepEqual(
+		page.listeners.wheel.map(({ options }) => options?.passive),
+		[false],
+	);
 	assert.ok(page.wheel().defaultPrevented, 'cran laissé au saut natif');
 	assert.equal(scrollY, 0, 'la page a sauté avant la première image');
 	// À 60 images par seconde, chacune rattrape un dixième de l'écart qui reste.
@@ -233,10 +238,27 @@ test('un défilement d’ailleurs arrête le glissé en cours', async () => {
 	page.wheel();
 	page.play(2000);
 	assert.equal(scrollY, 3120, 'le cran suivant ne part pas de la nouvelle place');
+
+	// Un défilement lisse (flèches du clavier, `j` dans la Lunette) peut n'avoir pas bougé d'un pixel à
+	// l'image suivante : la touche, ou le clic sur la barre, arrête le glissé avant lui.
+	for (const type of ['keydown', 'pointerdown']) {
+		page.wheel();
+		page.play(100);
+		const at = scrollY;
+		for (const { listener } of page.listeners[type] ?? []) listener({ type });
+		page.play(1000);
+		assert.equal(scrollY, at, `${type} : glissé toujours en cours`);
+	}
 });
 
 /** Un élément sous le pointeur, avec son style calculé. */
-const element = (style, scrollHeight = 100) => ({ nodeType: 1, scrollHeight, clientHeight: 100, style: { overflowY: 'visible', overscrollBehaviorY: 'auto', ...style } });
+const element = (style, scrollHeight = 100, scrollTop = 0) => ({
+	nodeType: 1,
+	scrollHeight,
+	scrollTop,
+	clientHeight: 100,
+	style: { overflowY: 'visible', overscrollBehaviorY: 'auto', ...style },
+});
 
 // La liste de la Lunette défile en propre ; son voile, qui couvre l'écran, ne laisse pas passer le
 // défilement à la page (`overscroll-behavior: contain`). Ni l'une ni l'autre ne doit faire glisser la page.
@@ -256,6 +278,8 @@ test('la molette au-dessus de ce qui défile en propre reste au navigateur', asy
 		['texte de la page', [element({}), ...root]],
 		['bloc rogné', [element({ overflowY: 'clip' }, 400), ...root]],
 		['liste qui tient en entier', [element({ overflowY: 'auto' }), ...root]],
+		// En bout de course, la liste passe le cran à la page, qui sauterait.
+		['liste en bas de sa course', [element({ overflowY: 'auto' }, 400, 300), ...root]],
 	]) {
 		assert.ok(page.wheel({ composedPath: () => path }).defaultPrevented, name);
 	}

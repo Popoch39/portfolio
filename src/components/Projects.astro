@@ -93,8 +93,8 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 	// Le Glissé de la molette (ADR 0010), et la Plongée là où sa CSS ne joue pas (Firefox) : son repli,
 	// jamais en mouvement réduit (ADR 0009). L'un et l'autre ne sont demandés qu'une fois la première
 	// image peinte, pour ne pas la retarder. La condition du repli est celle du `@supports` de la scène,
-	// mot pour mot : aucun navigateur ne reste sans l'une ni l'autre. Ils passent par ce module, le seul
-	// de l'accueil (ADR 0007) : un script dans la Plongée en ferait un second.
+	// mot pour mot : aucun navigateur ne reste sans la scène ni son repli. Ils passent par ce module, le
+	// seul de l'accueil (ADR 0007) : un script dans la Plongée en ferait un second.
 	const fallback =
 		!CSS.supports('(animation-timeline:view()) and (animation-range:entry) and (timeline-scope:--dive)') &&
 		!matchMedia('(prefers-reduced-motion)').matches;

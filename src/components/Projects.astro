@@ -302,11 +302,13 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 			grid-column: 1 / span 6;
 		}
 
+		/* `--preview-top` : la Plongée y ajoute la course de son épingle (`Dive.astro`). */
 		.preview {
+			--preview-top: 24px;
 			display: grid;
 			grid-column: 7 / span 6;
 			position: sticky;
-			top: 24px;
+			top: var(--preview-top);
 			padding-top: 24px;
 		}
 

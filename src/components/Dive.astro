@@ -3,8 +3,8 @@
 // en défilant depuis le haut, la scène (l'en-tête du site et le héros) s'épingle, le texte s'efface, le
 // curseur du nom grandit jusqu'à couvrir l'écran, puis le bleu se replie dans le carré de « 01 » de
 // Projets, qui suit la scène dans le flux et s'épingle avec elle pendant le repli. Tout est en CSS
-// pilotée par le défilement ; en mouvement réduit
-// ou dans un navigateur qui ne sait pas la jouer, ces enveloppes ne changent rien à la page.
+// pilotée par le défilement ; en mouvement réduit ou dans un navigateur qui ne sait pas la jouer, ces
+// enveloppes ne changent rien à la page.
 import { localeOf, ui } from '../lib/i18n';
 
 // La devise sur le bleu : l'accent de l'accroche, coupé en deux lignes là où sa langue le déclare.
@@ -450,9 +450,9 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 			   l'écran : un lien atteint au clavier y fait défiler la page, comme d'habitude. Au repli du bleu
 			   (58 %), il remonte d'un coup de cette course, sous l'en-tête, et y reste : l'épingle, qui le
 			   descend d'autant, le tient alors, puis le rend au défilement. Le saut a lieu sous le bleu, et
-			   l'animation reste jouée jusqu'au bout : sans elle sur un parent pendant le zoom, Chrome gardait
-			   parfois Projets tramé à une échelle du zoom, flou une fois posé. Zoomé, il déborde de l'écran :
-			   rogné en largeur, il ne fait pas défiler la page de côté. */
+			   l'animation reste jouée jusqu'au bout : une animation sur un parent pendant le zoom empêche
+			   Chrome de garder Projets tramé à une échelle du zoom, flou une fois posé. Zoomé, il déborde de
+			   l'écran : rogné en largeur, il ne fait pas défiler la page de côté. */
 			.dive-next {
 				position: relative;
 				top: var(--dive-hold);
@@ -463,9 +463,9 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 			}
 
 			/* L'aperçu A3, collé en haut de l'écran pendant que la liste défile : son épingle se calcule sur
-			   la mise en page, sans le saut de Projets, qu'elle compte donc en plus de ses 24 px. */
+			   la mise en page, sans le saut de Projets, qu'elle compte donc en plus de sa marge. */
 			.dive-next :global(.preview) {
-				top: calc(24px + var(--dive-hold));
+				top: calc(var(--preview-top) + var(--dive-hold));
 			}
 
 			/* Une seule animation, que le compositeur joue, et sans remplissage : avant la scène, l'ancre

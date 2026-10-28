@@ -226,7 +226,9 @@ test('les crans enchaînés s’ajoutent à la cible sans repartir de l’arrêt
 	assert.equal(after.at(-1).y, 240, 'second cran perdu');
 
 	page.wheel({ deltaY: -1000, wheelDeltaY: 1200 });
-	assert.equal(page.run(3000).at(-1).y, 0, 'au-dessus du haut');
+	const top = page.run(3000);
+	assert.equal(top.at(-1).y, 0, 'au-dessus du haut');
+	assert.ok(top.every(({ y }) => y >= 0), 'au-dessus du haut de la page');
 	page.wheel({ deltaY: PAGE * 2, wheelDeltaY: -120 });
 	const bottom = page.run(4000);
 	assert.equal(bottom.at(-1).y, PAGE - SCREEN, 'au-delà du bas');
@@ -255,6 +257,28 @@ test('un défilement venu d’ailleurs arrête le glissé, et le cran suivant re
 	assert.equal(page.pending(), 0, 'images demandées après l’arrêt');
 	page.wheel();
 	assert.equal(page.run(2000).at(-1).y, 3120);
+});
+
+// Le défilement lisse du navigateur (flèches, Page suivante dans Chromium) repart de l'arrêt : entre deux
+// images, il ne mène parfois la page que d'une fraction de pixel, ou d'un pixel arrondi. Ce pas suffit à
+// arrêter le glissé, qui sinon réécrirait la page par-dessus et annulerait le défilement du lecteur.
+test('un défilement venu d’ailleurs arrête le glissé, même d’une fraction de pixel par image', async () => {
+	for (const [snap, pace] of [
+		[false, 0.25],
+		[true, 1],
+	]) {
+		const page = await glide({ snap });
+		page.wheel();
+		page.run(100);
+		const from = scrollY;
+		// Le défilement du navigateur part d'où est la page à chaque image.
+		for (let n = 1; n <= 30; n++) {
+			page.at(scrollY + pace);
+			page.run(1000 / 60);
+		}
+		assert.equal(scrollY, from + 30 * pace, `pas de ${pace} px : le glissé réécrit la page`);
+		assert.equal(page.pending(), 0, `pas de ${pace} px : images demandées après l’arrêt`);
+	}
 });
 
 // Au repos, le Glissé ne coûte rien : ni image demandée, ni écouteur de défilement.

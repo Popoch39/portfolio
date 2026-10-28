@@ -16,7 +16,7 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 	<div class="dive-scene">
 		<span class="dive-track" aria-hidden="true"></span>
 		<div class="dive-stage">
-			<slot name="head" />
+			<div class="dive-head"><slot name="head" /></div>
 			<div class="dive-hero"><slot name="hero" /></div>
 			<div class="dive-blue" aria-hidden="true"></div>
 			{/* Elle double l'accroche : ni lue, ni reprise dans les extraits de recherche. */}
@@ -38,14 +38,19 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 	}
 
 	/* La chronologie de la planche, en part de la scène (1,9 écran de défilement) :
-	   0–4 %       le héros plus haut que l'écran remonte jusqu'à montrer son bas (la planche s'y arrête) ;
+	   0–4 %       le héros plus haut que l'écran remonte sous l'en-tête jusqu'à montrer son bas (la
+	               planche s'y arrête) ;
 	   4–17 %      le texte d'accroche, les informations et les actions s'effacent en descendant ;
-	   5–34 %      le curseur grandit jusqu'à couvrir l'écran, l'en-tête compris ;
+	   5–34 %      le curseur grandit jusqu'à couvrir l'écran ;
 	   9–30 %      « Louis » et « Pocheron » enflent et s'estompent ;
-	   33,6–34 %   l'aplat bleu prend le relais du curseur ; sous lui, le héros s'efface et Projets paraît ;
+	   30–34 %     l'en-tête s'efface dans le bleu qui l'entoure ;
+	   33,6–34 %   l'aplat bleu prend le relais du curseur ; sous lui, le héros s'efface ;
 	   34,75–57,5 % sur le bleu, « -- INSERT -- » puis les deux lignes de la devise montent et repartent ;
-	   58–88 %     le bleu se replie dans le carré de « 01 », Projets se pose d'un léger zoom en arrière ;
+	   58–88 %     le bleu se replie dans le carré de « 01 », Projets, tenu à sa place, se pose d'un léger
+	               zoom en arrière ;
 	   88–100 %    le bleu s'efface sur le vrai carré ; Projets reste tenu jusqu'à la fin de la scène.
+	   Ce qu'un fondu ou le bleu plein écran cache sort de la tabulation (`visibility`) : le focus ne
+	   s'y arrête pas sans être vu.
 	   Chaque raccourci `animation` porte la durée `auto`, comme la planche : sans elle, le minifieur
 	   replie `animation-timeline` dans le raccourci, que Chrome refuse alors en entier. */
 	@media (prefers-reduced-motion: no-preference) {
@@ -53,6 +58,8 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 			.dive {
 				/* 1,9 écran, comme les 1 500 px de la planche pour 800 de haut. */
 				--dive-length: 190svh;
+				/* Le bord gauche du contenu (`.container`), `100%` valant la largeur de la page. */
+				--content-left: calc(max(0px, (100% - var(--container)) / 2) + var(--page-margin));
 			}
 
 			/* Toute la page voit la ligne de temps : la barre d'état, qui la suit aussi, est hors de la Plongée. */
@@ -96,6 +103,23 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 				top: 0;
 				z-index: 1;
 				overflow-x: clip;
+			}
+
+			/* L'en-tête reste en haut, au-dessus du héros qui remonte sous lui : son fond, sur toute la
+			   largeur, cache ce qui passe dessous. Le curseur, dans le héros, grandit donc sous lui ; le nom
+			   effacé, l'en-tête s'efface à son tour dans le bleu qui l'entoure, puis l'aplat le couvre (34 %).
+			   Revenu sous l'aplat, il quitte la tabulation tant que le bleu couvre l'écran. */
+			.dive-head {
+				position: relative;
+				z-index: 1;
+				background: var(--bg);
+				animation:
+					auto dive-out linear,
+					auto dive-hide linear;
+				animation-timeline: --dive;
+				animation-range:
+					contain 30% contain 34%,
+					contain 34% contain 58%;
 			}
 
 			/* La barre d'état reste au-dessus du bleu, comme sur la planche, et sous le Lancement (10). */
@@ -155,32 +179,32 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 				scroll-margin-top: calc(var(--dive-length) + 100dvh);
 			}
 
-			/* Plus haut que l'écran, le héros remonte d'abord jusqu'à montrer son bas, pendant que la planche
-			   ne fait rien, avant que le texte ne s'efface ; s'il tient, il ne bouge pas. Son enveloppe
-			   s'étend sous l'en-tête, si bien que `100 %` de sa translation vaut l'en-tête et le héros : une
-			   hauteur en `cqh` dans les @keyframes resterait figée au compositeur quand l'en-tête change de
-			   hauteur (polices chargées). Sur l'en-tête, elle laisse passer le pointeur. */
+			/* Plus haut que l'écran, le héros remonte d'abord sous l'en-tête jusqu'à montrer son bas, pendant
+			   que la planche ne fait rien, avant que le texte ne s'efface ; s'il tient, il ne bouge pas. Son
+			   enveloppe s'étend sous l'en-tête, si bien que `100 %` de sa translation vaut l'en-tête et le
+			   héros : une hauteur en `cqh` dans les @keyframes resterait figée au compositeur quand l'en-tête
+			   change de hauteur (polices chargées). */
 			.dive-hero > :global(*) {
 				margin-top: -100cqh;
 				padding-top: 100cqh;
-				pointer-events: none;
 				animation: auto dive-lift linear both;
 				animation-timeline: --dive;
 				animation-range: contain 0% contain 4%;
 			}
 
-			/* Le héros glisse sur l'en-tête, resté collé, et le couvre de son fond : l'en-tête ne connaît pas
-			   la hauteur du héros pour remonter avec lui. */
-			.dive-hero :global(.hero) {
-				background: var(--bg);
-				pointer-events: auto;
-			}
-
 			/* Les enveloppes du texte, pas le texte : le Lancement anime l'accroche, les informations et les
 			   actions, et une liste `animation` remplace l'autre au lieu de s'y ajouter. */
-			.dive-hero :global(.topline > *),
-			.dive-hero :global(.body) {
+			.dive-hero :global(.topline > *) {
 				animation: auto dive-away cubic-bezier(0.5, 0, 0.9, 0.5) both;
+				animation-timeline: --dive;
+				animation-range: contain 4% contain 17%;
+			}
+
+			/* Effacées, les actions (« Écrire », GitHub) quittent la tabulation au même instant. */
+			.dive-hero :global(.body) {
+				animation:
+					auto dive-away cubic-bezier(0.5, 0, 0.9, 0.5) both,
+					auto dive-cover linear both;
 				animation-timeline: --dive;
 				animation-range: contain 4% contain 17%;
 			}
@@ -219,13 +243,13 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 			   qu'elle soit, et x est le bord gauche du contenu. Ses deux translations ont la même courbe et la
 			   même plage, et s'ajoutent comme une seule. */
 			.dive-blue {
-				/* Le haut du carré dans Projets : la marge haute de la section, puis le carré de 9 px centré
-				   dans la ligne du numéro (13 px × 1,5), qui vient en premier sous 1024 px et s'aligne sur le
-				   bas du titre (0,84 em) au-delà. Relevé sur Projects, SectionHeader et SectionNumber. */
-				--dot-top: calc(clamp(56px, 7vw, 108px) + 5.25px);
+				/* Le haut du carré dans Projets, lu sur la mise en page : la marge haute de la section, puis
+				   le carré centré dans la ligne du numéro, qui vient en premier sous 1024 px. */
+				--dot-top: calc(var(--projects-top) + (var(--section-number-line) - var(--section-dot)) / 2);
 				display: block;
 				position: absolute;
 				inset: 0;
+				z-index: 1;
 				pointer-events: none;
 				animation:
 					auto dive-in linear backwards,
@@ -236,9 +260,13 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 					contain 58% contain 88%;
 			}
 
+			/* Au-delà, comme dans SectionHeader, le numéro s'aligne sur le bas du titre. */
 			@media (min-width: 1024px) {
 				.dive-blue {
-					--dot-top: calc(clamp(56px, 7vw, 108px) + 0.84 * clamp(52px, 8vw, 120px) - 14.25px);
+					--dot-top: calc(
+						var(--projects-top) + var(--section-title-leading) * var(--section-title) -
+							(var(--section-number-line) + var(--section-dot)) / 2
+					);
 				}
 			}
 
@@ -274,10 +302,11 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 				position: absolute;
 				top: 0;
 				left: 0;
+				z-index: 1;
 				width: 100%;
 				height: 100dvh;
 				box-sizing: border-box;
-				padding: 0 calc(max(0px, (100% - var(--container)) / 2) + var(--page-margin));
+				padding: 0 var(--content-left);
 				container-type: inline-size;
 				color: #fff;
 				pointer-events: none;
@@ -326,29 +355,26 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 					contain calc(51% + var(--k) * 1.5%) contain calc(56% + var(--k) * 1.5%);
 			}
 
-			/* Projets, juste après la scène : il paraît sous le bleu, et une translation qui compense le
+			/* Projets, juste après la scène : quand le bleu se replie, une translation qui compense le
 			   défilement le tient à sa place de fin de scène, sous l'en-tête ; elle s'annule avec la scène,
-			   sans rien laisser derrière elle (ni contexte d'empilement, ni bloc conteneur). Zoomé, il déborde
-			   de l'écran : rogné en largeur, il ne fait pas défiler la page de côté. */
+			   sans rien laisser derrière elle (ni contexte d'empilement, ni bloc conteneur). Sous le bleu
+			   plein écran, il reste à sa place dans le flux, hors de l'écran : un lien atteint au clavier y
+			   fait défiler la page, comme d'habitude. Zoomé, il déborde de l'écran : rogné en largeur, il ne
+			   fait pas défiler la page de côté. */
 			.dive-next {
 				overflow-x: clip;
-				animation:
-					auto dive-in linear backwards,
-					auto dive-hold linear;
+				animation: auto dive-hold linear;
 				animation-timeline: --dive;
-				animation-range:
-					contain 33.8% contain 34%,
-					contain 33.8% contain 100%;
+				animation-range: contain 58% contain 100%;
 			}
 
-			/* Tenu à son départ dès qu'il paraît, puis posé de 58 à 88 % (voir `dive-settle`). Une seule
-			   animation, que le compositeur joue, et sans remplissage : avant la scène, l'ancre `#projets` vise
-			   sa boîte, qu'un zoom fausserait. */
+			/* Une seule animation, que le compositeur joue, et sans remplissage : avant la scène, l'ancre
+			   `#projets` vise sa boîte, qu'un zoom fausserait. */
 			.dive-next :global(.projects) {
 				transform-origin: 5% 20%;
-				animation: auto dive-settle linear;
+				animation: auto dive-settle cubic-bezier(0.3, 0, 0.2, 1);
 				animation-timeline: --dive;
-				animation-range: contain 33.8% contain 88%;
+				animation-range: contain 58% contain 88%;
 			}
 
 			@keyframes dive-in {
@@ -372,6 +398,14 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 			}
 
 			@keyframes dive-cover {
+				to {
+					visibility: hidden;
+				}
+			}
+
+			/* Caché sur toute la plage, visible hors d'elle (sans remplissage). */
+			@keyframes dive-hide {
+				from,
 				to {
 					visibility: hidden;
 				}
@@ -406,14 +440,14 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 
 			@keyframes dive-fold {
 				to {
-					translate: calc(max(0px, (100% - var(--container)) / 2) + var(--page-margin)) 100%;
+					translate: var(--content-left) 100%;
 				}
 			}
 
 			@keyframes dive-shrink {
 				to {
 					translate: 0 var(--dot-top);
-					scale: tan(atan2(9px, 100vw)) tan(atan2(9px, 100dvh));
+					scale: tan(atan2(var(--section-dot), 100vw)) tan(atan2(var(--section-dot), 100dvh));
 				}
 			}
 
@@ -429,20 +463,17 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 				}
 			}
 
-			/* Du début du bleu à la fin de la scène, 66,2 % de sa longueur. */
+			/* Du repli du bleu à la fin de la scène, 42 % de sa longueur. */
 			@keyframes dive-hold {
 				from {
-					translate: 0 calc(-0.662 * var(--dive-length));
+					translate: 0 calc(-0.42 * var(--dive-length));
 				}
 			}
 
-			/* Sur la plage 33,8–88 % de la scène, 58 % tombe à 44,65 %. */
 			@keyframes dive-settle {
-				from,
-				44.65% {
+				from {
 					opacity: 0.5;
 					scale: 1.06;
-					animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1);
 				}
 			}
 		}

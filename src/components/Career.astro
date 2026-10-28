@@ -15,8 +15,8 @@ const branchOf = (commit: Commit) => (commit.kind === 'head' ? `HEAD → ${commi
     colonne de la page. */}
 <section id={id[locale]} class="career">
 	{/* La piste se déclare au repli de Firefox (`dive.ts`) : sa ligne de temps et le préfixe de ses
-	    animations. */}
-	<span class="frise-track" aria-hidden="true" data-timeline="--frise" data-prefix="frise-"></span>
+	    animations ; et à la Traîne (`trail.ts`, ADR 0012), la scène étant collée par la CSS. */}
+	<span class="frise-track" aria-hidden="true" data-timeline="--frise" data-prefix="frise-" data-trail></span>
 	<div class="frise-scene">
 		<div class="container">
 			<SectionHeader number={2} title={label[locale]} note={careerSummary[locale]} />

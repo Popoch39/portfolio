@@ -1,51 +1,41 @@
 ---
 import SectionHeader from './SectionHeader.astro';
-import { career, careerSummary, education, sections } from '../data/profile';
-import { formats, localeOf, ui } from '../lib/i18n';
+import { careerSummary, commits, sections, type Commit } from '../data/profile';
+import { localeOf } from '../lib/i18n';
 
 const locale = localeOf(Astro.currentLocale);
 const { id, label } = sections.career;
+
+const branchOf = (commit: Commit) => (commit.kind === 'head' ? `HEAD → ${commit.branch}` : commit.branch);
 ---
 
 <section id={id[locale]} class="career">
 	<SectionHeader number={2} title={label[locale]} note={careerSummary[locale]} />
-	<div class="grid steps">
+	{/* La Frise en git log vertical. Chaque Commit porte sa Branche, son genre et sa position : la scène
+	    les lira pour poser son étiquette sur le plan. */}
+	<ol class="frise">
 		{
-			career.map((p) => (
-				<article class:list={['step', { current: p.current }]}>
-					<span class="year" aria-hidden="true">{p.year}</span>
-					<span class="mono when">{p.period[locale]} · {p.city}</span>
-					<h3 class="company">{p.company}</h3>
-					<p class="role">{p.role[locale]}</p>
-					<ul class="missions">
-						{p.missions.map((m) => (
-							<li class="mission">
-								<span class="dash" aria-hidden="true">—</span>
-								<span>{m[locale]}</span>
-							</li>
-						))}
-					</ul>
-				</article>
+			commits.map((commit) => (
+				<li class="commit" data-branch={commit.branch} data-kind={commit.kind} data-at={commit.at}>
+					<div class="label">
+						<p class="mono when">
+							{commit.date[locale]}
+							<span class="branch"> · {branchOf(commit)}</span>
+						</p>
+						<h3 class="title">{commit.title[locale]}</h3>
+						<p class="place">{commit.place[locale]}</p>
+					</div>
+					{commit.missions && (
+						<ul class="missions">
+							{commit.missions.map((m) => (
+								<li class="mission">{m[locale]}</li>
+							))}
+						</ul>
+					)}
+				</li>
 			))
 		}
-	</div>
-	<div class="grid education">
-		<h3 class="mono education-title">{ui.education[locale]}</h3>
-		<ol class="degrees">
-			{
-				education.map((f) => (
-					<li class="degree">
-						{/* Les `{' '}` font lire « 2018 Baccalauréat … » et non « 2018Baccalauréat… ». Hors du
-						    français, l'équivalent est suivi du nom d'origine, en italique comme tout terme
-						    étranger, et lu en français. */}
-						<span class="mono degree-when">{f.period}</span>{' '}
-						<span class="degree-title">{f.degree[locale]}{locale !== 'fr' && <> — <i lang={formats.fr.lang}>{f.degree.fr}</i></>}</span>{' '}
-						<span class="degree-school">{f.school}</span>
-					</li>
-				))
-			}
-		</ol>
-	</div>
+	</ol>
 </section>
 
 <style>
@@ -53,45 +43,116 @@ const { id, label } = sections.career;
 		padding-top: clamp(64px, 8vw, 120px);
 	}
 
-	.steps {
-		row-gap: 48px;
-		padding-top: 40px;
+	/* Le rail de `main` passe par le centre des points de `main` ; les Branches courent dans un couloir
+	   décalé de --lane. --dot-y est le centre des points, au milieu de la ligne de date. */
+	.frise {
+		--rail: 2px;
+		--dot: 12px;
+		--dot-y: 9px;
+		--lane: 20px;
+		--main-x: calc((var(--dot) - var(--rail)) / 2);
+		margin: 40px 0 0;
+		padding: 0;
+		list-style: none;
 	}
 
-	.step {
+	.commit {
+		--x: 0px;
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
+		padding: 0 0 36px calc(var(--x) + var(--dot) + 22px);
+		background: linear-gradient(var(--ink), var(--ink)) var(--main-x) 0 / var(--rail) 100% no-repeat;
+	}
+
+	.commit:not([data-branch='main']) {
+		--x: var(--lane);
+	}
+
+	/* `main` part du premier point et s'arrête à HEAD. */
+	.commit:first-child {
+		background-position-y: var(--dot-y);
+	}
+
+	.commit[data-kind='head'] {
+		padding-bottom: 0;
+		background-size: var(--rail) var(--dot-y);
+	}
+
+	.commit::before {
+		content: '';
+		position: absolute;
+		z-index: 1;
+		top: calc(var(--dot-y) - var(--dot) / 2);
+		left: var(--x);
+		width: var(--dot);
+		height: var(--dot);
+		border: var(--rail) solid var(--ink);
+		border-radius: 50%;
+		background: var(--ink);
+	}
+
+	/* Une fusion reste un anneau, comme sur la planche ; HEAD prend l'accent. */
+	.commit[data-kind='merge']::before {
+		background: var(--bg);
+	}
+
+	.commit[data-kind='head']::before {
+		border-color: var(--accent);
+		background: var(--accent);
+	}
+
+	/* Le couloir d'une Branche : il bifurque de `main` en haut de son premier Commit, et revient sur
+	   `main` au point de la fusion. */
+	.commit:not([data-branch='main'])::after,
+	.commit[data-kind='merge']::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: var(--main-x);
+		width: calc(var(--lane) + var(--rail));
+		border-right: var(--rail) solid var(--ink);
+	}
+
+	.commit:not([data-branch='main'])::after {
+		bottom: 0;
+	}
+
+	.commit[data-kind='branch']::after {
+		border-top: var(--rail) solid var(--ink);
+		border-top-right-radius: 10px;
+	}
+
+	.commit[data-kind='merge']::after {
+		height: calc(var(--dot-y) + var(--rail) / 2);
+		border-bottom: var(--rail) solid var(--ink);
+		border-bottom-right-radius: 10px;
+	}
+
+	.label {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
 		min-width: 0;
-		padding-top: 18px;
-		border-top: 4px solid var(--ink);
-	}
-
-	.current {
-		border-top-color: var(--accent);
-	}
-
-	.year {
-		font-size: clamp(64px, 7.4vw, 108px);
-		line-height: 0.82;
-		font-weight: 800;
-		font-stretch: 62%;
 	}
 
 	.when {
+		margin: 0;
 		font-size: 12px;
+		line-height: calc(var(--dot-y) * 2);
 		color: var(--muted);
 	}
 
-	.company {
+	.title {
 		margin: 0;
-		font-size: 26px;
+		font-size: 22px;
 		line-height: 1.15;
 		font-weight: 700;
-		letter-spacing: -0.015em;
+		letter-spacing: -0.01em;
 	}
 
-	.role {
+	.place {
 		margin: 0;
 		font-size: 15px;
 		color: var(--muted);
@@ -100,8 +161,8 @@ const { id, label } = sections.career;
 	.missions {
 		display: flex;
 		flex-direction: column;
-		gap: 9px;
-		margin: 6px 0 0;
+		gap: 8px;
+		margin: 0;
 		padding: 0;
 		list-style: none;
 		font-size: 15px;
@@ -113,76 +174,22 @@ const { id, label } = sections.career;
 		gap: 10px;
 	}
 
-	.dash {
+	/* Le tiret est un ornement : texte de remplacement vide pour les lecteurs d'écran. */
+	.mission::before {
+		content: '—' / '';
 		color: var(--muted);
 	}
 
-	.education {
-		row-gap: 14px;
-		margin-top: 72px;
-	}
-
-	.education-title {
-		margin: 0;
-		padding-top: 14px;
-		font-size: 13px;
-		font-weight: 400;
-		color: var(--muted);
-	}
-
-	.degrees {
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-
-	.degree {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
-		gap: 4px 20px;
-		padding: 14px 0;
-		border-top: 1px solid var(--rule);
-		font-size: 17px;
-	}
-
-	.degree-when {
-		flex-shrink: 0;
-		width: 110px;
-		font-size: 13px;
-		color: var(--muted);
-	}
-
-	.degree-title {
-		flex: 1 1 260px;
-		font-weight: 600;
-	}
-
-	.degree-school {
-		color: var(--muted);
-	}
-
-	/* Tablette : le poste actuel en pleine largeur, les deux précédents côte à côte ;
-	   Formation déjà en 3/9. */
-	@media (min-width: 600px) {
-		.step:not(.current) {
-			grid-column: span 6;
-		}
-
-		.education-title {
-			grid-column: span 3;
-		}
-
-		.degrees {
-			grid-column: span 9;
-		}
-	}
-
-	/* Laptop et au-delà : les trois étapes en 4/4/4, comme la maquette. */
+	/* Laptop et au-delà : les missions à droite de leur Commit, sur la ligne du titre. */
 	@media (min-width: 1024px) {
-		.step,
-		.step:not(.current) {
-			grid-column: span 4;
+		.commit {
+			display: grid;
+			grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+			column-gap: var(--gutter);
+		}
+
+		.missions {
+			padding-top: calc(var(--dot-y) * 2 + 4px);
 		}
 	}
 </style>

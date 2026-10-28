@@ -494,7 +494,7 @@ export const pages: Page[] = [home, ...projects.map((project) => fiche(project.s
 /** Nombre de dépôts publics sur GitHub, relevé à la main (affiché dans l'en-tête des projets). */
 export const publicRepoCount = 41;
 
-// ── Parcours et formation (section 02) ──
+// ── Parcours : la Frise (section 02) ──
 
 /** Mention de l'en-tête de la section Parcours. */
 export const careerSummary: Localized<string> = {
@@ -502,56 +502,80 @@ export const careerSummary: Localized<string> = {
 	en: '~4 years · healthcare, energy, sport',
 };
 
-export interface Position {
-	/** Année de début, affichée en grand à titre décoratif. */
-	year: number;
-	period: Localized<string>;
-	city: string;
-	company: string;
-	role: Localized<string>;
-	missions: Localized<string>[];
-	/** Poste actuel, signalé par un filet bleu. */
-	current?: boolean;
+/** Les Branches de la Frise : `main`, et une par formation suivie à côté. */
+export type Branch = 'main' | 'lea' | 'access-code' | 'cda';
+
+/**
+ * Genre d'un Commit : le départ de `main`, le premier Commit d'une Branche (bifurcation), un Commit
+ * ordinaire, le retour d'une Branche sur `main` (fusion), ou HEAD. Les Branches ne sont pas saisies à
+ * part : elles partent du Commit de `main` qui précède leur bifurcation et reviennent à la fusion suivante.
+ */
+export type CommitKind = 'init' | 'branch' | 'commit' | 'merge' | 'head';
+
+export interface Commit {
+	/** Position sur la Frise, en années décimales. */
+	at: number;
+	branch: Branch;
+	kind: CommitKind;
+	date: Localized<string>;
+	title: Localized<string>;
+	place: Localized<string>;
+	missions?: Localized<string>[];
 }
 
-/** Étapes professionnelles, de la plus récente à la plus ancienne. Les clients restent anonymes. */
-export const career: Position[] = [
+const employer = identity.employer.name;
+const verbatim = (value: string): Localized<string> => ({ fr: value, en: value });
+
+/** Les Commits de la Frise, du baccalauréat à HEAD (planche D). Les clients restent anonymes. */
+export const commits: Commit[] = [
 	{
-		year: identity.employer.since,
-		period: { fr: 'mars 2023 → aujourd’hui', en: 'Mar 2023 → present' },
-		city: identity.employer.city,
-		company: identity.employer.name,
-		role: { fr: 'Concepteur & développeur d’applications', en: 'Full-stack developer' },
-		current: true,
-		missions: [
-			{
-				fr: 'Back-office d’une plateforme de santé — NestJS 11, Prisma, PostgreSQL, GraphQL, React 19',
-				en: 'Back office for a healthcare platform — NestJS 11, Prisma, PostgreSQL, GraphQL, React 19',
-			},
-			{
-				fr: 'Micro-services Rust (Axum) — serveur de tuiles, fichiers CAD, nuages de points',
-				en: 'Rust microservices (Axum) — tile server, CAD files, point clouds',
-			},
-			{
-				fr: 'Applications cartographiques pour un grand acteur de l’énergie — Laravel 12, React 19',
-				en: 'Mapping applications for a major energy company — Laravel 12, React 19',
-			},
-			{
-				fr: 'Plateforme mobile terrain avec mode hors-ligne — React Native',
-				en: 'Offline-first mobile platform for field teams — React Native',
-			},
-			{
-				fr: 'Monorepos, Docker, CI/CD, Cloudflare Workers, authentification',
-				en: 'Monorepos, Docker, CI/CD, Cloudflare Workers, authentication',
-			},
-		],
+		at: 2018.45,
+		branch: 'main',
+		kind: 'init',
+		date: verbatim('2018'),
+		title: { fr: 'Baccalauréat ES', en: 'French baccalaureate (ES)' },
+		place: verbatim('Lycée Carnot, Dijon'),
 	},
 	{
-		year: 2022,
-		period: { fr: 'fév. 2022 → fév. 2023', en: 'Feb 2022 → Feb 2023' },
-		city: 'Dijon',
-		company: 'Conseil départemental olympique et sportif',
-		role: { fr: 'Concepteur & développeur d’applications', en: 'Full-stack developer' },
+		at: 2018.75,
+		branch: 'lea',
+		kind: 'branch',
+		date: verbatim('2018 → 2020'),
+		title: { fr: 'Langues étrangères appliquées', en: 'Applied Foreign Languages' },
+		place: verbatim('UFR SLHS, Besançon'),
+	},
+	{
+		at: 2020.55,
+		branch: 'main',
+		kind: 'merge',
+		date: verbatim('2020'),
+		title: { fr: 'Cap sur le code', en: 'Turning to code' },
+		place: verbatim('Besançon'),
+	},
+	{
+		at: 2020.8,
+		branch: 'access-code',
+		kind: 'branch',
+		date: verbatim('2020 → 2021'),
+		title: { fr: 'Développeur web & mobile', en: 'Web & mobile developer' },
+		place: verbatim('Access Code School, Besançon'),
+	},
+	{
+		at: 2021.68,
+		branch: 'access-code',
+		kind: 'commit',
+		date: { fr: 'sept. → déc. 2021', en: 'Sept → Dec 2021' },
+		title: { fr: 'Stage — Jordel Média', en: 'Internship — Jordel Média' },
+		place: { fr: 'Doucier · CMS interne', en: 'Doucier · in-house CMS' },
+		missions: [{ fr: 'Nouvelles fonctionnalités sur le CMS interne de l’entreprise', en: 'New features for the company’s in-house CMS' }],
+	},
+	{
+		at: 2022.1,
+		branch: 'main',
+		kind: 'merge',
+		date: { fr: 'fév. 2022', en: 'Feb 2022' },
+		title: verbatim('CDOS'),
+		place: verbatim('Dijon · Symfony, React Native, Express'),
 		missions: [
 			{ fr: 'Application web sous Symfony', en: 'Web application built with Symfony' },
 			{ fr: 'Application mobile React Native', en: 'React Native mobile app' },
@@ -559,51 +583,90 @@ export const career: Position[] = [
 		],
 	},
 	{
-		year: 2021,
-		period: { fr: 'sept. → déc. 2021', en: 'Sept → Dec 2021' },
-		city: 'Doucier',
-		company: 'Jordel Média',
-		role: { fr: 'Stage — développeur web', en: 'Internship — web developer' },
-		missions: [{ fr: 'Nouvelles fonctionnalités sur le CMS interne de l’entreprise', en: 'New features for the company’s in-house CMS' }],
-	},
-];
-
-export interface Education {
-	period: string;
-	/** Le nom du diplôme en français ; en anglais, un équivalent, suivi du nom d'origine. */
-	degree: Localized<string>;
-	school: string;
-}
-
-/** Formation, de la plus récente à la plus ancienne. */
-export const education: Education[] = [
-	{
-		period: '2022 — 2023',
-		degree: {
-			fr: 'Concepteur & développeur d’applications',
-			en: 'Application Designer & Developer, bachelor’s-level vocational qualification',
-		},
-		school: 'Access Code School, Besançon',
+		at: 2022.35,
+		branch: 'cda',
+		kind: 'branch',
+		date: verbatim('2022 → 2023'),
+		title: { fr: 'Concepteur & développeur d’applications', en: 'Application designer & developer' },
+		place: verbatim('Access Code School, Besançon'),
 	},
 	{
-		period: '2020 — 2021',
-		degree: {
-			fr: 'Développeur web & développeur mobile',
-			en: 'Web & Mobile Developer, foundation-degree-level vocational qualification',
-		},
-		school: 'Access Code School, Besançon',
+		at: 2023.2,
+		branch: 'main',
+		kind: 'merge',
+		date: { fr: 'mars 2023', en: 'Mar 2023' },
+		title: verbatim(employer),
+		place: verbatim(identity.employer.city),
+		// Le fil commun aux missions qui suivent, sans Commit propre.
+		missions: [
+			{
+				fr: 'Monorepos, Docker, CI/CD, Cloudflare Workers, authentification',
+				en: 'Monorepos, Docker, CI/CD, Cloudflare Workers, authentication',
+			},
+		],
 	},
 	{
-		period: '2018 — 2020',
-		degree: { fr: 'Langues étrangères appliquées (LEA)', en: 'Applied Foreign Languages, university studies' },
-		school: 'UFR SLHS, Besançon',
+		at: 2023.85,
+		branch: 'main',
+		kind: 'commit',
+		date: verbatim(employer),
+		title: { fr: 'Back-office santé', en: 'Healthcare back office' },
+		place: verbatim('NestJS, Prisma, PostgreSQL, GraphQL, React 19'),
+		missions: [
+			{
+				fr: 'Back-office d’une plateforme de santé — NestJS 11, Prisma, PostgreSQL, GraphQL, React 19',
+				en: 'Back office for a healthcare platform — NestJS 11, Prisma, PostgreSQL, GraphQL, React 19',
+			},
+		],
 	},
 	{
-		period: '2018',
-		degree: {
-			fr: 'Baccalauréat économique et social',
-			en: 'French baccalaureate, economics & social sciences, A-level equivalent',
-		},
-		school: 'Lycée Carnot, Dijon',
+		at: 2024.5,
+		branch: 'main',
+		kind: 'commit',
+		date: verbatim(employer),
+		title: { fr: 'Micro-services Rust', en: 'Rust microservices' },
+		place: { fr: 'Axum — tuiles, CAD, nuages de points', en: 'Axum — tiles, CAD, point clouds' },
+		missions: [
+			{
+				fr: 'Micro-services Rust (Axum) — serveur de tuiles, fichiers CAD, nuages de points',
+				en: 'Rust microservices (Axum) — tile server, CAD files, point clouds',
+			},
+		],
+	},
+	{
+		at: 2025.15,
+		branch: 'main',
+		kind: 'commit',
+		date: verbatim(employer),
+		title: { fr: 'Cartographie énergie', en: 'Energy mapping' },
+		place: verbatim('Laravel 12, React 19'),
+		missions: [
+			{
+				fr: 'Applications cartographiques pour un grand acteur de l’énergie — Laravel 12, React 19',
+				en: 'Mapping applications for a major energy company — Laravel 12, React 19',
+			},
+		],
+	},
+	{
+		at: 2025.8,
+		branch: 'main',
+		kind: 'commit',
+		date: verbatim(employer),
+		title: { fr: 'Terrain hors-ligne', en: 'Offline in the field' },
+		place: verbatim('React Native'),
+		missions: [
+			{
+				fr: 'Plateforme mobile terrain avec mode hors-ligne — React Native',
+				en: 'Offline-first mobile platform for field teams — React Native',
+			},
+		],
+	},
+	{
+		at: 2026.45,
+		branch: 'main',
+		kind: 'head',
+		date: { fr: 'aujourd’hui', en: 'today' },
+		title: { fr: 'La suite', en: 'What’s next' },
+		place: verbatim('Dijon'),
 	},
 ];

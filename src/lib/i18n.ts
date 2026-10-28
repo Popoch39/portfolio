@@ -104,8 +104,6 @@ export const ui = {
 		fr: (repo: string) => `Ouvrir la fiche ${repo}`,
 		en: (repo: string) => `Open the ${repo} project page`,
 	},
-	// Parcours.
-	education: { fr: 'Formation', en: 'Education' },
 	// Activité.
 	activityTotal: { fr: 'contributions sur GitHub, ces 12 derniers mois', en: 'contributions on GitHub in the last 12 months' },
 	activeDays: {

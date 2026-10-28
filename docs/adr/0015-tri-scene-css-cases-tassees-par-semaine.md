@@ -1,6 +1,6 @@
 # Tri : scène CSS, cases tassées par semaine
 
-Premier jet (#109) : la scène jusqu'au tassement, en paysage. `main` (#110), la scène couchée en portrait (#111), le repli et la Traîne (#112) et les mesures complètes (#113) le compléteront.
+Premier jet (#109) : la scène jusqu'au tassement, en paysage. `main` (#110), la scène couchée en portrait (#111), le repli (#112) et les mesures complètes (#113) le compléteront.
 
 Sur l'accueil, la section Activité (le Tri, spec #107) s'épingle le temps de trois écrans de défilement (`300svh`). La scène est collée en haut (`position: sticky`, haute d'un écran) : l'en-tête de section, le compteur et la commande restent dans la colonne de la page ; dessous, toute la place jusqu'à la barre d'état est un conteneur de requêtes, où la vue de la planche H2 (le calendrier, ses mois, son échelle et ses notes, 1 280 × 360 px de la planche) est centrée et mise à l'échelle (`scale` en unités du conteneur, comme la Frise). À 1 280 × 800, elle est à la taille de la planche. La section sort de la colonne de l'accueil pour que la vue ait toute la largeur, et remet son contenu dans la colonne (`.container`).
 
@@ -23,7 +23,7 @@ La ligne de temps `--tri` est visible de la section (`timeline-scope` sur `.acti
 
 ## Consequences
 
-L'accueil compte quatre scènes épinglées (Plongée 450svh, Frise 400svh, Tri 300svh, Visite 600svh). Aucun JS n'est ajouté. La scène tient 251 animations `tri-` (243 cases, et les calques, mois, échelle, notes et morceaux de commande), beaucoup plus que la Frise (79) : c'est le risque de la Traîne (#112), qui fait recalculer le style de tous les éléments animés d'une scène à chaque image de rattrapage (ADR 0012). À mesurer avec et sans `data-trail`.
+L'accueil compte quatre scènes épinglées (Plongée 450svh, Frise 400svh, Tri 300svh, Visite 600svh). Aucun JS n'est ajouté. La scène tient 251 animations `tri-` (243 cases, et les calques, mois, échelle, notes et morceaux de commande), beaucoup plus que la Frise (79) : la Traîne, qui fait recalculer le style de tous les éléments animés d'une scène à chaque image de rattrapage (ADR 0012), n'y est donc pas branchée (voir les mesures).
 
 En portrait, la vue paysage est encore réduite à la largeur de l'écran (environ 0,3 sur un téléphone de 390 px) : la scène couchée est le ticket #111.
 
@@ -34,5 +34,6 @@ En portrait, la vue paysage est encore réduite à la largeur de l'écran (envir
   - **Composition** : les 251 animations `tri-` sont composées (aucun `compositeFailed`). Pas de mise en page ni de peinture par image dues au Tri : les mises en page et peintures relevées (environ 50 et 190 sur 400 images à CPU ×4) sont les mêmes sans les animations des cases, et sans la vue.
   - **CPU ×1** : image médiane 8,3 ms, aucune image au-delà de 20 ms ; pendant tout le tassement, aucune au-delà de 10 ms. Les images en retard (environ 7 % des images) tombent dans les 20 derniers pourcents de la scène, où la section suivante arrive, et presque autant sans les cases (5 %).
   - **CPU ×4** : **régression pendant le tassement**. Entre 30 et 50 % de la scène, l'image médiane passe de 8,3 ms sans les animations des cases à 16,7 ms avec (120 → 60 images par seconde, pire image 25 ms), 57 images sur 67 au-delà de 10 ms contre aucune. Sur toute la scène : p95 41,7 ms dans les deux cas, 52 à 59 images au-delà de 20 ms sur environ 400 contre 43. Le surcoût par image : environ 1 ms de recalcul de style et 1,2 ms de commit du thread principal, pour les 243 cases animées. Avant de ne garder que les cases qui bougent (365 animées), le surcoût de commit était d'environ 1,6 ms par image.
-  - **À trancher par Louis** : garder les cases (60 images par seconde à CPU ×4 le temps du tassement, fluide à CPU ×1), ou passer au mouvement par colonne (le coût d'une cinquantaine d'animations, mais plus de cases qui glissent une à une).
-- À compléter (#113) : CPU ×1 et ×4 en 390 × 844, avant/après sur `main`, Lighthouse, captures aux cinq tailles, Traîne.
+  - **Décision de Louis (2026-10-28)** : il garde les cases réelles, qui glissent une à une, au prix de 60 images par seconde à CPU ×4 le temps du tassement (fluide à CPU ×1). Le mouvement par colonne reste le compromis de repli.
+- **Sans Traîne (décision de Louis, 2026-10-28)** : la piste du Tri ne porte pas `data-trail`. Avec la Traîne, l'image médiane passe de 8,3 à 16,6 ms à CPU ×1, et de 8,4 à 50–58 ms à CPU ×4 : chaque image de rattrapage recalcule le style des 251 animations de la scène (ADR 0012). Le suivi est l'issue #115.
+- À compléter (#113) : CPU ×1 et ×4 en 390 × 844, avant/après sur `main`, Lighthouse, captures aux cinq tailles.

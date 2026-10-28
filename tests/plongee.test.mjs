@@ -258,15 +258,16 @@ for (const { locale, projects } of [
 		assert.deepEqual(tested.map(bare), [bare(condition)]);
 	});
 
-	// Le repli joue les scènes que la page lui déclare : la Plongée, puis la Frise (#100), et la piste de
-	// chacune est bien l'élément qui porte sa ligne de temps dans la CSS.
-	test(`${locale} : la Plongée et la Frise sont les scènes déclarées au repli, chacune sur sa piste`, () => {
+	// Le repli joue les scènes que la page lui déclare : la Plongée, puis la Frise (#100) et le Tri (#112),
+	// et la piste de chacune est bien l'élément qui porte sa ligne de temps dans la CSS.
+	test(`${locale} : la Plongée, la Frise et le Tri sont les scènes déclarées au repli, chacune sur sa piste`, () => {
 		const scenes = scenesOf(html);
 		assert.deepEqual(
 			scenes.map(({ timeline, prefix }) => ({ timeline, prefix })),
 			[
 				{ timeline: '--dive', prefix: 'dive-' },
 				{ timeline: '--frise', prefix: 'frise-' },
+				{ timeline: '--tri', prefix: 'tri-' },
 			],
 		);
 		for (const { tag, timeline } of scenes) {
@@ -441,10 +442,11 @@ async function runFallback({ styles, scenes, animations = [], scrollY = 0 }) {
 // Le repli réécrit la CSS des scènes déclarées pour les jouer sans ligne de temps ; le reste de la page,
 // même une animation de durée `auto` ou une autre `@supports` sur les lignes de temps, n'est pas à lui.
 test('le repli ne réécrit que la CSS des scènes déclarées', async () => {
-	const scene = /@supports[^{]*--(?:dive|frise)\b/;
+	const scene = /@supports[^{]*--(?:dive|frise|tri)\b/;
 	const before = homeStyles(FOREIGN);
 	assert.equal(before.filter((styles) => /@supports[^{]*--dive/.test(styles)).length, 1, 'CSS de la Plongée introuvable');
 	assert.ok(before.some((styles) => /@supports[^{]*--frise\b/.test(styles)), 'CSS de la Frise introuvable');
+	assert.ok(before.some((styles) => /@supports[^{]*--tri\b/.test(styles)), 'CSS du Tri introuvable');
 	// Juste assez de navigateur pour que le repli s'exécute : les scènes déclarées par la page, pas
 	// d'animation à régler, lecteur en haut.
 	const page = await runFallback({ styles: before, scenes: scenesOf(readHome()) });

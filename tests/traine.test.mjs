@@ -32,6 +32,16 @@ test('la piste de la Visite déclare la Traîne, qui ne la cible pas par sa clas
 	assert.ok(!readDist(trailsOf(readHome())[0].slice(1)).includes('visit-'), 'Traîne qui nomme la Visite');
 });
 
+// La Frise (#103) hérite de la même inertie : sa scène est collée par la CSS, comme celle de la Visite.
+test('la piste de la Frise déclare la Traîne', () => {
+	for (const locale of ['fr', 'en']) {
+		const frise = tags(readHome(locale), 'span').filter((tag) => attr(tag, 'class')?.split(' ').includes('frise-track'));
+		assert.equal(frise.length, 1, `${locale} : piste de la Frise`);
+		assert.ok(hasAttr(frise[0], 'data-trail'), `${locale} : piste de la Frise sans data-trail`);
+	}
+	assert.ok(!readDist(trailsOf(readHome())[0].slice(1)).includes('frise-'), 'Traîne qui nomme la Frise');
+});
+
 let runs = 0;
 /**
  * Exécute la Traîne sur `count` pistes déclarées, chacune affichée ou non (`played`), sa section à

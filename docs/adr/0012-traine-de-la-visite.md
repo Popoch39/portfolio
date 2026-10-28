@@ -15,4 +15,4 @@ Le « sans script » de la Visite (ADR 0011) est révisé pour la Traîne : l'ac
 
 ## Mesures
 
-À faire : trace de performance de la Visite avec et sans Traîne (images par seconde à CPU ×6, coût de la mise en page par image), dans un Chromium fenêtré sur le GPU (ADR 0011).
+Le 2026-10-28, sur le GPU (#89, détail dans l'ADR 0011) : avec la Traîne, la Visite tombe de 120 à environ 88 images par seconde à CPU ×1 (p95 16,7 ms au lieu de 8,4) et de 70 à 15 à CPU ×6, en 1280 × 800 comme en 390 × 844. Ce n'est pas la mise en page (0,5 ms par image à CPU ×6) : décaler la piste change la plage de sa ligne de temps, et Chrome recalcule le style de tous les éléments animés de la Visite à chaque image où elle rattrape (environ 36 ms par image à CPU ×6, contre 7 ms sans elle). Réécrire la Traîne sans toucher à cette plage, ou la retirer, reste à décider.

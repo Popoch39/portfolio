@@ -63,13 +63,13 @@ const geometry = stack
 			<div class:list={['ring', `ring-${k}`, { accent: ring.accent }]}>
 				{layers.map((names) => {
 					const circles = names.map((name) => <circle class={name} pathLength={name === 'ticks' ? '360' : undefined} />);
-					return ring.accent ? (
+					// Le calque est une enveloppe HTML : Chrome ne joue pas l'échelle de la Visite sur un SVG dès
+					// que le zoom n'est pas 1 (un écran à l'échelle), elle repasserait sur le thread principal.
+					return (
 						<span class="layer">
-							<svg class="plain">{circles}</svg>
+							{ring.accent && <svg class="plain">{circles}</svg>}
 							<svg>{circles}</svg>
 						</span>
-					) : (
-						<svg class="layer">{circles}</svg>
 					);
 				})}
 				<span class="orbit">
@@ -162,8 +162,8 @@ const geometry = stack
 		overflow: visible;
 	}
 
-	/* La profondeur de chaque calque, en `transform` : sur un SVG, une propriété de transformation à part
-	   (`translate`) empêcherait le compositeur de jouer l'échelle de la Visite. La profondeur nulle du
+	/* La profondeur de chaque calque, en `transform`, la propriété qu'anime l'échelle de la Visite : la
+	   profondeur et l'échelle s'écrivent ensemble dans ses keyframes (`visit-band`). La profondeur nulle du
 	   calque du dessus n'est pas superflue : sans elle, Firefox le sort du contexte 3D et le dessine à plat,
 	   dans le coin de la page. */
 	.atom .layer {
@@ -376,13 +376,13 @@ const geometry = stack
 
 			/* Le bleu se pose sur le gris, qui disparaît d'un coup une fois couvert ; sur la Pastille, le gris
 			   s'efface au-dessus du bleu. Aucun fondu à deux couches translucides : le fond ne passe jamais. */
-			.atom .layer > svg {
+			.atom .accent .layer > svg {
 				animation: auto visit-in linear both;
 				animation-timeline: --visit;
 				animation-range: contain 72% contain 75.2%;
 			}
 
-			.atom .layer > .plain {
+			.atom .accent .layer > .plain {
 				display: block;
 				animation: auto visit-out step-end both;
 				animation-timeline: --visit;

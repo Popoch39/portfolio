@@ -242,6 +242,23 @@ const motto = [words.slice(0, mottoBreak), words.slice(mottoBreak)].map((line) =
 				animation-range: contain 4% contain 17%;
 			}
 
+			@media (max-width: 599px), (max-height: 499px) {
+				/* La ligne du mode part avec l'en-tête : sur un écran peu haut, la remontée du héros la
+				   coupait en haut de l'écran. */
+				.dive-hero :global(.topline > *) {
+					animation-range: contain 0% contain 4%;
+				}
+			}
+
+			/* En paysage sur téléphone, le héros fait près de deux écrans : remonté jusqu'à son bas, il
+			   sortait le nom de l'écran et le curseur grandissait hors champ. Il reste en haut, le nom à
+			   l'écran ; son bas s'efface sans avoir été vu. */
+			@media (max-height: 499px) {
+				.dive-hero > :global(*) {
+					animation: none;
+				}
+			}
+
 			/* Effacées, les actions (« Écrire », GitHub) quittent la tabulation au même instant. */
 			.dive-hero :global(.body) {
 				animation:

@@ -1,14 +1,14 @@
-// La Traîne de la Visite (ADR 0012) : la scène rattrape le défilement au lieu de s'arrêter net avec lui.
-// Le module du build est exécuté dans un faux navigateur : le test fait défiler la page et rend les
-// images, et lit le décalage de la piste, la seule chose que la Traîne touche.
+// La Traîne (ADR 0012) : toute scène qui la déclare sur sa piste (`data-trail`) rattrape le défilement
+// au lieu de s'arrêter net avec lui. Le module du build est exécuté dans un faux navigateur : le test fait
+// défiler la page et rend les images, et lit le décalage des pistes, la seule chose que la Traîne touche.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { brotliCompressSync, constants } from 'node:zlib';
-import { attr, moduleGraph, readDist, readHome, tags } from './helpers/dist.mjs';
+import { attr, hasAttr, moduleGraph, readDist, readHome, tags } from './helpers/dist.mjs';
 
 const moduleOf = (html) => attr(tags(html, 'script').find((t) => attr(t, 'type') === 'module') ?? '', 'src') ?? '';
 const onDemand = (code) => [...code.matchAll(/import\(\s*["'`]\.\/([\w.-]+\.js)["'`]\s*\)/g)].map((m) => `/_astro/${m[1]}`);
-const trailsOf = (html) => onDemand(moduleGraph(moduleOf(html)).code).filter((path) => readDist(path.slice(1)).includes('visit-track'));
+const trailsOf = (html) => onDemand(moduleGraph(moduleOf(html)).code).filter((path) => readDist(path.slice(1)).includes('[data-trail]'));
 
 const SCREEN = 900;
 
@@ -23,45 +23,68 @@ test('l’accueil demande la Traîne à la demande, en moins de 1 000 octets', (
 	assert.ok(weight <= 1000, `Traîne de ${weight} o`);
 });
 
+test('la piste de la Visite déclare la Traîne, qui ne la cible pas par sa classe', () => {
+	for (const locale of ['fr', 'en']) {
+		const visit = tags(readHome(locale), 'span').filter((tag) => attr(tag, 'class')?.split(' ').includes('visit-track'));
+		assert.equal(visit.length, 1, `${locale} : piste de la Visite`);
+		assert.ok(hasAttr(visit[0], 'data-trail'), `${locale} : piste de la Visite sans data-trail`);
+	}
+	assert.ok(!readDist(trailsOf(readHome())[0].slice(1)).includes('visit-'), 'Traîne qui nomme la Visite');
+});
+
 let runs = 0;
-/** Exécute la Traîne, la piste affichée ou non (`played`), la section à l'écran ou non. */
-async function trail({ played = true } = {}) {
+/**
+ * Exécute la Traîne sur `count` pistes déclarées, chacune affichée ou non (`played`), sa section à
+ * l'écran ou non.
+ */
+async function trail({ played = true, count = 1 } = {}) {
 	const listeners = {};
-	const frames = [];
-	let observed;
+	const frames = new Map();
+	const observed = new Map();
 	let now = 0;
-	const track = { style: { marginTop: '' }, parentElement: {} };
+	let id = 0;
+	const tracks = Array.from({ length: count }, () => {
+		const track = { style: { marginTop: '' }, parentElement: {} };
+		track.parentElement.track = track;
+		return track;
+	});
 	Object.assign(globalThis, {
 		scrollY: 0,
 		innerHeight: SCREEN,
 		addEventListener: (type, listener) => (listeners[type] ??= []).push(listener),
-		requestAnimationFrame: (callback) => frames.push(callback),
-		cancelAnimationFrame: () => frames.splice(0),
+		requestAnimationFrame: (callback) => (frames.set(++id, callback), id),
+		cancelAnimationFrame: (frame) => frames.delete(frame),
 		getComputedStyle: () => ({ display: played ? 'block' : 'none' }),
 		IntersectionObserver: class {
 			constructor(callback) {
-				observed = (isIntersecting) => callback([{ isIntersecting }]);
+				this.callback = callback;
 			}
-			observe() {}
+			observe(section) {
+				observed.set(section.track, (isIntersecting) => this.callback([{ isIntersecting, target: section }]));
+			}
 		},
-		document: { querySelector: (selector) => (selector === '.visit-track' ? track : null) },
+		document: { querySelectorAll: (selector) => (selector === '[data-trail]' ? tracks : []) },
 	});
 	await import(`${new URL(`../dist${trailsOf(readHome())[0]}`, import.meta.url)}?${++runs}`);
+	const offsetOf = (track) => parseFloat(track.style.marginTop || '0');
 	return {
-		near: (isIntersecting = true) => observed(isIntersecting),
+		near: (isIntersecting = true, index = 0) => observed.get(tracks[index])(isIntersecting),
+		offsets: () => tracks.map(offsetOf),
 		scroll(y) {
 			globalThis.scrollY = y;
 			listeners.scroll?.forEach((listener) => listener());
 		},
 		/** Rend `count` images de 16 ms ; rend `true` si une image en demande encore une. */
 		frames(count) {
-			for (let i = 0; i < count && frames.length; i++) {
+			for (let i = 0; i < count && frames.size; i++) {
 				now += 16;
-				frames.splice(0).forEach((callback) => callback(now));
+				const due = [...frames.values()];
+				frames.clear();
+				due.forEach((callback) => callback(now));
 			}
-			return frames.length > 0;
+			return frames.size > 0;
 		},
-		offset: () => parseFloat(track.style.marginTop || '0'),
+		offset: () => offsetOf(tracks[0]),
 	};
 }
 
@@ -119,4 +142,26 @@ test('loin de la section, ou là où la Visite ne joue pas, la piste reste à sa
 	left.frames(1);
 	left.near(false);
 	assert.equal(left.offset(), 0, 'piste laissée décalée en quittant la section');
+});
+
+test('la Traîne suit chaque piste déclarée, seule celle dont la section est à l’écran', async () => {
+	const page = await trail({ count: 2 });
+	page.near(true, 1);
+	page.scroll(200);
+	page.frames(1);
+	const [first, second] = page.offsets();
+	assert.equal(first, 0, 'piste décalée loin de sa section');
+	assert.ok(second > 150 && second < 200, `décalage ${second}`);
+	// Les deux sections à l'écran, chacune rattrape le défilement.
+	page.near(true, 0);
+	page.scroll(400);
+	page.frames(1);
+	assert.ok(page.offsets().every((offset) => offset > 0), `décalages ${page.offsets()}`);
+	assert.equal(page.frames(200), false, 'images encore demandées une fois rattrapé');
+	assert.deepEqual(page.offsets(), [0, 0]);
+	// L'une quitte l'écran : l'autre la suit toujours.
+	page.near(false, 1);
+	page.scroll(600);
+	page.frames(1);
+	assert.ok(page.offsets()[0] > 0 && page.offsets()[1] === 0, `décalages ${page.offsets()}`);
 });

@@ -26,6 +26,11 @@ Sur l'accueil, entre le héros et les projets, le défilement où la page s'arr�
 _EN_ : Dive
 _Avoid_ : animation au scroll, transition, scroll épinglé
 
+**Glissé** :
+Sur tout le site, un cran de molette fait glisser la page avec de l'inertie au lieu de la faire sauter ; le pavé tactile, le toucher et le clavier gardent leur défilement.
+_EN_ : Glide
+_Avoid_ : smooth scroll, Lenis, lissage
+
 ## Langues
 
 **Version** :

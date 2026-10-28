@@ -85,10 +85,10 @@ test('la CSS livrée n’a ni :hover ni transition hors des notes de la figure, 
 				(name) =>
 					!name.startsWith('iso-') &&
 					!name.startsWith('vt-') &&
-					!(page.home && (name.startsWith('launch-') || name.startsWith('dive-') || name.startsWith('visit-'))),
+					!(page.home && (name.startsWith('launch-') || name.startsWith('dive-') || name.startsWith('visit-') || name.startsWith('frise-'))),
 			),
 			[],
-			`${page.name} : @keyframes hors du kit, de la transition, du lancement, de la Plongée et de la Visite`,
+			`${page.name} : @keyframes hors du kit, de la transition, du lancement, de la Plongée, de la Visite et de la Frise`,
 		);
 		// Les étapes des `@keyframes vt-…`, `launch-…`, `dive-…` et `visit-…` portent `animation-timing-function`.
 		const animated = [...withoutBlocks(pageStyles, /@keyframes\s+(vt|launch|dive|visit)-/).matchAll(/([^{}]+)\{[^{}]*\banimation(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap(
@@ -97,11 +97,11 @@ test('la CSS livrée n’a ni :hover ni transition hors des notes de la figure, 
 		const allowed = (selector) =>
 			selector.startsWith('.iso') ||
 			selector.startsWith('::view-transition-') ||
-			(page.home && (selector.startsWith(':root[data-launch]') || selector.startsWith('.dive') || /^\.(?:stack|atom)\b/.test(selector)));
+			(page.home && (selector.startsWith(':root[data-launch]') || selector.startsWith('.dive') || /^\.(?:stack|atom)\b|^\.frise-/.test(selector)));
 		assert.deepEqual(
 			animated.map((selector) => selector.trim()).filter((selector) => !allowed(selector)),
 			[],
-			`${page.name} : animation hors de la CSS du kit, de la transition, du lancement, de la Plongée et de la Visite`,
+			`${page.name} : animation hors de la CSS du kit, de la transition, du lancement, de la Plongée, de la Visite et de la Frise`,
 		);
 	}
 });

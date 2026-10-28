@@ -255,18 +255,23 @@ for (const { locale, projects } of [
 		assert.deepEqual(tested.map(bare), [bare(condition)]);
 	});
 
-	// Le repli joue les scènes que la page lui déclare : la Plongée est la seule, et sa piste est bien
-	// l'élément qui porte sa ligne de temps dans la CSS.
-	test(`${locale} : la Plongée est la seule scène déclarée au repli, sur sa piste`, () => {
+	// Le repli joue les scènes que la page lui déclare : la Plongée, puis la Frise (#100), et la piste de
+	// chacune est bien l'élément qui porte sa ligne de temps dans la CSS.
+	test(`${locale} : la Plongée et la Frise sont les scènes déclarées au repli, chacune sur sa piste`, () => {
 		const scenes = scenesOf(html);
 		assert.deepEqual(
 			scenes.map(({ timeline, prefix }) => ({ timeline, prefix })),
-			[{ timeline: '--dive', prefix: 'dive-' }],
+			[
+				{ timeline: '--dive', prefix: 'dive-' },
+				{ timeline: '--frise', prefix: 'frise-' },
+			],
 		);
-		const classes = (attr(scenes[0].tag, 'class') ?? '').split(/\s+/);
-		const tracks = [...styles.matchAll(/([^{}]+)\{[^{}]*\bview-timeline\s*:\s*--dive\b[^{}]*\}/g)].map(([, selector]) => selector);
-		assert.ok(tracks.length > 0, 'ligne de temps de la Plongée absente');
-		for (const selector of tracks) assert.ok(classes.some((name) => new RegExp(`\\.${name}(?![\\w-])`).test(selector)), `piste déclarée hors de ${selector.trim()}`);
+		for (const { tag, timeline } of scenes) {
+			const classes = (attr(tag, 'class') ?? '').split(/\s+/);
+			const tracks = [...styles.matchAll(new RegExp(`([^{}]+)\\{[^{}]*\\bview-timeline\\s*:\\s*${timeline}\\b[^{}]*\\}`, 'g'))].map(([, selector]) => selector);
+			assert.ok(tracks.length > 0, `ligne de temps ${timeline} absente`);
+			for (const selector of tracks) assert.ok(classes.some((name) => new RegExp(`\\.${name}(?![\\w-])`).test(selector)), `piste déclarée hors de ${selector.trim()}`);
+		}
 	});
 
 	// Le repli prend toutes les animations de la scène par leur préfixe, sans liste à tenir, la CSS
@@ -428,17 +433,18 @@ async function runFallback({ styles, scenes, animations = [], scrollY = 0 }) {
 	};
 }
 
-// Le repli réécrit la CSS de la scène pour la jouer sans ligne de temps ; le reste de la page, même une
-// animation de durée `auto` ou une autre `@supports` sur les lignes de temps, n'est pas à lui.
-test('le repli ne réécrit que la CSS de la Plongée', async () => {
-	const scene = /@supports[^{]*--dive/;
+// Le repli réécrit la CSS des scènes déclarées pour les jouer sans ligne de temps ; le reste de la page,
+// même une animation de durée `auto` ou une autre `@supports` sur les lignes de temps, n'est pas à lui.
+test('le repli ne réécrit que la CSS des scènes déclarées', async () => {
+	const scene = /@supports[^{]*--(?:dive|frise)\b/;
 	const before = homeStyles(FOREIGN);
-	assert.equal(before.filter((styles) => scene.test(styles)).length, 1, 'CSS de la scène introuvable');
-	// Juste assez de navigateur pour que le repli s'exécute : la scène déclarée par la page, pas
+	assert.equal(before.filter((styles) => /@supports[^{]*--dive/.test(styles)).length, 1, 'CSS de la Plongée introuvable');
+	assert.ok(before.some((styles) => /@supports[^{]*--frise\b/.test(styles)), 'CSS de la Frise introuvable');
+	// Juste assez de navigateur pour que le repli s'exécute : les scènes déclarées par la page, pas
 	// d'animation à régler, lecteur en haut.
 	const page = await runFallback({ styles: before, scenes: scenesOf(readHome()) });
 	for (const [i, textContent] of page.styles().entries()) {
-		assert.equal(withoutBlocks(textContent, scene), withoutBlocks(before[i], scene), 'CSS hors de la Plongée réécrite');
+		assert.equal(withoutBlocks(textContent, scene), withoutBlocks(before[i], scene), 'CSS hors des scènes réécrite');
 		for (const block of blocks(textContent, scene)) assert.doesNotMatch(block, /\banimation-timeline\s*:/, 'scène toujours sur une ligne de temps');
 	}
 });

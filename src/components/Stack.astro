@@ -188,8 +188,9 @@ const { id, label } = sections.stack;
 		}
 	}
 
-	/* La Visite (ADR 0011). La section s'épingle le temps de quatre écrans de défilement : aux 1,9 écran de
-	   la planche, la Visite filerait sous la molette, comme la Plongée avant elle. Sur moins de 500 px de
+	/* La Visite (ADR 0011). La section s'épingle le temps de six écrans de défilement : aux 1,9 écran de
+	   la planche, la Visite filerait sous la molette, comme la Plongée avant elle, et à quatre, les familles
+	   allumées défilaient encore trop vite pour être lues. Sur moins de 500 px de
 	   haut, la scène ne tiendrait pas dans l'écran, et sur un téléphone de moins de 640 px de haut, l'Atome
 	   n'y aurait pas le tiers de sa taille : la section reste posée. L'Atome et chaque ligne de la
 	   légende se règlent dans Atom.astro et `src/lib/visit.ts` ; ici, l'épingle et la légende. */
@@ -199,7 +200,7 @@ const { id, label } = sections.stack;
 			   écran, puis la course de l'épingle : la scène collante ne sort pas de la boîte de contenu de
 			   son parent. Le haut de la scène passe dans la scène, pour que l'en-tête ne colle pas au bord. */
 			.stack {
-				--visit-length: 400svh;
+				--visit-length: 600svh;
 				timeline-scope: --visit;
 				padding-top: calc(var(--stack-top) - 36px);
 			}
@@ -231,23 +232,32 @@ const { id, label } = sections.stack;
 				padding-top: 36px;
 			}
 
-			/* Sur un écran d'au moins 900 × 800 px, la scène tient avec son en-tête, comme sur la planche. Les
-			   outils restent au-dessus de la barre d'état tant qu'elle est collée : de 900 à 1 023 px de large,
-			   où l'en-tête est plus haut, la place réservée à l'Atome, vide sous la légende, les accueille. */
+			/* Sur un écran d'au moins 900 × 800 px, la scène tient avec son en-tête, comme sur la planche, et se
+			   centre dans l'écran au-dessus de la barre d'état : collée en haut, elle laissait l'Atome dans le
+			   haut d'un grand écran, un vide sous les outils. Les outils restent au-dessus de la barre d'état
+			   tant qu'elle est collée : de 900 à 1 023 px de large, où l'en-tête est plus haut, la place
+			   réservée à l'Atome, vide sous la légende, les accueille. */
 			@media (min-width: 900px) and (min-height: 800px) {
+				.stage {
+					display: flex;
+					flex-direction: column;
+					justify-content: center;
+					min-height: calc(100svh - var(--status-height));
+				}
+
 				.tools {
 					position: sticky;
 					bottom: calc(var(--status-height) + 22px);
 				}
 			}
 
-			/* Ailleurs (téléphone, portable peu haut), la scène ne tient pas avec l'en-tête : de 0 à 4 %, là où
+			/* Ailleurs (téléphone, portable peu haut), la scène ne tient pas avec l'en-tête : de 0 à 2,8 %, là où
 			   la planche ne fait rien, elle remonte de l'en-tête, qui sort par le haut, et le plateau (Atome,
 			   légende, outils) occupe l'écran au-dessus de la barre d'état. L'Atome y prend la place que lui
 			   laissent la légende et les outils, quels que soient l'écran et la langue : sa boîte est un
 			   conteneur, dont il lit la taille. Elle contient tout son dessin pendant la Visite (356 × 378 px à
 			   l'échelle 1, le centre à 147 px du haut : le gyroscope descend plus bas que l'Atome posé, jusqu'à
-			   231 px sous le centre quand la première ligne de la légende apparaît, à 22 %), si bien que les
+			   231 px sous le centre quand la première ligne de la légende apparaît, à 15,4 %), si bien que les
 			   Bagues ne passent jamais sur la légende ni hors de l'écran. */
 			@media (max-width: 899px), (max-height: 799px) {
 				.stage {
@@ -257,7 +267,7 @@ const { id, label } = sections.stack;
 				.stack .lift {
 					animation: auto visit-lift linear forwards;
 					animation-timeline: --visit;
-					animation-range: contain 0% contain 4%;
+					animation-range: contain 0% contain 2.8%;
 				}
 
 				/* Sa marge haute garde l'Atome du bord de l'écran. */

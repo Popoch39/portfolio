@@ -44,7 +44,7 @@ for (const locale of ['fr', 'en']) {
 		}
 	});
 
-	test(`${locale} : la piste de la Visite est dans la section Stack, qui la voit, longue d’environ quatre écrans`, () => {
+	test(`${locale} : la piste de la Visite est dans la section Stack, qui la voit, longue d’environ six écrans`, () => {
 		const track = tags(section, 'span').find((t) => /\bclass="[^"]*\bvisit-track\b/.test(t));
 		assert.ok(track, 'piste absente');
 		assert.equal(attr(track, 'aria-hidden'), 'true');
@@ -54,7 +54,7 @@ for (const locale of ['fr', 'en']) {
 		assert.equal(rule.length, 1, 'ligne de temps de la Visite');
 		assert.match(rule[0][1], /\.visit-track\b/);
 		assert.match(styles, /\.stack\b[^{}]*\{[^{}]*\btimeline-scope\s*:\s*--visit\b/, 'la section ne voit pas la ligne de temps');
-		assert.match(styles, /--visit-length\s*:\s*400svh\b/, 'course de la Visite');
+		assert.match(styles, /--visit-length\s*:\s*600svh\b/, 'course de la Visite');
 	});
 
 	// Sans exception : le rayon des Bagues, animé sur le thread principal dans la planche, passe par l'échelle

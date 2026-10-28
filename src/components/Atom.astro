@@ -321,13 +321,14 @@ const geometry = stack
 		fill: currentColor;
 	}
 
-	/* La Visite de l'Atome (ADR 0011), sur la piste de la section Stack, plages et courbes de la planche :
-	   6–62 %      chaque Bague se déploie du gyroscope en atome, à un pas de la précédente, son rayon avec
+	/* La Visite de l'Atome (ADR 0011), sur la piste de la section Stack, courbes de la planche, plages de la
+	   planche ramenées à 70 % jusqu'à l'estompe, pour laisser à chaque famille allumée le temps d'être lue :
+	   4,2–43,4 %  chaque Bague se déploie du gyroscope en atome, à un pas de la précédente, son rayon avec
 	               elle, et ses Pastilles se tournent pour rester de face ;
-	   4–96 %      les Pastilles font leur tour sur leur Bague ;
-	   54–62 %     le noyau surgit ;
-	   62–97 %     tout s'estompe, chaque famille s'allume à son tour, puis tout se rallume (`src/lib/visit.ts`) ;
-	   81–83 %     la Bague de Carto & 3D passe en bleu, son dessin gris s'effaçant sous le bleu.
+	   2,8–96 %    les Pastilles font leur tour sur leur Bague ;
+	   37,8–43,4 % le noyau surgit ;
+	   43,4–97 %   tout s'estompe, chaque famille s'allume à son tour, puis tout se rallume (`src/lib/visit.ts`) ;
+	   72–75,2 %   la Bague de Carto & 3D passe en bleu, son dessin gris s'effaçant sous le bleu.
 	   Les keyframes écrivent leur départ : la pose de base est leur arrivée. Les fondus vont sur les calques
 	   et les Pastilles, jamais sur une enveloppe 3D, qu'une opacité aplatirait. Le rayon de la planche
 	   (`--r`, animé sur le thread principal : 27 images par seconde à CPU ×6) devient une échelle des
@@ -364,13 +365,13 @@ const geometry = stack
 			.atom .unspin {
 				animation: auto visit-spin linear both;
 				animation-timeline: --visit;
-				animation-range: contain 4% contain 96%;
+				animation-range: contain 2.8% contain 96%;
 			}
 
 			.atom .nucleus {
 				animation: auto visit-pop cubic-bezier(0.3, 1.6, 0.5, 1) both;
 				animation-timeline: --visit;
-				animation-range: contain 54% contain 62%;
+				animation-range: contain 37.8% contain 43.4%;
 			}
 
 			/* Le bleu se pose sur le gris, qui disparaît d'un coup une fois couvert ; sur la Pastille, le gris
@@ -378,21 +379,21 @@ const geometry = stack
 			.atom .layer > svg {
 				animation: auto visit-in linear both;
 				animation-timeline: --visit;
-				animation-range: contain 81% contain 83%;
+				animation-range: contain 72% contain 75.2%;
 			}
 
 			.atom .layer > .plain {
 				display: block;
 				animation: auto visit-out step-end both;
 				animation-timeline: --visit;
-				animation-range: contain 81% contain 83%;
+				animation-range: contain 72% contain 75.2%;
 			}
 
 			.atom .chip > .plain {
 				display: block;
 				animation: auto visit-out linear both;
 				animation-timeline: --visit;
-				animation-range: contain 81% contain 83%;
+				animation-range: contain 72% contain 75.2%;
 			}
 
 			/* Gyroscope : les Bagues emboîtées, à plat puis écartées en profondeur, 150 px plus bas. */

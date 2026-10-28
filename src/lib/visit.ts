@@ -6,15 +6,17 @@ import { stack } from '../data/profile';
 const played = (css: string) =>
 	`@media (prefers-reduced-motion:no-preference) and (min-height:500px) and ((min-width:900px) or (min-height:640px)){@supports (animation-timeline:view()) and (animation-range:entry) and (timeline-scope:--visit){${css}}}`;
 
-// Les plages de la planche, en part de la piste : toutes les familles s'estompent (62–65 %) puis se
-// rallument (94–97 %) ; entre les deux, chacune s'allume à son tour sur 4 %, à pleine opacité de 22 à 78 %
-// de sa plage. Sa légende apparaît sur les 8 % qui précèdent son repère.
-const DIM = [62, 65] as const;
+// Les plages, en part de la piste : celles de la planche jusqu'à l'estompe, ramenées à 70 % ; toutes les
+// familles s'estompent (43,4–45,5 %) puis se rallument (94–97 %) ; entre les deux, chacune s'allume à son
+// tour sur 6,4 %, à pleine opacité de 22 à 78 % de sa plage : aux 4 % de la planche, soit 16svh, la visite
+// passait d'une famille à l'autre d'un cran de molette. Sa légende apparaît sur les 5,6 % qui précèdent son
+// repère.
+const DIM = [43.4, 45.5] as const;
 const UNDIM = [94, 97] as const;
-const LIT = 64;
-const LIT_LENGTH = 4;
+const LIT = 44.8;
+const LIT_LENGTH = 6.4;
 const PEAK = [0.22, 0.78] as const;
-const SHOW = 8;
+const SHOW = 5.6;
 
 /** Une opacité `[a, b]` : a + b × `--lo`, l'opacité estompée (celle de l'Atome ou de la légende). */
 type Fade = readonly [number, number];
@@ -76,13 +78,13 @@ export const visitSheet = played(
 	stack
 		.map(({ ring }, k) => {
 			const fadeName = `visit-o${k}`;
-			const lit = `contain ${LIT + ring.offset}% contain ${LIT + ring.offset + LIT_LENGTH}%`;
+			const lit = `contain ${round(LIT + ring.offset, 2)}% contain ${round(LIT + ring.offset + LIT_LENGTH, 2)}%`;
 			return [
 				fadeKeyframes(fadeName, ring.offset),
 				`.atom .ring-${k} .layer{animation:auto ${fadeName} linear both,auto visit-band cubic-bezier(.5,0,.25,1) both;${timeline};${fade},contain var(--g0) contain var(--g1)}`,
 				`.stack .line-${k}>*{animation:auto ${fadeName} linear both;${timeline};${fade}}`,
 				`.atom .ring-${k} .chip{animation:auto ${fadeName} linear both,auto visit-lit linear;${timeline};${fade},${lit}}`,
-				`.stack .line-${k}{animation:auto visit-show cubic-bezier(.2,.7,.2,1) both;${timeline};animation-range:contain ${ring.legend - SHOW}% contain ${ring.legend}%}`,
+				`.stack .line-${k}{animation:auto visit-show cubic-bezier(.2,.7,.2,1) both;${timeline};animation-range:contain ${round(ring.legend - SHOW, 2)}% contain ${ring.legend}%}`,
 				`.stack .line-${k}::after{animation:auto visit-bar linear;${timeline};animation-range:${lit}}`,
 			].join('');
 		})

@@ -1,5 +1,5 @@
 // Bandeau des technologies entre Projets et Parcours : décoratif, figé, chaque mot une seule fois.
-// Il a quitté le dessous du héros pour que la Plongée relie le héros à Projets (spec #68).
+// Pas entre le héros et Projets : la Plongée les relie directement (spec #68).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readHome, tags, attr, elements, text } from './helpers/dist.mjs';

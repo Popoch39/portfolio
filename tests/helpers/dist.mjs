@@ -138,15 +138,21 @@ export function elementAt(html, at) {
 	return undefined;
 }
 
+/** La fin du bloc CSS dont l'en-tête commence à `at` : l'indice qui suit son accolade fermante. */
+function blockEnd(styles, at) {
+	let end = styles.indexOf('{', at);
+	for (let depth = 1; depth > 0; ) depth += styles[++end] === '{' ? 1 : styles[end] === '}' ? -1 : 0;
+	return end + 1;
+}
+
 /** Les blocs de la CSS dont l'en-tête répond à `opening` (ex. `/@keyframes\s+dive-/`), en-tête et contenu compris. */
 export function blocks(styles, opening) {
 	const found = [];
 	const pattern = new RegExp(opening.source, opening.flags.replace('g', '') + 'g');
 	for (let m = pattern.exec(styles); m; m = pattern.exec(styles)) {
-		let end = styles.indexOf('{', m.index);
-		for (let depth = 1; depth > 0; ) depth += styles[++end] === '{' ? 1 : styles[end] === '}' ? -1 : 0;
-		found.push(styles.slice(m.index, end + 1));
-		pattern.lastIndex = end + 1;
+		const end = blockEnd(styles, m.index);
+		found.push(styles.slice(m.index, end));
+		pattern.lastIndex = end;
 	}
 	return found;
 }
@@ -154,11 +160,7 @@ export function blocks(styles, opening) {
 /** La CSS sans les blocs dont l'en-tête répond à `opening` (ex. `/@keyframes\s+vt-/`), contenu compris. */
 export function withoutBlocks(styles, opening) {
 	let rest = styles;
-	for (let at = rest.search(opening); at >= 0; at = rest.search(opening)) {
-		let end = rest.indexOf('{', at);
-		for (let depth = 1; depth > 0; ) depth += rest[++end] === '{' ? 1 : rest[end] === '}' ? -1 : 0;
-		rest = rest.slice(0, at) + rest.slice(end + 1);
-	}
+	for (let at = rest.search(opening); at >= 0; at = rest.search(opening)) rest = rest.slice(0, at) + rest.slice(blockEnd(rest, at));
 	return rest;
 }
 

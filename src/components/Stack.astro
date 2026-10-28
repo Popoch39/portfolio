@@ -1,5 +1,9 @@
 ---
+// Section 04 · Stack (planche 34 · Atome, visite guidée, spec #80) : l'Atome à gauche, sa légende à droite,
+// les outils du quotidien dessous ; sous 900 px de large, l'Atome passe au-dessus de la légende. La
+// légende est la liste de définitions lue par les lecteurs d'écran ; l'Atome, décoratif, en est le dessin.
 import SectionHeader from './SectionHeader.astro';
+import Atom from './Atom.astro';
 import { identity, stack, dailyTools, sections } from '../data/profile';
 import { localeOf, ui } from '../lib/i18n';
 
@@ -8,35 +12,47 @@ const { id, label } = sections.stack;
 ---
 
 <section id={id[locale]} class="stack">
-	<SectionHeader number={4} title={label[locale]} note=":set stack?" />
-	<dl class="categories">
-		{
-			stack.map((category) => (
-				<div class="grid category">
-					<dt class="mono label">{category.label[locale]}</dt>
-					<dd class="items">
-						{/* Espace insécable avant « / » : la barre ne commence jamais une ligne. Les
-						   vrais espaces hors du séparateur masqué gardent les mots distincts à l'oral. */}
-						{category.items.map((item, i) => (
-							<Fragment>
-								{i > 0 && (
+	<div class="stage">
+		<SectionHeader number={4} title={label[locale]} note=":set stack?" />
+		<div class="scene">
+			<div class="atom-box">
+				<Atom />
+			</div>
+			<dl class="legend">
+				{
+					stack.map((category, k) => (
+						<div class:list={['line', { accent: category.ring.accent }]}>
+							<dt class="mono family">
+								<span class="number" aria-hidden="true">
+									{String(k + 1).padStart(2, '0')}
+								</span>
+								{category.label[locale]}
+							</dt>
+							<dd class="items">
+								{/* Espace insécable avant « / » : la barre ne commence jamais une ligne. Les
+								   vrais espaces hors du séparateur masqué gardent les mots distincts à l'oral. */}
+								{category.items.map((item, i) => (
 									<Fragment>
-										{' '}
-										<span class="sep" aria-hidden="true">/</span>{' '}
+										{i > 0 && (
+											<Fragment>
+												{' '}
+												<span class="sep" aria-hidden="true">/</span>{' '}
+											</Fragment>
+										)}
+										<span>{item.name}</span>
 									</Fragment>
-								)}
-								<span>{item}</span>
-							</Fragment>
-						))}
-					</dd>
-				</div>
-			))
-		}
-	</dl>
-	<p class="mono tools">
-		{dailyTools.map((tool) => ui.dailyTool[locale](tool.role[locale], tool.name)).join(' · ')} —{' '}
-		<a href={identity.links.nvimConfig}>{ui.configOnGitHub[locale]}</a>
-	</p>
+								))}
+							</dd>
+						</div>
+					))
+				}
+			</dl>
+		</div>
+		<p class="mono tools">
+			{dailyTools.map((tool) => ui.dailyTool[locale](tool.role[locale], tool.name)).join(' · ')} —{' '}
+			<a href={identity.links.nvimConfig}>{ui.configOnGitHub[locale]}</a>
+		</p>
+	</div>
 </section>
 
 <style>
@@ -44,30 +60,64 @@ const { id, label } = sections.stack;
 		padding-top: clamp(64px, 8vw, 120px);
 	}
 
-	.categories {
+	/* L'Atome posé tient dans 330 × 300 px autour de son centre. Plus étroite, la colonne le réduit à sa
+	   largeur : `tan(atan2(a, b))` est le seul quotient de deux longueurs que la CSS sache écrire partout. */
+	.scene {
+		container-type: inline-size;
+	}
+
+	/* Les boîtes des Bagues, des carrés tournés en 3D, débordent le dessin : coupées en largeur, elles ne
+	   font pas défiler la page de côté. */
+	.atom-box {
+		--atom-scale: min(1, tan(atan2(100cqw, 330px)));
+		position: relative;
+		overflow-x: clip;
+		height: calc(300px * var(--atom-scale));
+		margin: 28px 0 12px;
+	}
+
+	.atom-box > :global(.atom) {
+		left: 50%;
+		top: 50%;
+		scale: var(--atom-scale);
+	}
+
+	.legend {
 		margin: 0;
 	}
 
-	.category {
-		row-gap: 6px;
-		align-items: baseline;
-		padding: 22px 0;
-		border-bottom: 1px solid var(--rule);
+	/* Le numéro sort de la colonne du texte, à gauche, comme sur la planche. */
+	.line {
+		position: relative;
+		padding: 8px 0 9px 34px;
+		border-top: 0.5px solid var(--stack-sep);
 	}
 
-	.label {
-		font-size: 13px;
-		letter-spacing: 0.04em;
+	.number {
+		position: absolute;
+		left: 0;
+		font-size: 11px;
+		line-height: 16px;
+		letter-spacing: 0;
+	}
+
+	.family {
+		font-size: 10px;
+		line-height: 16px;
+		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color: var(--muted);
 	}
 
+	.accent .family {
+		color: var(--accent);
+	}
+
 	.items {
 		margin: 0;
-		font-size: clamp(22px, 2.4vw, 34px);
-		line-height: 1.22;
-		font-weight: 500;
-		letter-spacing: -0.015em;
+		font-size: 15px;
+		line-height: 21px;
+		letter-spacing: -0.005em;
 	}
 
 	.sep {
@@ -75,19 +125,51 @@ const { id, label } = sections.stack;
 	}
 
 	.tools {
-		margin: 22px 0 0;
-		font-size: 13px;
+		margin: 18px 0 0;
+		font-size: 12px;
+		line-height: 18px;
 		color: var(--muted);
 	}
 
-	/* Tablette et au-delà : la grille 3/9 de la maquette. */
-	@media (min-width: 600px) {
-		.label {
-			grid-column: span 3;
+	/* La mise en page de la planche, en 1280 × 800 : l'Atome centré à 340 px du bord (ou au milieu de sa
+	   colonne si elle est plus étroite), à 290 px sous le filet ; la légende de 440 px à droite. */
+	@media (min-width: 900px) {
+		.scene {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) 440px;
+			min-height: 589px;
+		}
+
+		.atom-box {
+			height: auto;
+			margin: 0;
+		}
+
+		.atom-box > :global(.atom) {
+			left: min(340px, 50%);
+			top: 290px;
+		}
+
+		.legend {
+			margin-top: 22px;
+		}
+
+		.line {
+			padding: 10px 0 11px 34px;
+		}
+
+		.number {
+			line-height: 18px;
 		}
 
 		.items {
-			grid-column: span 9;
+			font-size: 16px;
+			line-height: 22px;
+		}
+
+		.tools {
+			margin: 0;
+			text-align: right;
 		}
 	}
 </style>

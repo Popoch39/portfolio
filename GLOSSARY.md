@@ -31,6 +31,33 @@ Sur tout le site, un cran de molette fait glisser la page avec de l'inertie au l
 _EN_ : Glide
 _Avoid_ : smooth scroll, Lenis, lissage
 
+## Stack
+
+**Atome** :
+Le dessin de la stack dans la section Stack de l'accueil : une Bague par famille autour d'un noyau bleu, une Pastille par technologie qui a un logo. Ce n'est pas une Figure, terme réservé aux machines des fiches.
+_EN_ : Atom
+_Avoid_ : schéma, illustration, vue éclatée, Figure
+
+**Bague** :
+L'anneau d'une famille de la stack dans l'Atome ; celle de Carto & 3D est bleue.
+_EN_ : Ring
+_Avoid_ : orbite, cercle, anneau
+
+**Pastille** :
+Le logo d'une technologie, posé sur la Bague de sa famille, toujours de face.
+_EN_ : Chip
+_Avoid_ : badge, icône, électron
+
+**Visite** :
+Le défilement où la section Stack s'arrête : les Bagues, emboîtées en gyroscope, se déploient en Atome, puis chaque famille s'allume à son tour avec sa ligne de la légende. Elle se rejoue à l'envers en remontant.
+_EN_ : Tour
+_Avoid_ : animation au scroll, visite guidée, parcours
+
+**Révolution** :
+Une fois la Visite finie, la rotation lente et sans fin des Pastilles sur leurs Bagues, chaque Bague dans son sens.
+_EN_ : Revolution
+_Avoid_ : rotation, spin, orbite
+
 ## Langues
 
 **Version** :

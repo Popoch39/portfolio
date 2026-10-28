@@ -1,7 +1,7 @@
-// Le Glissé (ADR 0010) : sur tout le site, un cran de molette fait glisser la page avec de l'inertie au
-// lieu de la faire sauter, ce qui rend la Plongée continue sous la molette. Le module du build est
-// exécuté dans un faux navigateur : les crans y sont des événements, les images passent quand le test
-// les rend, et la place de la page se lit dans `scrollY`.
+// Le Glissé (ADR 0010) : sur tout le site, un cran de molette fait glisser la page au lieu de la faire
+// sauter, ce qui rend la Plongée continue sous la molette. Le module du build est exécuté dans un faux
+// navigateur : les crans y sont des événements, et les défilements lisses qu'il demande au navigateur
+// sont relevés ; le test déplace la page lui-même, comme le navigateur en route vers la cible.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
@@ -83,28 +83,21 @@ test('le Glissé n’est demandé qu’une fois la première image peinte', asyn
 const PAGE = 10_000;
 const SCREEN = 800;
 /**
- * Exécute le Glissé dans un faux navigateur, la page en haut, haute de `PAGE` pour un écran de `SCREEN`.
- * `wheel` envoie un cran (un `WheelEvent` de Chromium par défaut) et le rend ; `play` rend des images
- * de `step` millisecondes pendant `ms` et relève `scrollY` après chacune.
+ * Exécute le Glissé dans un faux navigateur, la page à `y`, haute de `PAGE` pour un écran de `SCREEN`.
+ * `wheel` envoie un cran (un `WheelEvent` de Chromium par défaut) ; `requests` relève les défilements
+ * demandés au navigateur ; `at` pose la page où le navigateur l'a menée, ou un autre défilement.
  */
-async function glide({ reduced = false } = {}) {
+async function glide({ reduced = false, y = 0 } = {}) {
 	const listeners = {};
-	const frames = new Map();
-	let id = 0;
-	// L'horloge des images court depuis l'ouverture de la page, bien avant le premier cran.
-	let now = 12_345;
+	const requests = [];
 	Object.assign(globalThis, {
-		scrollY: 0,
+		scrollY: y,
 		innerHeight: SCREEN,
-		scrollTo(_, y) {
-			globalThis.scrollY = Math.max(0, Math.min(PAGE - SCREEN, y));
-			for (const { listener } of listeners.scroll ?? []) listener({ type: 'scroll' });
-		},
+		// Le navigateur anime le défilement lui-même : la page ne bouge pas à l'appel.
+		scrollTo: (options) => requests.push(options),
 		addEventListener(type, listener, options) {
 			(listeners[type] ??= []).push({ listener, options });
 		},
-		requestAnimationFrame: (callback) => (frames.set(++id, callback), id),
-		cancelAnimationFrame: (frame) => frames.delete(frame),
 		matchMedia: (query) => ({ matches: /prefers-reduced-motion/.test(query) ? reduced : false, addEventListener() {} }),
 		getComputedStyle: (element) => element.style,
 		document: { documentElement: { scrollHeight: PAGE, clientHeight: SCREEN } },
@@ -114,10 +107,10 @@ async function glide({ reduced = false } = {}) {
 	await import(`${new URL(`../dist${path}`, import.meta.url)}?${++runs}`);
 	return {
 		listeners,
+		requests,
 		wheel(init = {}) {
 			const event = {
 				type: 'wheel',
-				timeStamp: now,
 				deltaMode: 0,
 				deltaX: 0,
 				deltaY: 120,
@@ -135,27 +128,19 @@ async function glide({ reduced = false } = {}) {
 			for (const { listener } of listeners.wheel ?? []) listener(event);
 			return event;
 		},
-		play(ms, step = 1000 / 60) {
-			const positions = [];
-			for (let t = 0; t < ms - 1e-6; t += step) {
-				now += step;
-				const due = [...frames.values()];
-				frames.clear();
-				due.forEach((callback) => callback(now));
-				positions.push(scrollY);
-			}
-			return positions;
+		at(place) {
+			globalThis.scrollY = place;
 		},
-		/** Un défilement qui ne vient pas du Glissé : clavier, barre de défilement, ancre, Lunette. */
-		scroll(y) {
-			globalThis.scrollY = y;
-			for (const { listener } of listeners.scroll ?? []) listener({ type: 'scroll' });
-		},
-		pending: () => frames.size,
+		/** La cible du dernier défilement demandé. */
+		target: () => requests.at(-1)?.top,
 	};
 }
 
-test('un cran de molette fait glisser la page jusqu’à sa cible, en une demi-seconde environ', async () => {
+// Le navigateur anime le défilement lisse sur le compositeur, comme celui de la molette : la Plongée,
+// qui suit le défilement sur le compositeur, reste dans la même image que lui. Un défilement écrit
+// image par image depuis le script lui arrivait parfois une image en retard, et Projets, tenu par une
+// translation qui compense le défilement, tremblait (Brave sous Wayland).
+test('un cran de molette demande au navigateur un défilement lisse jusqu’à sa cible', async () => {
 	const page = await glide();
 	// Passif, l'écouteur ne pourrait pas annuler le saut natif : Chromium l'ignorerait.
 	assert.deepEqual(
@@ -163,38 +148,37 @@ test('un cran de molette fait glisser la page jusqu’à sa cible, en une demi-s
 		[false],
 	);
 	assert.ok(page.wheel().defaultPrevented, 'cran laissé au saut natif');
-	assert.equal(scrollY, 0, 'la page a sauté avant la première image');
-	// À 60 images par seconde, chacune rattrape un dixième de l'écart qui reste.
-	const positions = page.play(500);
-	assert.ok(positions[0] > 0 && positions[0] < 20, `première image à ${positions[0]} px`);
-	assert.ok(positions.every((y, i) => i == 0 || y >= positions[i - 1]), 'la page recule');
-	assert.ok(positions.at(-1) > 110 && positions.at(-1) < 120, `à 0,5 s, ${positions.at(-1)} px`);
-	page.play(1000);
-	assert.equal(scrollY, 120, 'cible manquée');
-	assert.equal(page.pending(), 0, 'des images demandées une fois la page posée');
+	assert.deepEqual(page.requests, [{ top: 120, behavior: 'smooth' }]);
+	assert.equal(page.listeners.scroll, undefined, 'le défilement est suivi par le script');
 });
 
-test('les crans s’ajoutent en route, la page reste dans ses bornes, et le toucher ne dépend pas de la cadence de l’écran', async () => {
+test('les crans s’ajoutent à la cible en route, dans les bornes de la page', async () => {
 	const page = await glide();
 	page.wheel();
-	page.play(100);
+	page.at(50);
 	page.wheel();
-	page.play(2000);
-	assert.equal(scrollY, 240, 'deux crans');
-	page.wheel({ deltaY: -1000 });
-	page.play(2000);
-	assert.equal(scrollY, 0, 'au-dessus du haut');
-	page.wheel({ deltaY: PAGE * 2 });
-	page.play(3000);
-	assert.equal(scrollY, PAGE - SCREEN, 'au-delà du bas');
+	assert.equal(page.target(), 240, 'le second cran repart de la page plutôt que de la cible');
+	page.at(240);
+	page.wheel();
+	assert.equal(page.target(), 360, 'cible atteinte');
+	page.wheel({ deltaY: -1000, wheelDeltaY: 1200 });
+	assert.equal(page.target(), 0, 'au-dessus du haut');
+	page.at(0);
+	page.wheel({ deltaY: PAGE * 2, wheelDeltaY: -120 });
+	assert.equal(page.target(), PAGE - SCREEN, 'au-delà du bas');
+});
 
-	const places = [];
-	for (const step of [1000 / 60, 1000 / 120]) {
-		const screen = await glide();
-		screen.wheel();
-		places.push(screen.play(250, step).at(-1));
-	}
-	assert.ok(Math.abs(places[0] - places[1]) < 1, `à 0,25 s : ${places[0]} px à 60 i/s, ${places[1]} px à 120 i/s`);
+// Le lecteur qui change de sens, ou qu'un autre défilement a mené au-delà de la cible (Fin, une ancre,
+// `G` dans la Lunette), repart d'où il est.
+test('en changeant de sens, ou passé la cible, le cran repart de la page', async () => {
+	const page = await glide({ y: 1000 });
+	page.wheel();
+	page.at(1060);
+	page.wheel({ deltaY: -120, wheelDeltaY: 120 });
+	assert.equal(page.target(), 940, 'demi-tour');
+	page.at(3000);
+	page.wheel();
+	assert.equal(page.target(), 3120, 'passé la cible');
 });
 
 // Un pavé tactile envoie déjà un flux continu, avec son élan : le lisser lui ajouterait du retard.
@@ -206,7 +190,7 @@ test('le pavé tactile garde son défilement', async () => {
 	]) {
 		assert.equal(page.wheel(event).defaultPrevented, false, name);
 	}
-	assert.equal(page.pending(), 0, 'glissé lancé');
+	assert.deepEqual(page.requests, [], 'glissé lancé');
 });
 
 test('le zoom, le défilement horizontal et le mouvement réduit restent au navigateur', async () => {
@@ -219,36 +203,10 @@ test('le zoom, le défilement horizontal et le mouvement réduit restent au navi
 	]) {
 		assert.equal(page.wheel(event).defaultPrevented, false, name);
 	}
-	assert.equal(page.pending(), 0, 'glissé lancé');
+	assert.deepEqual(page.requests, [], 'glissé lancé');
 
 	const reduced = await glide({ reduced: true });
 	assert.equal(reduced.wheel().defaultPrevented, false, 'mouvement réduit');
-});
-
-// Le lecteur qui saute ailleurs en plein glissé (Fin, une ancre, `G` dans la Lunette) y reste : le
-// glissé ne le ramène pas vers sa cible.
-test('un défilement d’ailleurs arrête le glissé en cours', async () => {
-	const page = await glide();
-	page.wheel();
-	page.play(100);
-	page.scroll(3000);
-	page.play(1000);
-	assert.equal(scrollY, 3000, 'ramené vers la cible du cran');
-	assert.equal(page.pending(), 0, 'glissé toujours en cours');
-	page.wheel();
-	page.play(2000);
-	assert.equal(scrollY, 3120, 'le cran suivant ne part pas de la nouvelle place');
-
-	// Un défilement lisse (flèches du clavier, `j` dans la Lunette) peut n'avoir pas bougé d'un pixel à
-	// l'image suivante : la touche, ou le clic sur la barre, arrête le glissé avant lui.
-	for (const type of ['keydown', 'pointerdown']) {
-		page.wheel();
-		page.play(100);
-		const at = scrollY;
-		for (const { listener } of page.listeners[type] ?? []) listener({ type });
-		page.play(1000);
-		assert.equal(scrollY, at, `${type} : glissé toujours en cours`);
-	}
 });
 
 /** Un élément sous le pointeur, avec son style calculé. */
@@ -272,7 +230,7 @@ test('la molette au-dessus de ce qui défile en propre reste au navigateur', asy
 	]) {
 		assert.equal(page.wheel({ composedPath: () => path }).defaultPrevented, false, name);
 	}
-	assert.equal(page.pending(), 0, 'glissé lancé');
+	assert.deepEqual(page.requests, [], 'glissé lancé');
 
 	for (const [name, path] of [
 		['texte de la page', [element({}), ...root]],

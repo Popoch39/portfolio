@@ -35,27 +35,6 @@ const cell = (day: TriDay) => (day.packed === day.row ? `r${day.row}` : `r${day.
 					<p class="tri-start" aria-hidden="true" data-nosnippet>{start}</p>
 				</div>
 				<p class="mono tri-command">{ui.triCommand[locale].map((part) => <span>{part}</span>)}</p>
-				<figure class="tri-figure">
-					{/* Une image pour les lecteurs d'écran, qui lisent sa description et le tableau ; les étiquettes de
-					    pause doublent le tableau dans les extraits de recherche. */}
-					<div class="tri-main" role="img" aria-label={figureLabel} data-nosnippet>
-						{
-							weeks.map((week, i) => (
-								<span class="tri-week" data-days={week.activeDays} data-link={week.link} title={week.title}>
-									<span class="tri-node" />
-									{/* Dans la seconde moitié de l'année, l'étiquette part vers la gauche pour rester dans la page ;
-									    une pause sur deux descend d'une ligne, pour que deux étiquettes proches ne se chevauchent pas. */}
-									{week.pause && (
-										<span class:list={['mono', 'tri-pause', { end: i >= weeks.length / 2, low: weeks.slice(0, i).filter((w) => w.pause).length % 2 === 1 }]}>
-											{week.pause}
-										</span>
-									)}
-								</span>
-							))
-						}
-					</div>
-					<figcaption class="tri-conclusion">{conclusion}</figcaption>
-				</figure>
 				<table class="sr-only">
 					<caption>{ui.triTable[locale]}</caption>
 					<thead>
@@ -79,24 +58,48 @@ const cell = (day: TriDay) => (day.packed === day.row ? `r${day.row}` : `r${day.
 				</table>
 			</div>
 		</div>
-		{/* La vue de la planche : le calendrier et ce qui l'accompagne, un dessin qui double le tableau. Trois
-		    calques de cases, une colonne par semaine : les niveaux, immobiles, qui se fondent dans le calque
-		    d'une seule couleur ; ce calque et celui des jours vides, où chaque case qui change de rang glisse vers
-		    son rang tassé. */}
-		<div class="tri-stage" aria-hidden="true" data-nosnippet>
+		{/* La vue de la planche, où la scène finit sur `main` et la phrase. La planche est un dessin qui double
+		    le tableau : le calendrier et ce qui l'accompagne. Trois calques de cases, une colonne par semaine :
+		    les niveaux, immobiles, qui se fondent dans le calque d'une seule couleur ; ce calque et celui des
+		    jours vides, où chaque case qui change de rang glisse vers son rang tassé. */}
+		<div class="tri-stage">
 			<div class="tri-view">
-				<div class="mono tri-months">{months.map((month) => <span>{month.label}</span>)}</div>
-				<div class="mono tri-scale">{scale.map((graduation) => <span>{graduation}</span>)}</div>
-				<div class="tri-grid tri-move tri-empty">
-					{weeks.map((week) => <span>{week.days.filter((day) => day.level === 0).map((day) => <i class={cell(day)} />)}</span>)}
+				<div class="tri-board" aria-hidden="true" data-nosnippet>
+					<div class="mono tri-months">{months.map((month) => <span>{month.label}</span>)}</div>
+					<div class="mono tri-scale">{scale.map((graduation) => <span>{graduation}</span>)}</div>
+					<div class="tri-grid tri-move tri-empty">
+						{weeks.map((week) => <span>{week.days.filter((day) => day.level === 0).map((day) => <i class={cell(day)} />)}</span>)}
+					</div>
+					<div class="tri-grid tri-move tri-flat">
+						{weeks.map((week) => <span>{week.days.filter((day) => day.level > 0).map((day) => <i class={cell(day)} />)}</span>)}
+					</div>
+					<div class="tri-grid tri-levels">
+						{weeks.map((week) => <span>{week.days.filter((day) => day.level > 0).map((day) => <i class={`r${day.row} l${day.level}`} />)}</span>)}
+					</div>
+					{notes.map((note) => <p class="mono tri-note">{note}</p>)}
 				</div>
-				<div class="tri-grid tri-move tri-flat">
-					{weeks.map((week) => <span>{week.days.filter((day) => day.level > 0).map((day) => <i class={cell(day)} />)}</span>)}
-				</div>
-				<div class="tri-grid tri-levels">
-					{weeks.map((week) => <span>{week.days.filter((day) => day.level > 0).map((day) => <i class={`r${day.row} l${day.level}`} />)}</span>)}
-				</div>
-				{notes.map((note) => <p class="mono tri-note">{note}</p>)}
+				{/* Hors de la scène, la figure reprend la colonne de la page. */}
+				<figure class="container tri-figure">
+					{/* Une image pour les lecteurs d'écran, qui lisent sa description et le tableau ; les étiquettes de
+					    pause doublent le tableau dans les extraits de recherche. */}
+					<div class="tri-main" role="img" aria-label={figureLabel} data-nosnippet>
+						{
+							weeks.map((week, i) => (
+								<span class="tri-week" data-days={week.activeDays} data-link={week.link} title={week.title}>
+									<span class="tri-node" />
+									{/* Dans la seconde moitié de l'année, l'étiquette part vers la gauche pour rester dans la page ;
+									    une pause sur deux descend d'une ligne, pour que deux étiquettes proches ne se chevauchent pas. */}
+									{week.pause && (
+										<span class:list={['mono', 'tri-pause', { end: i >= weeks.length / 2, low: weeks.slice(0, i).filter((w) => w.pause).length % 2 === 1 }]}>
+											{week.pause}
+										</span>
+									)}
+								</span>
+							))
+						}
+					</div>
+					<figcaption class="tri-conclusion">{conclusion}</figcaption>
+				</figure>
 			</div>
 		</div>
 	</div>
@@ -109,7 +112,7 @@ const cell = (day: TriDay) => (day.packed === day.row ? `r${day.row}` : `r${day.
 
 	.tri-track,
 	.tri-start,
-	.tri-stage {
+	.tri-board {
 		display: none;
 	}
 
@@ -137,8 +140,10 @@ const cell = (day: TriDay) => (day.packed === day.row ? `r${day.row}` : `r${day.
 		overflow-wrap: anywhere;
 	}
 
+	/* Posée dans la vue de la scène, hors de `.tri-body` : elle reprend ici l'écart de ses enfants (20 px)
+	   plus le sien (24 px). */
 	.tri-figure {
-		margin: 24px 0 0;
+		margin: 44px auto 0;
 		display: flex;
 		flex-direction: column;
 		gap: 40px;
@@ -306,7 +311,8 @@ const cell = (day: TriDay) => (day.packed === day.row ? `r${day.row}` : `r${day.
 				grid-area: 1 / 1;
 			}
 
-			.tri-start {
+			.tri-start,
+			.tri-board {
 				display: block;
 			}
 
@@ -342,7 +348,6 @@ const cell = (day: TriDay) => (day.packed === day.row ? `r${day.row}` : `r${day.
 			}
 
 			.tri-stage {
-				display: block;
 				position: relative;
 				flex: 1;
 				min-height: 0;

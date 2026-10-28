@@ -69,8 +69,9 @@ for (const version of VERSIONS) {
 			['@supports sur --tri', withoutBlocks(styles, SUPPORTED)],
 		]) {
 			assert.doesNotMatch(outside, PLAYED, `Tri hors de ${condition}`);
-			// Sans la scène, ce qui n'appartient qu'à elle se cache : le socle reste tel quel.
-			const own = [...outside.matchAll(/([^{}@]+)\{([^{}]*)\}/g)].filter(([, selector]) => /\.tri-(?:track|start|stage|view|grid|move|months|scale|note)\b/.test(selector));
+			// Sans la scène, ce qui n'appartient qu'à elle se cache : le socle reste tel quel. La vue, qui porte
+			// aussi la figure du socle, reste affichée ; seule sa planche se cache.
+			const own = [...outside.matchAll(/([^{}@]+)\{([^{}]*)\}/g)].filter(([, selector]) => /\.tri-(?:track|start|board|grid|move|months|scale|note)\b/.test(selector));
 			assert.ok(own.length > 0, `aucune règle de la scène hors de ${condition}`);
 			for (const [, selector, body] of own) assert.equal(body, 'display:none', `${selector.trim()} hors de ${condition}`);
 		}
@@ -195,13 +196,27 @@ for (const version of VERSIONS) {
 		assert.ok(start, 'compteur de départ absent');
 		assert.equal(text(start), version.start);
 		assert.ok(decorative(start), 'compteur de départ lu ou repris');
-		const [stage] = withClass('tri-stage');
-		assert.ok(stage && decorative(stage), 'vue de la planche lue ou reprise');
+		const [board] = withClass('tri-board');
+		assert.ok(board && decorative(board), 'planche lue ou reprise');
 		assert.deepEqual(withClass('tri-note').map(text), version.notes);
 		assert.deepEqual(tags(withClass('tri-months')[0] ?? '', 'span').length, 12);
 		assert.deepEqual(elementsText(withClass('tri-months')[0]), version.months);
 		assert.deepEqual(elementsText(withClass('tri-scale')[0]), version.scale);
-		for (const name of ['tri-note', 'tri-months', 'tri-scale', 'tri-grid']) assert.ok(stage.includes(withClass(name)[0]), `${name} hors de la vue`);
+		for (const name of ['tri-note', 'tri-months', 'tri-scale', 'tri-grid']) assert.ok(board.includes(withClass(name)[0]), `${name} hors de la planche`);
+	});
+
+	// `main` et la phrase finissent la scène dans la vue de la planche, où les cases les rejoignent : la
+	// figure y est posée, mais hors de la planche décorative, pour rester lue et reprise.
+	test(`${locale} : la figure est dans la vue, lue par les lecteurs d’écran, la phrase en texte réel`, () => {
+		const [view] = withClass('tri-view');
+		const [figure] = withClass('tri-figure');
+		assert.ok(view && figure && view.includes(figure), 'figure hors de la vue');
+		assert.ok(!withClass('tri-board')[0].includes(figure), 'figure dans la planche décorative');
+		for (const name of ['tri-stage', 'tri-view']) assert.ok(!decorative(withClass(name)[0]), `${name} cachée aux lecteurs d’écran`);
+		const [main] = withClass('tri-main');
+		assert.equal(attr(main, 'role'), 'img');
+		assert.match(text(withClass('tri-conclusion')[0]), /^(?:Le nombre de commits|The number of commits)/);
+		assert.ok(!hasAttr(withClass('tri-conclusion')[0].match(/^<[^>]*>/)[0], 'aria-hidden'), 'phrase cachée');
 	});
 
 	/** La plage d'une règle de la scène qui joue `name` sur un sélecteur. */

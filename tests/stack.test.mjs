@@ -98,10 +98,13 @@ for (const { locale, categories, tools: toolsLine } of VERSIONS) {
 		for (let rest = atom.slice(1), ring = byClass(rest, 'ring'); ring; rest = rest.slice(rest.indexOf(ring) + ring.length), ring = byClass(rest, 'ring')) {
 			rings.push(ring);
 		}
-		const logos = rings.map((ring) => tags(ring, 'use').map((use) => attr(use, 'href')?.replace(/^#logo-/, '')));
+		// Le dessin gris de la Bague bleue (`.plain`), que seule la Visite montre, double ses Pastilles.
+		const drawn = (ring) => ring.replace(/<span class="plain"[^>]*>[\s\S]*?<\/span>/g, '');
+		const logos = rings.map((ring) => tags(drawn(ring), 'use').map((use) => attr(use, 'href')?.replace(/^#logo-/, '')));
 		assert.deepEqual(logos, LOGOS);
 		assert.equal(logos.flat().length, 29);
-		for (const ring of rings) assert.equal(tags(ring, 'svg').filter((t) => /\bclass="[^"]*\blayer\b/.test(t)).length, 5, 'cinq calques par Bague');
+		// Un calque est un SVG, ou, sur la Bague bleue, une enveloppe qui garde aussi son dessin gris.
+		for (const ring of rings) assert.equal(tags(ring, '(?:svg|span)').filter((t) => /\bclass="[^"]*\blayer\b/.test(t)).length, 5, 'cinq calques par Bague');
 	});
 
 	test(`${locale} : un symbole par logo utilisé, une seule fois dans la page`, () => {

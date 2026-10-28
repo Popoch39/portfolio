@@ -3,9 +3,10 @@
 // d'un noyau bleu, une Pastille par technologie qui a un logo. Décoratif : la légende de la section Stack
 // dit la même chose en texte.
 //
-// Rien n'est animé ici : la CSS de base est la pose finale de la Visite (la fin des keyframes de la
-// planche), celle du mouvement réduit et le point d'arrivée de la Visite. Chaque niveau d'enveloppe ne
-// porte qu'une transformation, pour que la Visite (#83) et la Révolution (#84) animent chacune la sienne :
+// La CSS de base est la pose finale de la Visite (la fin des keyframes de la planche), celle du mouvement
+// réduit et le point d'arrivée de la Visite, qui part de l'état écrit dans ses keyframes (ADR 0011). Chaque
+// niveau d'enveloppe ne porte qu'une transformation, pour que la Visite et la Révolution (#84) animent
+// chacune la sienne :
 //   .ring      la Bague : sa profondeur et son orientation (`transform`), son rayon (`--r`) ;
 //   .layer     ses cinq calques empilés en profondeur, qui lui donnent son épaisseur ;
 //   .orbit     le tour des Pastilles sur la Bague (`rotate`) ;
@@ -13,7 +14,9 @@
 //   .unspin    le tour défait, pour que la Pastille ne tourne pas sur elle-même (`rotate`) ;
 //   .face      l'orientation de la Bague défaite : le logo reste de face (`transform`) ;
 //   .chip      la Pastille dessinée (`opacity`, `scale`, `translate` libres).
-// La géométrie de chaque Bague vient de `stack` (`src/data/profile.ts`), en propriétés personnalisées.
+// La Bague bleue de Carto & 3D garde aussi son dessin gris (`.plain`), que seule la Visite montre et
+// efface par l'opacité au lieu d'en changer la couleur. La géométrie de chaque Bague vient de `stack`
+// (`src/data/profile.ts`), en propriétés personnalisées.
 import { stack, type StackItem, type Tilt } from '../data/profile';
 import { compactLogo, logoOf } from '../anatomies/tech';
 
@@ -21,10 +24,20 @@ const pastillesOf = (items: StackItem[]) => items.flatMap(({ pastille }) => (pas
 const deg = (n: number) => `${n}deg`;
 const tilt = (name: string, [a, b, c]: Tilt) => `--${name}a:${deg(a)};--${name}b:${deg(b)};--${name}c:${deg(c)}`;
 
-// Une règle par Bague (la pose finale), puis une par Pastille (sa place).
+/** Les cercles des cinq calques d'une Bague, du dessous au dessus. */
+const layers = [['side', 'edge out', 'edge in'], ['side'], ['side'], ['side'], ['top', 'ticks', 'edge out', 'edge in']];
+
+// Le rayon de la Visite rapporté à celui de la pose : l'échelle des calques (`--k…`) et le déplacement des
+// Pastilles le long de leur rayon (`--d…`).
+const reach = (name: string, radius: number, end: number) => `--k${name}:${+(radius / end).toFixed(4)};--d${name}:${radius - end}px`;
+
+// Une règle par Bague (la pose finale, puis le départ, la mi-course et la plage de montage de la Visite),
+// puis une par Pastille (sa place).
 const geometry = stack
 	.flatMap(({ items, ring }, k) => [
-		`.atom .ring-${k}{--r:${ring.radius.end}px;--dz:${ring.depth}px;${tilt('f', ring.tilt.end)};--sp:${deg(ring.turn)}}`,
+		`.atom .ring-${k}{--r:${ring.radius.end}px;--dz:${ring.depth}px;${tilt('f', ring.tilt.end)};--sp:${deg(ring.turn)};` +
+			`${reach('0', ring.radius.gyro, ring.radius.end)};${reach('m', ring.radius.mid, ring.radius.end)};` +
+			`${tilt('g', ring.tilt.gyro)};${tilt('m', ring.tilt.mid)};--g0:${ring.assembly[0]}%;--g1:${ring.assembly[1]}%}`,
 		...pastillesOf(items).map(({ angle }, i) => `.atom .ring-${k} .pastille:nth-child(${i + 1}){--t:${deg(angle)}}`),
 	])
 	.join('');
@@ -48,26 +61,17 @@ const geometry = stack
 	{
 		stack.map(({ items, ring }, k) => (
 			<div class:list={['ring', `ring-${k}`, { accent: ring.accent }]}>
-				<svg class="layer">
-					<circle class="side" />
-					<circle class="edge out" />
-					<circle class="edge in" />
-				</svg>
-				<svg class="layer">
-					<circle class="side" />
-				</svg>
-				<svg class="layer">
-					<circle class="side" />
-				</svg>
-				<svg class="layer">
-					<circle class="side" />
-				</svg>
-				<svg class="layer">
-					<circle class="top" />
-					<circle class="ticks" pathLength="360" />
-					<circle class="edge out" />
-					<circle class="edge in" />
-				</svg>
+				{layers.map((names) => {
+					const circles = names.map((name) => <circle class={name} pathLength={name === 'ticks' ? '360' : undefined} />);
+					return ring.accent ? (
+						<span class="layer">
+							<svg class="plain">{circles}</svg>
+							<svg>{circles}</svg>
+						</span>
+					) : (
+						<svg class="layer">{circles}</svg>
+					);
+				})}
 				<span class="orbit">
 					{pastillesOf(items).map(({ logo }) => (
 						<span class="pastille">
@@ -77,6 +81,13 @@ const geometry = stack
 										<svg class="logo">
 											<use href={`#logo-${logo}`} />
 										</svg>
+										{ring.accent && (
+											<span class="plain">
+												<svg class="logo">
+													<use href={`#logo-${logo}`} />
+												</svg>
+											</span>
+										)}
 									</span>
 								</span>
 							</span>
@@ -142,31 +153,38 @@ const geometry = stack
 		transform: translateZ(var(--dz)) rotateZ(var(--fa)) rotateX(var(--fb)) rotateZ(var(--fc));
 	}
 
-	/* La profondeur nulle du calque du dessus n'est pas superflue : sans elle, Firefox le sort du contexte
-	   3D et le dessine à plat, dans le coin de la page. */
-	.atom .layer {
+	.atom .layer,
+	.atom .layer > svg {
 		position: absolute;
 		inset: 0;
 		width: 100%;
 		height: 100%;
 		overflow: visible;
-		translate: 0 0 0;
+	}
+
+	/* La profondeur de chaque calque, en `transform` : sur un SVG, une propriété de transformation à part
+	   (`translate`) empêcherait le compositeur de jouer l'échelle de la Visite. La profondeur nulle du
+	   calque du dessus n'est pas superflue : sans elle, Firefox le sort du contexte 3D et le dessine à plat,
+	   dans le coin de la page. */
+	.atom .layer {
+		--z: 0px;
+		transform: translateZ(var(--z));
 	}
 
 	.atom .layer:nth-child(1) {
-		translate: 0 0 -8px;
+		--z: -8px;
 	}
 
 	.atom .layer:nth-child(2) {
-		translate: 0 0 -6px;
+		--z: -6px;
 	}
 
 	.atom .layer:nth-child(3) {
-		translate: 0 0 -4px;
+		--z: -4px;
 	}
 
 	.atom .layer:nth-child(4) {
-		translate: 0 0 -2px;
+		--z: -2px;
 	}
 
 	.atom circle {
@@ -249,15 +267,19 @@ const geometry = stack
 		transform: rotateZ(calc(-1 * var(--fc))) rotateX(calc(-1 * var(--fb))) rotateZ(calc(-1 * var(--fa)));
 	}
 
+	.atom .chip,
+	.atom .chip > .plain {
+		border: 0.6px solid var(--ink);
+		border-radius: 50%;
+		background: radial-gradient(circle at 35% 28%, #fff 0, var(--paper) 45%, #e4e4de 100%);
+	}
+
 	.atom .chip {
 		position: absolute;
 		left: -9px;
 		top: -9px;
 		width: 18px;
 		height: 18px;
-		border: 0.6px solid var(--ink);
-		border-radius: 50%;
-		background: radial-gradient(circle at 35% 28%, #fff 0, var(--paper) 45%, #e4e4de 100%);
 		box-shadow:
 			0 2.5px 0 -0.5px var(--side),
 			0 2.5px 0 0 var(--ink);
@@ -269,6 +291,26 @@ const geometry = stack
 		color: #fff;
 	}
 
+	/* Le dessin gris de la Bague bleue, que seule la Visite montre : ses calques sous les bleus, et sa
+	   Pastille posée sur la bleue, bordure comprise. */
+	.atom .plain {
+		display: none;
+	}
+
+	.atom .plain .side {
+		stroke: var(--side);
+	}
+
+	.atom .plain .top {
+		stroke: var(--paper);
+	}
+
+	.atom .chip > .plain {
+		position: absolute;
+		inset: -0.6px;
+		color: var(--ink);
+	}
+
 	/* Les logos sans couleur de marque prennent l'encre de la Pastille. */
 	.atom .logo {
 		position: absolute;
@@ -277,5 +319,165 @@ const geometry = stack
 		width: 10px;
 		height: 10px;
 		fill: currentColor;
+	}
+
+	/* La Visite de l'Atome (ADR 0011), sur la piste de la section Stack, plages et courbes de la planche :
+	   6–62 %      chaque Bague se déploie du gyroscope en atome, à un pas de la précédente, son rayon avec
+	               elle, et ses Pastilles se tournent pour rester de face ;
+	   4–96 %      les Pastilles font leur tour sur leur Bague ;
+	   54–62 %     le noyau surgit ;
+	   62–97 %     tout s'estompe, chaque famille s'allume à son tour, puis tout se rallume (`src/lib/visit.ts`) ;
+	   81–83 %     la Bague de Carto & 3D passe en bleu, son dessin gris s'effaçant sous le bleu.
+	   Les keyframes écrivent leur départ : la pose de base est leur arrivée. Les fondus vont sur les calques
+	   et les Pastilles, jamais sur une enveloppe 3D, qu'une opacité aplatirait. Le rayon de la planche
+	   (`--r`, animé sur le thread principal : 27 images par seconde à CPU ×6) devient une échelle des
+	   calques (`--k…`, la bande s'y amincit avec le rayon) et un déplacement des Pastilles le long de leur
+	   rayon (`--d…`, leur taille ne change pas) : tout est joué par le compositeur. */
+	@media (prefers-reduced-motion: no-preference) and (min-height: 500px) and ((min-width: 900px) or (min-height: 640px)) {
+		@supports (animation-timeline: view()) and (animation-range: entry) and (timeline-scope: --visit) {
+			/* L'opacité estompée de l'Atome, dans les keyframes de chaque famille. */
+			.atom {
+				--lo: 0.14;
+			}
+
+			.atom .ring {
+				animation: auto visit-gyro linear both;
+				animation-timeline: --visit;
+				animation-range: contain var(--g0) contain var(--g1);
+			}
+
+			/* Le rayon de la Pastille suit celui de sa Bague (l'échelle des calques est réglée avec leur fondu,
+			   dans `src/lib/visit.ts`). */
+			.atom .pastille {
+				animation: auto visit-reach cubic-bezier(0.5, 0, 0.25, 1) both;
+				animation-timeline: --visit;
+				animation-range: contain var(--g0) contain var(--g1);
+			}
+
+			.atom .face {
+				animation: auto visit-counter linear both;
+				animation-timeline: --visit;
+				animation-range: contain var(--g0) contain var(--g1);
+			}
+
+			.atom .orbit,
+			.atom .unspin {
+				animation: auto visit-spin linear both;
+				animation-timeline: --visit;
+				animation-range: contain 4% contain 96%;
+			}
+
+			.atom .nucleus {
+				animation: auto visit-pop cubic-bezier(0.3, 1.6, 0.5, 1) both;
+				animation-timeline: --visit;
+				animation-range: contain 54% contain 62%;
+			}
+
+			/* Le bleu se pose sur le gris, qui disparaît d'un coup une fois couvert ; sur la Pastille, le gris
+			   s'efface au-dessus du bleu. Aucun fondu à deux couches translucides : le fond ne passe jamais. */
+			.atom .layer > svg {
+				animation: auto visit-in linear both;
+				animation-timeline: --visit;
+				animation-range: contain 81% contain 83%;
+			}
+
+			.atom .layer > .plain {
+				display: block;
+				animation: auto visit-out step-end both;
+				animation-timeline: --visit;
+				animation-range: contain 81% contain 83%;
+			}
+
+			.atom .chip > .plain {
+				display: block;
+				animation: auto visit-out linear both;
+				animation-timeline: --visit;
+				animation-range: contain 81% contain 83%;
+			}
+
+			/* Gyroscope : les Bagues emboîtées, à plat puis écartées en profondeur, 150 px plus bas. */
+			@keyframes visit-gyro {
+				from {
+					transform: translateY(150px) translateZ(0) rotateZ(var(--ga)) rotateX(var(--gb)) rotateZ(var(--gc));
+				}
+				6% {
+					transform: translateY(150px) translateZ(var(--dz)) rotateZ(var(--ga)) rotateX(var(--gb)) rotateZ(var(--gc));
+					animation-timing-function: cubic-bezier(0.55, 0, 0.4, 1);
+				}
+				50% {
+					transform: translateY(40px) translateZ(var(--dz)) rotateZ(var(--ma)) rotateX(var(--mb)) rotateZ(var(--mc));
+					animation-timing-function: cubic-bezier(0.35, 0, 0.15, 1);
+				}
+				to {
+					transform: translateY(0) translateZ(var(--dz)) rotateZ(var(--fa)) rotateX(var(--fb)) rotateZ(var(--fc));
+				}
+			}
+
+			/* Le rayon de départ puis de mi-course, la pose donnant celui d'arrivée. */
+			@keyframes visit-band {
+				from {
+					transform: translateZ(var(--z)) scale(var(--k0));
+				}
+				50% {
+					transform: translateZ(var(--z)) scale(var(--km));
+				}
+			}
+
+			@keyframes visit-reach {
+				from {
+					translate: calc(var(--d0) * cos(var(--t))) calc(var(--d0) * sin(var(--t)));
+				}
+				50% {
+					translate: calc(var(--dm) * cos(var(--t))) calc(var(--dm) * sin(var(--t)));
+				}
+			}
+
+			@keyframes visit-counter {
+				from,
+				6% {
+					transform: rotateZ(calc(-1 * var(--gc))) rotateX(calc(-1 * var(--gb))) rotateZ(calc(-1 * var(--ga)));
+					animation-timing-function: cubic-bezier(0.55, 0, 0.4, 1);
+				}
+				50% {
+					transform: rotateZ(calc(-1 * var(--mc))) rotateX(calc(-1 * var(--mb))) rotateZ(calc(-1 * var(--ma)));
+					animation-timing-function: cubic-bezier(0.35, 0, 0.15, 1);
+				}
+			}
+
+			/* Le tour des Pastilles, et le même défait dans chacune. */
+			@keyframes visit-spin {
+				from {
+					rotate: 0deg;
+				}
+			}
+
+			@keyframes visit-pop {
+				from {
+					opacity: 0;
+					scale: 0;
+				}
+			}
+
+			/* La Pastille allumée grossit et s'avance, devant les autres. */
+			@keyframes visit-lit {
+				22%,
+				78% {
+					scale: 1.45;
+					translate: 0 0 22.5px;
+				}
+			}
+
+			@keyframes visit-in {
+				from {
+					opacity: 0;
+				}
+			}
+
+			@keyframes visit-out {
+				to {
+					opacity: 0;
+				}
+			}
+		}
 	}
 </style>

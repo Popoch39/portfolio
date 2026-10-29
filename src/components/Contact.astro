@@ -128,6 +128,8 @@ const examples = ui.bufferExamples[locale];
 			<input id="buffer-site" name="site" tabindex="-1" autocomplete="off" />
 		</div>
 		<input type="hidden" name="lang" value={locale} />
+		{/* Le délai depuis le premier focus, que le script remplit avant d'envoyer ; vide, le Worker l'ignore. */}
+		<input type="hidden" name="delai" />
 	</form>
 </section>
 

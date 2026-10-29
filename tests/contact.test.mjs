@@ -196,6 +196,14 @@ for (const { locale, pitch, links, legends, types, labels, ok, errors, hint, noB
 		assert.equal(attr(lang, 'value'), locale);
 	});
 
+	// Sans script, le délai part vide et le Worker l'ignore ; le script le remplit avant d'envoyer (#120).
+	test(`${locale} : le délai depuis le premier focus part dans un champ caché, vide au build`, () => {
+		const [delay] = named('delai');
+		assert.ok(delay, 'aucun champ délai');
+		assert.equal(attr(delay, 'type'), 'hidden');
+		assert.ok(!attr(delay, 'value'), 'le délai a une valeur au build');
+	});
+
 	test(`${locale} : le pot de miel est hors de la vue, hors du parcours clavier et des lecteurs d’écran`, () => {
 		const [pot] = named('site');
 		assert.ok(pot, 'aucun pot de miel');

@@ -174,7 +174,9 @@ test('délai fourni et trop court : « succès » sans mail ; délai suffisant o
 	assert.equal(env.sent.length, 0);
 	await worker.fetch(post({ ...VALID, delai: '45000' }, { json: true }), env);
 	await worker.fetch(post(VALID, { json: true }), env);
-	assert.equal(env.sent.length, 2);
+	// L'envoi natif poste le champ caché du délai, vide sans script.
+	await worker.fetch(post({ ...VALID, delai: '' }), env);
+	assert.equal(env.sent.length, 3);
 });
 
 test('limite atteinte pour cette IP : E5, et aucun mail', async () => {

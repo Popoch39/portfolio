@@ -22,6 +22,7 @@ export function start(form: HTMLFormElement, at: number) {
 	const line = form.querySelector<HTMLElement>('.cmd');
 	const cmd = form.querySelector<HTMLInputElement>('#buffer-cmd');
 	const send = form.querySelector<HTMLButtonElement>('.send');
+	const delay = form.querySelector<HTMLInputElement>('[name=delai]');
 	if (!win || !line || !cmd || !send) return;
 	const position = win.querySelector('.at');
 	const lines = [...win.querySelectorAll('.buf > .ln')];
@@ -77,12 +78,12 @@ export function start(form: HTMLFormElement, at: number) {
 
 	const submit = async () => {
 		if (busy) return;
+		if (delay) delay.value = String(Math.round(performance.now() - at));
 		const data = new FormData(form);
 		const fields = fieldsOf(data);
 		const missing = validate(fields);
 		if (missing) return refuse(missing);
 		busy = true;
-		data.set('delai', String(Math.round(performance.now() - at)));
 		const reply: Promise<Reply> = fetch(form.action, { method: 'POST', body: data, headers: { Accept: 'application/json' } })
 			.then((response) => response.json())
 			// Réseau coupé, Worker arrêté ou réponse illisible : le Buffer reste à réessayer.

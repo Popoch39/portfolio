@@ -216,7 +216,9 @@ for (const version of VERSIONS) {
 		for (const { repo, html } of fiches) assert.ok(!html.includes('data-repere'), `${repo} : repère restant`);
 		const home = readHome(locale);
 		assert.equal(tags(home, 'li').filter((t) => /class="note\b/.test(t)).length, 0);
-		assert.equal(tags(home, 'fieldset').length, 0);
+		// Les fieldsets du Buffer (section Contact) ne sont pas la bascule de Lecture.
+		const legends = elements(home, 'fieldset').map((f) => text(elements(f, 'legend')[0] ?? ''));
+		assert.ok(!legends.includes(version.legend), 'bascule de Lecture sur l’accueil');
 	});
 }
 

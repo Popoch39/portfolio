@@ -6,6 +6,10 @@ import { localeOf, ui } from '../lib/i18n';
 const locale = localeOf(Astro.currentLocale);
 const { email, github, links } = identity;
 const [mailbox, domain] = email.split('@');
+// Les valeurs que le Worker accepte : le type en français dans les deux Versions, les tranches telles quelles.
+const types = ['projet', 'app', 'bonjour'] as const;
+const budgets = ['<5k€', '5-15k€', '15-40k€', '?'];
+const errors = ui.bufferErrors[locale];
 ---
 
 <section id={sections.contact.id[locale]} class="grid contact">
@@ -13,6 +17,55 @@ const [mailbox, domain] = email.split('@');
 	<div class="body">
 		<p class="wq" aria-hidden="true">:wq</p>
 		<p class="pitch">{ui.pitch[locale]}</p>
+		{/* Le Buffer (ADR 0016) : un vrai formulaire, envoyé nativement au Worker, qui renvoie (303) sur
+		    l'ancre d'un des messages ci-dessous. */}
+		<form class="buffer" method="post" action="/api/contact">
+			<fieldset>
+				<legend>{ui.bufferType[locale]}</legend>
+				{
+					types.map((type) => (
+						<>
+							<input type="radio" id={`buffer-type-${type}`} name="type" value={type} required />
+							<label for={`buffer-type-${type}`}>{ui.bufferTypes[locale][type]}</label>
+						</>
+					))
+				}
+			</fieldset>
+			<label for="buffer-nom">{ui.bufferName[locale]}</label>
+			<input id="buffer-nom" name="nom" autocomplete="name" maxlength="100" />
+			<label for="buffer-email">{ui.bufferEmail[locale]}</label>
+			<input id="buffer-email" name="email" type="email" autocomplete="email" required />
+			<fieldset>
+				<legend>{ui.bufferBudget[locale]}</legend>
+				{
+					budgets.map((budget, i) => (
+						<>
+							<input type="radio" id={`buffer-budget-${i}`} name="budget" value={budget} />
+							<label for={`buffer-budget-${i}`}>{budget}</label>
+						</>
+					))
+				}
+			</fieldset>
+			<label for="buffer-message">{ui.bufferMessage[locale]}</label>
+			<textarea id="buffer-message" name="message" rows="6" maxlength="5000" required></textarea>
+			{/* Le pot de miel : hors de la vue et du parcours clavier, mais pas en `display: none`, que des robots
+			    savent sauter. */}
+			<div class="pot" aria-hidden="true">
+				<label for="buffer-site">site</label>
+				<input id="buffer-site" name="site" tabindex="-1" autocomplete="off" />
+			</div>
+			<input type="hidden" name="lang" value={locale} />
+			<button type="submit">{ui.bufferSend[locale]} <span class="mono">:wq</span></button>
+			{/* `tabindex="-1"` : le navigateur y pose le point de départ du parcours au retour du Worker. */}
+			<p id="contact-ok" class="echo" tabindex="-1">{ui.bufferOk[locale]}</p>
+			{
+				Object.entries(errors).map(([code, message]) => (
+					<p id={`contact-${code}`} class="echo error" tabindex="-1">
+						{message}
+					</p>
+				))
+			}
+		</form>
 		{/* Coupure préférée après « @ » plutôt qu'au milieu du domaine. */}
 		<a class="mail" href={`mailto:${email}`}>{mailbox}@<wbr />{domain}</a>
 		<div class="links">
@@ -52,6 +105,83 @@ const [mailbox, domain] = email.split('@');
 		font-size: clamp(20px, 2vw, 28px);
 		line-height: 1.25;
 		letter-spacing: -0.01em;
+	}
+
+	/* Le Buffer, en attendant sa fenêtre `contact.md` : des lignes clé / valeur, sans plus. */
+	.buffer {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 10px;
+		width: 100%;
+		max-width: 720px;
+		font-family: var(--font-mono);
+		/* 16 px : iOS ne zoome pas au focus d'un champ. */
+		font-size: 16px;
+	}
+
+	.buffer fieldset {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px 12px;
+		margin: 0;
+		padding: 0;
+		border: 0;
+	}
+
+	.buffer legend {
+		float: left;
+		margin-right: 4px;
+		padding: 0;
+		color: var(--muted);
+	}
+
+	.buffer input:not([type]),
+	.buffer input[type='email'],
+	.buffer textarea {
+		box-sizing: border-box;
+		width: 100%;
+		min-height: 44px;
+		padding: 8px 10px;
+		border: 1px solid var(--rule);
+		background: var(--paper);
+		color: inherit;
+		font: inherit;
+	}
+
+	.buffer button {
+		min-height: 44px;
+		padding: 10px 18px;
+		border: 0;
+		background: var(--ink);
+		color: var(--paper);
+		font: inherit;
+		cursor: pointer;
+	}
+
+	.pot {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	/* Les messages du repli sans JS : seul celui que vise l'ancre du retour s'affiche. */
+	.echo {
+		margin: 0;
+	}
+
+	.echo:not(:target) {
+		display: none;
+	}
+
+	/* Rouge à 9:1 sur le fond clair ; la fenêtre sombre du Buffer aura le sien. */
+	.error {
+		color: #b3261e;
 	}
 
 	/* Filet de sécurité si même une moitié de l'adresse ne tient pas : couper plutôt que déborder. */

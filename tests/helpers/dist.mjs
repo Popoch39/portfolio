@@ -98,6 +98,9 @@ export function text(fragment) {
 	return fragment
 		.replace(/<[^>]+>/g, '')
 		.replace(/&shy;|­/g, '')
+		.replace(/&lt;/g, '<')
+		.replace(/&gt;/g, '>')
+		.replace(/&quot;|&#34;/g, '"')
 		.replace(/&amp;/g, '&')
 		.replace(/&#39;|&#x27;/g, "'")
 		.replace(/&nbsp;|&#160;/g, ' ')

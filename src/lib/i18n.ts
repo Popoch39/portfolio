@@ -126,6 +126,36 @@ export const ui = {
 		en: 'An API, an interface, a tool that needs building? Drop me a line. Open to remote.',
 	},
 	nvimConfig: { fr: 'Config Neovim ↗', en: 'Neovim config ↗' },
+	// Le Buffer (spec #116) : les clés de l'en-tête de `contact.md`, le libellé affiché de chaque type (la
+	// valeur envoyée au Worker reste française), puis les messages du repli sans JS, que `:target` affiche
+	// au retour du Worker (ADR 0016).
+	bufferType: { fr: 'type:', en: 'type:' },
+	bufferTypes: {
+		fr: { projet: 'projet', app: 'app', bonjour: 'bonjour' },
+		en: { projet: 'project', app: 'app', bonjour: 'hello' },
+	},
+	bufferName: { fr: 'nom:', en: 'name:' },
+	bufferEmail: { fr: 'email:', en: 'email:' },
+	bufferBudget: { fr: 'budget:', en: 'budget:' },
+	bufferMessage: { fr: '# Message — markdown bienvenu', en: '# Message — markdown welcome' },
+	bufferSend: { fr: 'Enregistrer et envoyer', en: 'Save and send' },
+	bufferOk: { fr: '"contact.md" écrit — message envoyé à Louis, merci !', en: '"contact.md" written — message sent to Louis, thank you!' },
+	bufferErrors: {
+		fr: {
+			e1: 'E1: type manquant',
+			e2: 'E2: email manquant ou invalide',
+			e3: 'E3: message vide',
+			e4: 'E4: champ invalide ou trop long',
+			e5: 'E5: envoi impossible, réessayez dans une minute ou écrivez à l’adresse ci-dessous',
+		},
+		en: {
+			e1: 'E1: missing type',
+			e2: 'E2: missing or invalid email',
+			e3: 'E3: empty message',
+			e4: 'E4: invalid or too long field',
+			e5: 'E5: sending failed, try again in a minute or write to the address below',
+		},
+	},
 	// Barre d'état : le total de l'activité, et la position façon Neovim (« Bot » en anglais).
 	statusContributions: {
 		fr: (total: string) => `${total} contributions · 12 mois`,

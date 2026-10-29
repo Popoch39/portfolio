@@ -2,7 +2,7 @@
 // (spec #116, ADR 0016), puis l'adresse et les liens, dans les deux Versions.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readHome, tags, attr, hasAttr, elements, text, css, blocks, withoutBlocks } from './helpers/dist.mjs';
+import { readHome, tags, attr, hasAttr, elements, elementAt, text, css, blocks, withoutBlocks } from './helpers/dist.mjs';
 
 const MOTION = /@media \(prefers-reduced-motion:\s*no-preference\)/;
 /** Les seules propriétés qu'on anime : ni layout ni paint par image. */
@@ -12,7 +12,7 @@ const VERSIONS = [
 	{
 		locale: 'fr',
 		pitch: /Une API, une interface, un outil à construire \? Écrivez-moi\. Ouvert au remote\./,
-		links: /GitHub — Popoch39 ↗ Config Neovim ↗ Besançon, France/,
+		links: /^GitHub — Popoch39 ↗ Config Neovim ↗ Besançon, France$/,
 		legends: ['type:', 'budget:'],
 		types: ['projet', 'app', 'bonjour'],
 		labels: { nom: 'nom:', email: 'email:', message: '# Message — markdown bienvenu' },
@@ -26,7 +26,7 @@ const VERSIONS = [
 	{
 		locale: 'en',
 		pitch: /An API, an interface, a tool that needs building\? Drop me a line\. Open to remote\./,
-		links: /GitHub — Popoch39 ↗ Neovim config ↗ Besançon, France/,
+		links: /^GitHub — Popoch39 ↗ Neovim config ↗ Besançon, France$/,
 		legends: ['type:', 'budget:'],
 		types: ['project', 'app', 'hello'],
 		labels: { nom: 'name:', email: 'email:', message: '# Message — markdown welcome' },
@@ -238,6 +238,7 @@ for (const { locale, pitch, links, legends, types, labels, ok, errors, hint, noB
 			hrefs.filter((href) => !href.startsWith('mailto:')),
 			['https://github.com/Popoch39', 'https://github.com/Popoch39/nvim'],
 		);
-		assert.match(text(section), links);
+		// Le bloc des liens tient sur sa ligne, la ville en dernier ; le pot de miel le suit dans le HTML.
+		assert.match(text(elementAt(section, section.indexOf('<div class="links"')) ?? ''), links);
 	});
 }

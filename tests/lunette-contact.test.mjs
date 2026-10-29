@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { list, run } from '../src/lunette/registry.ts';
 import { modified } from '../src/lunette/normal.ts';
-import { attr, elements, moduleGraph, readDist, readHome, readPage, tags, HOME, FICHE } from './helpers/dist.mjs';
+import { attr, bufferStart, moduleGraph, readDist, readHome, readPage, tags, HOME, FICHE } from './helpers/dist.mjs';
 
 const accueil = { page: { kind: 'home' }, locale: 'fr' };
 const home = { page: { kind: 'home' }, locale: 'en' };
@@ -13,11 +13,9 @@ const trekkerPage = { page: { kind: 'fiche', slug: 'trekker' }, locale: 'en' };
 
 const names = (context) => list('', context).entries.map((entry) => entry.label);
 
-/** La première ligne du Buffer (`type:`), son premier champ, lue dans l'accueil construit de `locale`. */
-function bufferStart(locale) {
-	const html = readHome(locale);
-	const contact = elements(html, 'section').find((s) => attr(tags(s, 'section')[0], 'id') === 'contact') ?? '';
-	const [first] = tags(elements(contact, 'form')[0] ?? '', 'input');
+/** L'id de la première ligne du Buffer (`type:`), son premier champ, lu dans l'accueil construit de `locale`. */
+function bufferId(locale) {
+	const first = bufferStart(readHome(locale));
 	assert.equal(attr(first ?? '', 'name'), 'type', `${locale} : Buffer absent de la section Contact`);
 	return attr(first, 'id');
 }
@@ -25,8 +23,8 @@ function bufferStart(locale) {
 // L'ancre est un champ du Buffer, dans la section Contact : le navigateur y pose le focus à l'arrivée,
 // même depuis une fiche, et la Lunette n'a rien d'autre à faire que d'y aller (#121).
 test(':wq et :x mènent au Buffer de la section Contact, focus sur sa première ligne, dans la version de la page', () => {
-	const fr = { kind: 'go', path: `/#${bufferStart('fr')}` };
-	const en = { kind: 'go', path: `/en/#${bufferStart('en')}` };
+	const fr = { kind: 'go', path: `/#${bufferId('fr')}` };
+	const en = { kind: 'go', path: `/en/#${bufferId('en')}` };
 	for (const line of ['wq', ':x', 'xit']) {
 		assert.deepEqual(run(line, accueil), fr, line);
 		assert.deepEqual(run(line, ficheTrekker), fr, line);

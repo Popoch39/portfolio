@@ -1,7 +1,7 @@
 // Haut de page : en-tête du site, héros et barre d'état, dans les deux versions de l'accueil.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readHome, tags, attr, elements, text } from './helpers/dist.mjs';
+import { readHome, tags, attr, elements, text, bufferStart } from './helpers/dist.mjs';
 
 const VERSIONS = [
 	{
@@ -79,8 +79,7 @@ for (const version of VERSIONS) {
 	test(`${locale} : le héros propose d’écrire, au Buffer de la section Contact, et d’aller sur GitHub`, () => {
 		const write = elements(body, 'a').find((a) => text(a).startsWith(version.write));
 		assert.ok(write, `bouton « ${version.write} » absent`);
-		const contact = elements(body, 'section').find((s) => attr(tags(s, 'section')[0], 'id') === 'contact') ?? '';
-		const [first] = tags(elements(contact, 'form')[0] ?? '', 'input');
+		const first = bufferStart(body);
 		assert.ok(first, 'Buffer absent de la section Contact');
 		assert.equal(attr(first, 'name'), 'type');
 		assert.equal(attr(write, 'href'), `#${attr(first, 'id')}`);

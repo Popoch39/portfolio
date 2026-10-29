@@ -2,9 +2,7 @@
 // E1 à E3, ce que `:wq` écrit et le `mailto:` de repli de E5. Les tests l'importent sous Node, comme le
 // registre de la Lunette (ADR 0007). Il porte sa propre table bilingue : la table `ui` du site partirait
 // entière avec le module.
-
-/** Les champs du Buffer, tels que le formulaire les envoie (le type en français dans les deux Versions). */
-export type Fields = { type: string; nom: string; email: string; budget: string; message: string };
+import { contactMd, EMAIL, subject, type Fields } from './contact-md.ts';
 
 export type Command = { kind: 'write' | 'quit' | 'abandon' | 'none' } | { kind: 'unknown'; line: string };
 
@@ -17,9 +15,6 @@ export function command(line: string): Command {
 	if (typed === 'q!') return { kind: 'abandon' };
 	return { kind: 'unknown', line: typed };
 }
-
-// La forme d'adresse du Worker (worker/contact.ts) : le client refuse ce que le Worker refuserait.
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Un champ refusé, nommé par son message : le Buffer y ramène le curseur. */
 export type Refusal = 'e1' | 'e2' | 'e2invalid' | 'e3';
@@ -42,16 +37,19 @@ const WORKER: Partial<Record<string, Refusal>> = { E1: 'e1', E2: 'e2invalid', E3
  */
 export const refused = (code?: string): Refusal | undefined => (code ? WORKER[code] : undefined);
 
-/** Ce que `:wq` écrit, à la manière de Vim : les lignes et les octets UTF-8 de `contact.md`. */
-export function written({ type, nom, email, budget, message }: Fields): string {
-	const md = ['---', `type: ${type}`, `nom: ${nom}`, `email: ${email}`, `budget: ${budget}`, '---', '# Message', message].join('\n');
-	return `${md.split('\n').length}L, ${new TextEncoder().encode(md).length}B`;
+/**
+ * Ce que `:wq` écrit, à la manière de Vim : les lignes et les octets UTF-8 de `contact.md`, le corps du
+ * mail que Louis reçoit. Il finit par un retour à la ligne, qui n'ouvre pas de ligne de plus.
+ */
+export function written(fields: Fields): string {
+	const md = contactMd(fields);
+	return `${md.split('\n').length - 1}L, ${new TextEncoder().encode(md).length}B`;
 }
 
 /** Le `mailto:` prérempli de E5 : l'objet du mail du Worker, et le message. */
-export function mailto(to: string, { type, nom, email, message }: Fields): string {
+export function mailto(to: string, fields: Fields): string {
 	// `encodeURIComponent` plutôt que `URLSearchParams` : un client mail lirait ses `+` tels quels.
-	return `mailto:${to}?subject=${encodeURIComponent(`[portfolio] ${type} — ${nom || email}`)}&body=${encodeURIComponent(message)}`;
+	return `mailto:${to}?subject=${encodeURIComponent(subject(fields))}&body=${encodeURIComponent(fields.message)}`;
 }
 
 export const texts = {

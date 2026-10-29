@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { command, mailto, refused, texts, validate, written } from '../src/buffer/command.ts';
 
-const full = { type: 'projet', nom: 'Camille Martin', email: 'camille@studio.fr', budget: '5-15k€', message: 'Bonjour,\nune API à construire.' };
+const full = { type: 'projet', nom: 'Camille Martin', email: 'camille@studio.fr', budget: '5-15k€', message: 'Bonjour,\nune API à construire.', lang: 'fr' };
 
 test(':wq, :x et :w envoient, avec ou sans deux-points, blancs autour ignorés', () => {
 	for (const line of [':wq', 'wq', ' :x ', ':w']) assert.deepEqual(command(line), { kind: 'write' }, line);
@@ -65,11 +65,12 @@ test('les messages de la planche, en français et en anglais', () => {
 	assert.deepEqual(Object.keys(texts.en).sort(), Object.keys(texts.fr).sort());
 });
 
+// Le contact.md compté est le corps du mail (worker-contact.test.mjs le vérifie au caractère près).
 test('« écrits » compte les lignes et les octets UTF-8 de contact.md : l’en-tête du Buffer puis le message', () => {
-	// ---, type, nom, email, budget, ---, # Message, puis les deux lignes du message : 9 lignes.
-	const md = '---\ntype: projet\nnom: Camille Martin\nemail: camille@studio.fr\nbudget: 5-15k€\n---\n# Message\nBonjour,\nune API à construire.';
-	assert.equal(Buffer.byteLength(md), 124);
-	assert.equal(written(full), '9L, 124B');
+	// ---, type, nom, email, budget, langue, ---, une ligne vide, puis les deux lignes du message : 10 lignes.
+	const md = '---\ntype: projet\nnom: Camille Martin\nemail: camille@studio.fr\nbudget: 5-15k€\nlangue: fr\n---\n\nBonjour,\nune API à construire.\n';
+	assert.equal(Buffer.byteLength(md), 127);
+	assert.equal(written(full), '10L, 127B');
 });
 
 test('le mailto de E5 reprend l’objet du Worker et le message, encodés', () => {

@@ -2,7 +2,8 @@
 // la position `ln:col`, et l'envoi sans rechargement (validation E1 à E3, `:wq` qui se tape, spinner, puis
 // succès figé ou E5 et son `mailto:`). Sans lui, le formulaire s'envoie nativement (ADR 0016).
 import css from './buffer.css?inline';
-import { command, mailto, refused, texts, validate, written, type Fields, type Refusal } from './command.ts';
+import { command, mailto, refused, texts, validate, written, type Refusal } from './command.ts';
+import { fieldsOf } from './contact-md.ts';
 
 /** Le spinner en ASCII : les spinners braille manquent à Fragment Mono (ADR 0005). */
 const FRAMES = '|/-\\';
@@ -13,11 +14,6 @@ const FIELD: Record<Refusal, string> = { e1: '[name=type]', e2: '#buffer-email',
 type Reply = { ok: boolean; code?: string };
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const read = (data: FormData, name: string) => {
-	const value = data.get(name);
-	return typeof value === 'string' ? value : '';
-};
 
 /** Branche le Buffer de `form` ; `at` est l'instant du premier focus, d'où se mesure le délai pour le Worker. */
 export function start(form: HTMLFormElement, at: number) {
@@ -82,13 +78,7 @@ export function start(form: HTMLFormElement, at: number) {
 	const submit = async () => {
 		if (busy) return;
 		const data = new FormData(form);
-		const fields: Fields = {
-			type: read(data, 'type'),
-			nom: read(data, 'nom'),
-			email: read(data, 'email'),
-			budget: read(data, 'budget'),
-			message: read(data, 'message'),
-		};
+		const fields = fieldsOf(data);
 		const missing = validate(fields);
 		if (missing) return refuse(missing);
 		busy = true;

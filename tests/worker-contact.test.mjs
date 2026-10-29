@@ -4,6 +4,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import worker from '../worker/contact.ts';
+import { written } from '../src/buffer/command.ts';
+import { fieldsOf } from '../src/buffer/contact-md.ts';
 
 const SITE = 'https://louis.example';
 
@@ -58,6 +60,23 @@ test('un envoi valide part chez Louis : objet, Reply-To du visiteur, corps faço
 		mail.text,
 		['---', 'type: projet', 'nom: Ada Lovelace', 'email: ada@example.com', 'budget: 5-15k€', 'langue: fr', '---', '', 'Une machine analytique à brancher sur une API.', ''].join('\n'),
 	);
+});
+
+// « "contact.md" NL, NB écrits » (#120) compte le contact.md que Louis reçoit : à la manière de Vim, ses
+// lignes (le fichier finit par un retour à la ligne) et ses octets UTF-8.
+test('ce que :wq dit avoir écrit est le corps du mail, au caractère près, lu dans le même Buffer', async () => {
+	const cases = [
+		VALID,
+		{ ...VALID, nom: '  Ada  ', email: ' ada@example.com ', budget: '', message: 'Ligne 1\r\nLigne 2' },
+		{ ...VALID, type: 'bonjour', nom: '', budget: '<5k€', lang: 'en' },
+	];
+	for (const fields of cases) {
+		const env = makeEnv();
+		await worker.fetch(post(fields), env);
+		const [{ text }] = env.sent;
+		const data = Object.entries(fields).reduce((form, [k, v]) => (form.append(k, v), form), new FormData());
+		assert.equal(written(fieldsOf(data)), `${text.split('\n').length - 1}L, ${Buffer.byteLength(text)}B`, JSON.stringify(fields));
+	}
 });
 
 test('envoi natif : 303 vers l’ancre succès de la section Contact, à la racine pour le français', async () => {

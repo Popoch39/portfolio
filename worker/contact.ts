@@ -1,6 +1,8 @@
 // Le Worker du Buffer (ADR 0016) : il reçoit `POST /api/contact`, sur la même origine que le site
-// resté sur Cloudflare Pages, et écrit à Louis par le binding `send_email`. Sans dépendance ni import :
+// resté sur Cloudflare Pages, et écrit à Louis par le binding `send_email`. Sans dépendance : son seul
+// import est le `contact.md` qu'il partage avec le script du Buffer, module pur que wrangler embarque, et
 // les tests l'importent tel quel sous Node, qui retire les types.
+import { contactMd, EMAIL, fieldsOf, subject, type Fields } from '../src/buffer/contact-md.ts';
 
 /** Ce que le Worker utilise du binding `send_email` : son API structurée. */
 interface SendEmail {
@@ -26,19 +28,10 @@ export interface Env {
 /** Le seul chemin servi : la route du Worker sur le domaine du site. */
 const PATH = '/api/contact';
 
-type Fields ={ type: string; nom: string; email: string; budget: string; message: string; lang: string };
-
 const read = (form: FormData, name: string): string => {
 	const value = form.get(name);
 	return typeof value === 'string' ? value : '';
 };
-
-/** Le corps du mail, en texte brut : l'en-tête de `contact.md` puis le message. */
-function mailText({ type, nom, email, budget, message, lang }: Fields): string {
-	// Pour « bonjour », le Buffer remplace la ligne budget : une tranche cochée avant de changer de type ne compte plus.
-	const range = type === 'bonjour' ? 'sans objet' : budget || '—';
-	return ['---', `type: ${type}`, `nom: ${nom || '—'}`, `email: ${email}`, `budget: ${range}`, `langue: ${lang}`, '---', '', message, ''].join('\n');
-}
 
 /** Le code d'une réponse : `ok`, ou l'erreur que la ligne de commande du Buffer affiche. */
 type Outcome = 'ok' | 'E1' | 'E2' | 'E3' | 'E4' | 'E5';
@@ -48,8 +41,6 @@ const BUDGETS = ['', '<5k€', '5-15k€', '15-40k€', '?'];
 const LANGS = ['fr', 'en'];
 const MAX_NOM = 100;
 const MAX_MESSAGE = 5000;
-// Une forme d'adresse, pas une preuve : le Reply-To d'une adresse fausse ne gêne que son auteur.
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_EMAIL = 254;
 /** Le pot de miel : un champ que le Buffer cache, et qu'un robot qui remplit tout remplit aussi. */
 const HONEYPOT = 'site';
@@ -102,15 +93,7 @@ export default {
 			// Ni urlencoded ni multipart : rien qu'un Buffer n'enverrait. La Version est inconnue, donc la racine.
 			return reply(request, '', 'E4');
 		}
-		const fields: Fields = {
-			type: read(form, 'type'),
-			nom: read(form, 'nom').trim(),
-			email: read(form, 'email').trim(),
-			budget: read(form, 'budget'),
-			// L'envoi natif écrit les fins de ligne en CRLF : elles comptent pour un caractère, comme dans le `textarea`.
-			message: read(form, 'message').replace(/\r\n?/g, '\n'),
-			lang: read(form, 'lang'),
-		};
+		const fields = fieldsOf(form);
 		// « Succès » sans rien envoyer : le robot n'apprend pas qu'il est repéré.
 		if (isBot(form)) return reply(request, fields.lang, 'ok');
 		const error = invalid(fields);
@@ -123,8 +106,8 @@ export default {
 				to: env.CONTACT_TO,
 				from: env.CONTACT_FROM,
 				replyTo: fields.email,
-				subject: `[portfolio] ${fields.type} — ${fields.nom || fields.email}`,
-				text: mailText(fields),
+				subject: subject(fields),
+				text: contactMd(fields),
 			});
 		} catch {
 			// La cause (adresse non vérifiée, quota du jour…) n'aide pas le visiteur : E5 lui propose le `mailto:`.

@@ -3,7 +3,7 @@
 // ce que `:wq` écrit et prépare le `mailto:` de repli de E5, dans les deux Versions.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { command, mailto, texts, validate, written } from '../src/buffer/command.ts';
+import { command, mailto, refused, texts, validate, written } from '../src/buffer/command.ts';
 
 const full = { type: 'projet', nom: 'Camille Martin', email: 'camille@studio.fr', budget: '5-15k€', message: 'Bonjour,\nune API à construire.' };
 
@@ -36,6 +36,14 @@ test('la validation suit l’ordre de la planche : type, puis email, puis messag
 test('une adresse mal formée est refusée par E2, comme le Worker, avec son propre message', () => {
 	assert.equal(validate({ ...full, email: 'camille@studio' }), 'e2invalid');
 	assert.equal(validate({ ...full, email: 'camille studio.fr' }), 'e2invalid');
+});
+
+test('un refus du Worker sur E1 à E3 renvoie au champ ; E4, E5 ou une réponse illisible mènent au mailto de E5', () => {
+	assert.equal(refused('E1'), 'e1');
+	// Le client a vu l'adresse non vide : refusée par le Worker, elle est mal formée.
+	assert.equal(refused('E2'), 'e2invalid');
+	assert.equal(refused('E3'), 'e3');
+	for (const code of ['E4', 'E5', undefined]) assert.equal(refused(code), undefined, String(code));
 });
 
 test('les messages de la planche, en français et en anglais', () => {

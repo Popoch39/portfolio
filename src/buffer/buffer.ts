@@ -2,10 +2,13 @@
 // la position `ln:col`, et l'envoi sans rechargement (validation E1 à E3, `:wq` qui se tape, spinner, puis
 // succès figé ou E5 et son `mailto:`). Sans lui, le formulaire s'envoie nativement (ADR 0016).
 import css from './buffer.css?inline';
-import { command, mailto, texts, validate, written, type Fields } from './command.ts';
+import { command, mailto, refused, texts, validate, written, type Fields, type Refusal } from './command.ts';
 
 /** Le spinner en ASCII : les spinners braille manquent à Fragment Mono (ADR 0005). */
 const FRAMES = '|/-\\';
+
+/** Le champ de chaque refus, que la validation ou le Worker l'ait prononcé. */
+const FIELD: Record<Refusal, string> = { e1: '[name=type]', e2: '#buffer-email', e2invalid: '#buffer-email', e3: '#buffer-message' };
 
 type Reply = { ok: boolean; code?: string };
 
@@ -68,6 +71,12 @@ export function start(form: HTMLFormElement, at: number) {
 	};
 	for (const type of ['focusin', 'input', 'click', 'keyup']) form.addEventListener(type, locate);
 
+	/** Ramène le curseur sur le champ refusé et dit pourquoi. */
+	const refuse = (refusal: Refusal) => {
+		form.querySelector<HTMLElement>(FIELD[refusal])?.focus();
+		say(t[refusal], 'error');
+	};
+
 	let busy = false;
 
 	const submit = async () => {
@@ -81,10 +90,7 @@ export function start(form: HTMLFormElement, at: number) {
 			message: read(data, 'message'),
 		};
 		const missing = validate(fields);
-		if (missing) {
-			form.querySelector<HTMLElement>(missing === 'e1' ? '[name=type]' : missing === 'e3' ? '#buffer-message' : '#buffer-email')?.focus();
-			return say(t[missing], 'error');
-		}
+		if (missing) return refuse(missing);
 		busy = true;
 		data.set('delai', String(Math.round(performance.now() - at)));
 		const reply: Promise<Reply> = fetch(form.action, { method: 'POST', body: data, headers: { Accept: 'application/json' } })
@@ -128,9 +134,8 @@ export function start(form: HTMLFormElement, at: number) {
 			return;
 		}
 		busy = false;
-		// Le Worker a refusé un champ (E2 : l'adresse, que le client n'a pas vue fausse).
-		const refused = code === 'E1' ? t.e1 : code === 'E2' ? t.e2invalid : code === 'E3' ? t.e3 : code === 'E4' ? t.e4 : undefined;
-		if (refused) return say(refused, 'error');
+		const refusal = refused(code);
+		if (refusal) return refuse(refusal);
 		const address = form.querySelector<HTMLAnchorElement>('a[href^="mailto:"]')?.href.slice('mailto:'.length) ?? '';
 		say(t.e5, 'error', Object.assign(document.createElement('a'), { href: mailto(address, fields), textContent: address }));
 	};

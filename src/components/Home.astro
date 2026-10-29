@@ -41,8 +41,9 @@ const stats = activityStats(githubSnapshot);
 		<Marquee />
 		{/* La Frise tient sa colonne elle-même : sa scène couvre toute la largeur de la page. */}
 		<Career />
+		{/* Le Tri aussi : la vue de la planche prend toute la largeur de sa scène. */}
+		<Activity />
 		<div class="container">
-			<Activity stats={stats} />
 			<Stack />
 			<Contact />
 		</div>

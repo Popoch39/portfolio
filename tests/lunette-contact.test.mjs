@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { list, run } from '../src/lunette/registry.ts';
 import { modified } from '../src/lunette/normal.ts';
-import { attr, moduleGraph, readDist, readPage, tags, HOME, FICHE } from './helpers/dist.mjs';
+import { attr, elements, moduleGraph, readDist, readHome, readPage, tags, HOME, FICHE } from './helpers/dist.mjs';
 
 const accueil = { page: { kind: 'home' }, locale: 'fr' };
 const home = { page: { kind: 'home' }, locale: 'en' };
@@ -13,18 +13,45 @@ const trekkerPage = { page: { kind: 'fiche', slug: 'trekker' }, locale: 'en' };
 
 const names = (context) => list('', context).entries.map((entry) => entry.label);
 
-test(':wq et :x descendent au contact de l’accueil, ou y ramènent depuis une fiche, dans la version de la page', () => {
+/** La première ligne du Buffer (`type:`), son premier champ, lue dans l'accueil construit de `locale`. */
+function bufferStart(locale) {
+	const html = readHome(locale);
+	const contact = elements(html, 'section').find((s) => attr(tags(s, 'section')[0], 'id') === 'contact') ?? '';
+	const [first] = tags(elements(contact, 'form')[0] ?? '', 'input');
+	assert.equal(attr(first ?? '', 'name'), 'type', `${locale} : Buffer absent de la section Contact`);
+	return attr(first, 'id');
+}
+
+// L'ancre est un champ du Buffer, dans la section Contact : le navigateur y pose le focus à l'arrivée,
+// même depuis une fiche, et la Lunette n'a rien d'autre à faire que d'y aller (#121).
+test(':wq et :x mènent au Buffer de la section Contact, focus sur sa première ligne, dans la version de la page', () => {
+	const fr = { kind: 'go', path: `/#${bufferStart('fr')}` };
+	const en = { kind: 'go', path: `/en/#${bufferStart('en')}` };
 	for (const line of ['wq', ':x', 'xit']) {
-		assert.deepEqual(run(line, accueil), { kind: 'go', path: '/#contact' }, line);
-		assert.deepEqual(run(line, ficheTrekker), { kind: 'go', path: '/#contact' }, line);
-		assert.deepEqual(run(line, home), { kind: 'go', path: '/en/#contact' }, line);
-		assert.deepEqual(run(line, trekkerPage), { kind: 'go', path: '/en/#contact' }, line);
+		assert.deepEqual(run(line, accueil), fr, line);
+		assert.deepEqual(run(line, ficheTrekker), fr, line);
+		assert.deepEqual(run(line, home), en, line);
+		assert.deepEqual(run(line, trekkerPage), en, line);
 	}
 	// Listée sous son nom, l'alias accepté tapé en entier : Entrée sur wq y va tout de suite.
 	for (const context of [accueil, ficheTrekker]) {
 		const wq = list('', context).entries.find((entry) => entry.label === 'wq');
-		assert.deepEqual(wq?.action, { kind: 'go', path: '/#contact' });
+		assert.deepEqual(wq?.action, fr);
 		assert.ok(!names(context).includes('x'));
+	}
+});
+
+test('la Lunette n’envoie jamais le Buffer : aucune commande n’a d’action d’envoi', () => {
+	const kinds = new Set(['go', 'show', 'yank', 'open', 'aim', 'lecture', 'tour', 'quit']);
+	for (const context of [accueil, home, ficheTrekker, trekkerPage]) {
+		for (const { label, action } of list('', context).entries) {
+			if (action && 'kind' in action) assert.ok(kinds.has(action.kind), `:${label} : action ${action.kind}`);
+		}
+		for (const line of ['wq', 'x', 'w', 'wq!', 'x!']) {
+			const result = run(line, context);
+			assert.ok(!('kind' in result) || kinds.has(result.kind), `:${line}`);
+			assert.ok(!('kind' in result && result.kind === 'go' && result.path.includes('/api/')), `:${line} poste au Worker`);
+		}
 	}
 });
 

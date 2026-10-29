@@ -1,5 +1,5 @@
 ---
-import { identity } from '../data/profile';
+import { bufferStart, identity } from '../data/profile';
 import { localeOf, ui } from '../lib/i18n';
 
 const locale = localeOf(Astro.currentLocale);
@@ -37,7 +37,7 @@ const lede = ui.heroLede[locale];
 			</div>
 		</dl>
 		<div class="actions">
-			<a class="write" href={`mailto:${identity.email}`}>{ui.write[locale]} <span class="mono">:wq</span></a>
+			<a class="write" href={`#${bufferStart}`}>{ui.write[locale]} <span class="mono">:wq</span></a>
 			<a class="github" href={identity.links.github}>GitHub ↗</a>
 		</div>
 	</div>

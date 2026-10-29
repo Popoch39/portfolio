@@ -357,6 +357,12 @@ export const sections: Record<SectionKey, Section> = {
 	contact: { id: { fr: 'contact', en: 'contact' }, label: { fr: 'Contact', en: 'Contact' } },
 };
 
+/**
+ * L'ancre du Buffer, qu'ouvrent le héros et `:wq` : son premier champ (`type:`) plutôt que la section,
+ * parce qu'un navigateur pose de lui-même le focus sur une cible de fragment focalisable, sans script.
+ */
+export const bufferStart = 'buffer-type-projet';
+
 /** Mots du bandeau noir entre Projets et Parcours, dans l'ordre d'affichage. */
 export const marqueeWords: string[] = [
 	'TypeScript',

@@ -1,0 +1,33 @@
+// Le Worker du Buffer (ADR 0016), déployé à part du site resté sur Cloudflare Pages et routé sur
+// `/api/contact` du même domaine. En local : `pnpm worker:dev`, que `pnpm dev` relaie sur `/api`.
+{
+	"$schema": "../node_modules/wrangler/config-schema.json",
+	"name": "portfolio-contact",
+	"main": "contact.ts",
+	"compatibility_date": "2026-10-01",
+	// PROVISOIRE, comme `site` d'astro.config.mjs : les adresses et l'origine attendent le domaine.
+	"vars": {
+		"CONTACT_TO": "pocheron.louis@gmail.com",
+		"CONTACT_FROM": "contact@louis-pocheron.example",
+		"SITE_ORIGIN": "https://louis-pocheron.example",
+	},
+	// La route, à décommenter une fois le domaine sur Cloudflare : même origine que le site, donc ni
+	// CORS ni preflight.
+	// "routes": [{ "pattern": "louis-pocheron.example/api/contact", "zone_name": "louis-pocheron.example" }],
+	"workers_dev": false,
+	"send_email": [
+		{
+			"name": "EMAIL",
+			// Le binding ne peut écrire qu'à l'adresse vérifiée de Louis : pas d'accusé de réception au visiteur.
+			"destination_address": "pocheron.louis@gmail.com",
+		},
+	],
+	"ratelimits": [
+		{
+			"name": "CONTACT_LIMIT",
+			"namespace_id": "1001",
+			// Par IP : deux envois par minute suffisent à qui se reprend, pas à un robot.
+			"simple": { "limit": 2, "period": 60 },
+		},
+	],
+}

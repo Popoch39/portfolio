@@ -17,6 +17,8 @@
     "ancres": "node scripts/ancres.mjs",
     "polices": "node scripts/polices.mjs",
     "perf": "node scripts/perf.mjs",
+    "worker:dev": "wrangler dev -c worker/wrangler.jsonc --port 8787 --var SITE_ORIGIN:http://localhost:4321",
+    "worker:deploy": "wrangler deploy -c worker/wrangler.jsonc",
     "test": "astro build && node --test \"tests/**/*.test.mjs\""
   },
   "dependencies": {
@@ -25,6 +27,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
     "subset-font": "^2.9.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "wrangler": "^4.155.0"
   }
 }

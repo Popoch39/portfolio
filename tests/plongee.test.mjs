@@ -258,9 +258,9 @@ for (const { locale, projects } of [
 		assert.deepEqual(tested.map(bare), [bare(condition)]);
 	});
 
-	// Le repli joue les scènes que la page lui déclare : la Plongée, puis la Frise (#100) et le Tri (#112),
-	// et la piste de chacune est bien l'élément qui porte sa ligne de temps dans la CSS.
-	test(`${locale} : la Plongée, la Frise et le Tri sont les scènes déclarées au repli, chacune sur sa piste`, () => {
+	// Le repli joue les scènes que la page lui déclare : la Plongée, puis la Frise (#100), le Tri (#112)
+	// et la Visite (#85), et la piste de chacune est bien l'élément qui porte sa ligne de temps dans la CSS.
+	test(`${locale} : la Plongée, la Frise, le Tri et la Visite sont les scènes déclarées au repli, chacune sur sa piste`, () => {
 		const scenes = scenesOf(html);
 		assert.deepEqual(
 			scenes.map(({ timeline, prefix }) => ({ timeline, prefix })),
@@ -268,8 +268,12 @@ for (const { locale, projects } of [
 				{ timeline: '--dive', prefix: 'dive-' },
 				{ timeline: '--frise', prefix: 'frise-' },
 				{ timeline: '--tri', prefix: 'tri-' },
+				{ timeline: '--visit', prefix: 'visit-' },
 			],
 		);
+		// Le repli relève la place du lecteur d'après la scène de chaque piste, qui porte la classe de son
+		// préfixe, dans l'enveloppe de la piste.
+		for (const { prefix } of scenes) assert.match(html, new RegExp(`class="[^"]*\\b${prefix}scene\\b`), `scène ${prefix} introuvable`);
 		for (const { tag, timeline } of scenes) {
 			const classes = (attr(tag, 'class') ?? '').split(/\s+/);
 			const tracks = [...styles.matchAll(new RegExp(`([^{}]+)\\{[^{}]*\\bview-timeline\\s*:\\s*${timeline}\\b[^{}]*\\}`, 'g'))].map(([, selector]) => selector);
@@ -442,7 +446,7 @@ async function runFallback({ styles, scenes, animations = [], scrollY = 0 }) {
 // Le repli réécrit la CSS des scènes déclarées pour les jouer sans ligne de temps ; le reste de la page,
 // même une animation de durée `auto` ou une autre `@supports` sur les lignes de temps, n'est pas à lui.
 test('le repli ne réécrit que la CSS des scènes déclarées', async () => {
-	const scene = /@supports[^{]*--(?:dive|frise|tri)\b/;
+	const scene = /@supports[^{]*--(?:dive|frise|tri|visit)\b/;
 	const before = homeStyles(FOREIGN);
 	assert.equal(before.filter((styles) => /@supports[^{]*--dive/.test(styles)).length, 1, 'CSS de la Plongée introuvable');
 	assert.ok(before.some((styles) => /@supports[^{]*--frise\b/.test(styles)), 'CSS de la Frise introuvable');

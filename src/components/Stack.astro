@@ -17,8 +17,9 @@ const { id, label } = sections.stack;
 
 <style is:inline set:html={visitSheet}></style>
 <section id={id[locale]} class="stack">
-	<span class="visit-track" aria-hidden="true" data-trail></span>
-	<div class="stage">
+	{/* La piste se déclare au repli de Firefox (`dive.ts`), qui reconnaît la scène collée à `visit-scene`. */}
+	<span class="visit-track" aria-hidden="true" data-timeline="--visit" data-prefix="visit-" data-trail></span>
+	<div class="stage visit-scene">
 		<div class="lift">
 			<SectionHeader number={4} title={label[locale]} note=":set stack?" />
 			<div class="board">

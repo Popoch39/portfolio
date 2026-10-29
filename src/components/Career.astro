@@ -467,6 +467,10 @@ const branchOf = (commit: Commit) => (commit.kind === 'head' ? `HEAD → ${commi
 				width: 230px;
 				transform-origin: 0 100%;
 				transform: rotateZ(22deg) rotateX(-58deg);
+				/* Le rail qui glisse change à chaque image l'échelle projetée de l'étiquette : sans cet indice,
+				   Chromium la rastérise de nouveau à chaque échelle, et sous Brave/Wayland, en défilant vite,
+				   ses tuiles manquent et l'étiquette s'affiche en rectangle plein. L'indice fige son échelle de raster. */
+				will-change: transform;
 			}
 
 			.frise .caption {

@@ -12,8 +12,7 @@ const VERSIONS = [
 	{
 		locale: 'fr',
 		pitch: /Une API, une interface, un outil à construire \? Écrivez-moi\. Ouvert au remote\./,
-		// La ville clôt la colonne de gauche ; la fenêtre suit.
-		links: /GitHub — Popoch39 ↗ Config Neovim ↗ Besançon, France(?=contact\.md)/,
+		links: /GitHub — Popoch39 ↗ Config Neovim ↗ Besançon, France/,
 		legends: ['type:', 'budget:'],
 		types: ['projet', 'app', 'bonjour'],
 		labels: { nom: 'nom:', email: 'email:', message: '# Message — markdown bienvenu' },
@@ -27,7 +26,7 @@ const VERSIONS = [
 	{
 		locale: 'en',
 		pitch: /An API, an interface, a tool that needs building\? Drop me a line\. Open to remote\./,
-		links: /GitHub — Popoch39 ↗ Neovim config ↗ Besançon, France(?=contact\.md)/,
+		links: /GitHub — Popoch39 ↗ Neovim config ↗ Besançon, France/,
 		legends: ['type:', 'budget:'],
 		types: ['project', 'app', 'hello'],
 		labels: { nom: 'name:', email: 'email:', message: '# Message — markdown welcome' },
@@ -81,6 +80,18 @@ for (const { locale, pitch, links, legends, types, labels, ok, errors, hint, noB
 		assert.ok(send, 'aucun bouton marqué :wq dans le formulaire');
 		assert.equal(attr(tags(send, 'button')[0], 'type'), 'submit');
 		assert.match(text(send), /^(Enregistrer et envoyer|Save and send) ?:wq$/);
+	});
+
+	// Sur téléphone, les colonnes s'empilent dans cet ordre (#119) ; le HTML le suit, pour que le parcours
+	// clavier et la lecture ne sautent pas du bouton aux champs puis reviennent.
+	test(`${locale} : :wq, le pitch, la fenêtre, puis le bouton, l’adresse et les liens, dans l’ordre du HTML`, () => {
+		const at = (needle) => {
+			const i = section.indexOf(needle);
+			assert.ok(i >= 0, needle);
+			return i;
+		};
+		const order = ['class="wq"', 'class="pitch"', 'class="win"', 'type="submit"', 'href="mailto:', 'href="https://github.com/Popoch39"'].map(at);
+		assert.deepEqual(order, [...order].sort((a, b) => a - b));
 	});
 
 	test(`${locale} : la fenêtre contact.md, son onglet, sa barre d’état et sa ligne de commande`, () => {

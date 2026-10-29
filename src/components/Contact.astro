@@ -22,13 +22,6 @@ const examples = ui.bufferExamples[locale];
 			<p class="wq" aria-hidden="true">:wq<span class="blink"></span></p>
 			<p class="pitch">{ui.pitch[locale]}</p>
 			<p class="hint">{ui.bufferHint[locale]}</p>
-			<button type="submit" class="send">{ui.bufferSend[locale]} <kbd>:wq</kbd></button>
-			<p class="mono or">{ui.bufferOr[locale]} <a href={`mailto:${email}`}>{email}</a></p>
-			<div class="links">
-				<a href={links.github}>GitHub — {github.handle} ↗</a>{' '}
-				<a href={links.nvimConfig}>{ui.nvimConfig[locale]}</a>{' '}
-				<span class="place">{identity.city}, {identity.country}</span>
-			</div>
 		</div>
 		{/* La fenêtre `contact.md`. Le chrome (onglet, barre d'état) est décoratif ; les lignes sont
 		    numérotées par un compteur CSS, et leurs états (curseur, mode, [+], jetons, bonjour, exemples)
@@ -115,6 +108,17 @@ const examples = ui.bufferExamples[locale];
 						</p>
 					))
 				}
+			</div>
+		</div>
+		{/* Après la fenêtre dans le HTML, comme sur téléphone (#119) : le parcours clavier va des champs au
+		    bouton. En deux colonnes, la grille le remonte en bas de la colonne de gauche. */}
+		<div class="side foot">
+			<button type="submit" class="send">{ui.bufferSend[locale]} <kbd>:wq</kbd></button>
+			<p class="mono or">{ui.bufferOr[locale]} <a href={`mailto:${email}`}>{email}</a></p>
+			<div class="links">
+				<a href={links.github}>GitHub — {github.handle} ↗</a>{' '}
+				<a href={links.nvimConfig}>{ui.nvimConfig[locale]}</a>{' '}
+				<span class="place">{identity.city}, {identity.country}</span>
 			</div>
 		</div>
 		{/* Le pot de miel : hors de la vue et du parcours clavier, mais pas en `display: none`, que des robots
@@ -428,7 +432,8 @@ const examples = ui.bufferExamples[locale];
 		transform: none;
 	}
 
-	/* Le message couvre les lignes 8 à 14 : la gouttière écrit les suivantes d'un bloc. */
+	/* Le message couvre les lignes 8 à 14 : la gouttière les écrit d'un bloc, et `::after` reste libre pour
+	   le curseur du téléphone. */
 	.contact .msg {
 		position: relative;
 		padding: 0;
@@ -436,14 +441,9 @@ const examples = ui.bufferExamples[locale];
 		line-height: 34px;
 	}
 
-	.contact .msg::after {
-		content: '9\A 10\A 11\A 12\A 13\A 14';
-		position: absolute;
-		top: 34px;
-		width: 42px;
-		text-align: right;
+	.contact .msg::before {
+		content: counter(line) '\A 9\A 10\A 11\A 12\A 13\A 14';
 		white-space: pre;
-		color: var(--stack-sep);
 	}
 
 	.contact textarea {
@@ -471,6 +471,23 @@ const examples = ui.bufferExamples[locale];
 		opacity: 1;
 	}
 
+	/* Le curseur remplace le contour des champs : une barre sur la ligne en focus. En paysage, `.cur` glisse
+	   d'une ligne à l'autre ; sur téléphone, les lignes changent de hauteur avec la largeur, et chacune porte
+	   sa barre (`::after`), qui s'allume à son focus. */
+	.contact .win input,
+	.contact textarea {
+		outline: 0;
+	}
+
+	.contact .cur,
+	.contact .ln::after {
+		position: absolute;
+		border-left: 3px solid var(--accent-light);
+		background: color-mix(in srgb, var(--accent-light) 8%, transparent);
+		opacity: 0;
+		pointer-events: none;
+	}
+
 	.contact .cur {
 		display: none;
 	}
@@ -491,6 +508,7 @@ const examples = ui.bufferExamples[locale];
 	}
 
 	.contact .st > .mode {
+		flex: none;
 		overflow: hidden;
 		width: 104px;
 		padding: 0;
@@ -562,6 +580,61 @@ const examples = ui.bufferExamples[locale];
 		color: var(--err);
 	}
 
+	/* Téléphone : une gouttière de 34 px, chaque clé au-dessus de sa valeur, des cibles de 44 px. Seules
+	   règles en `max-width` du Buffer : en `min-width`, le paysage devrait toutes les défaire. */
+	@media (max-width: 599px) {
+		.contact .ln {
+			position: relative;
+			align-items: flex-start;
+			padding-left: 34px;
+		}
+
+		/* Hors du flux, le numéro garde sa place d'élément seul : en haut de la ligne, face à la clé. */
+		.contact .ln::before {
+			position: absolute;
+			left: 0;
+			width: 26px;
+		}
+
+		.contact legend,
+		.contact .ln > label:first-child {
+			flex-basis: 100%;
+		}
+
+		.contact .ex {
+			left: 34px;
+		}
+
+		/* 42 px et le bord : 44 px à toucher. */
+		.contact input + label {
+			line-height: 42px;
+		}
+
+		.contact div.ln > input {
+			min-height: 44px;
+		}
+
+		.contact .ln::after {
+			content: '';
+			inset: 0 -24px 0 0;
+			transform: scaleY(0.6);
+		}
+
+		.contact .ln:focus-within::after {
+			opacity: 1;
+			transform: none;
+		}
+
+		/* La barre d'état garde le mode et `ln:col`. */
+		.contact .pos {
+			font-size: 0;
+		}
+
+		.contact .at {
+			font-size: 14px;
+		}
+	}
+
 	/* Paysage : chaque ligne tient sur une hauteur fixe, ce qui donne au curseur sa course. */
 	@media (min-width: 600px) {
 		.contact .num {
@@ -577,25 +650,14 @@ const examples = ui.bufferExamples[locale];
 			white-space: nowrap;
 		}
 
-		/* Le curseur remplace le contour des champs : une barre qui glisse jusqu'à la ligne en focus. */
-		.contact .win input,
-		.contact textarea {
-			outline: 0;
-		}
-
 		.contact .cur {
 			display: block;
-			position: absolute;
 			top: 12px;
 			left: 0;
 			right: 0;
 			height: 52px;
-			border-left: 3px solid var(--accent-light);
-			background: color-mix(in srgb, var(--accent-light) 8%, transparent);
-			opacity: 0;
 			transform: translateY(calc(var(--line, 0) * 52px));
 			transform-origin: 0 0;
-			pointer-events: none;
 		}
 
 		.contact .buf:focus-within .cur {
@@ -631,8 +693,12 @@ const examples = ui.bufferExamples[locale];
 			column-gap: 56px;
 		}
 
-		.contact .send {
-			margin-top: auto;
+		.contact .win {
+			grid-area: 1 / 2 / 3;
+		}
+
+		.contact .foot {
+			align-self: end;
 		}
 	}
 
@@ -653,6 +719,7 @@ const examples = ui.bufferExamples[locale];
 		}
 
 		.contact .cur,
+		.contact .ln::after,
 		.contact .swap > * {
 			transition:
 				opacity 0.3s,

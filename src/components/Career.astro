@@ -255,7 +255,7 @@ const branchOf = (commit: Commit) => (commit.kind === 'head' ? `HEAD → ${commi
 		}
 	}
 
-	/* La Frise jouée (ADR 0014) : la section s'épingle le temps de quatre écrans de défilement, et le rail
+	/* La Frise jouée (ADR 0014) : la section s'épingle le temps de six écrans de défilement, et le rail
 	   glisse sous HEAD, du premier Commit au dernier. La place de chaque Commit et les translations sont
 	   tirées des Commits dans `src/lib/frise.ts`. Chaque raccourci `animation` porte la durée `auto` :
 	   sans elle, le minifieur replie `animation-timeline` dans le raccourci, que Chrome refuse. */
@@ -267,9 +267,9 @@ const branchOf = (commit: Commit) => (commit.kind === 'head' ? `HEAD → ${commi
 			}
 
 			/* Dans le flux, la scène haute d'un écran, puis la course de l'épingle : la scène collante ne
-			   sort pas de la boîte de contenu de son parent. Environ 30svh par Commit. */
+			   sort pas de la boîte de contenu de son parent. Environ 45svh par Commit. */
 			.career {
-				--frise-length: 400svh;
+				--frise-length: 600svh;
 			}
 
 			.career::after {

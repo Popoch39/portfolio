@@ -59,7 +59,7 @@ for (const version of VERSIONS) {
 		assert.match(rule[0][1], /\.tri-track\b/);
 		// La scène voit la ligne de temps de sa piste, sa sœur : la portée est posée sur la section.
 		assert.match(styles, /\.activity(?:\[[^\]]*\])?\{[^{}]*\btimeline-scope\s*:\s*--tri\b/, 'ligne de temps invisible de la scène');
-		assert.match(styles, /--tri-length\s*:\s*300svh\b/, 'course du Tri');
+		assert.match(styles, /--tri-length\s*:\s*450svh\b/, 'course du Tri');
 	});
 
 	test(`${locale} : le Tri ne joue qu’en mouvement non réduit, dans un navigateur qui sait la jouer`, () => {

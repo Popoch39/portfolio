@@ -2,7 +2,7 @@
 
 Premier jet (#109) : la scène jusqu'au tassement, en paysage. `main` (#110), la scène couchée en portrait (#111), le repli (#112) et les mesures complètes (#113) le compléteront.
 
-Sur l'accueil, la section Activité (le Tri, spec #107) s'épingle le temps de trois écrans de défilement (`300svh`). La scène est collée en haut (`position: sticky`, haute d'un écran) : l'en-tête de section, le compteur et la commande restent dans la colonne de la page ; dessous, toute la place jusqu'à la barre d'état est un conteneur de requêtes, où la vue de la planche H2 (le calendrier, ses mois, son échelle et ses notes, 1 280 × 360 px de la planche) est centrée et mise à l'échelle (`scale` en unités du conteneur, comme la Frise). À 1 280 × 800, elle est à la taille de la planche. La section sort de la colonne de l'accueil pour que la vue ait toute la largeur, et remet son contenu dans la colonne (`.container`).
+Sur l'accueil, la section Activité (le Tri, spec #107) s'épingle le temps de quatre écrans et demi de défilement (`450svh` ; 300svh à l'origine, allongée d'une moitié à la demande de Louis). La scène est collée en haut (`position: sticky`, haute d'un écran) : l'en-tête de section, le compteur et la commande restent dans la colonne de la page ; dessous, toute la place jusqu'à la barre d'état est un conteneur de requêtes, où la vue de la planche H2 (le calendrier, ses mois, son échelle et ses notes, 1 280 × 360 px de la planche) est centrée et mise à l'échelle (`scale` en unités du conteneur, comme la Frise). À 1 280 × 800, elle est à la taille de la planche. La section sort de la colonne de l'accueil pour que la vue ait toute la largeur, et remet son contenu dans la colonne (`.container`).
 
 Deux temps, aux bornes de la planche :
 
@@ -31,7 +31,7 @@ Toutes ces animations finissent sur l'état du socle (rien n'a d'étape `to` sau
 
 ## Consequences
 
-L'accueil compte quatre scènes épinglées (Plongée 450svh, Frise 400svh, Tri 300svh, Visite 600svh). Aucun JS n'est ajouté. La scène tient 251 animations `tri-` (243 cases, et les calques, mois, échelle, notes et morceaux de commande), beaucoup plus que la Frise (79) : la Traîne, qui fait recalculer le style de tous les éléments animés d'une scène à chaque image de rattrapage (ADR 0012), n'y est donc pas branchée (voir les mesures).
+L'accueil compte quatre scènes épinglées (Plongée 450svh, Frise 600svh, Tri 450svh, Visite 600svh). Aucun JS n'est ajouté. La scène tient 251 animations `tri-` (243 cases, et les calques, mois, échelle, notes et morceaux de commande), beaucoup plus que la Frise (79) : la Traîne, qui fait recalculer le style de tous les éléments animés d'une scène à chaque image de rattrapage (ADR 0012), n'y est donc pas branchée (voir les mesures).
 
 En portrait, la vue paysage est encore réduite à la largeur de l'écran (environ 0,3 sur un téléphone de 390 px) : la scène couchée est le ticket #111.
 

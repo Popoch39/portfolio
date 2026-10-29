@@ -250,7 +250,7 @@ const cell = (day: TriDay) => (day.packed === day.row ? `r${day.row}` : `r${day.
 		white-space: nowrap;
 	}
 
-	/* Le Tri joué (ADR 0015) : la section s'épingle le temps de trois écrans de défilement ; les niveaux
+	/* Le Tri joué (ADR 0015) : la section s'épingle le temps de quatre écrans et demi de défilement ; les niveaux
 	   se fondent en une seule couleur (6–22 %), puis chaque semaine tasse ses Jours actifs vers le bas
 	   (28–56 %), en vague. Les bornes sont celles de la planche H2 ; la plage de chaque semaine et la place
 	   des mois sont tirées de l'instantané dans `src/lib/tri.ts`. Chaque raccourci `animation` porte la
@@ -260,7 +260,7 @@ const cell = (day: TriDay) => (day.packed === day.row ? `r${day.row}` : `r${day.
 			/* La scène voit la ligne de temps de sa piste, sa sœur. Pas sur la racine : `html` porte déjà celle
 			   de la Frise, et deux déclarations sur le même élément s'écraseraient. */
 			.activity {
-				--tri-length: 300svh;
+				--tri-length: 450svh;
 				timeline-scope: --tri;
 			}
 

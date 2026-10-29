@@ -37,7 +37,7 @@ for (const { locale, id } of [
 		assert.match(rule[0][1], /\.frise-track\b/);
 		// Toute la page la voit : la portée est posée sur la racine.
 		assert.match(styles, /(?:^|[{}\s])html(?:\[[^\]]*\])?\{[^{}]*\btimeline-scope\s*:\s*--frise\b/, 'ligne de temps invisible du reste de la page');
-		assert.match(styles, /--frise-length\s*:\s*400svh\b/, 'course de la Frise');
+		assert.match(styles, /--frise-length\s*:\s*600svh\b/, 'course de la Frise');
 	});
 
 	test(`${locale} : la Frise ne joue qu’en mouvement non réduit, dans un navigateur qui sait la jouer`, () => {

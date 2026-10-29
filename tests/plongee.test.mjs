@@ -456,6 +456,19 @@ test('le repli ne réécrit que la CSS des scènes déclarées', async () => {
 	}
 });
 
+// Le serveur de dev sert la CSS telle qu'écrite, une espace après chaque deux-points : le repli doit
+// l'ouvrir comme celle du build, sans quoi Firefox reste sans aucune scène en dev.
+test('le repli lit la CSS non minifiée du serveur de dev', async () => {
+	const dev =
+		'@supports (animation-timeline: view()) and (animation-range: entry) and (timeline-scope: --dive) {\n' +
+		'\t.s {\n\t\tanimation: auto dive-x linear both;\n\t\tanimation-timeline: --dive;\n\t\tanimation-range: contain 0% contain 40%;\n\t}\n}';
+	const page = await runFallback({ styles: [dev], scenes: scenesOf(readHome()) });
+	const [after] = page.styles();
+	assert.doesNotMatch(after, /\banimation-timeline\s*:/, 'scène toujours sur une ligne de temps');
+	assert.match(after, /^@supports \(animation-play-state:paused\) and \(--animation-range: entry\) and \(--timeline-scope: --dive\)/, 'condition de la scène fermée');
+	assert.match(after, /animation: 1s dive-x linear both;\s*animation-play-state:paused;\s*--animation-range: contain 0% contain 40%;/, 'animation de la scène mal réécrite');
+});
+
 // Une seconde scène (la Visite de l'Atome, demain) n'a qu'à se déclarer : le repli réécrit sa CSS et
 // règle ses animations d'après sa propre piste, sans toucher au reste.
 test('le repli joue une seconde scène d’après sa propre piste', async () => {

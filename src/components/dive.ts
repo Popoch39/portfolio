@@ -45,7 +45,7 @@ for (const style of document.querySelectorAll('style')) {
 		const block = css
 			.slice(start, ++end)
 			.replace(/animation:[^;}]+/g, (shorthand) => shorthand.replace(/\bauto\b/g, '1s'))
-			.replace(/animation-timeline:[\w-]+(\(\))?/g, 'animation-play-state:paused')
+			.replace(/animation-timeline:\s*[\w-]+(\(\))?/g, 'animation-play-state:paused')
 			.replace(/animation-range|timeline-scope/g, '--$&');
 		css = css.slice(0, start) + block + css.slice(end);
 		from = start + block.length;

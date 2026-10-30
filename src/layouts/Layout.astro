@@ -134,6 +134,27 @@ const jsonLd = JSON.stringify(structuredData).replaceAll('<', '\\u003c');
 		/* La barre d'état collée en bas masquerait l'élément qui reçoit le focus au clavier :
 		   le défilement le garde au-dessus d'elle, contour compris (WCAG 2.4.11). */
 		scroll-padding-bottom: calc(var(--status-height) + 8px);
+		/* Le voile gris qu'iOS et Android posent sur l'élément touché trahit la page web ; chaque
+		   commande répond déjà par son propre état (cochée, ouverte, au focus). */
+		-webkit-tap-highlight-color: transparent;
+		/* iOS grossit le texte en paysage : la mise en page tient compte de la largeur, pas lui. */
+		-webkit-text-size-adjust: 100%;
+		text-size-adjust: 100%;
+	}
+
+	/* `manipulation` : pas de double-tap pour zoomer sur une commande, donc pas d'attente avant le clic. */
+	a,
+	button,
+	label,
+	[role='button'] {
+		touch-action: manipulation;
+	}
+
+	/* Un appui long sur une commande ne sélectionne pas son libellé ; les liens restent copiables. */
+	button,
+	input + label {
+		-webkit-user-select: none;
+		user-select: none;
 	}
 
 	body {

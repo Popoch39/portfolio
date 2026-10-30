@@ -46,7 +46,7 @@ const examples = ui.bufferExamples[locale];
 				</fieldset>
 				<div class="ln">
 					<label for="buffer-nom">{ui.bufferName[locale]}</label>
-					<input id="buffer-nom" name="nom" autocomplete="name" maxlength="100" placeholder={ui.bufferNameExample[locale]} />
+					<input id="buffer-nom" name="nom" autocomplete="name" autocapitalize="words" maxlength="100" placeholder={ui.bufferNameExample[locale]} />
 				</div>
 				<div class="ln">
 					<label for="buffer-email">{ui.bufferEmail[locale]}</label>
@@ -99,7 +99,7 @@ const examples = ui.bufferExamples[locale];
 			    de départ du parcours au retour du Worker. */}
 			<div class="cmd">
 				<label class="sr" for="buffer-cmd">{ui.bufferCommandLine[locale]}</label>
-				<input id="buffer-cmd" hidden autocomplete="off" spellcheck="false" />
+				<input id="buffer-cmd" hidden autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" />
 				<p id="contact-ok" class="echo" tabindex="-1">{ui.bufferOk[locale]}</p>
 				{
 					Object.entries(errors).map(([code, message]) => (

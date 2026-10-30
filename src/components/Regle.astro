@@ -111,12 +111,13 @@ const major = new Set(marks.map((mark) => mark.at));
 		}
 	}
 
-	/* Le doigt sur la règle la fait glisser, il ne fait pas défiler la page. */
+	/* Le doigt qui glisse en travers de la règle la fait glisser ; à la verticale, il fait défiler la page
+	   (sinon la règle, pleine largeur sur téléphone, bloque le défilement). */
 	.ruler {
 		flex: 1 1 280px;
 		min-width: 0;
 		padding-inline: 24px;
-		touch-action: none;
+		touch-action: pan-y;
 	}
 
 	.ruler[role='slider'] {

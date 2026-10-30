@@ -702,6 +702,50 @@ const examples = ui.bufferExamples[locale];
 		.contact .foot {
 			align-self: end;
 		}
+
+		/* La section tient dans l'écran, au-dessus de la barre d'état : marges, écarts et `:wq` suivent
+		   aussi la hauteur. */
+		.contact {
+			padding: clamp(32px, min(9vw, 7dvh), 136px) 0 clamp(16px, min(6vw, 3dvh), 96px);
+		}
+
+		.contact .body {
+			row-gap: clamp(24px, 4dvh, 48px);
+		}
+
+		.contact .wq {
+			font-size: clamp(88px, min(14vw, 20dvh), 216px);
+		}
+	}
+
+	/* Écran bas : le message passe de sept lignes à cinq, puis à trois ; la gouttière et la course du
+	   curseur suivent. */
+	@media (min-width: 1024px) and (max-height: 869px) {
+		.contact .msg::before {
+			content: counter(line) '\A 9\A 10\A 11\A 12';
+		}
+
+		.contact textarea {
+			height: 170px;
+		}
+
+		.contact .buf:has(textarea:focus) .cur {
+			transform: translateY(364px) scaleY(3.269);
+		}
+	}
+
+	@media (min-width: 1024px) and (max-height: 793px) {
+		.contact .msg::before {
+			content: counter(line) '\A 9\A 10';
+		}
+
+		.contact textarea {
+			height: 102px;
+		}
+
+		.contact .buf:has(textarea:focus) .cur {
+			transform: translateY(364px) scaleY(1.962);
+		}
 	}
 
 	@media (prefers-reduced-motion: no-preference) {

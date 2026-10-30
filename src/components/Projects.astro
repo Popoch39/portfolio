@@ -75,6 +75,8 @@ const A3 = '(min-width: 1024px) and (hover: hover) and (scripting: enabled)';
 	// vérifiée. Elle est celle de l'image au repos des panneaux : une seule requête pour les deux.
 	// L'écouteur de la Lunette passe aussi par ce module, le seul de l'accueil (ADR 0007).
 	import '../lunette/keys.ts';
+	// L'écouteur du Buffer de la section Contact, sur le même principe (#120).
+	import '../buffer/focus.ts';
 
 	// Par sa classe : l'ancre de la section change avec la langue.
 	const section = document.querySelector<HTMLElement>('section.projects');

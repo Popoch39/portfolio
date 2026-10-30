@@ -1,7 +1,7 @@
 // Haut de page : en-tête du site, héros et barre d'état, dans les deux versions de l'accueil.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readHome, tags, attr, elements, text } from './helpers/dist.mjs';
+import { readHome, tags, attr, elements, text, bufferStart } from './helpers/dist.mjs';
 
 const VERSIONS = [
 	{
@@ -74,10 +74,15 @@ for (const version of VERSIONS) {
 		assert.deepEqual(elements(dl, 'dd').map(text), version.defs);
 	});
 
-	test(`${locale} : le héros propose d’écrire et d’aller sur GitHub`, () => {
+	// Une ancre sur la première ligne du Buffer, un champ : à l'arrivée, le navigateur y pose le focus de
+	// lui-même, sans script (#121).
+	test(`${locale} : le héros propose d’écrire, au Buffer de la section Contact, et d’aller sur GitHub`, () => {
 		const write = elements(body, 'a').find((a) => text(a).startsWith(version.write));
 		assert.ok(write, `bouton « ${version.write} » absent`);
-		assert.equal(attr(write, 'href'), 'mailto:pocheron.louis@gmail.com');
+		const first = bufferStart(body);
+		assert.ok(first, 'Buffer absent de la section Contact');
+		assert.equal(attr(first, 'name'), 'type');
+		assert.equal(attr(write, 'href'), `#${attr(first, 'id')}`);
 		assert.ok(hrefs.includes('https://github.com/Popoch39'), 'lien GitHub absent');
 	});
 

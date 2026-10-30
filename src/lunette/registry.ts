@@ -2,7 +2,7 @@
 // sous Node. La Lunette lui passe la ligne tapée et le contexte de la page ; il lui rend la liste à
 // afficher, meilleur résultat en tête, et l'action que la ligne résout. Chaque commande déclare son nom,
 // ses alias, sa portée, son aide et son argument : en ajouter une ne touche ni au filtre ni à la Lunette.
-import { identity, pages, projects, sectionKeys, sections, type SectionKey } from '../data/profile.ts';
+import { bufferStart, identity, pages, projects, sectionKeys, sections, type SectionKey } from '../data/profile.ts';
 import { smile } from './smile.ts';
 import { fiche, home, locales, pathOf, type Locale, type Localized, type Page } from '../lib/i18n.ts';
 
@@ -383,14 +383,15 @@ const commands: Command[] = [
 		},
 	},
 	{
-		// « Écrire, puis partir » : le `:wq` de la section contact, que celui de la barre d'état annonce.
+		// « Écrire, puis partir » : le `:wq` de la section contact, que celui de la barre d'état annonce. Il
+		// mène au Buffer, prêt à écrire, mais n'envoie jamais rien : c'est au Buffer d'enregistrer.
 		name: 'wq',
 		aliases: ['x', 'xit'],
 		help: {
-			fr: 'Écrire, puis partir : descend jusqu’au contact, ou y ramène depuis une fiche. :x aussi.',
-			en: 'Write, then quit: scrolls down to the contact, or takes you back there from a project page. :x too.',
+			fr: 'Écrire, puis partir : descend jusqu’au Buffer du contact, prêt à écrire, ou y ramène depuis une fiche. :x aussi.',
+			en: 'Write, then quit: scrolls down to the contact Buffer, ready to write, or takes you back there from a project page. :x too.',
 		},
-		run: ({ locale }) => go(sectionPath('contact', locale)),
+		run: ({ locale }) => go(`${pathOf(home, locale)}#${bufferStart}`),
 	},
 	{
 		name: 'q',

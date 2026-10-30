@@ -102,6 +102,13 @@ Une fois la Visite finie, la rotation lente et sans fin des Pastilles sur leurs 
 _EN_ : Revolution
 _Avoid_ : rotation, spin, orbite
 
+## Contact
+
+**Buffer** :
+La fenêtre `contact.md` de la section Contact, que le visiteur remplit puis enregistre avec `:wq` pour écrire à Louis. Sans JS, elle s'envoie comme un formulaire ordinaire et revient sur la section avec un message de succès ou d'erreur.
+_EN_ : Buffer
+_Avoid_ : formulaire, form, fenêtre
+
 ## Langues
 
 **Version** :

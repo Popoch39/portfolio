@@ -126,6 +126,53 @@ export const ui = {
 		en: 'An API, an interface, a tool that needs building? Drop me a line. Open to remote.',
 	},
 	nvimConfig: { fr: 'Config Neovim ↗', en: 'Neovim config ↗' },
+	// Le Buffer (spec #116) : les clés de l'en-tête de `contact.md`, le libellé affiché de chaque type (la
+	// valeur envoyée au Worker reste française), puis les messages du repli sans JS, que `:target` affiche
+	// au retour du Worker (ADR 0016).
+	bufferType: { fr: 'type:', en: 'type:' },
+	bufferTypes: {
+		fr: { projet: 'projet', app: 'app', bonjour: 'bonjour' },
+		en: { projet: 'project', app: 'app', bonjour: 'hello' },
+	},
+	bufferName: { fr: 'nom:', en: 'name:' },
+	bufferEmail: { fr: 'email:', en: 'email:' },
+	bufferBudget: { fr: 'budget:', en: 'budget:' },
+	bufferMessage: { fr: '# Message — markdown bienvenu', en: '# Message — markdown welcome' },
+	bufferHint: {
+		fr: 'Remplissez le buffer, puis enregistrez et quittez. Pas besoin de connaître Vim : le bouton fait pareil.',
+		en: 'Fill in the buffer, then save and quit. No need to know Vim: the button does the same.',
+	},
+	bufferOr: { fr: 'ou', en: 'or' },
+	bufferNameExample: { fr: 'Camille Martin', en: 'Sam Taylor' },
+	bufferEmailExample: { fr: 'camille@studio.fr', en: 'sam@studio.com' },
+	bufferNoBudget: { fr: '# sans objet, on discute', en: '# not applicable, let’s talk' },
+	// Le texte d'exemple du message : celui du textarea tant qu'aucun type n'est choisi, puis un par type,
+	// que la CSS superpose au champ vide.
+	bufferExample: { fr: 'Quelques lignes suffisent.', en: 'A few lines will do.' },
+	bufferExamples: {
+		fr: { projet: 'Le contexte, le besoin, ce qui existe déjà…', app: 'À quoi sert l’app, pour qui, sur quels écrans…', bonjour: 'Bonjour Louis, …' },
+		en: { projet: 'The context, the need, what already exists…', app: 'What the app does, for whom, on which screens…', bonjour: 'Hi Louis, …' },
+	},
+	bufferCommandLine: { fr: 'Ligne de commande', en: 'Command line' },
+	bufferSend: { fr: 'Enregistrer et envoyer', en: 'Save and send' },
+	bufferOk: { fr: '"contact.md" écrit — message envoyé à Louis, merci !', en: '"contact.md" written — message sent to Louis, thank you!' },
+	bufferErrors: {
+		fr: {
+			e1: 'E1: type manquant',
+			e2: 'E2: email manquant ou invalide',
+			e3: 'E3: message vide',
+			e4: 'E4: champ invalide ou trop long',
+			// Pas de « ci-dessous » : l'adresse est à gauche de la fenêtre en paysage, au-dessus sur téléphone.
+			e5: 'E5: envoi impossible, réessayez dans une minute ou écrivez-moi par mail',
+		},
+		en: {
+			e1: 'E1: missing type',
+			e2: 'E2: missing or invalid email',
+			e3: 'E3: empty message',
+			e4: 'E4: invalid or too long field',
+			e5: 'E5: sending failed, try again in a minute or email me directly',
+		},
+	},
 	// Barre d'état : le total de l'activité, et la position façon Neovim (« Bot » en anglais).
 	statusContributions: {
 		fr: (total: string) => `${total} contributions · 12 mois`,

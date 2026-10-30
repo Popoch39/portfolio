@@ -327,14 +327,15 @@ function act(action: Action) {
 /**
  * Un simple changement d'adresse : la transition lettre à lettre (ADR 0004) joue d'elle-même. Vers une
  * section de la page même, le navigateur défile sans rien focaliser : la section prend le focus, pour
- * que le clavier et le lecteur d'écran repartent de là, focalisable le temps de l'avoir seulement.
+ * que le clavier et le lecteur d'écran repartent de là, focalisable le temps de l'avoir seulement. Une
+ * cible déjà focalisable (le premier champ du Buffer) garde son `tabindex` : elle reste dans le parcours.
  */
 function go(path: string) {
 	const { pathname, hash } = new URL(path, location.href);
 	location.assign(path);
 	const section = pathname === location.pathname && hash ? document.getElementById(hash.slice(1)) : null;
 	if (!section) return;
-	if (!section.hasAttribute('tabindex')) {
+	if (!section.hasAttribute('tabindex') && section.tabIndex < 0) {
 		section.tabIndex = -1;
 		section.addEventListener('blur', () => section.removeAttribute('tabindex'), { once: true });
 	}

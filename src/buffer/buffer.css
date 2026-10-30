@@ -1,0 +1,48 @@
+/* Les états que pilote le script du Buffer (#120), injectés avec lui au premier focus : rien de plus sur
+   l'accueil. Après la CSS de la page, à spécificité égale, ils l'emportent. */
+
+/* La ligne de commande : le champ et les messages se partagent la même ligne, comme dans Vim. */
+.contact .cmd {
+	display: grid;
+	align-items: center;
+}
+
+.contact .cmd > * {
+	grid-area: 1 / 1;
+}
+
+.contact .say {
+	margin: 0;
+	/* Le champ, dessous, reste cliquable ; seul le lien de E5 répond. */
+	pointer-events: none;
+}
+
+.contact .say a {
+	pointer-events: auto;
+	color: inherit;
+	text-underline-offset: 3px;
+}
+
+.contact .say[data-kind='ok'] {
+	color: var(--ok);
+}
+
+.contact .say[data-kind='error'] {
+	color: var(--err);
+}
+
+/* Pendant l'envoi, la barre d'état passe en COMMAND, d'où que soit parti `:wq`. */
+.contact .win[data-sending] .roll {
+	transform: translateY(-68px);
+}
+
+/* Envoyé : le bouton passe au vert, et le Buffer est figé jusqu'au rechargement. */
+.contact .send:disabled {
+	background: var(--ok);
+	color: var(--ink);
+	cursor: default;
+}
+
+.contact .win[data-sent] .mod {
+	visibility: hidden;
+}

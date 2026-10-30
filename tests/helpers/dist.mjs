@@ -66,6 +66,12 @@ export const readFiche = (slug, locale = 'fr') => readPage(FICHE[locale](slug));
 /** Adresse de la figure au repos autonome d'un projet : une par version, puisqu'elle porte un libellé. */
 export const FIGURE = { fr: (slug) => `/figures/${slug}.svg`, en: (slug) => `/en/figures/${slug}.svg` };
 
+/** La balise du premier champ du Buffer, dans la section Contact d'une page, ou `undefined`. */
+export function bufferStart(html) {
+	const contact = elements(html, 'section').find((s) => attr(tags(s, 'section')[0], 'id') === 'contact') ?? '';
+	return tags(elements(contact, 'form')[0] ?? '', 'input')[0];
+}
+
 /** Toutes les occurrences d'une balise ouvrante, attributs compris (ex. `tags(html, 'link')`). */
 export function tags(html, name) {
 	return html.match(new RegExp(`<${name}\\b[^>]*>`, 'gi')) ?? [];
@@ -98,6 +104,9 @@ export function text(fragment) {
 	return fragment
 		.replace(/<[^>]+>/g, '')
 		.replace(/&shy;|­/g, '')
+		.replace(/&lt;/g, '<')
+		.replace(/&gt;/g, '>')
+		.replace(/&quot;|&#34;/g, '"')
 		.replace(/&amp;/g, '&')
 		.replace(/&#39;|&#x27;/g, "'")
 		.replace(/&nbsp;|&#160;/g, ' ')

@@ -5,40 +5,161 @@ import { localeOf, ui } from '../lib/i18n';
 
 const locale = localeOf(Astro.currentLocale);
 const { email, github, links } = identity;
-const [mailbox, domain] = email.split('@');
+// Les valeurs que le Worker accepte : le type en français dans les deux Versions, les tranches telles quelles.
+const types = ['projet', 'app', 'bonjour'] as const;
+const budgets = ['<5k€', '5-15k€', '15-40k€', '?'];
+const errors = ui.bufferErrors[locale];
+const examples = ui.bufferExamples[locale];
 ---
 
 <section id={sections.contact.id[locale]} class="grid contact">
 	<SectionNumber class="num" number={5} />
-	<div class="body">
-		<p class="wq" aria-hidden="true">:wq</p>
-		<p class="pitch">{ui.pitch[locale]}</p>
-		{/* Coupure préférée après « @ » plutôt qu'au milieu du domaine. */}
-		<a class="mail" href={`mailto:${email}`}>{mailbox}@<wbr />{domain}</a>
-		<div class="links">
-			<a href={links.github}>GitHub — {github.handle} ↗</a>{' '}
-			<a href={links.nvimConfig}>{ui.nvimConfig[locale]}</a>{' '}
-			<span class="place">{identity.city}, {identity.country}</span>
+	{/* Le Buffer (ADR 0016) : un vrai formulaire, envoyé nativement au Worker, qui renvoie (303) sur
+	    l'ancre d'un des messages de la ligne de commande. Il englobe les deux colonnes pour que le bouton
+	    de gauche soit son bouton d'envoi. */}
+	<form class="body" method="post" action="/api/contact">
+		<div class="side">
+			<p class="wq" aria-hidden="true">:wq<span class="blink"></span></p>
+			<p class="pitch">{ui.pitch[locale]}</p>
+			<p class="hint">{ui.bufferHint[locale]}</p>
 		</div>
-	</div>
+		{/* La fenêtre `contact.md`. Le chrome (onglet, barre d'état) est décoratif ; les lignes sont
+		    numérotées par un compteur CSS, et leurs états (curseur, mode, [+], jetons, bonjour, exemples)
+		    se lisent par `:has()` et `:focus-within`, sans JS. */}
+		<div class="win">
+			<div class="tabs" aria-hidden="true">
+				<span class="tab">contact.md <span class="mod">[+]</span></span><span>louis@portfolio</span>
+			</div>
+			<div class="buf">
+				<span class="cur"></span>
+				<div class="ln c" aria-hidden="true">---</div>
+				<fieldset class="ln">
+					<legend>{ui.bufferType[locale]}</legend>
+					{
+						types.map((type) => (
+							<>
+								<input type="radio" id={`buffer-type-${type}`} name="type" value={type} required />
+								<label for={`buffer-type-${type}`}>{ui.bufferTypes[locale][type]}</label>
+							</>
+						))
+					}
+				</fieldset>
+				<div class="ln">
+					<label for="buffer-nom">{ui.bufferName[locale]}</label>
+					<input id="buffer-nom" name="nom" autocomplete="name" maxlength="100" placeholder={ui.bufferNameExample[locale]} />
+				</div>
+				<div class="ln">
+					<label for="buffer-email">{ui.bufferEmail[locale]}</label>
+					<input
+						id="buffer-email"
+						name="email"
+						type="email"
+						autocomplete="email"
+						required
+						placeholder={ui.bufferEmailExample[locale]}
+					/>
+				</div>
+				<fieldset class="ln">
+					<legend>{ui.bufferBudget[locale]}</legend>
+					<div class="swap">
+						<div class="toks">
+							{
+								budgets.map((budget, i) => (
+									<>
+										<input type="radio" id={`buffer-budget-${i}`} name="budget" value={budget} />
+										<label for={`buffer-budget-${i}`}>{budget}</label>
+									</>
+								))
+							}
+						</div>
+						<span class="c na">{ui.bufferNoBudget[locale]}</span>
+					</div>
+				</fieldset>
+				<div class="ln c" aria-hidden="true">---</div>
+				<label class="ln c" for="buffer-message">{ui.bufferMessage[locale]}</label>
+				<div class="ln msg">
+					<textarea id="buffer-message" name="message" rows="7" maxlength="5000" required placeholder={ui.bufferExample[locale]}
+					></textarea>
+					{
+						types.map((type) => (
+							<span class={`c ex ex-${type}`} aria-hidden="true">
+								{examples[type]}
+							</span>
+						))
+					}
+				</div>
+			</div>
+			<div class="st" aria-hidden="true">
+				<span class="mode"><span class="roll"><b>NORMAL</b><b>INSERT</b><b>COMMAND</b></span></span>
+				<span>contact.md</span>
+				<span class="pos">utf-8 markdown <span class="at">1:1</span></span>
+			</div>
+			{/* La ligne de commande : son champ attend le script (#120), qui lui ôtera `hidden` ; les messages
+			    du repli sans JS s'y affichent par `:target`. `tabindex="-1"` : le navigateur y pose le point
+			    de départ du parcours au retour du Worker. */}
+			<div class="cmd">
+				<label class="sr" for="buffer-cmd">{ui.bufferCommandLine[locale]}</label>
+				<input id="buffer-cmd" hidden autocomplete="off" spellcheck="false" />
+				<p id="contact-ok" class="echo" tabindex="-1">{ui.bufferOk[locale]}</p>
+				{
+					Object.entries(errors).map(([code, message]) => (
+						<p id={`contact-${code}`} class="echo error" tabindex="-1">
+							{message}
+						</p>
+					))
+				}
+			</div>
+		</div>
+		{/* Après la fenêtre dans le HTML, comme sur téléphone (#119) : le parcours clavier va des champs au
+		    bouton. En deux colonnes, la grille le remonte en bas de la colonne de gauche. */}
+		<div class="side foot">
+			<button type="submit" class="send">{ui.bufferSend[locale]} <kbd>:wq</kbd></button>
+			<p class="mono or">{ui.bufferOr[locale]} <a href={`mailto:${email}`}>{email}</a></p>
+			<div class="links">
+				<a href={links.github}>GitHub — {github.handle} ↗</a>{' '}
+				<a href={links.nvimConfig}>{ui.nvimConfig[locale]}</a>{' '}
+				<span class="place">{identity.city}, {identity.country}</span>
+			</div>
+		</div>
+		{/* Le pot de miel : hors de la vue et du parcours clavier, mais pas en `display: none`, que des robots
+		    savent sauter. */}
+		<div class="pot" aria-hidden="true">
+			<label for="buffer-site">site</label>
+			<input id="buffer-site" name="site" tabindex="-1" autocomplete="off" />
+		</div>
+		<input type="hidden" name="lang" value={locale} />
+		{/* Le délai depuis le premier focus, que le script remplit avant d'envoyer ; vide, le Worker l'ignore. */}
+		<input type="hidden" name="delai" />
+	</form>
 </section>
 
-<style>
+{/* Global, mais tout sous `.contact` : scopée, la CSS du Buffer mettait l'attribut `data-astro-cid-*` sur
+    ses ~220 sélecteurs et éléments, 257 o de Brotli que le budget de l'accueil (90 Ko) n'a pas. */}
+<style is:global>
 	.contact {
+		/* Succès et erreur sur l'encre de la fenêtre : les seules couleurs propres au Buffer (≥ 9:1). */
+		--ok: #9be29b;
+		--err: #ff8a80;
+		--ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 		row-gap: 18px;
 		padding: clamp(72px, 9vw, 136px) 0 clamp(56px, 6vw, 96px);
 	}
 
-	.body {
+	.contact .body {
+		display: grid;
+		gap: 48px;
+		/* Laisse la fenêtre se replier dans la colonne au lieu de l'élargir. */
+		min-width: 0;
+	}
+
+	.contact .side {
 		display: flex;
 		flex-direction: column;
 		align-items: flex-start;
 		gap: 22px;
-		/* Laisse l'adresse se replier dans la colonne au lieu de l'élargir. */
-		min-width: 0;
 	}
 
-	.wq {
+	.contact .wq {
 		margin: 0;
 		font-size: clamp(88px, 14vw, 216px);
 		line-height: 0.78;
@@ -47,49 +168,570 @@ const [mailbox, domain] = email.split('@');
 		color: var(--accent);
 	}
 
-	.pitch {
+	.contact .blink {
+		display: inline-block;
+		width: 0.09em;
+		height: 0.62em;
+		margin-left: 0.04em;
+		background: currentColor;
+	}
+
+	.contact .pitch {
 		margin: 0;
 		font-size: clamp(20px, 2vw, 28px);
 		line-height: 1.25;
 		letter-spacing: -0.01em;
 	}
 
-	/* Filet de sécurité si même une moitié de l'adresse ne tient pas : couper plutôt que déborder. */
-	.mail {
-		font-size: clamp(30px, 6.2vw, 92px);
-		line-height: 1.05;
-		font-weight: 800;
-		font-stretch: 70%;
-		letter-spacing: -0.02em;
-		text-decoration: none;
-		overflow-wrap: anywhere;
-	}
-
-	.links {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 10px 28px;
-		margin-top: 10px;
-		font-size: 16px;
-		font-weight: 500;
-	}
-
-	.links a {
-		text-underline-offset: 4px;
-	}
-
-	.place {
+	.contact .hint,
+	.contact .or {
+		margin: 0;
 		color: var(--muted);
 	}
 
-	/* Tablette et au-delà : numéro dans la première colonne, contenu sur les 11 autres. */
+	.contact .or {
+		font-size: 14px;
+	}
+
+	/* Le bouton d'envoi : la pilule de la planche, en encre sur la section claire ; l'accent la remplit
+	   au focus, en `scaleX` depuis la touche `:wq` (pas de `:hover` sur le site, ADR 0003). */
+	.contact .send {
+		position: relative;
+		z-index: 0;
+		overflow: hidden;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		width: 100%;
+		max-width: 420px;
+		padding: 6px 6px 6px 24px;
+		border: 0;
+		border-radius: 99px;
+		background: var(--ink);
+		color: var(--bg);
+		font: 700 20px var(--font-sans);
+		font-stretch: 80%;
+		cursor: pointer;
+	}
+
+	.contact .send::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		background: var(--accent);
+		transform: scaleX(0);
+		transform-origin: 100% 50%;
+	}
+
+	.contact .send:focus-visible::before {
+		transform: none;
+	}
+
+	.contact kbd {
+		padding: 14px 16px;
+		border-radius: 99px;
+		background: var(--accent-light);
+		color: var(--ink);
+		font: 17px var(--font-mono);
+	}
+
+	.contact .links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px 28px;
+		font-weight: 500;
+		text-underline-offset: 4px;
+	}
+
+	.contact .place {
+		color: var(--muted);
+	}
+
+	/* La fenêtre sombre posée sur la section claire : encre, filets et segments de la barre d'état du site. */
+	.contact .win {
+		min-width: 0;
+		border: 1.5px solid var(--status-segment);
+		border-radius: 10px;
+		overflow: hidden;
+		background: var(--ink);
+		color: var(--bg);
+		/* 16 px : iOS ne zoome pas au focus d'un champ. */
+		font: 16px var(--font-mono);
+	}
+
+	/* Le bleu du site se perdrait sur l'encre (2,6:1) : contour en accent clair dans la fenêtre. */
+	.contact .win :focus-visible {
+		outline-color: var(--accent-light);
+	}
+
+	.contact .tabs {
+		display: flex;
+		justify-content: space-between;
+		height: 44px;
+		border-bottom: 1.5px solid var(--status-segment);
+		font-size: 13px;
+		color: var(--stack-sep);
+	}
+
+	.contact .tabs > span {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 0 18px;
+	}
+
+	.contact .tab {
+		background: var(--status-segment);
+		color: var(--bg);
+		font-size: 16px;
+	}
+
+	.contact .mod {
+		color: var(--accent-light);
+		opacity: 0;
+	}
+
+	/* `[+]` : un jeton choisi ou un champ rempli (son exemple n'est plus affiché). */
+	.contact .win:has(.buf :checked, .buf [placeholder]:not(:placeholder-shown)) .mod {
+		opacity: 1;
+	}
+
+	.contact .buf {
+		position: relative;
+		padding: 12px 24px 12px 0;
+		counter-reset: line;
+	}
+
+	.contact .ln {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px 14px;
+		min-width: 0;
+		min-height: 52px;
+		margin: 0;
+		/* La boîte de contenu d'un fieldset ne s'étire pas sur son `min-height` : ses jetons (36 px) se
+		   centrent par ce rembourrage, comme les autres lignes. */
+		padding: 8px 0;
+		border: 0;
+	}
+
+	/* La gouttière : 42 px de numéro et 14 px d'écart, les 56 px de la planche. */
+	.contact .ln::before {
+		counter-increment: line;
+		content: counter(line);
+		width: 42px;
+		text-align: right;
+		color: var(--stack-sep);
+	}
+
+	.contact .ln:focus-within::before {
+		color: var(--accent-light);
+	}
+
+	/* Commentaires et `---` ; les clés en accent clair. */
+	.contact .c {
+		color: var(--stack-sep);
+	}
+
+	.contact legend,
+	.contact .ln > label:first-child {
+		float: left;
+		padding: 0;
+		color: var(--accent-light);
+	}
+
+	/* Les radios restent focalisables (le Hero et la Lunette visent `#buffer-type-projet`, #121) : masquées
+	   à leur place, sans `display: none`. L'arrivée par l'ancre cadre la fenêtre depuis son onglet. */
+	.contact [type='radio'] {
+		position: absolute;
+		opacity: 0;
+		scroll-margin-top: 160px;
+	}
+
+	/* Les jetons : le choisi se remplit de l'accent en `scaleY` depuis le bas. */
+	.contact input + label {
+		position: relative;
+		z-index: 0;
+		overflow: hidden;
+		padding: 0 12px;
+		/* Le gris muet du site ferait 2,9:1 sur l'encre : sous les 3:1 d'un contour de contrôle. */
+		border: 1.5px solid var(--stack-sep);
+		border-radius: 4px;
+		line-height: 33px;
+		color: var(--on-ink-muted);
+		cursor: pointer;
+	}
+
+	.contact input + label::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		background: var(--accent-light);
+		transform: scaleY(0);
+		transform-origin: 50% 100%;
+	}
+
+	.contact :checked + label {
+		border-color: var(--accent-light);
+		color: var(--ink);
+	}
+
+	.contact :checked + label::before {
+		transform: none;
+	}
+
+	.contact :focus-visible + label {
+		outline: 2px solid var(--accent-light);
+		outline-offset: 2px;
+	}
+
+	.contact .win input,
+	.contact textarea {
+		flex: 1;
+		min-width: 0;
+		padding: 0;
+		border: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
+		caret-color: var(--accent-light);
+	}
+
+	.contact ::placeholder {
+		color: var(--stack-sep);
+		opacity: 1;
+	}
+
+	/* « bonjour » : les tranches de budget cèdent la place à « # sans objet » ; `visibility` les retire
+	   aussi du parcours clavier. */
+	.contact .swap {
+		display: grid;
+		flex: 1;
+	}
+
+	.contact .swap > * {
+		grid-area: 1 / 1;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.contact .na,
+	.contact .buf:has([value='bonjour']:checked) .toks {
+		visibility: hidden;
+		opacity: 0;
+		transform: translateX(12px);
+	}
+
+	.contact .buf:has([value='bonjour']:checked) .na {
+		visibility: visible;
+		opacity: 1;
+		transform: none;
+	}
+
+	/* Le message couvre les lignes 8 à 14 : la gouttière les écrit d'un bloc, et `::after` reste libre pour
+	   le curseur du téléphone. */
+	.contact .msg {
+		position: relative;
+		padding: 0;
+		align-items: flex-start;
+		line-height: 34px;
+	}
+
+	.contact .msg::before {
+		content: counter(line) '\A 9\A 10\A 11\A 12\A 13\A 14';
+		white-space: pre;
+	}
+
+	.contact textarea {
+		height: 238px;
+		resize: none;
+	}
+
+	/* Le texte d'exemple suit le type : trois textes superposés au champ vide, à la place du sien. */
+	.contact .ex {
+		position: absolute;
+		left: 56px;
+		right: 0;
+		white-space: normal;
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.contact .buf:has([name='type']:checked) textarea::placeholder {
+		opacity: 0;
+	}
+
+	.contact .buf:has(#buffer-type-projet:checked) .msg:has(:placeholder-shown) .ex-projet,
+	.contact .buf:has(#buffer-type-app:checked) .msg:has(:placeholder-shown) .ex-app,
+	.contact .buf:has(#buffer-type-bonjour:checked) .msg:has(:placeholder-shown) .ex-bonjour {
+		opacity: 1;
+	}
+
+	/* Le curseur remplace le contour des champs : une barre sur la ligne en focus. En paysage, `.cur` glisse
+	   d'une ligne à l'autre ; sur téléphone, les lignes changent de hauteur avec la largeur, et chacune porte
+	   sa barre (`::after`), qui s'allume à son focus. */
+	.contact .win input,
+	.contact textarea {
+		outline: 0;
+	}
+
+	.contact .cur,
+	.contact .ln::after {
+		position: absolute;
+		border-left: 3px solid var(--accent-light);
+		background: color-mix(in srgb, var(--accent-light) 8%, transparent);
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.contact .cur {
+		display: none;
+	}
+
+	/* La barre d'état : le mode roule de NORMAL à INSERT au focus d'un champ, à COMMAND dans la ligne de
+	   commande. */
+	.contact .st {
+		display: flex;
+		height: 34px;
+		background: var(--status-segment);
+		font-size: 14px;
+		line-height: 34px;
+	}
+
+	.contact .st > span {
+		padding: 0 14px;
+		white-space: nowrap;
+	}
+
+	.contact .st > .mode {
+		flex: none;
+		overflow: hidden;
+		width: 104px;
+		padding: 0;
+		color: var(--ink);
+		font-weight: 700;
+		text-align: center;
+	}
+
+	.contact .roll {
+		display: grid;
+	}
+
+	.contact b {
+		background: var(--bg);
+	}
+
+	.contact b + b {
+		background: var(--accent-light);
+	}
+
+	.contact b + b + b {
+		background: var(--accent);
+		color: #ffffff;
+	}
+
+	.contact .win:focus-within .roll {
+		transform: translateY(-34px);
+	}
+
+	.contact .win:has(.cmd :focus) .roll {
+		transform: translateY(-68px);
+	}
+
+	.contact .pos {
+		margin-left: auto;
+		word-spacing: 0.6em;
+		color: var(--on-ink-muted);
+	}
+
+	.contact .cmd {
+		display: flex;
+		align-items: center;
+		min-height: 46px;
+		padding: 6px 16px;
+		line-height: 1.4;
+	}
+
+	.contact .pot,
+	.contact .sr {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	/* Les messages du repli sans JS : seul celui que vise l'ancre du retour s'affiche. */
+	.contact .echo {
+		margin: 0;
+		color: var(--ok);
+	}
+
+	.contact .echo:not(:target) {
+		display: none;
+	}
+
+	.contact .error {
+		color: var(--err);
+	}
+
+	/* Téléphone : une gouttière de 34 px, chaque clé au-dessus de sa valeur, des cibles de 44 px. Seules
+	   règles en `max-width` du Buffer : en `min-width`, le paysage devrait toutes les défaire. */
+	@media (max-width: 599px) {
+		.contact .ln {
+			position: relative;
+			align-items: flex-start;
+			padding-left: 34px;
+		}
+
+		/* Hors du flux, le numéro garde sa place d'élément seul : en haut de la ligne, face à la clé. */
+		.contact .ln::before {
+			position: absolute;
+			left: 0;
+			width: 26px;
+		}
+
+		.contact legend,
+		.contact .ln > label:first-child {
+			flex-basis: 100%;
+		}
+
+		.contact .ex {
+			left: 34px;
+		}
+
+		/* 42 px et le bord : 44 px à toucher. */
+		.contact input + label {
+			line-height: 42px;
+		}
+
+		.contact div.ln > input {
+			min-height: 44px;
+		}
+
+		.contact .ln::after {
+			content: '';
+			inset: 0 -24px 0 0;
+			transform: scaleY(0.6);
+		}
+
+		.contact .ln:focus-within::after {
+			opacity: 1;
+			transform: none;
+		}
+
+		/* La barre d'état garde le mode et `ln:col`. */
+		.contact .pos {
+			font-size: 0;
+		}
+
+		.contact .at {
+			font-size: 14px;
+		}
+	}
+
+	/* Paysage : chaque ligne tient sur une hauteur fixe, ce qui donne au curseur sa course. */
 	@media (min-width: 600px) {
-		.num {
+		.contact .num {
 			grid-column: span 1;
 		}
 
-		.body {
+		.contact .body {
 			grid-column: 2 / span 11;
+		}
+
+		.contact .ln {
+			flex-wrap: nowrap;
+			white-space: nowrap;
+		}
+
+		.contact .cur {
+			display: block;
+			top: 12px;
+			left: 0;
+			right: 0;
+			height: 52px;
+			transform: translateY(calc(var(--line, 0) * 52px));
+			transform-origin: 0 0;
+		}
+
+		.contact .buf:focus-within .cur {
+			opacity: 1;
+		}
+
+		.contact .buf:has([name='type']:focus) {
+			--line: 1;
+		}
+
+		.contact .buf:has(#buffer-nom:focus) {
+			--line: 2;
+		}
+
+		.contact .buf:has(#buffer-email:focus) {
+			--line: 3;
+		}
+
+		.contact .buf:has([name='budget']:focus) {
+			--line: 4;
+		}
+
+		/* Sur le message, la barre descend sous les sept lignes de 52 px et s'étire sur ses 238 px. */
+		.contact .buf:has(textarea:focus) .cur {
+			transform: translateY(364px) scaleY(4.577);
+		}
+	}
+
+	/* Les deux colonnes de la planche D · :wq. */
+	@media (min-width: 1024px) {
+		.contact .body {
+			grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+			column-gap: 56px;
+		}
+
+		.contact .win {
+			grid-area: 1 / 2 / 3;
+		}
+
+		.contact .foot {
+			align-self: end;
+		}
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.contact .blink {
+			animation: buffer-blink 1.1s steps(1) infinite;
+		}
+
+		.contact .send::before,
+		.contact input + label::before,
+		.contact .roll {
+			transition: transform 0.45s var(--ease);
+		}
+
+		.contact .mod,
+		.contact .ex {
+			transition: opacity 0.3s;
+		}
+
+		.contact .cur,
+		.contact .ln::after,
+		.contact .swap > * {
+			transition:
+				opacity 0.3s,
+				transform 0.45s var(--ease);
+		}
+	}
+
+	@keyframes buffer-blink {
+		50% {
+			opacity: 0;
 		}
 	}
 </style>

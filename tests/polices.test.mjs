@@ -28,9 +28,14 @@ const servedFile = (family, style) =>
 		?.match(/url\(["']?\/([^)"']+)/)?.[1];
 // En points de code, pour que les invisibles se lisent : U+00AD césure conditionnelle, U+202F espace
 // fine insécable (nombres formatés par `Intl`), U+1D49 ᵉ, U+2197 ↗, U+21B5 ↵, U+21E5 ⇥, U+2303 ⌃,
-// U+232B ⌫, U+2423 ␣, U+25CB ○, U+25CF ●, U+2605 ★.
+// U+232B ⌫, U+2423 ␣, U+25CB ○, U+25CF ●, U+2605 ★, et U+2713 ✓ pour la romaine seule (la ligne de
+// commande du Buffer, qui l'écrit, est en mono).
 const FONTS = {
-	romaine: { file: servedFile('Archivo', 'normal'), source: 'Archivo[wdth,wght].ttf', absent: [0x202f, 0x1d49, 0x2197, 0x21b5, 0x21e5, 0x2303, 0x232b, 0x2423, 0x25cb, 0x25cf, 0x2605] },
+	romaine: {
+		file: servedFile('Archivo', 'normal'),
+		source: 'Archivo[wdth,wght].ttf',
+		absent: [0x202f, 0x1d49, 0x2197, 0x21b5, 0x21e5, 0x2303, 0x232b, 0x2423, 0x25cb, 0x25cf, 0x2605, 0x2713],
+	},
 	italique: { file: servedFile('Archivo', 'italic'), source: 'Archivo-Italic[wdth,wght].ttf', absent: [] },
 	mono: { file: servedFile('Fragment Mono', 'normal'), source: 'FragmentMono-Regular.ttf', absent: [0xad, 0x202f, 0x1d49, 0x21b5, 0x21e5, 0x2303, 0x232b, 0x2423, 0x2605] },
 };

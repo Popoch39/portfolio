@@ -71,11 +71,11 @@ test('la CSS livrée n’a ni :hover ni transition hors des notes de la figure, 
 	for (const page of pages) {
 		const pageStyles = css(page.html);
 		assert.ok(pageStyles.length > 0, `${page.name} : aucune CSS trouvée`);
-		// ADR 0003 : les transitions ne vivent que dans la CSS des notes, sous `.annot`
-		// (`view-transition-name` n'en est pas une).
+		// ADR 0003 : les transitions ne vivent que dans la CSS des notes, sous `.annot`, et dans celle du
+		// Buffer de l'accueil, sous `.contact` (ADR 0016) ; `view-transition-name` n'en est pas une.
 		const transitioned = [...pageStyles.matchAll(/([^{}]+)\{[^{}]*(?<!view-)\btransition(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap((m) => m[1].split(/,(?![^(]*\))/));
 		assert.deepEqual(
-			transitioned.map((selector) => selector.trim()).filter((selector) => !selector.startsWith('.annot')),
+			transitioned.map((selector) => selector.trim()).filter((selector) => !selector.startsWith('.annot') && !(page.home && selector.startsWith('.contact '))),
 			[],
 			`${page.name} : transition hors des notes`,
 		);
@@ -87,10 +87,10 @@ test('la CSS livrée n’a ni :hover ni transition hors des notes de la figure, 
 				(name) =>
 					!name.startsWith('iso-') &&
 					!name.startsWith('vt-') &&
-					!(page.home && (name.startsWith('launch-') || name.startsWith('dive-') || name.startsWith('visit-') || name.startsWith('frise-') || name.startsWith('tri-'))),
+					!(page.home && (name.startsWith('launch-') || name.startsWith('dive-') || name.startsWith('visit-') || name.startsWith('frise-') || name.startsWith('tri-') || name.startsWith('buffer-'))),
 			),
 			[],
-			`${page.name} : @keyframes hors du kit, de la transition, du lancement, de la Plongée, de la Visite, de la Frise et du Tri`,
+			`${page.name} : @keyframes hors du kit, de la transition, du lancement, de la Plongée, de la Visite, de la Frise, du Tri et du Buffer`,
 		);
 		// Les étapes des `@keyframes vt-…`, `launch-…`, `dive-…` et `visit-…` portent `animation-timing-function`.
 		const animated = [...withoutBlocks(pageStyles, /@keyframes\s+(vt|launch|dive|visit)-/).matchAll(/([^{}]+)\{[^{}]*\banimation(?:-[a-z-]+)?\s*:[^{}]*\}/gi)].flatMap(
@@ -99,11 +99,11 @@ test('la CSS livrée n’a ni :hover ni transition hors des notes de la figure, 
 		const allowed = (selector) =>
 			selector.startsWith('.iso') ||
 			selector.startsWith('::view-transition-') ||
-			(page.home && (selector.startsWith(':root[data-launch]') || selector.startsWith('.dive') || /^\.(?:stack|atom|frise|tri)\b/.test(selector)));
+			(page.home && (selector.startsWith(':root[data-launch]') || selector.startsWith('.dive') || /^\.(?:stack|atom|frise|tri|contact)\b/.test(selector)));
 		assert.deepEqual(
 			animated.map((selector) => selector.trim()).filter((selector) => !allowed(selector)),
 			[],
-			`${page.name} : animation hors de la CSS du kit, de la transition, du lancement, de la Plongée, de la Visite, de la Frise et du Tri`,
+			`${page.name} : animation hors de la CSS du kit, de la transition, du lancement, de la Plongée, de la Visite, de la Frise, du Tri et du Buffer`,
 		);
 	}
 });

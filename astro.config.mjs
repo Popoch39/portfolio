@@ -26,6 +26,8 @@ export default defineConfig({
 		// `:version` de la Lunette : le commit, la date du build et la version d'Astro ; `:Lazy` : celles
 		// d'Astro et de TypeScript.
 		define: buildDefines(['astro', 'typescript']),
+		// En local, le Buffer poste sur la même origine qu'en ligne : `/api` est relayé au Worker de `pnpm worker:dev`.
+		server: { proxy: { '/api': 'http://localhost:8787' } },
 		build: {
 			rollupOptions: {
 				output: {

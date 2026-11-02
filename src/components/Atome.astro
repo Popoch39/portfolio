@@ -288,6 +288,17 @@ const frame = [
 	/** When the enlarged drawing starts sliding back to its place, as the first bagues rise, and when it is there with the labels. */
 	const INTRO_LEAVE = 0.66;
 	const INTRO_END = 0.84;
+	/**
+	 * Once the tower is finished, the scroll lights its bagues one by one from the base, each for FOCUS_STEP,
+	 * the others dimmed to DIMMED; then they all come back, and the tower holds still once more.
+	 */
+	const FOCUS_START = 1;
+	const FOCUS_STEP = 0.07;
+	const FOCUS_FADE = 0.025;
+	const FOCUS_HOLD = 0.05;
+	const DIMMED = 0.2;
+	/** How far the page scrolls, in screens, for the length of the building phase (0 to 1 on the timeline). */
+	const BUILD_SCREENS = 4;
 
 	/** Breathing room kept above the pinned frame. */
 	const ROOM = 24;
@@ -393,15 +404,20 @@ const frame = [
 		// layer, both repaint and re-raster the section at every frame.
 		gsap.set([section, tower], { willChange: 'transform' });
 
-		// One timeline over the whole pin, its progress running from 0 to 1 in "seconds".
+		const bagues = atome.querySelectorAll<HTMLElement>('[data-choreography]');
+		const focusEnd = FOCUS_START + bagues.length * FOCUS_STEP + FOCUS_FADE;
+		const sceneLength = focusEnd + FOCUS_HOLD;
+
+		// One timeline over the whole pin: the tower is built from 0 to 1 in "seconds", then its bagues are lit in turn.
 		const scene = gsap.timeline({
 			defaults: { ease: 'none' },
 			scrollTrigger: {
 				trigger: section,
 				pin: true,
 				start: () => `top+=${pinOffset} top`,
-				// As long as the Frise's pin, so the scene doesn't rush past before its phases can be read.
-				end: '+=400%',
+				// The building phase is as long as the Frise's pin, so it doesn't rush past before its phases can
+				// be read; the bagues lit in turn come on top, at the same pace.
+				end: `+=${Math.round(BUILD_SCREENS * 100 * sceneLength)}%`,
 				scrub: true,
 				// The enlarged, centred drawing depends on the screen: its tween takes the refreshed values.
 				invalidateOnRefresh: true,
@@ -411,7 +427,7 @@ const frame = [
 		});
 
 		const labels = atome.querySelectorAll('.atome-label');
-		for (const [rank, bague] of atome.querySelectorAll<HTMLElement>('[data-choreography]').entries()) {
+		for (const [rank, bague] of bagues.entries()) {
 			const { start, end, travel, poses, pastilles }: Choreography = JSON.parse(bague.dataset.choreography!);
 			const plane = bague.querySelector('.bague-plane');
 			const layers = bague.querySelectorAll('.bague-layer');
@@ -500,8 +516,22 @@ const frame = [
 			HOLD_START - 0.04,
 		);
 
+		// The bagues lit one by one. The dimming goes on the layers and logos, never on the bague: an
+		// opacity below 1 on an element that preserves 3D flattens it, and its pastilles would cut the band.
+		const parts = [...bagues].map((bague, rank) => [...bague.querySelectorAll('.bague-layer, .pastille-logo'), labels[rank]]);
+		const others = (rank: number) => parts.filter((_, other) => other !== rank).flat();
+		const fade = (targets: Element[], from: number, to: number, at: number) =>
+			scene.fromTo(targets, { opacity: from }, { opacity: to, duration: FOCUS_FADE, immediateRender: false }, at);
+		fade(others(0), 1, DIMMED, FOCUS_START);
+		for (let rank = 1; rank < parts.length; rank++) {
+			const at = FOCUS_START + rank * FOCUS_STEP;
+			fade(parts[rank - 1], 1, DIMMED, at);
+			fade(parts[rank], DIMMED, 1, at);
+		}
+		fade(others(parts.length - 1), DIMMED, 1, focusEnd - FOCUS_FADE);
+
 		// A hold on the finished tower before the page moves on: nothing moves past this point.
-		scene.set({}, {}, 1);
+		scene.set({}, {}, sceneLength);
 
 		return () => {
 			ScrollTrigger.removeEventListener('refreshInit', refit);

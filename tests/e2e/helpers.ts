@@ -123,15 +123,20 @@ export async function lengthenPage(page: Page) {
 export async function swipeUp(page: Page, distance: number) {
 	const size = page.viewportSize();
 	if (!size) throw new Error('swipeUp: window without a size');
-	const x = size.width / 2;
-	const start = size.height * 0.8;
+	// A negative distance swipes down: it starts higher so that the finger stays in the window.
+	const start = distance > 0 ? size.height * 0.8 : size.height * 0.2;
+	await swipe(page, { x: size.width / 2, y: start }, { x: 0, y: -distance });
+}
+
+/** Swipes a finger from a point of the window by an offset (same constraints as `swipeUp`). */
+export async function swipe(page: Page, from: { x: number; y: number }, by: { x: number; y: number }) {
 	const steps = 10;
 	const cdp = await page.context().newCDPSession(page);
-	await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y: start }] });
+	await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [from] });
 	for (let i = 1; i <= steps; i++) {
 		await cdp.send('Input.dispatchTouchEvent', {
 			type: 'touchMove',
-			touchPoints: [{ x, y: start - (distance * i) / steps }],
+			touchPoints: [{ x: from.x + (by.x * i) / steps, y: from.y + (by.y * i) / steps }],
 		});
 	}
 	await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });

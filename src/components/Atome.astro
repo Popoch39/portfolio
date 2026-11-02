@@ -1,5 +1,6 @@
 ---
-import { stack, toolLogos } from '../data/profile';
+import { stack } from '../data/profile';
+import { logoHref } from './logo-sprite';
 
 /*
  * The Atome's final state: the tower of bagues, drawn in DOM 3D (ADR 0004). Every length and angle is
@@ -53,20 +54,6 @@ const GYRO_HEIGHT = 40;
 /** Each bague starts and ends its choreography a little after the one below it, over this share of the scene. */
 const STAGGER = 0.03;
 
-const sources = import.meta.glob<string>('../assets/logos/*.svg', {
-	query: '?raw',
-	import: 'default',
-	eager: true,
-});
-
-/** The single path of a simple-icons file, without its title or role: the label already names the tool. */
-function logoPath(slug: string) {
-	const source = sources[`../assets/logos/${slug}.svg`];
-	const path = source?.match(/<path d="([^"]+)"/)?.[1];
-	if (!path) throw new Error(`No single-path logo for "${slug}" in src/assets/logos/`);
-	return path;
-}
-
 /**
  * The lift that keeps a pastille clear of its own bague at a given tilt: the band it covers runs up to
  * radius × tan(tilt) deep. It grows with the tilt as a convex curve, so interpolating it with the same
@@ -83,8 +70,8 @@ const bagues = stack.map((group, rank) => {
 	const height = stack.length > 1 ? BASE_HEIGHT - (BASE_HEIGHT - TOP_HEIGHT) * share : 0;
 	const { spin, firstPastille, gyro, nested, drift } = RANKS[rank % RANKS.length];
 	const nestedRadius = NESTED_BASE_RADIUS - (NESTED_BASE_RADIUS - NESTED_TOP_RADIUS) * share;
-	const logos = group.items.map((item) => toolLogos[item]).filter(Boolean);
-	const pastilles = logos.map((slug, index) => ({ slug, angle: firstPastille + (360 / logos.length) * index }));
+	const logos = group.items.map(logoHref).filter((href) => href !== undefined);
+	const pastilles = logos.map((href, index) => ({ href, angle: firstPastille + (360 / logos.length) * index }));
 	/** The scene's poses, from the target to the tower: height, Z · X · Z tilt, radius as a scale of the tower's. */
 	const pose = (y: number, [a, b, c]: number[], scale: number) => ({ y, a, b, c, scale: round(scale), lift: round(liftAt(b)) });
 	const choreography = {
@@ -108,8 +95,6 @@ const bagues = stack.map((group, rank) => {
 	return { ...group, radius, height, spin, box: 2 * (radius + BAND_ROOM), pastilles, choreography };
 });
 
-const slugs = [...new Set(bagues.flatMap((bague) => bague.pastilles.map((pastille) => pastille.slug)))];
-
 const halfWidth = BASE_RADIUS + PASTILLE_RADIUS + 1;
 const above = Math.max(...bagues.map((b) => -b.height + b.radius / 2)) + PASTILLE_RADIUS + 8;
 const below = Math.max(...bagues.map((b) => b.height + b.radius / 2)) + PASTILLE_RADIUS + THICKNESS + 4;
@@ -126,15 +111,6 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 
 <div class="atome" style={frame} data-atome>
 	<div class="atome-tower" aria-hidden="true">
-		<svg class="logo-sprite" width="0" height="0">
-			{
-				slugs.map((slug) => (
-					<symbol id={`logo-${slug}`} viewBox="0 0 24 24">
-						<path d={logoPath(slug)} />
-					</symbol>
-				))
-			}
-		</svg>
 		<div class="atome-drawing">
 			{/* Only the scene shows it, while the bagues form the atom around it. */}
 			<span class="atome-nucleus"></span>
@@ -185,13 +161,13 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 												<div class="pastille" style={`transform: translateZ(${PASTILLE_LIFT}px)`}>
 													<span class="pastille-face">
 														<svg class="pastille-logo" viewBox="0 0 24 24">
-															<use href={`#logo-${pastille.slug}`} />
+															<use href={pastille.href} />
 														</svg>
 													</span>
 													{bague.accent && (
 														<span class="pastille-face pastille-face--accent">
 															<svg class="pastille-logo" viewBox="0 0 24 24">
-																<use href={`#logo-${pastille.slug}`} />
+																<use href={pastille.href} />
 															</svg>
 														</span>
 													)}
@@ -449,10 +425,6 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 		height: calc(var(--tower-height) * var(--tower-scale));
 		/* Chromium counts the unscaled boxes of the 3D layers as scrollable overflow; the scaled drawing fits the box. */
 		overflow: clip;
-	}
-
-	.logo-sprite {
-		position: absolute;
 	}
 
 	/* The tower axis: every bague, pastille and leader line is placed from this point. */

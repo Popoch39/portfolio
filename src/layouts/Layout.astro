@@ -9,6 +9,11 @@
 		<title>Astro Basics</title>
 	</head>
 	<body>
+		<header class="entete">
+			<nav aria-label="Main">
+				<a href="/#contact">Contact</a>
+			</nav>
+		</header>
 		<!-- Enveloppe du défilement lissé : les éléments fixes (header, barres) se placent hors de ces deux div. -->
 		<div id="smooth-wrapper">
 			<div id="smooth-content">
@@ -26,5 +31,20 @@
 	body {
 		margin: 0;
 		width: 100%;
+	}
+
+	/* Hors de l'enveloppe : la transformation du contenu lissé ne l'entraîne pas. */
+	.entete {
+		position: fixed;
+		inset: 0 0 auto;
+		z-index: 1;
+		padding: 0.75rem 1rem;
+		background: #fff;
+		color: #111827;
+		font-family: system-ui, sans-serif;
+	}
+
+	.entete a {
+		color: inherit;
 	}
 </style>

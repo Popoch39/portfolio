@@ -8,4 +8,24 @@ import Layout from '../layouts/Layout.astro';
 
 <Layout>
 	<Welcome />
+	<section id="contact" class="contact" aria-labelledby="contact-titre">
+		<h2 id="contact-titre">Contact</h2>
+		<p>Code and side projects live on GitHub.</p>
+		<a href="https://github.com/Popoch39">GitHub profile</a>
+	</section>
 </Layout>
+
+<style>
+	/* L'accueil provisoire tient dans un écran : la section part sous la ligne de flottaison,
+	   pour que l'ancre du header et le clavier aient du chemin à faire. */
+	.contact {
+		margin-top: 100svh;
+		padding: 4rem 1rem;
+		font-family: system-ui, sans-serif;
+		color: #111827;
+	}
+
+	.contact a {
+		color: inherit;
+	}
+</style>

@@ -28,6 +28,8 @@ La section Stack devient l’**Atome** (maquette 35 · Atome → tour) : des **b
 - **Calque plat de pastilles projetées en 2D** : il casse la profondeur (plus de bague de devant pour cacher une pastille) et demande du JS à chaque frame.
 - **Pastilles plus petites restées sur la bague** : le clipping diminue sans disparaître.
 
+- **Recadrage** : en portrait (ou sous 640 px de large), la tour se centre en haut et les étiquettes s’empilent en liste dessous ; sinon elles restent à droite. Le CSS fixe l’échelle qui fait tenir la tour dans la largeur (0,82 sur téléphone, soit environ 300 px, 0,78 sous 360 px). La scène la réduit au besoin pour que le cadre épinglé tienne dans la hauteur au-dessus de la statusline, en mesurant à la mise en place et à chaque `refreshInit` de ScrollTrigger, jamais à chaque frame. Si garder le titre de section dans le cadre coûtait plus d’un quart de la tour (téléphone en portrait ou en paysage, fenêtre basse), l’épinglage commence sous le titre, qui sort par le haut. Le texte des étiquettes n’est jamais mis à l’échelle ; il se resserre par media query (14 px, 13 px sous 360 px), jamais sous 12 px.
+
 ## Conséquences
 
 - **Sans opacité sur les conteneurs 3D** : une `opacity` inférieure à 1 sur une bague ou son plan aplatit le contexte 3D. Seuls les calques feuilles (calques accent, faces de pastille, noyau, étiquettes) passent par `opacity`.

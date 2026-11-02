@@ -14,6 +14,11 @@ const sources = import.meta.glob<string>('../assets/logos/*.svg', {
 	eager: true,
 });
 
+// A misspelt tool would otherwise lose its pastille without a word.
+const stackItems = new Set(stack.flatMap((group) => group.items));
+const strays = Object.keys(toolLogos).filter((tool) => !stackItems.has(tool));
+if (strays.length) throw new Error(`toolLogos names tools missing from the stack: ${strays.join(', ')}`);
+
 /** The single path of a simple-icons file, without its title or role: the label already names the tool. */
 function logoPath(slug: string) {
 	const source = sources[`../assets/logos/${slug}.svg`];

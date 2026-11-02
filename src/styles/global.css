@@ -1,3 +1,11 @@
+:root {
+	--couleur-fond: #fff;
+	--couleur-texte: #111827;
+	--couleur-texte-secondaire: #4b5563;
+	--couleur-lien: #3245ff;
+	--police-texte: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
+}
+
 /*
  * Transitions entre pages : view transitions natives cross-document (ADR 0001), sans `<ClientRouter />`.
  * Chaque page reste un vrai chargement ; un navigateur qui ne les gère pas navigue sans animation.

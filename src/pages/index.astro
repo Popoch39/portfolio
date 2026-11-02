@@ -10,12 +10,12 @@ import Layout from '../layouts/Layout.astro';
 <Layout title="Astro Basics" description="Astro starter page, home of the portfolio while it is being built.">
 	<Welcome />
 	<Revelation>
-		<section class="suite">
+		<section class="colonne-de-texte">
 			<h2>Scroll-driven scenes</h2>
 			<p>This block is revealed as it enters the viewport, and is fully visible without JavaScript.</p>
 		</section>
 	</Revelation>
-	<section id="contact" class="suite" aria-labelledby="contact-titre">
+	<section id="contact" class="colonne-de-texte" aria-labelledby="contact-titre">
 		<h2 id="contact-titre">Contact</h2>
 		<p>Code and side projects live on GitHub.</p>
 		<a href="https://github.com/Popoch39">GitHub profile</a>
@@ -23,14 +23,14 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 
 <style>
-	.suite {
+	.colonne-de-texte {
 		max-width: 40rem;
 		margin: 0 auto;
 		padding: 4rem 1rem 8rem;
-		font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
+		font-family: var(--police-texte);
 	}
 
-	.suite a {
-		color: #3245ff;
+	.colonne-de-texte a {
+		color: var(--couleur-lien);
 	}
 </style>

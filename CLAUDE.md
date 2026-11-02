@@ -17,6 +17,7 @@ Tout ce qui peut être calculé au build l'est : récupération de données, tra
 - Zéro JS client par défaut. Chaque script envoyé au navigateur répond à une interaction réelle que HTML et CSS ne couvrent pas (`<details>`, `popover`, `:has()`, animations CSS, scroll-driven animations, view transitions).
 - Interaction nécessaire : un `<script>` Astro en vanilla d'abord ; un framework d'UI seulement si l'état le justifie, en île avec la directive la plus tardive possible (`client:visible`, `client:idle`).
 - Aucun script tiers (analytics, widgets, embeds) sans accord explicite.
+- **Exception assumée : GSAP.** GSAP + ScrollTrigger + ScrollSmoother sont chargés sur chaque page par le socle d'animation (`src/animation/socle.ts`) : défilement lissé et toutes les scènes. Ce n'est pas une violation à corriger ; voir [ADR 0001](docs/adr/0001-gsap-pour-les-scenes.md). Une scène s'enregistre auprès du socle, n'importe jamais `gsap` pour créer son propre smoother, n'anime que `transform` et `opacity`, et épingle avec `pin` (jamais `position: sticky` dans le contenu lissé). Les animations d'interface restent en CSS.
 
 ## Assets
 

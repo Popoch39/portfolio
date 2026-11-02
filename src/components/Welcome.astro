@@ -21,6 +21,7 @@ import background from '../assets/background.svg';
 				<a class="button" href="https://docs.astro.build">
 					Read our docs
 				</a>
+				<a href="/about/">About</a>
 				<a href="https://astro.build/chat">
 					Join our Discord{' '}
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127.14 96.36">
@@ -51,7 +52,7 @@ import background from '../assets/background.svg';
 
 <style>
 	#background {
-		position: fixed;
+		position: absolute;
 		top: 0;
 		left: 0;
 		width: 100%;
@@ -60,13 +61,19 @@ import background from '../assets/background.svg';
 		filter: blur(100px);
 	}
 
+	/*
+	 * Bloc conteneur du fond et de l'encart : sans lui, ils se placeraient par rapport à la fenêtre
+	 * sans JS, puis par rapport à l'enveloppe du smoother dès qu'il démarre (décalage de mise en page).
+	 */
 	#container {
-		font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
+		position: relative;
+		font-family: var(--police-texte);
 		height: 100%;
 	}
 
 	main {
-		height: 100%;
+		/* Le hero remplit le premier écran : ce qui suit reste sous la ligne de flottaison. */
+		min-height: 100svh;
 		display: flex;
 		justify-content: center;
 	}
@@ -93,7 +100,7 @@ import background from '../assets/background.svg';
 		display: flex;
 		align-items: center;
 		padding: 10px 12px;
-		color: #111827;
+		color: var(--couleur-texte);
 		text-decoration: none;
 		transition: color 0.2s;
 	}
@@ -136,12 +143,12 @@ import background from '../assets/background.svg';
 	h2 {
 		margin: 0 0 1em;
 		font-weight: normal;
-		color: #111827;
+		color: var(--couleur-texte);
 		font-size: 20px;
 	}
 
 	p {
-		color: #4b5563;
+		color: var(--couleur-texte-secondaire);
 		font-size: 16px;
 		line-height: 24px;
 		letter-spacing: -0.006em;

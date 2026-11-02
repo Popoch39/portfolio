@@ -1,4 +1,5 @@
 ---
+import Revelation from '../components/Revelation.astro';
 import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
 
@@ -6,6 +7,30 @@ import Layout from '../layouts/Layout.astro';
 // Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
 
-<Layout>
+<Layout title="Astro Basics" description="Astro starter page, home of the portfolio while it is being built.">
 	<Welcome />
+	<Revelation>
+		<section class="colonne-de-texte">
+			<h2>Scroll-driven scenes</h2>
+			<p>This block is revealed as it enters the viewport, and is fully visible without JavaScript.</p>
+		</section>
+	</Revelation>
+	<section id="contact" class="colonne-de-texte" aria-labelledby="contact-titre">
+		<h2 id="contact-titre">Contact</h2>
+		<p>Code and side projects live on GitHub.</p>
+		<a href="https://github.com/Popoch39">GitHub profile</a>
+	</section>
 </Layout>
+
+<style>
+	.colonne-de-texte {
+		max-width: 40rem;
+		margin: 0 auto;
+		padding: 4rem 1rem 8rem;
+		font-family: var(--police-texte);
+	}
+
+	.colonne-de-texte a {
+		color: var(--couleur-lien);
+	}
+</style>

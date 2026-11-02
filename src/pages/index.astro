@@ -1,24 +1,20 @@
 ---
 import Atome from '../components/Atome.astro';
 import Cursor from '../components/Cursor.astro';
-import Reveal from '../components/Reveal.astro';
+import Frise from '../components/Frise.astro';
 import SectionHeading from '../components/SectionHeading.astro';
 import SectionNumber from '../components/SectionNumber.astro';
 import Layout from '../layouts/Layout.astro';
 import {
 	currentPosition,
 	education,
-	formatPeriod,
 	marqueeWords,
 	person,
-	positions,
 	profile,
 	projects,
 	publicRepoCount,
-	salariedPositions,
 	stack,
 	twoDigits,
-	yearsOfExperience,
 } from '../data/profile';
 
 const title = 'Louis Pocheron — Développeur fullstack & SIG à Besançon';
@@ -29,8 +25,6 @@ const repoCount = await publicRepoCount();
 const projectsAside = [`${projects.length} sélectionnés`, repoCount && `${repoCount} dépôts publics`]
 	.filter(Boolean)
 	.join(' · ');
-const cities = [...new Set(salariedPositions.map((p) => p.city)), person.city];
-const positionsAside = `~${yearsOfExperience()} ans · ${cities.join(' & ')}`;
 
 const mailto = `mailto:${person.email}`;
 const [mailUser, mailDomain] = person.email.split('@');
@@ -151,53 +145,11 @@ const jsonLd = JSON.stringify({
 					}
 				</ol>
 			</section>
+		</div>
 
-			<section id="parcours" class="section" aria-labelledby="career-title">
-				<SectionHeading number={2} title="Parcours" titleId="career-title" aside={positionsAside} />
-				<Reveal>
-					<div class="positions grid-12">
-						{
-							positions.map((position) => (
-								<article class="position" data-current={!position.end}>
-									<span class="position-year" aria-hidden="true">
-										{position.start.slice(0, 4)}
-									</span>
-									<p class="mono position-meta">
-										<time datetime={position.start}>{formatPeriod(position)}</time> · {position.city}
-									</p>
-									<h3>{position.company}</h3>
-									<p class="position-role">{position.role}</p>
-									<ul>
-										{position.missions.map((mission) => (
-											<li>
-												<span aria-hidden="true">—</span>
-												<span>{mission}</span>
-											</li>
-										))}
-									</ul>
-								</article>
-							))
-						}
-					</div>
-				</Reveal>
-				<div class="education grid-12">
-					<h3 class="mono">Formation</h3>
-					<ol>
-						{
-							education.map((entry) => (
-								<li>
-									<span class="mono education-period">{entry.period}</span>
-									<span class="education-title">{entry.title}</span>
-									<span class="dim">
-										{entry.school}, {entry.city}
-									</span>
-								</li>
-							))
-						}
-					</ol>
-				</div>
-			</section>
+		<Frise number={2} titleId="career-title" />
 
+		<div class="wrap">
 			<section id="stack" class="section" aria-labelledby="stack-title">
 				<SectionHeading number={3} title="Stack" titleId="stack-title" aside=":set stack?" />
 				<Atome />
@@ -499,116 +451,6 @@ const jsonLd = JSON.stringify({
 		.project-year {
 			grid-column: 11 / span 2;
 		}
-	}
-
-	/* Career */
-
-	.positions {
-		row-gap: 48px;
-		padding-top: 40px;
-	}
-
-	.position {
-		grid-column: span 4;
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-		padding-top: 18px;
-		border-top: 4px solid var(--color-ink);
-	}
-
-	.position[data-current] {
-		border-top-color: var(--color-accent);
-	}
-
-	.position-year {
-		font-size: clamp(64px, 7.4vw, 108px);
-		line-height: 0.82;
-		font-weight: 800;
-		font-stretch: 62%;
-	}
-
-	.position-meta {
-		margin: 0;
-		font-size: 12px;
-		color: var(--color-ink-muted);
-	}
-
-	.position h3 {
-		margin: 0;
-		font-size: 26px;
-		line-height: 1.15;
-		font-weight: 700;
-		letter-spacing: -0.015em;
-	}
-
-	.position-role {
-		margin: 0;
-		font-size: 15px;
-		color: var(--color-ink-muted);
-	}
-
-	.position ul {
-		margin: 6px 0 0;
-		padding: 0;
-		list-style: none;
-		display: flex;
-		flex-direction: column;
-		gap: 9px;
-		font-size: 15px;
-		line-height: 1.45;
-	}
-
-	.position li {
-		display: flex;
-		gap: 10px;
-	}
-
-	.position li > :first-child {
-		color: var(--color-ink-muted);
-	}
-
-	.education {
-		row-gap: 14px;
-		margin-top: 72px;
-	}
-
-	.education h3 {
-		grid-column: span 3;
-		margin: 0;
-		padding-top: 14px;
-		font-size: 13px;
-		font-weight: 400;
-		color: var(--color-ink-muted);
-	}
-
-	.education ol {
-		grid-column: span 9;
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-
-	.education li {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
-		gap: 4px 20px;
-		padding: 14px 0;
-		border-top: 1px solid var(--color-rule);
-		font-size: 17px;
-	}
-
-	.education-period {
-		width: 110px;
-		flex-shrink: 0;
-		font-size: 13px;
-		color: var(--color-ink-muted);
-	}
-
-	.education-title {
-		flex: 1 1 260px;
-		font-weight: 600;
 	}
 
 	/* Stack */

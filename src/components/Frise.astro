@@ -1,0 +1,706 @@
+---
+/**
+ * Frise: the career as a git graph on a plane tilted backwards, over a full-width accent band.
+ * This markup is its final state (ADR 0003): the graph runs straight from left to right, fully built,
+ * in a strip that scrolls horizontally under a fixed camera.
+ * The scene pins the section, turns the graph onto the −22° diagonal and lets the vertical scroll
+ * move HEAD along it, the camera following.
+ */
+import SectionHeading from './SectionHeading.astro';
+import { careerGraph, type Lane, onMain, person, salariedPositions, yearsOfExperience } from '../data/profile';
+
+interface Props {
+	number: number;
+	titleId: string;
+}
+
+const { number, titleId } = Astro.props;
+
+const { commits, branches, aside } = careerGraph();
+const cities = [...new Set(salariedPositions.map((position) => position.city)), person.city];
+const summary = `~${yearsOfExperience()} ans d’expérience · ${cities.join(' & ')}`;
+
+// Plane geometry, in px before the tilt: `main` runs along y = 0, the branches behind it.
+const SPAN = 3600;
+const START = 120;
+const END = 300;
+/** How far behind `main` the branches run. */
+const LANE = 180;
+/** Room for the strokes and the dots beyond the outer lanes. */
+const MARGIN = 20;
+/** Horizontal reach of the curve between `main` and a branch, at most. */
+const CURVE = 180;
+const width = START + SPAN + END;
+const x = (position: number) => Math.round(START + position * SPAN);
+const y = (lane: Lane) => (onMain(lane) ? 0 : -LANE);
+
+const graph = [
+	`M ${x(0)} 0 H ${x(1)}`,
+	...branches.map((branch) => {
+		const [fork, open, merge] = [x(branch.fork), x(branch.open), x(branch.merge)];
+		const back = Math.max(x(branch.last), merge - CURVE);
+		const out = (open - fork) / 2;
+		const home = (merge - back) / 2;
+		return `M ${fork} 0 C ${fork + out} 0 ${open - out} ${-LANE} ${open} ${-LANE} H ${back} C ${back + home} ${-LANE} ${merge - home} 0 ${merge} 0`;
+	}),
+].join(' ');
+const graphTop = -LANE - MARGIN;
+const graphHeight = LANE + 2 * MARGIN;
+const graphBox = { width, height: graphHeight, viewBox: `0 ${graphTop} ${width} ${graphHeight}` };
+// The CSS lays the labels and the graph layers out on the same lanes as the drawing.
+const geometry = [
+	`--frise-width: ${width}px`,
+	`--frise-lane: ${LANE}px`,
+	`--frise-graph-top: ${graphTop}px`,
+	`--frise-graph-height: ${graphHeight}px`,
+].join('; ');
+---
+
+<section id="parcours" class="frise" aria-labelledby={titleId} data-frise>
+	<div class="frise-head">
+		<SectionHeading number={number} title="Parcours" titleId={titleId} aside={aside} onAccent />
+		<p class="mono frise-summary">{summary}</p>
+	</div>
+
+	{/* Focusable at the final state, so that the keyboard scrolls it; the perspective sits on it, so the camera stays still. */}
+	<div class="frise-band" role="region" aria-label="Frise du parcours" tabindex="0" style={geometry} data-frise-band>
+		{/* The grid and the graph lie on two copies of the plane, so that the scene can fade the graph alone under the heading. */}
+		<div class="frise-plane" aria-hidden="true">
+			<div class="frise-grid" data-frise-grid></div>
+		</div>
+		<div class="frise-graph-layer">
+			<div class="frise-plane" data-frise-plane data-width={width} data-head-from={x(0)} data-head-to={x(1)}>
+				<div class="frise-camera" data-frise-camera>
+					<svg class="frise-graph frise-ahead" aria-hidden="true" {...graphBox}>
+						<path d={graph} />
+					</svg>
+					{/* A window over the trail: they slide in opposite directions, so the trail stays put and shows up to HEAD. */}
+					<div class="frise-trail" aria-hidden="true" data-frise-trail>
+						<svg class="frise-graph" {...graphBox} data-frise-trail-graph>
+							<path d={graph} />
+						</svg>
+					</div>
+					<svg class="frise-graph" aria-hidden="true" {...graphBox}>
+						{
+							commits.map((commit) => (
+								<circle cx={x(commit.position)} cy={y(commit.lane)} r="7.5" data-kind={commit.kind} />
+							))
+						}
+					</svg>
+					{/* Laid over the hollow dots, so that filling one is a change of opacity, not of colour. A merge stays hollow. */}
+					{
+						commits
+							.filter((commit) => commit.kind !== 'merge')
+							.map((commit) => (
+								<span
+									class="frise-fill"
+									aria-hidden="true"
+									data-frise-fill
+									data-x={x(commit.position)}
+									style={`--x: ${x(commit.position)}px; --y: ${y(commit.lane)}px`}
+								/>
+							))
+					}
+					<ol class="frise-commits">
+						{
+							commits
+								.filter((commit) => !commit.unlabeled)
+								.map((commit) => (
+									<li
+										class="commit"
+										data-lane={onMain(commit.lane) ? 'main' : 'branch'}
+										data-x={x(commit.position)}
+										style={`--x: ${x(commit.position)}px`}
+									>
+										<div class="commit-card">
+											<p class="mono commit-meta">
+												{commit.datetime ? <time datetime={commit.datetime}>{commit.date}</time> : commit.date}
+												{` · ${commit.lane}`}
+											</p>
+											<p class="commit-title">
+												{commit.titleExpansion ? <abbr title={commit.titleExpansion}>{commit.title}</abbr> : commit.title}
+											</p>
+											<p class="commit-place">{commit.place}</p>
+										</div>
+										{/* The label stays short on the band; the list still gives the whole job. */}
+										{(commit.role || commit.details) && (
+											<p class="visually-hidden">{[commit.role, ...(commit.details ?? [])].filter(Boolean).join(' · ')}</p>
+										)}
+										<span class="commit-pole" aria-hidden="true" />
+									</li>
+								))
+						}
+					</ol>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	{/* The scene's reading of the active commit, already in the list: left out of the accessibility tree. */}
+	<div class="frise-legend" aria-hidden="true" data-frise-legend>
+		<span class="mono frise-legend-meta" data-legend-meta></span>
+		<span class="frise-legend-title" data-legend-title></span>
+		<span class="frise-legend-place" data-legend-place></span>
+	</div>
+</section>
+
+<script>
+	import { gsap, registerScene } from '../animation/base';
+
+	/** Pinning length, in window heights (400svh). */
+	const PIN_HEIGHTS = 4;
+
+	// Cues, in plane px of HEAD travel (the mock-up's 440 px a year).
+	/** How far ahead of HEAD a label starts brightening from its floor. */
+	const NEARING = 500;
+	/** How close HEAD gets before a label lights up and its dot fills. */
+	const LIGHT_UP = 14;
+	/** The smoother can stop a hair short of a commit, the end of the travel included: cues land just before. */
+	const ARRIVAL = 2;
+	/** How far HEAD travels while a pole rises, before reaching its commit. */
+	const RISE = 80;
+	/** How far past the next commit a label takes to fade to its floor. */
+	const FADE_OUT = 220;
+	/** A lowered pole, as a share of its height (the mock-up's 18 of 138 px): its foot stays on the plane. */
+	const LOWERED = 0.13;
+	/** Far ahead of HEAD: discreet, never hidden, so that the way ahead reads without crowding the active label. */
+	const FAR_OPACITY = 0.25;
+	const AHEAD_OPACITY = 0.4;
+	/** Lowest opacity at which the muted lines (#d4d7ff) keep 4.5:1 on the accent: past labels stay AA. */
+	const PAST_OPACITY = 0.93;
+
+	interface Keyframe {
+		at: number;
+		value: number;
+		ease?: string;
+	}
+
+	registerScene(() => {
+		const section = document.querySelector<HTMLElement>('[data-frise]');
+		const band = section?.querySelector<HTMLElement>('[data-frise-band]');
+		const plane = section?.querySelector<HTMLElement>('[data-frise-plane]');
+		const legend = section?.querySelector<HTMLElement>('[data-frise-legend]');
+		if (!section || !band || !plane || !legend) return;
+
+		const labels = [...section.querySelectorAll<HTMLElement>('.commit')];
+		const commits = labels.map((commit) => ({
+			x: Number(commit.dataset.x),
+			meta: commit.querySelector('.commit-meta')?.textContent ?? '',
+			title: commit.querySelector('.commit-title')?.textContent ?? '',
+			place: commit.querySelector('.commit-place')?.textContent ?? '',
+		}));
+		const fields = {
+			meta: legend.querySelector('[data-legend-meta]'),
+			title: legend.querySelector('[data-legend-title]'),
+			place: legend.querySelector('[data-legend-place]'),
+		};
+		const width = Number(plane.dataset.width);
+		const from = Number(plane.dataset.headFrom);
+		const to = Number(plane.dataset.headTo);
+
+		// The diagonal and the hidden overflow come from CSS: the attribute goes away with the context.
+		section.dataset.scene = '';
+		// The camera places the graph under HEAD: a scrolled strip would shift it off its cues. Find-in-page,
+		// or a smooth keyboard scroll begun at the final state (Firefox), can still scroll it.
+		const keepBandStill = () => {
+			if (band.scrollLeft) band.scrollLeft = 0;
+		};
+		keepBandStill();
+		band.addEventListener('scroll', keepBandStill);
+
+		// Nothing left to scroll by hand: a tab stop or a landmark would lead the keyboard to a dead end.
+		const bandAttributes = ['tabindex', 'role', 'aria-label'].map((name) => [name, band.getAttribute(name)] as const);
+		for (const [name] of bandAttributes) band.removeAttribute(name);
+
+		// Written only when HEAD reaches another commit: text changes cost a layout, never per frame.
+		let active = -1;
+		const showActiveCommit = (head: number) => {
+			const index = Math.max(0, commits.findLastIndex((commit) => commit.x <= head + 0.5));
+			if (index === active) return;
+			active = index;
+			for (const key of ['meta', 'title', 'place'] as const) {
+				const field = fields[key];
+				if (field) field.textContent = commits[index][key];
+			}
+		};
+		showActiveCommit(from);
+
+		// The timeline counts in plane px of HEAD travel: a commit's cue sits at its distance from the start.
+		const travel = to - from;
+		const timeline = gsap.timeline({
+			defaults: { ease: 'none', duration: travel },
+			scrollTrigger: {
+				trigger: section,
+				pin: true,
+				start: 'top top',
+				end: `+=${PIN_HEIGHTS * 100}%`,
+				scrub: true,
+				invalidateOnRefresh: true,
+			},
+			onUpdate: () => showActiveCommit(from + travel * timeline.progress()),
+		});
+		// HEAD stays under the camera: the plane slides back by as much as HEAD moves forward.
+		timeline
+			.fromTo('[data-frise-camera]', { x: -from }, { x: -to }, 0)
+			.fromTo('[data-frise-trail]', { x: from - width }, { x: to - width }, 0)
+			.fromTo('[data-frise-trail-graph]', { x: width - from }, { x: width - to }, 0);
+
+		// A frame-sized grid stands for the endless one: shifted modulo its mesh, its lines move with the plane.
+		const mesh = parseFloat(getComputedStyle(section).getPropertyValue('--frise-mesh'));
+		timeline.fromTo(
+			'[data-frise-grid]',
+			{ x: -from },
+			{ x: -to, modifiers: { x: gsap.utils.unitize(gsap.utils.wrap(-mesh, 0)) } },
+			0,
+		);
+
+		/**
+		 * Lays a property's keyframes along HEAD's travel, eased into each key; keys before the start are
+		 * clipped. Values are in `unit`s, read again when the layout changes (`invalidateOnRefresh`).
+		 */
+		const track = (target: Element, property: string, keys: Keyframe[], unit = () => 1) => {
+			const valueAt = (at: number) => {
+				const next = keys.findIndex((key) => key.at >= at);
+				if (next === -1) return keys[keys.length - 1].value;
+				if (next === 0) return keys[0].value;
+				const [a, b] = [keys[next - 1], keys[next]];
+				return a.value + (b.value - a.value) * gsap.parseEase(b.ease ?? 'none')((at - a.at) / (b.at - a.at));
+			};
+			timeline.set(target, { [property]: () => valueAt(0) * unit() }, 0);
+			for (let i = 1; i < keys.length; i++) {
+				const start = Math.max(keys[i - 1].at, 0);
+				const end = Math.min(keys[i].at, travel);
+				if (end <= start) continue;
+				// A clipped segment no longer starts at its key: a linear run between the clipped values stays close.
+				const ease = start === keys[i - 1].at ? (keys[i].ease ?? 'none') : 'none';
+				timeline.fromTo(
+					target,
+					{ [property]: () => valueAt(start) * unit() },
+					{ [property]: () => valueAt(end) * unit(), duration: end - start, ease, immediateRender: false },
+					start,
+				);
+			}
+		};
+
+		/** When HEAD reaches a commit, on the timeline. */
+		const cue = (element: HTMLElement) => Number(element.dataset.x) - from - ARRIVAL;
+		labels.forEach((label, i) => {
+			const at = cue(label);
+			const next = i + 1 < labels.length ? cue(labels[i + 1]) : Number.POSITIVE_INFINITY;
+			// Lit while active, until the next commit takes over; discreet ahead, faded behind but readable.
+			track(label, 'opacity', [
+				{ at: at - NEARING, value: FAR_OPACITY },
+				{ at: at - LIGHT_UP, value: AHEAD_OPACITY },
+				{ at, value: 1 },
+				{ at: next, value: 1 },
+				{ at: next + FADE_OUT, value: PAST_OPACITY },
+			]);
+			const pole = label.querySelector<HTMLElement>('.commit-pole');
+			const card = label.querySelector<HTMLElement>('.commit-card');
+			if (!pole || !card) return;
+			// The pole rises as HEAD comes, the card riding on top of it; its height follows the framing.
+			track(pole, 'scaleY', [
+				{ at: at - RISE, value: LOWERED },
+				{ at, value: 1, ease: 'power3.out' },
+			]);
+			track(
+				card,
+				'y',
+				[
+					{ at: at - RISE, value: 1 - LOWERED },
+					{ at, value: 0, ease: 'power3.out' },
+				],
+				() => pole.offsetHeight,
+			);
+		});
+		for (const fill of section.querySelectorAll<HTMLElement>('[data-frise-fill]')) {
+			const at = cue(fill);
+			track(fill, 'opacity', [
+				{ at: at - LIGHT_UP, value: 0 },
+				{ at, value: 1 },
+			]);
+		}
+
+		return () => {
+			band.removeEventListener('scroll', keepBandStill);
+			for (const [name, value] of bandAttributes) if (value !== null) band.setAttribute(name, value);
+			delete section.dataset.scene;
+		};
+	});
+</script>
+
+<style>
+	.frise {
+		--frise-tilt: 58deg;
+		/* Straight at the final state; the scene turns the graph onto the mock-up's diagonal. */
+		--frise-turn: 0deg;
+		--frise-mesh: 110px;
+		/* Framing: the scene is cropped to the window, never scaled down (see the media queries below). */
+		--frise-perspective: 1100px;
+		/* Narrower on a small phone: the first card, 120px into the strip, must end inside the window. */
+		--frise-card: min(240px, 100vw - 136px);
+		/* Where `main` crosses the band: HEAD in the scene, the strip's line at the final state. */
+		--frise-scene-x: min(40%, 100% - var(--frise-card) - var(--page-gutter));
+		/*
+		 * The band spans the whole aplat, so that the grid runs behind the heading too, but the graph is
+		 * framed in what the heading leaves below it (159 to 201px tall from the phone to the 1440p screen).
+		 */
+		--frise-head: 190px;
+		--frise-scene-y: 0.48;
+		--frise-rest-y: 0.78;
+		/*
+		 * The eye stands at the aplat's top edge: the horizon, 687px above it (the perspective times
+		 * cot 58°), stays far enough out of the frame for a grid less than two windows deep to reach the top.
+		 */
+		--frise-eye-y: 0%;
+		/* The grid's box, fitted to what the tilted plane shows of the aplat from 320 to 2560px wide. */
+		--frise-grid-depth: 175svh;
+		--frise-grid-front: calc(40px + 10svh);
+		--frise-grid-left: calc(-50vw - max(0px, 60svh - 400px));
+		--frise-grid-right: calc(85vw + 120svh - 160px);
+		--frise-pole: 138px;
+		--frise-branch-pole: 88px;
+		--frise-legend-title: 44px;
+		--frise-legend-width: min(520px, 100% - 2 * var(--page-gutter));
+		position: relative;
+		box-sizing: border-box;
+		height: 100svh;
+		margin-top: clamp(64px, 8vw, 120px);
+		padding-top: clamp(28px, 4vw, 40px);
+		background: var(--color-accent);
+		color: var(--color-on-accent);
+	}
+
+	/*
+	 * Short phone upright: the heading leaves about 340px of band, to share between the active card
+	 * on its pole and the legend below HEAD.
+	 */
+	@media (orientation: portrait) and (max-height: 700px) {
+		.frise {
+			/* Seen from higher up, the branches would rise into the heading: the eye stays low, for a deeper grid. */
+			--frise-eye-y: calc(var(--frise-head) + (100% - var(--frise-head)) * 0.2);
+			--frise-grid-depth: 275svh;
+			--frise-grid-front: calc(40px + 15svh);
+			--frise-grid-left: -60vw;
+			--frise-grid-right: calc(100vw + 150svh - 100px);
+			--frise-scene-y: 0.53;
+			--frise-pole: 60px;
+			--frise-branch-pole: 40px;
+			--frise-legend-title: 28px;
+		}
+	}
+
+	/*
+	 * Phone on its side: about 160px of band under the heading. `main` comes down near the statusline,
+	 * the poles shorten, and HEAD moves to the middle so that the legend, to its left, stays low
+	 * enough to clear the heading.
+	 */
+	@media (orientation: landscape) and (max-height: 500px) {
+		.frise {
+			--frise-scene-x: min(50%, 100% - var(--frise-card) - var(--page-gutter));
+			--frise-scene-y: 0.76;
+			--frise-rest-y: 0.82;
+			/* As on a short phone upright, the eye stays low. */
+			--frise-eye-y: calc(var(--frise-head) + (100% - var(--frise-head)) * 0.2);
+			--frise-grid-depth: 310svh;
+			--frise-grid-right: calc(100vw + 150svh - 100px);
+			--frise-pole: 40px;
+			--frise-branch-pole: 25px;
+			--frise-legend-title: 22px;
+			--frise-legend-width: calc(var(--frise-scene-x) - 2 * var(--page-gutter));
+		}
+
+		/* The branch labels can't fit under the heading at the final state: it covers them, grid included. */
+		.frise:not([data-scene]) .frise-head {
+			background: var(--color-accent);
+		}
+	}
+
+	/* The aplat is full-bleed, so its heading hugs the screen edge rather than the centred column. */
+	.frise-head {
+		position: relative;
+		z-index: 1;
+		padding: 0 var(--page-gutter);
+	}
+
+	.frise-summary {
+		margin: 12px 0 0;
+		font-size: 13px;
+		color: var(--color-on-accent-muted);
+	}
+
+	.frise-band {
+		position: absolute;
+		inset: 0;
+		overflow-x: auto;
+		overflow-y: hidden;
+		perspective: var(--frise-perspective);
+		/* Above HEAD, so that the graph runs away from the camera on both sides of it. */
+		perspective-origin: var(--frise-scene-x) var(--frise-eye-y);
+		scrollbar-color: var(--color-on-accent-muted) transparent;
+	}
+
+	.frise-band:focus-visible {
+		outline: 2px solid var(--color-on-accent);
+		outline-offset: -6px;
+	}
+
+	/* Tilted back around `main`; the labels stand back up on it. */
+	.frise-plane {
+		position: absolute;
+		top: calc(var(--frise-head) + (100% - var(--frise-head)) * var(--frise-rest-y));
+		left: 0;
+		width: var(--frise-width);
+		height: 0;
+		transform-origin: 0 0;
+		transform: rotateX(var(--frise-tilt)) rotateZ(var(--frise-turn));
+		transform-style: preserve-3d;
+	}
+
+	/* Moved by the scene so that HEAD stays under the camera. */
+	.frise-camera {
+		position: absolute;
+		inset: 0;
+		transform-style: preserve-3d;
+	}
+
+	/* HEAD stands at the plane's origin, the graph runs up to the right of it. */
+	.frise[data-scene] {
+		--frise-turn: -22deg;
+	}
+
+	.frise[data-scene] .frise-band {
+		overflow: hidden;
+	}
+
+	/* At the final state, the graph's plane stays under the band's perspective, so that the strip scrolls under a still camera. */
+	.frise-graph-layer {
+		display: contents;
+	}
+
+	/*
+	 * The scene's strip stays still, so a layer the size of the band can carry the same perspective. The far
+	 * labels climb into the heading: they fade out under it instead of crossing it, while the grid runs on.
+	 */
+	.frise[data-scene] .frise-graph-layer {
+		display: block;
+		position: absolute;
+		inset: 0;
+		perspective: var(--frise-perspective);
+		perspective-origin: var(--frise-scene-x) var(--frise-eye-y);
+		mask-image: linear-gradient(
+			transparent var(--frise-head),
+			#000 calc(var(--frise-head) + min(64px, (100% - var(--frise-head)) * 0.2))
+		);
+	}
+
+	.frise[data-scene] .frise-plane {
+		top: calc(var(--frise-head) + (100% - var(--frise-head)) * var(--frise-scene-y));
+		left: var(--frise-scene-x);
+	}
+
+	/*
+	 * Deep enough to reach the aplat's top edge, and in front of `main`, just down to its bottom edge:
+	 * magnified by the perspective, a nearer edge would widen the strip's scroll further. The left edge
+	 * runs past the strip's start, where the receding plane narrows in: that overflow is not scrollable.
+	 */
+	.frise-grid {
+		position: absolute;
+		top: calc(-1 * var(--frise-grid-depth));
+		left: var(--frise-grid-left);
+		width: calc(100% - var(--frise-grid-left));
+		height: calc(var(--frise-grid-depth) + var(--frise-grid-front));
+		background-image:
+			linear-gradient(rgb(255 255 255 / 0.13) 1px, transparent 1px),
+			linear-gradient(90deg, rgb(255 255 255 / 0.13) 1px, transparent 1px);
+		background-size: var(--frise-mesh) var(--frise-mesh);
+		/* Lines run along `main` and the strip's start whatever the edges, as in the scene's frame-sized grid. */
+		background-position: left calc(-1 * var(--frise-grid-left)) bottom var(--frise-grid-front);
+	}
+
+	/*
+	 * The scene's grid covers what the turned plane shows of the frame, not the whole graph: about the
+	 * smallest box around it along the grid's own axes, plus a mesh for the scene's shift.
+	 */
+	.frise[data-scene] .frise-grid {
+		--frise-grid-front: 70svh;
+		width: calc(var(--frise-grid-right) + var(--frise-mesh) - var(--frise-grid-left));
+	}
+
+	.frise-graph {
+		position: absolute;
+		top: var(--frise-graph-top);
+		left: 0;
+		overflow: visible;
+		/* Firefox skips painting an untransformed SVG inside a 3D rendering context. */
+		transform: translateZ(0);
+	}
+
+	.frise-graph path {
+		fill: none;
+		stroke: var(--color-on-accent);
+		stroke-width: 4;
+		stroke-linecap: round;
+	}
+
+	/* The way ahead of HEAD, under the built trail: only the scene leaves part of it unbuilt. */
+	.frise-ahead {
+		display: none;
+	}
+
+	.frise[data-scene] .frise-ahead {
+		display: block;
+	}
+
+	.frise-ahead path {
+		stroke: rgb(255 255 255 / 0.35);
+		stroke-width: 2;
+		stroke-dasharray: 3 8;
+		stroke-linecap: butt;
+	}
+
+	.frise-trail {
+		position: absolute;
+		top: var(--frise-graph-top);
+		left: 0;
+		width: 100%;
+		height: var(--frise-graph-height);
+		overflow: hidden;
+		/* Same Firefox painting issue as the graph: the window holds an SVG. */
+		transform: translateZ(0);
+	}
+
+	.frise-trail .frise-graph {
+		top: 0;
+	}
+
+	/* Hollow, as a merge stays in `git log --graph`; the other commits get a filled dot on top. */
+	.frise-graph circle {
+		fill: var(--color-accent);
+		stroke: var(--color-on-accent);
+		stroke-width: 3;
+	}
+
+	/* The size of the circle with its stroke. */
+	.frise-fill {
+		position: absolute;
+		top: var(--y);
+		left: var(--x);
+		width: 18px;
+		height: 18px;
+		margin: -9px 0 0 -9px;
+		border-radius: 50%;
+		background: var(--color-on-accent);
+	}
+
+	.frise-commits {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		transform-style: preserve-3d;
+	}
+
+	.commit {
+		position: absolute;
+		left: var(--x);
+		bottom: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 10px;
+		transform-origin: 0 100%;
+		transform: rotateZ(calc(-1 * var(--frise-turn))) rotateX(calc(-1 * var(--frise-tilt)));
+	}
+
+	.commit[data-lane='branch'] {
+		bottom: var(--frise-lane);
+	}
+
+	.commit-card {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		box-sizing: border-box;
+		width: var(--frise-card);
+		padding-left: 10px;
+		border-left: 1px solid var(--color-on-accent);
+	}
+
+	.commit-card p {
+		margin: 0;
+	}
+
+	/* Branch labels stand a lane behind `main`, where the perspective shrinks them: still 11px on screen. */
+	.commit-meta {
+		font-size: 13px;
+		color: var(--color-on-accent-muted);
+	}
+
+	.commit-title {
+		font-size: 19px;
+		font-weight: 700;
+		line-height: 1.15;
+		letter-spacing: -0.01em;
+	}
+
+	.commit-title abbr {
+		text-decoration: none;
+	}
+
+	.commit-place {
+		font-size: 13px;
+		line-height: 1.35;
+		color: var(--color-on-accent-muted);
+	}
+
+	/* Fully raised at the final state. */
+	.commit-pole {
+		width: 1px;
+		height: var(--frise-pole);
+		background: var(--color-on-accent);
+		/* The scene raises it from its foot. */
+		transform-origin: 50% 100%;
+	}
+
+	.commit[data-lane='branch'] .commit-pole {
+		height: var(--frise-branch-pole);
+	}
+
+	/* Over the band, clear of the statusline; only the scene has an active commit. */
+	.frise-legend {
+		position: absolute;
+		bottom: calc(var(--statusline-height) + 28px);
+		left: var(--page-gutter);
+		display: none;
+		flex-direction: column;
+		gap: 8px;
+		max-width: var(--frise-legend-width);
+		pointer-events: none;
+	}
+
+	.frise[data-scene] .frise-legend {
+		display: flex;
+	}
+
+	.frise-legend-meta {
+		font-size: 12px;
+		color: var(--color-on-accent-muted);
+	}
+
+	.frise-legend-title {
+		font-size: var(--frise-legend-title);
+		font-weight: 800;
+		font-stretch: 75%;
+		line-height: 1;
+		letter-spacing: -0.015em;
+	}
+
+	.frise-legend-place {
+		font-size: 15px;
+		color: var(--color-on-accent-muted);
+	}
+</style>

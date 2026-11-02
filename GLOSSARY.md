@@ -19,6 +19,21 @@ _À éviter_ : smooth scroll (qui désigne aussi `scroll-behavior: smooth`).
 **État final**
 Rendu que donnent le HTML et le CSS seuls : tout le contenu visible, à sa place. Une scène anime depuis un état de départ vers cet état final ; sans JS ou en mouvement réduit, la page reste à l'état final sans rien défaire.
 
+## Parcours
+
+**Frise**
+La scène de la section Parcours : la carrière dessinée en graphe de commits sur un plan incliné, sur l'aplat accent. À l'état final, le graphe est droit dans une bande qui défile à l'horizontale (ADR 0003).
+_À éviter_ : timeline, git graph.
+
+**commit**
+Une étape de la Frise : le bac (`init`), un poste, un stage, une mission, ou une fusion qui ramène une branche sur `main`.
+
+**branche**
+Une formation : elle part de `main` à son début et y revient par le poste qui la suit, ou par une fusion sans étiquette.
+
+**HEAD**
+Le point courant de la progression dans la Frise ; à l'état final, le dernier commit, daté « aujourd'hui ».
+
 ## Stack
 
 **Atome**

@@ -1,4 +1,5 @@
 ---
+import Atome from '../components/Atome.astro';
 import Cursor from '../components/Cursor.astro';
 import Reveal from '../components/Reveal.astro';
 import SectionHeading from '../components/SectionHeading.astro';
@@ -199,22 +200,7 @@ const jsonLd = JSON.stringify({
 
 			<section id="stack" class="section" aria-labelledby="stack-title">
 				<SectionHeading number={3} title="Stack" titleId="stack-title" aside=":set stack?" />
-				<dl class="stack">
-					{
-						stack.map((group) => (
-							<div class="stack-row grid-12">
-								<dt class="mono">{group.category}</dt>
-								<dd>
-									<ul class="stack-items">
-										{group.items.map((item) => (
-											<li>{item}</li>
-										))}
-									</ul>
-								</dd>
-							</div>
-						))
-					}
-				</dl>
+				<Atome />
 				<p class="mono stack-note">
 					éditeur : neovim · multiplexeur : tmux · runtime : bun — <a href={person.nvimConfig}
 						>la config est sur GitHub</a
@@ -625,51 +611,6 @@ const jsonLd = JSON.stringify({
 	}
 
 	/* Stack */
-
-	.stack {
-		margin: 0;
-	}
-
-	.stack-row {
-		row-gap: 6px;
-		align-items: baseline;
-		padding: 22px 0;
-		border-bottom: 1px solid var(--color-rule);
-	}
-
-	.stack-row dt {
-		grid-column: span 3;
-		font-size: 13px;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--color-ink-muted);
-	}
-
-	.stack-row dd {
-		grid-column: span 9;
-		margin: 0;
-	}
-
-	.stack-items {
-		margin: 0;
-		padding: 0;
-		list-style: none;
-		font-size: clamp(22px, 2.4vw, 34px);
-		line-height: 1.22;
-		font-weight: 500;
-		letter-spacing: -0.015em;
-	}
-
-	.stack-items li {
-		display: inline;
-	}
-
-	/* The separator is drawn, not read: the empty alternative text keeps it out of the accessible name. */
-	.stack-items li:not(:last-child)::after {
-		content: ' / ';
-		content: ' / ' / '';
-		color: var(--color-ink-faint);
-	}
 
 	.stack-note {
 		margin: 22px 0 0;

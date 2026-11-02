@@ -328,36 +328,49 @@ const frame = [
 		return Math.max(0, height - frame);
 	}
 
-	/** The most the drawing grows in the middle of the frame before the tower rises. */
-	const INTRO_MAX_SCALE = 1.6;
+	/**
+	 * The largest the drawing is drawn in the middle of the frame before the tower rises, against its
+	 * size at scale 1: an absolute bound, so a phone's small tower may still open across the screen.
+	 */
+	const INTRO_MAX_SCALE = 2;
 	/** Share of the Atome's width the enlarged drawing may take. */
 	const INTRO_WIDTH_SHARE = 0.9;
 
 	/**
 	 * Where the tower box sits while the bagues swing, before the tower rises and the labels come in: the
-	 * drawing is centred in the Atome's width and in the tower's height, enlarged as far as it still fits
-	 * the box. The box scales from its top left corner. Reads layout, so it only runs at setup and refresh.
+	 * axis, where the atom forms round its nucleus, is put at the centre of the pinned screen (above the
+	 * statusline), and the drawing is enlarged as far as every early pose still fits around it. The box
+	 * scales from its top left corner. Reads layout, so it only runs at setup and refresh.
 	 */
-	function introFrame(atome: HTMLElement, tower: HTMLElement) {
+	function introFrame(section: HTMLElement, atome: HTMLElement, tower: HTMLElement, pinOffset: number) {
 		const style = getComputedStyle(atome);
 		const length = (name: string) => Number.parseFloat(style.getPropertyValue(name));
 		const scale = length('--tower-scale');
 		const [above, below, across] = ['--intro-above', '--intro-below', '--intro-across'].map(length);
 		const [axisX, axisY] = [length('--axis-x') * scale, length('--axis-y') * scale];
-		const height = length('--tower-height') * scale;
-		const width = atome.clientWidth;
+		const root = document.documentElement;
+		const frame = innerHeight - (Number.parseFloat(getComputedStyle(root).scrollPaddingBottom) || 0);
+		const atomeBox = atome.getBoundingClientRect();
+		// The page column is centred, so its middle is the screen's. Read from the column, not the page:
+		// on a phone, a page made wider for a moment widens the layout viewport, and a drawing centred on
+		// that width would keep it wide.
+		const [centreX, centreY] = [atomeBox.left + atome.clientWidth / 2, frame / 2];
+		// Where the box's corner stands on screen while pinned: the pin holds the section's top
+		// pinOffset above the top of the window.
+		const boxLeft = atomeBox.left + tower.offsetLeft;
+		const boxTop = atomeBox.top - section.getBoundingClientRect().top - pinOffset + tower.offsetTop;
 		const grow = Math.max(
 			1,
 			Math.min(
-				INTRO_MAX_SCALE,
-				height / ((above + below) * scale),
-				(width * INTRO_WIDTH_SHARE) / (2 * across * scale),
+				INTRO_MAX_SCALE / scale,
+				(centreY - ROOM) / (Math.max(above, below) * scale),
+				(atome.clientWidth * INTRO_WIDTH_SHARE) / (2 * across * scale),
 			),
 		);
 		return {
 			scale: grow,
-			x: width / 2 - tower.offsetLeft - axisX * grow,
-			y: height / 2 - ((below - above) / 2) * scale * grow - axisY * grow,
+			x: centreX - boxLeft - axisX * grow,
+			y: centreY - boxTop - axisY * grow,
 		};
 	}
 
@@ -369,10 +382,10 @@ const frame = [
 		const tower = atome.querySelector<HTMLElement>('.atome-tower')!;
 		// Before every refresh measures the pin, so the section has its fitted height by then.
 		let pinOffset = fitToScreen(section, atome);
-		let intro = introFrame(atome, tower);
+		let intro = introFrame(section, atome, tower, pinOffset);
 		const refit = () => {
 			pinOffset = fitToScreen(section, atome);
-			intro = introFrame(atome, tower);
+			intro = introFrame(section, atome, tower, pinOffset);
 		};
 		ScrollTrigger.addEventListener('refreshInit', refit);
 
@@ -508,6 +521,12 @@ const frame = [
 		position: relative;
 		height: calc(var(--tower-height) * var(--tower-scale));
 		margin-top: clamp(32px, 4vw, 56px);
+		/*
+		 * The enlarged opening drawing never widens the page: while a refresh measures, the tower can hold
+		 * its opening transform at another scale, and on a phone a page wider than the screen zooms the
+		 * layout viewport out, so every pin would be measured against a taller screen.
+		 */
+		overflow-x: clip;
 	}
 
 	/* The tower's box follows its scale, so the page around it is laid out for the scaled drawing. */
@@ -761,6 +780,10 @@ const frame = [
 		.atome-labels {
 			position: static;
 			margin-top: 16px;
+		}
+
+		/* On the first label rather than the list, so the scene fades it in with it, clear of the drawing. */
+		.atome-label:first-child {
 			border-top: 1px solid var(--color-rule);
 		}
 

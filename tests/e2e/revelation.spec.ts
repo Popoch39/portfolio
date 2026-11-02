@@ -1,8 +1,10 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
+	attendreLeDefilementLisse,
 	contenu,
 	defilerALaMolette,
 	enveloppe,
+	hautDansLaPage,
 	transformationCalculee,
 	translationVerticale,
 } from './outils';
@@ -58,7 +60,7 @@ test.describe('révélation, mouvement autorisé', () => {
 		await expect(enveloppe(page)).toHaveCSS('position', 'fixed');
 
 		await defilerALaMolette(page, 2000);
-		await expect.poll(() => translationVerticale(contenu(page))).toBeLessThan(0);
+		await attendreLeDefilementLisse(page);
 		await attendreEtatFinal(element);
 	});
 });
@@ -78,14 +80,8 @@ test.describe('révélation après un redimensionnement', () => {
 		await attendreEtatDeDepart(element);
 
 		// Le haut de la révélation à 80 % de la fenêtre : tout juste entrée dans la vue.
-		// offsetTop ignore les transformations : position dans la page, ni lissée ni décalée par la scène.
-		await element.evaluate((el) => {
-			let haut = 0;
-			for (let n: Element | null = el; n instanceof HTMLElement; n = n.offsetParent) {
-				haut += n.offsetTop;
-			}
-			scrollTo(0, haut - innerHeight * 0.8);
-		});
+		const haut = await hautDansLaPage(element);
+		await page.evaluate((y) => scrollTo(0, y - innerHeight * 0.8), haut);
 
 		await expect(element).toBeInViewport();
 		await attendreEtatFinal(element);

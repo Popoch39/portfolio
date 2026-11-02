@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
-import { allongerLaPage, contenu, defilerALaMolette, translationVerticale } from './outils';
+import { allongerLaPage, attendreLeDefilementLisse, defilerALaMolette } from './outils';
 
 /** Erreurs console et exceptions non rattrapées, collectées sur toute la visite. */
 function erreursDe(page: Page): string[] {
@@ -65,7 +65,7 @@ test.describe('navigation entre pages, mouvement autorisé', () => {
 		await allongerLaPage(page);
 		await defilerALaMolette(page, 600);
 
-		await expect.poll(() => translationVerticale(contenu(page))).toBeLessThan(0);
+		await attendreLeDefilementLisse(page);
 		expect(erreurs).toEqual([]);
 	});
 });

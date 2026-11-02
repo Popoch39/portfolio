@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
 import {
 	allongerLaPage,
+	attendreLeDefilementLisse,
 	contenu,
 	defilerALaMolette,
 	enveloppe,
+	positionDeDefilement,
 	transformationCalculee,
-	translationVerticale,
 } from './outils';
 
 test.describe('défilement lissé, mouvement autorisé', () => {
@@ -19,8 +20,8 @@ test.describe('défilement lissé, mouvement autorisé', () => {
 
 		await defilerALaMolette(page, 600);
 
-		await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
-		await expect.poll(() => translationVerticale(contenu(page))).toBeLessThan(0);
+		await expect.poll(() => positionDeDefilement(page)).toBeGreaterThan(0);
+		await attendreLeDefilementLisse(page);
 	});
 
 	test('la préférence basculée pendant la visite arrête puis relance le défilement lissé', async ({
@@ -36,6 +37,6 @@ test.describe('défilement lissé, mouvement autorisé', () => {
 
 		await page.emulateMedia({ reducedMotion: 'no-preference' });
 		await defilerALaMolette(page, 600);
-		await expect.poll(() => translationVerticale(contenu(page))).toBeLessThan(0);
+		await attendreLeDefilementLisse(page);
 	});
 });

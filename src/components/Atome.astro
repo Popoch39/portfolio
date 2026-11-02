@@ -22,14 +22,17 @@ const TILT = 60;
 const THICKNESS = 2;
 /** How far the accent layers sit above their base ones, so the two never fight over depth. */
 const ACCENT_RAISE = 0.5;
-/** Room around the band (±5px) and its 0.6px edges inside a bague's SVG box. */
-const BAND_ROOM = 6;
-const PASTILLE_RADIUS = 12;
+/** Half the band's width (its stroke is twice this in the CSS): wide enough for a logo to sit on it. */
+const BAND_HALF = 7;
+/** Room around the band and its 0.6px edges inside a bague's SVG box. */
+const BAND_ROOM = BAND_HALF + 1;
+/** Half the footprint of a pastille: its 14px logo, with a pixel to spare. */
+const PASTILLE_RADIUS = 8;
 /**
  * How far a pastille is lifted towards the screen. Facing the screen, it would otherwise cut its own
- * tilted bague: beside the bague, the band covered by the pastille runs up to radius × tan(60°) ≈ 21px deep.
+ * tilted bague: beside the bague, the band covered by the pastille runs up to radius × tan(60°) ≈ 14px deep.
  */
-const PASTILLE_LIFT = 24;
+const PASTILLE_LIFT = 18;
 /** Label text starts this far right of the tower axis, past the widest bague and its leader line. */
 const LABEL_OFFSET = BASE_RADIUS + 60;
 
@@ -50,7 +53,7 @@ const RANKS = [
 ];
 /** Tilt of every bague once laid down in the atom: steeper than the tower's, so the nest reads as a sphere. */
 const NESTED_TILT = 68;
-/** In the atom, the bagues spread out to these radii: 8px between two bands, so none touches another. */
+/** In the atom, the bagues spread out to these radii: 4px between two bands, so none touches another. */
 const NESTED_BASE_RADIUS = BASE_RADIUS - 10;
 const NESTED_TOP_RADIUS = TOP_RADIUS + 14;
 /** Where the target sits, then the gyroscope, below the tower axis. */
@@ -172,8 +175,8 @@ const frame = [
 									<circle class="bague-ticks" cx={centre} cy={centre} r={bague.radius} pathLength="360" />
 								</>
 							)}
-							<circle class="bague-edge" cx={centre} cy={centre} r={bague.radius + 5} />
-							<circle class="bague-edge" cx={centre} cy={centre} r={bague.radius - 5} />
+							<circle class="bague-edge" cx={centre} cy={centre} r={bague.radius + BAND_HALF} />
+							<circle class="bague-edge" cx={centre} cy={centre} r={bague.radius - BAND_HALF} />
 						</svg>
 					);
 					return (
@@ -198,11 +201,9 @@ const frame = [
 											{/* Undoes the bague's tilt and spin, so the pastille faces the screen. */}
 											<div class="pastille-untilt" style={`transform: rotate(${-bague.spin}deg) rotateX(${-TILT}deg)`}>
 												<div class="pastille" style={`transform: translateZ(${PASTILLE_LIFT}px)`}>
-													<span class="pastille-face">
-														<svg class="pastille-logo" viewBox="0 0 24 24">
-															<use href={pastille.href} />
-														</svg>
-													</span>
+													<svg class="pastille-logo" viewBox="0 0 24 24">
+														<use href={pastille.href} />
+													</svg>
 												</div>
 											</div>
 										</div>
@@ -512,10 +513,9 @@ const frame = [
 <style>
 	.atome {
 		--tower-scale: 1;
-		/* The drawing's shades, from the theme: the lit band, the thickness under it, the pastille's shaded edge. */
+		/* The drawing's shades, from the theme: the lit band and the thickness under it. */
 		--band: color-mix(in oklab, var(--color-paper) 30%, var(--color-light));
 		--side: color-mix(in oklab, var(--color-rule) 75%, var(--color-ink-faint));
-		--pastille-shade: color-mix(in oklab, var(--color-paper), var(--color-rule));
 		position: relative;
 		height: calc(var(--tower-height) * var(--tower-scale));
 		margin-top: clamp(32px, 4vw, 56px);
@@ -600,12 +600,12 @@ const frame = [
 
 	.bague-band {
 		stroke: var(--band);
-		stroke-width: 10;
+		stroke-width: 14;
 	}
 
 	.bague-side-band {
 		stroke: var(--side);
-		stroke-width: 10;
+		stroke-width: 14;
 	}
 
 	.bague-ticks {
@@ -628,38 +628,23 @@ const frame = [
 		stroke: var(--color-accent-deep);
 	}
 
-	/* Sized like its face: Chromium clips a flat element in a 3D context to its own box. */
+	/* Sized like its logo: Chromium clips a flat element in a 3D context to its own box. */
 	.pastille {
-		top: -12px;
-		left: -12px;
-		width: 24px;
-		height: 24px;
+		top: -7px;
+		left: -7px;
+		width: 14px;
+		height: 14px;
 		transform-style: flat;
 	}
 
-	.pastille-face {
+	/* The logo alone, laid on the band: no disc behind it. */
+	.pastille-logo {
 		position: absolute;
 		top: 0;
 		left: 0;
-		box-sizing: border-box;
-		width: 24px;
-		height: 24px;
-		border: 0.6px solid var(--color-ink);
-		border-radius: 50%;
-		background: radial-gradient(circle at 35% 28%, var(--color-light) 0, var(--band) 45%, var(--pastille-shade) 100%);
-		box-shadow:
-			0 2.5px 0 -0.5px var(--side),
-			0 2.5px 0 0 var(--color-ink);
-		color: var(--color-ink);
-	}
-
-	.pastille-logo {
-		position: absolute;
-		top: 5.4px;
-		left: 5.4px;
-		width: 12px;
-		height: 12px;
-		fill: currentColor;
+		width: 14px;
+		height: 14px;
+		fill: var(--color-ink);
 		/* Without it, Chromium repaints every pastille at every frame of the scene, as its bague turns. */
 		contain: paint;
 	}

@@ -115,8 +115,35 @@ for (const { name, use } of FINAL_STATE_CONTEXTS) {
 			await expect(first).toContainText('Lycée Carnot, Dijon');
 			await expect(first).toContainText('main');
 		});
+
+		test('the older jobs give their role and missions in the list, beyond their compact label', async ({ page }) => {
+			await page.goto('/');
+			const commits = band(page).getByRole('listitem');
+
+			const cdos = commits.filter({ hasText: 'CDOS' });
+			await expect(cdos).toContainText('Concepteur & développeur d’applications');
+			await expect(cdos).toContainText('Application web sous Symfony');
+			await expect(cdos).toContainText('API back-end en Node.js / TypeScript (Express)');
+
+			const internship = commits.filter({ hasText: 'Jordel Média' });
+			await expect(internship).toContainText('Stage — développeur web');
+			await expect(internship).toContainText('Nouvelles fonctionnalités sur le CMS interne de l’entreprise');
+		});
+
+		test('Tab stops on the strip, then goes on to the Stack', async ({ page }) => {
+			await page.goto('/');
+			await lastProjectLink(page).focus();
+
+			await page.keyboard.press('Tab');
+			await expect(band(page)).toBeFocused();
+			await page.keyboard.press('Tab');
+			await expect(stackLink(page)).toBeFocused();
+		});
 	});
 }
+
+const lastProjectLink = (page: Page) => page.locator('#projets').getByRole('link').last();
+const stackLink = (page: Page) => page.locator('#stack').getByRole('link');
 
 /** Where the HEAD commit stands on screen once the smoothing has settled: a reading taken mid-glide would leave HEAD still moving forward. */
 function headOnceStill(page: Page): Promise<number> {
@@ -269,6 +296,26 @@ test.describe('Frise, scene', () => {
 		expect(await poleRatio(head)).toBeGreaterThan(2 * lowered);
 		await expect.poll(() => opacity(diploma)).toBeLessThan(1);
 		expect(await opacity(diploma)).toBeGreaterThanOrEqual(AA_FLOOR);
+	});
+
+	test('a commit far ahead stays discreet but never invisible', async ({ page }) => {
+		await page.goto('/');
+		await scrollToScene(page, await topInPage(section(page)), 0);
+		const commits = band(page).getByRole('listitem');
+		const active = await opacity(commits.first());
+
+		// Several commits ahead of HEAD, far from lighting up.
+		const ahead = await opacity(commits.nth(3));
+		expect(ahead).toBeGreaterThan(0);
+		expect(ahead).toBeLessThan(active);
+	});
+
+	test('the strip is no tab stop while the scene runs: Tab goes on to the Stack', async ({ page }) => {
+		await page.goto('/');
+		await lastProjectLink(page).focus();
+
+		await page.keyboard.press('Tab');
+		await expect(stackLink(page)).toBeFocused();
 	});
 
 	test('a dot fills once HEAD reaches it, a merge stays hollow', async ({ page }) => {

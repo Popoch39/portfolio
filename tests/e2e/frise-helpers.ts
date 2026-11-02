@@ -2,7 +2,8 @@ import { expect, type Page } from '@playwright/test';
 import { topInPage, topOnceStill } from './helpers';
 
 export const friseSection = (page: Page) => page.getByRole('region', { name: 'Parcours', exact: true });
-export const friseBand = (page: Page) => page.getByRole('region', { name: 'Frise du parcours' });
+// A region at the final state only: the scene takes its role away with its tab stop.
+export const friseBand = (page: Page) => friseSection(page).locator('.frise-band');
 // Hidden from assistive technologies: targeted by its attribute.
 export const friseLegend = (page: Page) => page.locator('[data-frise-legend]');
 
@@ -41,13 +42,14 @@ export function friseFraming(page: Page) {
 		const textOnScreen = (el: HTMLElement) =>
 			(Number.parseFloat(getComputedStyle(el).fontSize) * el.getBoundingClientRect().height) / el.offsetHeight;
 		const section = document.querySelector('#parcours');
-		const band = section?.querySelector('[role="region"]');
-		const commits = [...(band?.querySelectorAll('li') ?? [])].map((commit) => {
-			const card = commit.firstElementChild as HTMLElement;
+		const band = section?.querySelector('.frise-band');
+		const commits = [...(band?.querySelectorAll('.commit') ?? [])].map((commit) => {
+			const card = commit.querySelector('.commit-card');
+			const lines = [...(card?.querySelectorAll<HTMLElement>('.commit-meta, .commit-title, .commit-place') ?? [])];
 			return {
-				title: card.children[1]?.textContent ?? '',
+				title: card?.querySelector('.commit-title')?.textContent ?? '',
 				box: boxOf(card),
-				text: Math.min(...[...card.children].map((line) => textOnScreen(line as HTMLElement))),
+				text: Math.min(...lines.map(textOnScreen)),
 			};
 		});
 		return {

@@ -180,13 +180,21 @@ export function formatPeriod({ start, end }: Pick<Position, 'start' | 'end'>) {
 	return `${from.format(firstDayOf(start))} → ${monthAndYear.format(firstDayOf(end))}`;
 }
 
+/** The branches the trainings open on the Frise. */
+export type BranchName = 'lea' | 'access-code' | 'cda';
+
+/** Where a commit of the Frise sits: `main`, or a training's branch. */
+export type Lane = 'main' | BranchName;
+
+export const onMain = (lane: Lane): lane is 'main' => lane === 'main';
+
 export interface Education {
 	/** First month, `YYYY-MM`. */
 	start: string;
 	/** Last month, `YYYY-MM`. */
 	end: string;
 	/** Branch the training opens on the Frise; none for the diploma `main` starts from. */
-	branch?: string;
+	branch?: BranchName;
 	title: string;
 	school: string;
 	city: string;
@@ -248,8 +256,7 @@ export type CommitKind = 'init' | 'branch' | 'commit' | 'merge' | 'head';
 
 export interface Commit {
 	kind: CommitKind;
-	/** `main`, or the branch the commit sits on. */
-	lane: string;
+	lane: Lane;
 	/** Along the Frise, from 0 (the first commit) to 1 (HEAD). */
 	position: number;
 	/** Machine-readable date for `<time>`; none for the missions, which carry no date of their own. */
@@ -259,14 +266,18 @@ export interface Commit {
 	/** Full name behind a shortened title. */
 	titleExpansion?: string;
 	place: string;
+	/** The job's title, which the label leaves out. */
+	role?: string;
+	/** In full, the missions the label names in a word: crawlers and screen readers get the whole job. */
+	details?: string[];
 	/** On a merge, the branch it brings back to `main`. */
-	merges?: string;
+	merges?: BranchName;
 	/** Drawn on the graph but left out of the list: the merge of a branch no job followed. */
 	unlabeled?: boolean;
 }
 
 export interface Branch {
-	name: string;
+	name: BranchName;
 	/** Positions (0 to 1) of the `main` commit it leaves, of its first and last commits, and of its merge. */
 	fork: number;
 	open: number;
@@ -295,7 +306,9 @@ const MIN_COMMIT_GAP = 0.035;
 export function careerGraph(now = new Date()): CareerGraph {
 	type Event = Omit<Commit, 'position'> & { month: number };
 	const events: Event[] = [];
-	const trainings = education.filter((entry) => entry.branch).sort((a, b) => a.start.localeCompare(b.start));
+	const trainings = education
+		.filter((entry): entry is Education & { branch: BranchName } => !!entry.branch)
+		.sort((a, b) => a.start.localeCompare(b.start));
 	const diploma = education.find((entry) => !entry.branch);
 	const jobs = [...salariedPositions].sort((a, b) => a.start.localeCompare(b.start));
 	const headMonth = now.getUTCFullYear() * 12 + now.getUTCMonth();
@@ -313,9 +326,9 @@ export function careerGraph(now = new Date()): CareerGraph {
 	}
 
 	/** Job → branch it brings back to `main`. */
-	const mergedBy = new Map<Position, string>();
+	const mergedBy = new Map<Position, BranchName>();
 	trainings.forEach((training, i) => {
-		const branch = training.branch ?? 'main';
+		const { branch } = training;
 		const [from, to] = [year(training.start), year(training.end)];
 		events.push({
 			kind: 'branch',
@@ -356,7 +369,9 @@ export function careerGraph(now = new Date()): CareerGraph {
 			datetime: internship.start,
 			date: formatPeriod(internship),
 			title: `Stage — ${internship.shortName ?? internship.company}`,
-			place: [internship.city, internship.missions.map((mission) => mission.title).join(', ')].join(' · '),
+			place: placeWithMissions(internship),
+			role: internship.role,
+			details: internship.missions.map((mission) => mission.detail),
 		});
 	}
 
@@ -371,7 +386,10 @@ export function careerGraph(now = new Date()): CareerGraph {
 			date: monthAndYear.format(firstDayOf(job.start)),
 			title: job.shortName ?? job.company,
 			titleExpansion: job.shortName && job.company,
-			place: current ? job.city : [job.city, job.missions.map((mission) => mission.title).join(', ')].join(' · '),
+			// The current missions are commits of their own, up to HEAD.
+			place: current ? job.city : placeWithMissions(job),
+			role: job.role,
+			details: current ? undefined : job.missions.map((mission) => mission.detail),
 		});
 		if (!current) continue;
 		const start = monthIndex(job.start);
@@ -398,7 +416,7 @@ export function careerGraph(now = new Date()): CareerGraph {
 	});
 
 	// Within a month, `main` comes first: a branch opened that month leaves from it.
-	events.sort((a, b) => a.month - b.month || Number(a.lane !== 'main') - Number(b.lane !== 'main'));
+	events.sort((a, b) => a.month - b.month || Number(!onMain(a.lane)) - Number(!onMain(b.lane)));
 
 	// Positions follow the calendar, pushed apart where commits would crowd, then brought back to 0–1.
 	const first = events[0].month;
@@ -411,10 +429,10 @@ export function careerGraph(now = new Date()): CareerGraph {
 	const commits: Commit[] = events.map(({ month: _month, ...event }, i) => ({ ...event, position: spread[i] / last }));
 
 	const branches = trainings.map((training): Branch => {
-		const name = training.branch ?? 'main';
+		const name = training.branch;
 		const onBranch = commits.filter((commit) => commit.lane === name);
 		const opening = commits.indexOf(onBranch[0]);
-		const fork = commits.slice(0, opening).findLast((commit) => commit.lane === 'main');
+		const fork = commits.slice(0, opening).findLast((commit) => onMain(commit.lane));
 		return {
 			name,
 			fork: fork?.position ?? 0,
@@ -425,6 +443,11 @@ export function careerGraph(now = new Date()): CareerGraph {
 	});
 
 	return { commits, branches, aside: `main ← ${branches.map((branch) => branch.name).join(', ')}` };
+}
+
+/** "City · mission, mission": a past job or an internship, compact enough for a commit label. */
+function placeWithMissions(position: Position) {
+	return [position.city, position.missions.map((mission) => mission.title).join(', ')].join(' · ');
 }
 
 function monthIndex(month: string) {

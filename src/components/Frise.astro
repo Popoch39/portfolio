@@ -7,7 +7,7 @@
  * move HEAD along it, the camera following.
  */
 import SectionHeading from './SectionHeading.astro';
-import { careerGraph, person, salariedPositions, yearsOfExperience } from '../data/profile';
+import { careerGraph, type Lane, onMain, person, salariedPositions, yearsOfExperience } from '../data/profile';
 
 interface Props {
 	number: number;
@@ -24,12 +24,15 @@ const summary = `~${yearsOfExperience()} ans d’expérience · ${cities.join(' 
 const SPAN = 3600;
 const START = 120;
 const END = 300;
-const LANE = -180;
+/** How far behind `main` the branches run. */
+const LANE = 180;
+/** Room for the strokes and the dots beyond the outer lanes. */
+const MARGIN = 20;
 /** Horizontal reach of the curve between `main` and a branch, at most. */
 const CURVE = 180;
 const width = START + SPAN + END;
 const x = (position: number) => Math.round(START + position * SPAN);
-const y = (lane: string) => (lane === 'main' ? 0 : LANE);
+const y = (lane: Lane) => (onMain(lane) ? 0 : -LANE);
 
 const graph = [
 	`M ${x(0)} 0 H ${x(1)}`,
@@ -38,10 +41,19 @@ const graph = [
 		const back = Math.max(x(branch.last), merge - CURVE);
 		const out = (open - fork) / 2;
 		const home = (merge - back) / 2;
-		return `M ${fork} 0 C ${fork + out} 0 ${open - out} ${LANE} ${open} ${LANE} H ${back} C ${back + home} ${LANE} ${merge - home} 0 ${merge} 0`;
+		return `M ${fork} 0 C ${fork + out} 0 ${open - out} ${-LANE} ${open} ${-LANE} H ${back} C ${back + home} ${-LANE} ${merge - home} 0 ${merge} 0`;
 	}),
 ].join(' ');
-const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} ${-LANE + 40}` };
+const graphTop = -LANE - MARGIN;
+const graphHeight = LANE + 2 * MARGIN;
+const graphBox = { width, height: graphHeight, viewBox: `0 ${graphTop} ${width} ${graphHeight}` };
+// The CSS lays the labels and the graph layers out on the same lanes as the drawing.
+const geometry = [
+	`--frise-width: ${width}px`,
+	`--frise-lane: ${LANE}px`,
+	`--frise-graph-top: ${graphTop}px`,
+	`--frise-graph-height: ${graphHeight}px`,
+].join('; ');
 ---
 
 <section id="parcours" class="frise" aria-labelledby={titleId} data-frise>
@@ -50,11 +62,11 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 		<p class="mono frise-summary">{summary}</p>
 	</div>
 
-	{/* Focusable, so that the keyboard scrolls it; the perspective sits on it, so the camera stays still. */}
+	{/* Focusable at the final state, so that the keyboard scrolls it; the perspective sits on it, so the camera stays still. */}
 	<div class="frise-band" role="region" aria-label="Frise du parcours" tabindex="0" data-frise-band>
 		<div
 			class="frise-plane"
-			style={`--frise-width: ${width}px`}
+			style={geometry}
 			data-frise-plane
 			data-width={width}
 			data-head-from={x(0)}
@@ -99,7 +111,7 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 							.map((commit) => (
 								<li
 									class="commit"
-									data-lane={commit.lane === 'main' ? 'main' : 'branch'}
+									data-lane={onMain(commit.lane) ? 'main' : 'branch'}
 									data-x={x(commit.position)}
 									style={`--x: ${x(commit.position)}px`}
 								>
@@ -113,6 +125,10 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 										</p>
 										<p class="commit-place">{commit.place}</p>
 									</div>
+									{/* The label stays short on the band; the list still gives the whole job. */}
+									{(commit.role || commit.details) && (
+										<p class="visually-hidden">{[commit.role, ...(commit.details ?? [])].filter(Boolean).join(' · ')}</p>
+									)}
 									<span class="commit-pole" aria-hidden="true" />
 								</li>
 							))
@@ -137,8 +153,8 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 	const PIN_HEIGHTS = 4;
 
 	// Cues, in plane px of HEAD travel (the mock-up's 440 px a year).
-	/** How far ahead of HEAD a label starts showing. */
-	const FADE_IN = 500;
+	/** How far ahead of HEAD a label starts brightening from its floor. */
+	const NEARING = 500;
 	/** How close HEAD gets before a label lights up and its dot fills. */
 	const LIGHT_UP = 14;
 	/** The smoother can stop a hair short of a commit, the end of the travel included: cues land just before. */
@@ -149,11 +165,13 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 	const FADE_OUT = 220;
 	/** A lowered pole, as a share of its height (the mock-up's 18 of 138 px): its foot stays on the plane. */
 	const LOWERED = 0.13;
+	/** Far ahead of HEAD: discreet, never hidden, so that the way ahead reads without crowding the active label. */
+	const FAR_OPACITY = 0.25;
 	const AHEAD_OPACITY = 0.4;
 	/** Lowest opacity at which the muted lines (#d4d7ff) keep 4.5:1 on the accent: past labels stay AA. */
 	const PAST_OPACITY = 0.93;
 
-	interface Key {
+	interface Keyframe {
 		at: number;
 		value: number;
 		ease?: string;
@@ -184,13 +202,17 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 
 		// The diagonal and the hidden overflow come from CSS: the attribute goes away with the context.
 		section.dataset.scene = '';
-		// The camera does the travelling now: the strip stays at its start, even when find-in-page or
-		// a smooth keyboard scroll begun at the final state (Firefox) would move it.
+		// The camera places the graph under HEAD: a scrolled strip would shift it off its cues. Find-in-page,
+		// or a smooth keyboard scroll begun at the final state (Firefox), can still scroll it.
 		const keepBandStill = () => {
 			if (band.scrollLeft) band.scrollLeft = 0;
 		};
 		keepBandStill();
 		band.addEventListener('scroll', keepBandStill);
+
+		// Nothing left to scroll by hand: a tab stop or a landmark would lead the keyboard to a dead end.
+		const bandAttributes = ['tabindex', 'role', 'aria-label'].map((name) => [name, band.getAttribute(name)] as const);
+		for (const [name] of bandAttributes) band.removeAttribute(name);
 
 		// Written only when HEAD reaches another commit: text changes cost a layout, never per frame.
 		let active = -1;
@@ -238,7 +260,7 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 		 * Lays a property's keyframes along HEAD's travel, eased into each key; keys before the start are
 		 * clipped. Values are in `unit`s, read again when the layout changes (`invalidateOnRefresh`).
 		 */
-		const track = (target: Element, property: string, keys: Key[], unit = () => 1) => {
+		const track = (target: Element, property: string, keys: Keyframe[], unit = () => 1) => {
 			const valueAt = (at: number) => {
 				const next = keys.findIndex((key) => key.at >= at);
 				if (next === -1) return keys[keys.length - 1].value;
@@ -269,7 +291,7 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 			const next = i + 1 < labels.length ? cue(labels[i + 1]) : Number.POSITIVE_INFINITY;
 			// Lit while active, until the next commit takes over; discreet ahead, faded behind but readable.
 			track(label, 'opacity', [
-				{ at: at - FADE_IN, value: 0 },
+				{ at: at - NEARING, value: FAR_OPACITY },
 				{ at: at - LIGHT_UP, value: AHEAD_OPACITY },
 				{ at, value: 1 },
 				{ at: next, value: 1 },
@@ -303,6 +325,7 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 
 		return () => {
 			band.removeEventListener('scroll', keepBandStill);
+			for (const [name, value] of bandAttributes) if (value !== null) band.setAttribute(name, value);
 			delete section.dataset.scene;
 		};
 	});
@@ -418,6 +441,17 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 		overflow: hidden;
 	}
 
+	/* The far labels climb past the band's top edge: they fade out there instead of being cut on a line. */
+	.frise[data-scene] .frise-band::after {
+		content: '';
+		position: absolute;
+		inset: 0 0 auto;
+		/* A phone on its side keeps most of its short band clear. */
+		height: min(64px, 20%);
+		background: linear-gradient(var(--color-accent), transparent);
+		pointer-events: none;
+	}
+
 	.frise[data-scene] .frise-plane {
 		top: var(--frise-scene-y);
 		left: var(--frise-scene-x);
@@ -449,7 +483,7 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 
 	.frise-graph {
 		position: absolute;
-		top: -200px;
+		top: var(--frise-graph-top);
 		left: 0;
 		overflow: visible;
 		/* Firefox skips painting an untransformed SVG inside a 3D rendering context. */
@@ -481,10 +515,10 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 
 	.frise-trail {
 		position: absolute;
-		top: -200px;
+		top: var(--frise-graph-top);
 		left: 0;
 		width: 100%;
-		height: 220px;
+		height: var(--frise-graph-height);
 		overflow: hidden;
 		/* Same Firefox painting issue as the graph: the window holds an SVG. */
 		transform: translateZ(0);
@@ -537,7 +571,7 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 	}
 
 	.commit[data-lane='branch'] {
-		bottom: 180px;
+		bottom: var(--frise-lane);
 	}
 
 	.commit-card {
@@ -554,7 +588,7 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 		margin: 0;
 	}
 
-	/* Branch labels stand 180px behind `main`, where the perspective shrinks them: still 11px on screen. */
+	/* Branch labels stand a lane behind `main`, where the perspective shrinks them: still 11px on screen. */
 	.commit-meta {
 		font-size: 13px;
 		color: var(--color-on-accent-muted);

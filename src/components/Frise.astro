@@ -3,6 +3,8 @@
  * Frise: the career as a git graph on a plane tilted backwards, over a full-width accent band.
  * This markup is its final state (ADR 0003): the graph runs straight from left to right, fully built,
  * in a strip that scrolls horizontally under a fixed camera.
+ * The scene pins the section, turns the graph onto the −22° diagonal and lets the vertical scroll
+ * move HEAD along it, the camera following.
  */
 import SectionHeading from './SectionHeading.astro';
 import { careerGraph, person, salariedPositions, yearsOfExperience } from '../data/profile';
@@ -39,65 +41,163 @@ const graph = [
 		return `M ${fork} 0 C ${fork + out} 0 ${open - out} ${LANE} ${open} ${LANE} H ${back} C ${back + home} ${LANE} ${merge - home} 0 ${merge} 0`;
 	}),
 ].join(' ');
+const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} ${-LANE + 40}` };
 ---
 
-<section id="parcours" class="frise" aria-labelledby={titleId}>
+<section id="parcours" class="frise" aria-labelledby={titleId} data-frise>
 	<div class="wrap frise-head">
 		<SectionHeading number={number} title="Parcours" titleId={titleId} aside={aside} onAccent />
 		<p class="mono frise-summary">{summary}</p>
 	</div>
 
 	{/* Focusable, so that the keyboard scrolls it; the perspective sits on it, so the camera stays still. */}
-	<div class="frise-band" role="region" aria-label="Frise du parcours" tabindex="0">
-		<div class="frise-plane" style={`--frise-width: ${width}px`}>
-			<div class="frise-grid" aria-hidden="true"></div>
-			<svg
-				class="frise-graph"
-				aria-hidden="true"
-				width={width}
-				height={-LANE + 40}
-				viewBox={`0 ${LANE - 20} ${width} ${-LANE + 40}`}
-			>
-				<path d={graph} />
-				{
-					commits.map((commit) => (
-						<circle cx={x(commit.position)} cy={y(commit.lane)} r="7.5" data-kind={commit.kind} />
-					))
-				}
-			</svg>
-			<ol class="frise-commits">
-				{
-					commits
-						.filter((commit) => !commit.unlabeled)
-						.map((commit) => (
-							<li
-								class="commit"
-								data-lane={commit.lane === 'main' ? 'main' : 'branch'}
-								style={`--x: ${x(commit.position)}px`}
-							>
-								<div class="commit-card">
-									<p class="mono commit-meta">
-										{commit.datetime ? <time datetime={commit.datetime}>{commit.date}</time> : commit.date}
-										{` · ${commit.lane}`}
-									</p>
-									<p class="commit-title">
-										{commit.titleExpansion ? <abbr title={commit.titleExpansion}>{commit.title}</abbr> : commit.title}
-									</p>
-									<p class="commit-place">{commit.place}</p>
-								</div>
-								<span class="commit-pole" aria-hidden="true" />
-							</li>
+	<div class="frise-band" role="region" aria-label="Frise du parcours" tabindex="0" data-frise-band>
+		<div
+			class="frise-plane"
+			style={`--frise-width: ${width}px`}
+			data-frise-plane
+			data-width={width}
+			data-head-from={x(0)}
+			data-head-to={x(1)}
+		>
+			<div class="frise-camera" data-frise-camera>
+				<div class="frise-grid" aria-hidden="true"></div>
+				<svg class="frise-graph frise-ahead" aria-hidden="true" {...graphBox}>
+					<path d={graph} />
+				</svg>
+				{/* A window over the trail: they slide in opposite directions, so the trail stays put and shows up to HEAD. */}
+				<div class="frise-trail" aria-hidden="true" data-frise-trail>
+					<svg class="frise-graph" {...graphBox} data-frise-trail-graph>
+						<path d={graph} />
+					</svg>
+				</div>
+				<svg class="frise-graph" aria-hidden="true" {...graphBox}>
+					{
+						commits.map((commit) => (
+							<circle cx={x(commit.position)} cy={y(commit.lane)} r="7.5" data-kind={commit.kind} />
 						))
-				}
-			</ol>
+					}
+				</svg>
+				<ol class="frise-commits">
+					{
+						commits
+							.filter((commit) => !commit.unlabeled)
+							.map((commit) => (
+								<li
+									class="commit"
+									data-lane={commit.lane === 'main' ? 'main' : 'branch'}
+									data-x={x(commit.position)}
+									style={`--x: ${x(commit.position)}px`}
+								>
+									<div class="commit-card">
+										<p class="mono commit-meta">
+											{commit.datetime ? <time datetime={commit.datetime}>{commit.date}</time> : commit.date}
+											{` · ${commit.lane}`}
+										</p>
+										<p class="commit-title">
+											{commit.titleExpansion ? <abbr title={commit.titleExpansion}>{commit.title}</abbr> : commit.title}
+										</p>
+										<p class="commit-place">{commit.place}</p>
+									</div>
+									<span class="commit-pole" aria-hidden="true" />
+								</li>
+							))
+					}
+				</ol>
+			</div>
 		</div>
 	</div>
+
+	{/* The scene's reading of the active commit, already in the list: left out of the accessibility tree. */}
+	<div class="frise-legend" aria-hidden="true" data-frise-legend>
+		<span class="mono frise-legend-meta" data-legend-meta></span>
+		<span class="frise-legend-title" data-legend-title></span>
+		<span class="frise-legend-place" data-legend-place></span>
+	</div>
 </section>
+
+<script>
+	import { gsap, registerScene } from '../animation/base';
+
+	/** Pinning length, in window heights (400svh). */
+	const PIN_HEIGHTS = 4;
+
+	registerScene(() => {
+		const section = document.querySelector<HTMLElement>('[data-frise]');
+		const band = section?.querySelector<HTMLElement>('[data-frise-band]');
+		const plane = section?.querySelector<HTMLElement>('[data-frise-plane]');
+		const legend = section?.querySelector<HTMLElement>('[data-frise-legend]');
+		if (!section || !band || !plane || !legend) return;
+
+		const commits = [...section.querySelectorAll<HTMLElement>('.commit')].map((commit) => ({
+			x: Number(commit.dataset.x),
+			meta: commit.querySelector('.commit-meta')?.textContent ?? '',
+			title: commit.querySelector('.commit-title')?.textContent ?? '',
+			place: commit.querySelector('.commit-place')?.textContent ?? '',
+		}));
+		const fields = {
+			meta: legend.querySelector('[data-legend-meta]'),
+			title: legend.querySelector('[data-legend-title]'),
+			place: legend.querySelector('[data-legend-place]'),
+		};
+		const width = Number(plane.dataset.width);
+		const from = Number(plane.dataset.headFrom);
+		const to = Number(plane.dataset.headTo);
+
+		// The diagonal and the hidden overflow come from CSS: the attribute goes away with the context.
+		section.dataset.scene = '';
+		// The camera does the travelling now: the strip stays at its start, even when find-in-page or
+		// a smooth keyboard scroll begun at the final state (Firefox) would move it.
+		const keepBandStill = () => {
+			if (band.scrollLeft) band.scrollLeft = 0;
+		};
+		keepBandStill();
+		band.addEventListener('scroll', keepBandStill);
+
+		// Written only when HEAD reaches another commit: text changes cost a layout, never per frame.
+		let active = -1;
+		const showActiveCommit = (head: number) => {
+			const index = Math.max(0, commits.findLastIndex((commit) => commit.x <= head + 0.5));
+			if (index === active) return;
+			active = index;
+			for (const key of ['meta', 'title', 'place'] as const) {
+				const field = fields[key];
+				if (field) field.textContent = commits[index][key];
+			}
+		};
+		showActiveCommit(from);
+
+		const timeline = gsap.timeline({
+			defaults: { ease: 'none' },
+			scrollTrigger: {
+				trigger: section,
+				pin: true,
+				start: 'top top',
+				end: `+=${PIN_HEIGHTS * 100}%`,
+				scrub: true,
+			},
+			onUpdate: () => showActiveCommit(from + (to - from) * timeline.progress()),
+		});
+		// HEAD stays under the camera: the plane slides back by as much as HEAD moves forward.
+		timeline
+			.fromTo('[data-frise-camera]', { x: -from }, { x: -to }, 0)
+			.fromTo('[data-frise-trail]', { x: from - width }, { x: to - width }, 0)
+			.fromTo('[data-frise-trail-graph]', { x: width - from }, { x: width - to }, 0);
+
+		return () => {
+			band.removeEventListener('scroll', keepBandStill);
+			delete section.dataset.scene;
+		};
+	});
+</script>
 
 <style>
 	.frise {
 		--frise-tilt: 58deg;
+		/* Straight at the final state; the scene turns the graph onto the mock-up's diagonal. */
+		--frise-turn: 0deg;
 		--frise-mesh: 110px;
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		box-sizing: border-box;
@@ -138,8 +238,29 @@ const graph = [
 		width: var(--frise-width);
 		height: 0;
 		transform-origin: 0 0;
-		transform: rotateX(var(--frise-tilt));
+		transform: rotateX(var(--frise-tilt)) rotateZ(var(--frise-turn));
 		transform-style: preserve-3d;
+	}
+
+	/* Moved by the scene so that HEAD stays under the camera. */
+	.frise-camera {
+		position: absolute;
+		inset: 0;
+		transform-style: preserve-3d;
+	}
+
+	/* HEAD stands at the plane's origin, the graph runs up to the right of it. */
+	.frise[data-scene] {
+		--frise-turn: -22deg;
+	}
+
+	.frise[data-scene] .frise-band {
+		overflow: hidden;
+	}
+
+	.frise[data-scene] .frise-plane {
+		top: 48%;
+		left: 40%;
 	}
 
 	.frise-grid {
@@ -173,6 +294,37 @@ const graph = [
 		stroke-linecap: round;
 	}
 
+	/* The way ahead of HEAD, under the built trail: only the scene leaves part of it unbuilt. */
+	.frise-ahead {
+		display: none;
+	}
+
+	.frise[data-scene] .frise-ahead {
+		display: block;
+	}
+
+	.frise-ahead path {
+		stroke: rgb(255 255 255 / 0.35);
+		stroke-width: 2;
+		stroke-dasharray: 3 8;
+		stroke-linecap: butt;
+	}
+
+	.frise-trail {
+		position: absolute;
+		top: -200px;
+		left: 0;
+		width: 100%;
+		height: 220px;
+		overflow: hidden;
+		/* Same Firefox painting issue as the graph: the window holds an SVG. */
+		transform: translateZ(0);
+	}
+
+	.frise-trail .frise-graph {
+		top: 0;
+	}
+
 	.frise-graph circle {
 		fill: var(--color-on-accent);
 		stroke: var(--color-on-accent);
@@ -204,7 +356,7 @@ const graph = [
 		align-items: flex-start;
 		gap: 10px;
 		transform-origin: 0 100%;
-		transform: rotateX(calc(-1 * var(--frise-tilt)));
+		transform: rotateZ(calc(-1 * var(--frise-turn))) rotateX(calc(-1 * var(--frise-tilt)));
 	}
 
 	.commit[data-lane='branch'] {
@@ -256,5 +408,39 @@ const graph = [
 
 	.commit[data-lane='branch'] .commit-pole {
 		height: 88px;
+	}
+
+	/* Over the band, clear of the statusline; only the scene has an active commit. */
+	.frise-legend {
+		position: absolute;
+		bottom: calc(var(--statusline-height) + 28px);
+		left: max(var(--page-gutter), calc((100% - var(--page-max-width)) / 2 + var(--page-gutter)));
+		display: none;
+		flex-direction: column;
+		gap: 8px;
+		max-width: min(520px, calc(100% - 2 * var(--page-gutter)));
+		pointer-events: none;
+	}
+
+	.frise[data-scene] .frise-legend {
+		display: flex;
+	}
+
+	.frise-legend-meta {
+		font-size: 12px;
+		color: var(--color-on-accent-muted);
+	}
+
+	.frise-legend-title {
+		font-size: 44px;
+		font-weight: 800;
+		font-stretch: 75%;
+		line-height: 1;
+		letter-spacing: -0.015em;
+	}
+
+	.frise-legend-place {
+		font-size: 15px;
+		color: var(--color-on-accent-muted);
 	}
 </style>

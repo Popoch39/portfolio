@@ -240,6 +240,9 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 	];
 	const RADIUS_EASES = [cubicBezier(0.5, 0, 0.25, 1), cubicBezier(0.5, 0, 0.25, 1), 'none', cubicBezier(0.6, 0, 0.3, 1), 'none'];
 	const LABEL_EASE = cubicBezier(0.2, 0.7, 0.2, 1);
+	/** When the pastilles start going round their bague, and when the finished tower holds still, the SIG accent last in. */
+	const TRAVEL_START = 0.04;
+	const HOLD_START = 0.9;
 	const NUCLEUS_EASE = cubicBezier(0.3, 1.6, 0.5, 1);
 
 	/** Breathing room kept above the pinned frame, and below it when the title scrolls out. */
@@ -363,9 +366,12 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 				}
 			}
 
-			// The pastilles go round only as the page scrolls, ending where the HTML draws them.
-			scene.fromTo(bague.querySelector('.bague-orbit'), { rotation: -orbit }, { rotation: 0, duration: 0.92 }, 0.04);
-			scene.fromTo(slots, { rotation: orbit }, { rotation: 0, duration: 0.92 }, 0.04);
+			// The pastilles go round only as the page scrolls, ending where the HTML draws them as their bague
+			// settles in the tower: the hold at the end of the scene stays still. The ease lets them come to
+			// rest with the bague rather than stop dead.
+			const settle = { ease: 'sine.inOut', duration: end - TRAVEL_START };
+			scene.fromTo(bague.querySelector('.bague-orbit'), { rotation: -orbit }, { rotation: 0, ...settle }, TRAVEL_START);
+			scene.fromTo(slots, { rotation: orbit }, { rotation: 0, ...settle }, TRAVEL_START);
 
 			// Its label comes in as the bague takes its place in the tower.
 			scene.fromTo(labels[rank], { opacity: 0, x: -14 }, { opacity: 1, x: 0, ease: LABEL_EASE, duration: 0.06 }, end - 0.03);
@@ -385,10 +391,10 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 			atome.querySelectorAll('.bague-side-accent, .bague-top-accent'),
 			{ opacity: 0 },
 			{ opacity: 1, duration: 0.04 },
-			0.88,
+			HOLD_START - 0.04,
 		);
 
-		// A hold on the finished tower before the page moves on.
+		// A hold on the finished tower before the page moves on: nothing moves past this point.
 		scene.set({}, {}, 1);
 
 		return () => {

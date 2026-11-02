@@ -323,6 +323,11 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 		};
 		ScrollTrigger.addEventListener('refreshInit', refit);
 
+		// Their own layers, for as long as the scene runs: under the smoother the pin moves the section
+		// with a 2D transform, and the 3D drawing changes inside it at every frame. Left in the page's
+		// layer, both repaint and re-raster the section at every frame.
+		gsap.set([section, atome.querySelector('.atome-tower')], { willChange: 'transform' });
+
 		// One timeline over the whole pin, its progress running from 0 to 1 in "seconds".
 		const scene = gsap.timeline({
 			defaults: { ease: 'none' },
@@ -576,6 +581,8 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 		width: 12px;
 		height: 12px;
 		fill: currentColor;
+		/* Without it, Chromium repaints every pastille at every frame of the scene, as its bague turns. */
+		contain: paint;
 	}
 
 	/* Labels: one per bague, beside its height in the tower, its leader line running back to the band. */

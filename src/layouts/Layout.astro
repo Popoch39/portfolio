@@ -1,66 +1,96 @@
 ---
+import { Font } from 'astro:assets';
+import touchIcon from '../assets/apple-touch-icon.png';
+import iconUrl from '../assets/icon.svg?url';
+import ogImage from '../assets/og.png';
+import SiteHeader from '../components/SiteHeader.astro';
+import Statusline from '../components/Statusline.astro';
+import { person } from '../data/profile';
 import '../styles/global.css';
 
 interface Props {
 	title: string;
 	description: string;
+	/** Pages outside the index (404): no canonical URL, no social card, `noindex`. */
+	noindex?: boolean;
 }
 
-const { title, description } = Astro.props;
+const { title, description, noindex = false } = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const ogImageUrl = new URL(ogImage.src, Astro.site).href;
+const ogImageAlt = `${person.name}, ${person.jobTitle.toLowerCase()} — portfolio`;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="fr">
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="generator" content={Astro.generator} />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>{title}</title>
 		<meta name="description" content={description} />
+		{noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={canonical} />}
+		<meta name="author" content={person.name} />
+		<meta name="theme-color" content="#f3f3ef" />
+		<meta name="color-scheme" content="light" />
+		<meta name="generator" content={Astro.generator} />
+
+		<link rel="icon" href="/favicon.ico" sizes="32x32" />
+		<link rel="icon" href={iconUrl} type="image/svg+xml" />
+		<link rel="apple-touch-icon" href={touchIcon.src} />
+		<link rel="sitemap" href="/sitemap.xml" />
+
+		{/* The variable Archivo draws the title, the LCP element: it alone is preloaded. */}
+		<Font cssVariable="--font-sans" preload={[{ style: 'normal' }]} />
+		<Font cssVariable="--font-mono" />
+
+		{
+			!noindex && (
+				<>
+					<meta property="og:type" content="profile" />
+					<meta property="og:site_name" content={person.name} />
+					<meta property="og:locale" content="fr_FR" />
+					<meta property="og:url" content={canonical} />
+					<meta property="og:title" content={title} />
+					<meta property="og:description" content={description} />
+					<meta property="og:image" content={ogImageUrl} />
+					<meta property="og:image:type" content="image/png" />
+					<meta property="og:image:width" content={String(ogImage.width)} />
+					<meta property="og:image:height" content={String(ogImage.height)} />
+					<meta property="og:image:alt" content={ogImageAlt} />
+					<meta property="profile:first_name" content={person.givenName} />
+					<meta property="profile:last_name" content={person.familyName} />
+					<meta property="profile:username" content={person.github.user} />
+					<meta name="twitter:card" content="summary_large_image" />
+					<meta name="twitter:title" content={title} />
+					<meta name="twitter:description" content={description} />
+					<meta name="twitter:image" content={ogImageUrl} />
+					<meta name="twitter:image:alt" content={ogImageAlt} />
+				</>
+			)
+		}
+		<slot name="head" />
 	</head>
 	<body>
-		<header class="entete">
-			<nav aria-label="Main">
-				<a href="/#contact">Contact</a>
-			</nav>
-		</header>
-		{/* Enveloppe du défilement lissé : les éléments fixes (header, barres) se placent hors de ces deux div. */}
+		{/* Smoothed-scrolling envelope: fixed elements (the statusline) sit outside these two divs. */}
 		<div id="smooth-wrapper">
 			<div id="smooth-content">
-				<slot />
+				<div id="top" class="page">
+					<SiteHeader />
+					<slot />
+				</div>
 			</div>
 		</div>
+		<Statusline />
 		<script>
-			import '../animation/socle';
+			import '../animation/base';
 		</script>
 	</body>
 </html>
 
 <style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-	}
-
-	/* Hors de l'enveloppe : la transformation du contenu lissé ne l'entraîne pas. */
-	.entete {
-		position: fixed;
-		inset: 0 0 auto;
-		z-index: 1;
-		box-sizing: border-box;
-		height: var(--hauteur-entete);
-		display: flex;
-		align-items: center;
-		padding: 0 1rem;
-		background: var(--couleur-fond);
-		color: var(--couleur-texte);
-		font-family: system-ui, sans-serif;
-	}
-
-	.entete a {
-		color: inherit;
+	/* Room for the fixed statusline: the end of the page scrolls clear of it. */
+	.page {
+		padding-bottom: var(--statusline-height);
 	}
 </style>

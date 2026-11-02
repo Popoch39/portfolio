@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { defineConfig, devices } from '@playwright/test';
 
-// Un port par copie de travail : plusieurs worktrees lancent leurs tests en même temps,
-// et un serveur réutilisé servirait le build d'une autre branche.
+// One port per working copy: several worktrees run their tests at the same time,
+// and a reused server would serve another branch's build.
 const port = 4400 + (createHash('sha1').update(process.cwd()).digest().readUInt16BE(0) % 500);
 const baseURL = `http://127.0.0.1:${port}`;
 
@@ -23,13 +23,13 @@ export default defineConfig({
 		{
 			name: 'firefox',
 			use: { ...devices['Desktop Firefox'] },
-			// Playwright n'émule pas `isMobile` sous Firefox : le doigt se teste dans Chromium.
-			testIgnore: /tactile\.spec\.ts/,
+			// Playwright does not emulate `isMobile` under Firefox: touch is tested in Chromium.
+			testIgnore: /touch\.spec\.ts/,
 		},
 	],
-	// Toujours le site construit, jamais le serveur de dev.
-	// Astro passe `preview` en arrière-plan quand il détecte un agent IA : Playwright perdrait
-	// le processus. On le garde au premier plan, hors du fichier de verrou d'un preview manuel.
+	// Always the built site, never the dev server.
+	// Astro moves `preview` to the background when it detects an AI agent: Playwright would lose
+	// the process. It stays in the foreground, outside the lock file of a manual preview.
 	webServer: {
 		command: `bun run build && bun run preview --ignore-lock --host 127.0.0.1 --port ${port}`,
 		env: { ASTRO_PREVIEW_BACKGROUND: '0' },

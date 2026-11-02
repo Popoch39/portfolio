@@ -164,13 +164,6 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 															<use href={pastille.href} />
 														</svg>
 													</span>
-													{bague.accent && (
-														<span class="pastille-face pastille-face--accent">
-															<svg class="pastille-logo" viewBox="0 0 24 24">
-																<use href={pastille.href} />
-															</svg>
-														</span>
-													)}
 												</div>
 											</div>
 										</div>
@@ -389,7 +382,7 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 
 		// The SIG accent is a layer laid over the bague: only its opacity moves, never a colour.
 		scene.fromTo(
-			atome.querySelectorAll('.bague-side-accent, .bague-top-accent, .pastille-face--accent'),
+			atome.querySelectorAll('.bague-side-accent, .bague-top-accent'),
 			{ opacity: 0 },
 			{ opacity: 1, duration: 0.04 },
 			0.88,
@@ -538,12 +531,6 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 			0 2.5px 0 -0.5px var(--side),
 			0 2.5px 0 0 var(--color-ink);
 		color: var(--color-ink);
-	}
-
-	.pastille-face--accent {
-		border-color: var(--accent-deep);
-		background: var(--color-accent);
-		color: var(--color-on-accent);
 	}
 
 	.pastille-logo {

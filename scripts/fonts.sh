@@ -10,7 +10,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 # Basic Latin, Latin-1 (French accents, no-break space), œ/Œ/Ÿ, typographic punctuation, € and arrows.
-GLYPHS="U+0020-007E,U+00A0-00FF,U+0152-0153,U+0178,U+2013-2014,U+2018-2019,U+201C-201D,U+2022,U+2026,U+202F,U+2039-203A,U+20AC,U+2192,U+2197"
+GLYPHS="U+0020-007E,U+00A0-00FF,U+0152-0153,U+0178,U+2013-2014,U+2018-2019,U+201C-201D,U+2022,U+2026,U+202F,U+2039-203A,U+20AC,U+2190,U+2192,U+2197"
 FEATURES="kern,liga,calt,ccmp,locl,mark,mkmk"
 
 curl -sSfL -o "$TMP/archivo.ttf" "$SOURCES/archivo/Archivo%5Bwdth%2Cwght%5D.ttf"

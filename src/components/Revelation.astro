@@ -1,0 +1,29 @@
+---
+/**
+ * Révélation : le contenu glisse et apparaît à son entrée dans la vue.
+ * Jamais sur ce qui est visible au premier affichage (hero, élément LCP).
+ */
+---
+
+<!-- Le déclencheur reste immobile : mesuré sur l'élément animé, le seuil serait décalé de son état de départ. -->
+<div data-revelation>
+	<div data-revelation-cible>
+		<slot />
+	</div>
+</div>
+
+<script>
+	import { enregistrerScene, gsap } from '../animation/socle';
+
+	enregistrerScene(() => {
+		for (const declencheur of document.querySelectorAll<HTMLElement>('[data-revelation]')) {
+			gsap.from(declencheur.querySelector(':scope > [data-revelation-cible]'), {
+				opacity: 0,
+				y: 48,
+				duration: 0.8,
+				ease: 'power2.out',
+				scrollTrigger: { trigger: declencheur, start: 'top 85%', once: true },
+			});
+		}
+	});
+</script>

@@ -30,6 +30,18 @@ const cibleDArrivee = cibleDeLAncre(location.hash);
 if (cibleDArrivee) ScrollSmoother.get()?.scrollTo(cibleDArrivee, false, 'top top');
 
 /**
+ * Enregistre une scène : son code ne s'exécute que si le mouvement est autorisé, et tout ce
+ * qu'elle crée (tweens, ScrollTriggers, styles inline) est annulé puis recréé quand la préférence bascule.
+ * Le HTML/CSS rend l'état final : la scène anime vers lui (`from()` / `fromTo()`).
+ */
+export function enregistrerScene(scene: gsap.ContextFunc) {
+	mouvement.add(MOUVEMENT_AUTORISE, scene);
+}
+
+// Les scènes prennent GSAP ici, jamais à part : une seule instance, plugins déjà enregistrés.
+export { gsap, ScrollTrigger };
+
+/**
  * Amène les ancres internes par le smoother ; renvoie de quoi s'en détacher quand le contexte est annulé.
  * La navigation native suit son cours (URL, `:target`, point de départ du focus) ; seul le défilement change de main.
  */

@@ -21,6 +21,7 @@ import background from '../assets/background.svg';
 				<a class="button" href="https://docs.astro.build">
 					Read our docs
 				</a>
+				<a href="/about/">About</a>
 				<a href="https://astro.build/chat">
 					Join our Discord{' '}
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127.14 96.36">
@@ -66,7 +67,8 @@ import background from '../assets/background.svg';
 	}
 
 	main {
-		height: 100%;
+		/* Le hero remplit le premier écran : ce qui suit reste sous la ligne de flottaison. */
+		min-height: 100svh;
 		display: flex;
 		justify-content: center;
 	}

@@ -1,4 +1,5 @@
 ---
+import Revelation from '../components/Revelation.astro';
 import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
 
@@ -6,9 +7,15 @@ import Layout from '../layouts/Layout.astro';
 // Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
 
-<Layout>
+<Layout title="Astro Basics" description="Astro starter page, home of the portfolio while it is being built.">
 	<Welcome />
-	<section id="contact" class="contact" aria-labelledby="contact-titre">
+	<Revelation>
+		<section class="suite">
+			<h2>Scroll-driven scenes</h2>
+			<p>This block is revealed as it enters the viewport, and is fully visible without JavaScript.</p>
+		</section>
+	</Revelation>
+	<section id="contact" class="suite" aria-labelledby="contact-titre">
 		<h2 id="contact-titre">Contact</h2>
 		<p>Code and side projects live on GitHub.</p>
 		<a href="https://github.com/Popoch39">GitHub profile</a>
@@ -16,16 +23,14 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 
 <style>
-	/* L'accueil provisoire tient dans un écran : la section part sous la ligne de flottaison,
-	   pour que l'ancre du header et le clavier aient du chemin à faire. */
-	.contact {
-		margin-top: 100svh;
-		padding: 4rem 1rem;
-		font-family: system-ui, sans-serif;
-		color: #111827;
+	.suite {
+		max-width: 40rem;
+		margin: 0 auto;
+		padding: 4rem 1rem 8rem;
+		font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
 	}
 
-	.contact a {
-		color: inherit;
+	.suite a {
+		color: #3245ff;
 	}
 </style>

@@ -18,3 +18,20 @@ _À éviter_ : smooth scroll (qui désigne aussi `scroll-behavior: smooth`).
 
 **État final**
 Rendu que donnent le HTML et le CSS seuls : tout le contenu visible, à sa place. Une scène anime depuis un état de départ vers cet état final ; sans JS ou en mouvement réduit, la page reste à l'état final sans rien défaire.
+
+## Stack
+
+**Atome**
+La scène de la section Stack : les bagues passent de la cible au gyroscope, puis à l'atome autour d'un noyau, se recouchent emboîtées et montent en tour. Son état final est la tour.
+_À éviter_ : gyroscope, vue éclatée.
+
+**Bague**
+L'anneau d'une catégorie de la stack, une par catégorie, dans l'ordre du profil de la base au sommet de la tour. La bague SIG est en accent.
+_À éviter_ : ring, orbite.
+
+**Pastille**
+Le disque qui porte le logo d'un outil sur sa bague, toujours face à l'écran et posé devant sa bague. Un outil sans logo n'a pas de pastille : il reste dans l'étiquette.
+_À éviter_ : chip, icône, électron.
+
+**Tour**
+L'empilement final des bagues, chacune à sa hauteur, avec son étiquette (catégorie et outils) à côté : l'état final de l'Atome.

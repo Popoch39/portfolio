@@ -1,36 +1,757 @@
 ---
-import Revelation from '../components/Revelation.astro';
-import Welcome from '../components/Welcome.astro';
+import Cursor from '../components/Cursor.astro';
+import Reveal from '../components/Reveal.astro';
+import SectionHeading from '../components/SectionHeading.astro';
+import SectionNumber from '../components/SectionNumber.astro';
 import Layout from '../layouts/Layout.astro';
+import {
+	currentPosition,
+	education,
+	formatPeriod,
+	marqueeWords,
+	person,
+	positions,
+	profile,
+	projects,
+	publicRepoCount,
+	salariedPositions,
+	stack,
+	twoDigits,
+	yearsOfExperience,
+} from '../data/profile';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const title = 'Louis Pocheron — Développeur fullstack & SIG à Besançon';
+const description =
+	'Concepteur et développeur d’applications fullstack, spécialisé SIG et cartographie : serveurs de tuiles, nuages de points et interfaces React. Basé à Besançon.';
+
+const repoCount = await publicRepoCount();
+const projectsAside = [`${projects.length} sélectionnés`, repoCount && `${repoCount} dépôts publics`]
+	.filter(Boolean)
+	.join(' · ');
+const cities = [...new Set(salariedPositions.map((p) => p.city)), person.city];
+const positionsAside = `~${yearsOfExperience()} ans · ${cities.join(' & ')}`;
+
+const mailto = `mailto:${person.email}`;
+const [mailUser, mailDomain] = person.email.split('@');
+
+const canonical = new URL('/', Astro.site).href;
+// `<` escaped: the JSON sits inside a <script> and must not be able to close it.
+const jsonLd = JSON.stringify({
+	'@context': 'https://schema.org',
+	'@type': 'ProfilePage',
+	url: canonical,
+	name: title,
+	description,
+	inLanguage: 'fr-FR',
+	mainEntity: {
+		'@type': 'Person',
+		'@id': `${canonical}#person`,
+		name: person.name,
+		givenName: person.givenName,
+		familyName: person.familyName,
+		url: canonical,
+		email: mailto,
+		jobTitle: person.jobTitle,
+		description: profile.specialty,
+		address: { '@type': 'PostalAddress', addressLocality: person.city, addressCountry: person.country },
+		worksFor: currentPosition && {
+			'@type': 'Organization',
+			name: currentPosition.company,
+			address: { '@type': 'PostalAddress', addressLocality: currentPosition.city, addressCountry: 'FR' },
+		},
+		alumniOf: [...new Set(education.map((e) => e.school))].map((name) => ({
+			'@type': 'EducationalOrganization',
+			name,
+		})),
+		knowsAbout: stack.flatMap((group) => group.items),
+		sameAs: [person.github.url],
+	},
+}).replace(/</g, '\\u003c');
 ---
 
-<Layout title="Astro Basics" description="Astro starter page, home of the portfolio while it is being built.">
-	<Welcome />
-	<Revelation>
-		<section class="colonne-de-texte">
-			<h2>Scroll-driven scenes</h2>
-			<p>This block is revealed as it enters the viewport, and is fully visible without JavaScript.</p>
-		</section>
-	</Revelation>
-	<section id="contact" class="colonne-de-texte" aria-labelledby="contact-titre">
-		<h2 id="contact-titre">Contact</h2>
-		<p>Code and side projects live on GitHub.</p>
-		<a href="https://github.com/Popoch39">GitHub profile</a>
-	</section>
+<Layout title={title} description={description}>
+	<script slot="head" type="application/ld+json" set:html={jsonLd} />
+
+	<main>
+		<div class="wrap">
+			<section class="hero" aria-labelledby="hero-title">
+				<p class="mono hero-status">
+					<span class="hero-mode">-- NORMAL --</span>
+					<span>portfolio · {new Date().getFullYear()}</span>
+				</p>
+				<h1 id="hero-title" class="hero-title">
+					<span>{person.givenName}</span>
+					<span class="hero-last">{person.familyName}<Cursor /></span>
+				</h1>
+				<div class="hero-grid grid-12">
+					<p class="hero-lede">
+						Je construis la plomberie derrière les cartes — serveurs de tuiles, caches, nuages de points —
+						et les interfaces <em>React</em> qui vont dessus.
+					</p>
+					<dl class="hero-facts">
+						<div>
+							<dt class="mono">Rôle</dt>
+							<dd>{profile.role}</dd>
+						</div>
+						<div>
+							<dt class="mono">Spécialité</dt>
+							<dd>{profile.specialty}</dd>
+						</div>
+						<div>
+							<dt class="mono">Aujourd’hui</dt>
+							<dd>{profile.today}</dd>
+						</div>
+					</dl>
+					<div class="hero-actions">
+						<a class="button" href={mailto}
+							>Écrire<span class="visually-hidden"> un e-mail</span>
+							<span class="mono" aria-hidden="true">:wq</span></a
+						>
+						<a class="hero-github" href={person.github.url} rel="me">GitHub <span aria-hidden="true">↗</span></a>
+					</div>
+				</div>
+			</section>
+		</div>
+
+		<div class="marquee" aria-hidden="true">
+			{/* Two copies: the track slides by half its width, then loops seamlessly. */}
+			<div class="marquee-track">
+				{
+					[...marqueeWords, ...marqueeWords].map((word) => (
+						<span class="marquee-item">
+							{word}
+							<span class="marquee-slash">/</span>
+						</span>
+					))
+				}
+			</div>
+		</div>
+
+		<div class="wrap">
+			<section id="projets" class="projects-section" aria-labelledby="projects-title">
+				<SectionHeading number={1} title="Projets" titleId="projects-title" aside={projectsAside} />
+				<ol class="projects">
+					{
+						projects.map((project, i) => (
+							<li>
+								<a class="project grid-12" href={`${person.github.url}/${project.repo}`}>
+									<span class="mono project-number" aria-hidden="true">
+										{twoDigits(i + 1)}
+									</span>
+									<h3 class="project-name">{project.repo}</h3>
+									<p class="project-description dim">{project.description}</p>
+									<p class="mono project-stack dim">{project.stack}</p>
+									<span class="mono project-year">
+										<time datetime={String(project.year)}>{project.year}</time> <span aria-hidden="true">↗</span>
+									</span>
+								</a>
+							</li>
+						))
+					}
+				</ol>
+			</section>
+
+			<section id="parcours" class="section" aria-labelledby="career-title">
+				<SectionHeading number={2} title="Parcours" titleId="career-title" aside={positionsAside} />
+				<Reveal>
+					<div class="positions grid-12">
+						{
+							positions.map((position) => (
+								<article class="position" data-current={!position.end}>
+									<span class="position-year" aria-hidden="true">
+										{position.start.slice(0, 4)}
+									</span>
+									<p class="mono position-meta">
+										<time datetime={position.start}>{formatPeriod(position)}</time> · {position.city}
+									</p>
+									<h3>{position.company}</h3>
+									<p class="position-role">{position.role}</p>
+									<ul>
+										{position.missions.map((mission) => (
+											<li>
+												<span aria-hidden="true">—</span>
+												<span>{mission}</span>
+											</li>
+										))}
+									</ul>
+								</article>
+							))
+						}
+					</div>
+				</Reveal>
+				<div class="education grid-12">
+					<h3 class="mono">Formation</h3>
+					<ol>
+						{
+							education.map((entry) => (
+								<li>
+									<span class="mono education-period">{entry.period}</span>
+									<span class="education-title">{entry.title}</span>
+									<span class="dim">
+										{entry.school}, {entry.city}
+									</span>
+								</li>
+							))
+						}
+					</ol>
+				</div>
+			</section>
+
+			<section id="stack" class="section" aria-labelledby="stack-title">
+				<SectionHeading number={3} title="Stack" titleId="stack-title" aside=":set stack?" />
+				<dl class="stack">
+					{
+						stack.map((group) => (
+							<div class="stack-row grid-12">
+								<dt class="mono">{group.category}</dt>
+								<dd>
+									<ul class="stack-items">
+										{group.items.map((item) => (
+											<li>{item}</li>
+										))}
+									</ul>
+								</dd>
+							</div>
+						))
+					}
+				</dl>
+				<p class="mono stack-note">
+					éditeur : neovim · multiplexeur : tmux · runtime : bun — <a href={person.nvimConfig}
+						>la config est sur GitHub</a
+					>
+				</p>
+			</section>
+
+			<section id="contact" class="contact-section" aria-labelledby="contact-title">
+				<div class="contact grid-12">
+					<SectionNumber number={4} />
+					<div class="contact-body">
+						<h2 id="contact-title" class="visually-hidden">Contact</h2>
+						<p class="contact-wq" aria-hidden="true">:wq</p>
+						<p class="contact-lede">Un projet carto, une API, une interface React&nbsp;? Écrivez-moi.</p>
+						<a class="contact-mail" href={mailto}>{mailUser}@<wbr />{mailDomain}</a>
+						<div class="contact-links">
+							<a href={person.github.url} rel="me"
+								>GitHub — {person.github.user} <span aria-hidden="true">↗</span></a
+							>
+							<a href={person.nvimConfig}>Config Neovim <span aria-hidden="true">↗</span></a>
+							<span class="dim">{person.city}, France</span>
+						</div>
+					</div>
+				</div>
+			</section>
+		</div>
+	</main>
 </Layout>
 
 <style>
-	.colonne-de-texte {
-		max-width: 40rem;
-		margin: 0 auto;
-		padding: 4rem 1rem 8rem;
-		font-family: var(--police-texte);
+	.dim {
+		color: var(--color-ink-muted);
 	}
 
-	.colonne-de-texte a {
-		color: var(--couleur-lien);
+	/* Hero */
+
+	.hero {
+		/* The title is sized against the column, measured as a container. */
+		container-type: inline-size;
+		padding: clamp(28px, 4vw, 52px) 0 clamp(48px, 6vw, 88px);
+	}
+
+	.hero-status {
+		display: flex;
+		justify-content: space-between;
+		gap: 16px;
+		margin: 0 0 clamp(14px, 2vw, 26px);
+		font-size: 13px;
+		color: var(--color-ink-muted);
+	}
+
+	.hero-mode {
+		color: var(--color-ink);
+	}
+
+	.hero-title {
+		margin: 0;
+		/*
+		 * "POCHERON" and its cursor take 4.3em: the size follows the width of the column so the
+		 * cursor never bleeds out of it (the mockup's 22vw did, down to 320px screens).
+		 */
+		font-size: min(100cqi / 4.35, 305px);
+		line-height: 0.8;
+		font-weight: 800;
+		font-stretch: 62%;
+		letter-spacing: -0.015em;
+		text-transform: uppercase;
+	}
+
+	.hero-title > span {
+		display: block;
+	}
+
+	.hero-last {
+		white-space: nowrap;
+	}
+
+	.hero-grid {
+		row-gap: 32px;
+		align-items: start;
+		margin-top: clamp(32px, 4.5vw, 68px);
+	}
+
+	.hero-lede {
+		grid-column: 1 / span 6;
+		margin: 0;
+		font-size: clamp(22px, 2.35vw, 34px);
+		line-height: 1.2;
+		letter-spacing: -0.012em;
+		text-wrap: pretty;
+	}
+
+	.hero-lede em {
+		color: var(--color-accent);
+	}
+
+	.hero-facts {
+		grid-column: 8 / span 3;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		font-size: 15px;
+		line-height: 1.4;
+	}
+
+	.hero-facts div {
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+	}
+
+	.hero-facts dt {
+		font-size: 12px;
+		color: var(--color-ink-muted);
+	}
+
+	.hero-facts dd {
+		margin: 0;
+	}
+
+	.hero-actions {
+		grid-column: 11 / span 2;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 12px;
+	}
+
+	.button .mono {
+		font-size: 13px;
+		color: var(--color-on-ink-muted);
+	}
+
+	.button:hover .mono {
+		color: inherit;
+	}
+
+	.hero-github {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		font-weight: 600;
+		text-underline-offset: 4px;
+	}
+
+	/* Tablet: the three hero columns are too narrow for the button. */
+	@media (min-width: 861px) and (max-width: 1100px) {
+		.hero-lede {
+			grid-column: 1 / -1;
+		}
+
+		.hero-facts {
+			grid-column: 1 / span 7;
+		}
+
+		.hero-actions {
+			grid-column: 9 / span 4;
+		}
+	}
+
+	/* Marquee */
+
+	.marquee {
+		overflow: hidden;
+		background: var(--color-ink);
+		color: var(--color-paper);
+	}
+
+	.marquee-track {
+		display: flex;
+		width: max-content;
+		animation: marquee 42s linear infinite;
+	}
+
+	.marquee-item {
+		display: flex;
+		align-items: center;
+		gap: 26px;
+		padding: 18px 0 18px 26px;
+		font-size: clamp(22px, 2.6vw, 38px);
+		font-weight: 700;
+		font-stretch: 72%;
+		text-transform: uppercase;
+		white-space: nowrap;
+	}
+
+	.marquee-slash {
+		color: var(--color-accent-soft);
+	}
+
+	@keyframes marquee {
+		to {
+			transform: translateX(-50%);
+		}
+	}
+
+	/* Sections */
+
+	.projects-section {
+		padding-top: clamp(56px, 7vw, 108px);
+	}
+
+	.section {
+		padding-top: clamp(64px, 8vw, 120px);
+	}
+
+	/* Projects */
+
+	.projects {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.projects li {
+		border-bottom: 1px solid var(--color-rule);
+	}
+
+	.project {
+		row-gap: 8px;
+		align-items: baseline;
+		margin: 0 -14px;
+		padding: 26px 14px;
+		color: inherit;
+		text-decoration: none;
+		transition:
+			background-color 0.2s ease,
+			color 0.2s ease;
+	}
+
+	/* Hover only where a pointer hovers: a tap must not leave the row inverted. */
+	@media (hover: hover) {
+		.project:hover {
+			background: var(--color-ink);
+			color: var(--color-paper);
+		}
+
+		.project:hover .dim {
+			color: var(--color-on-ink-muted);
+		}
+	}
+
+	.project-number {
+		grid-column: span 1;
+		font-size: 13px;
+	}
+
+	.project-name {
+		grid-column: span 4;
+		margin: 0;
+		font-size: clamp(24px, 2.5vw, 36px);
+		line-height: 1.05;
+		font-weight: 700;
+		font-stretch: 80%;
+		letter-spacing: -0.015em;
+		overflow-wrap: anywhere;
+	}
+
+	.project-description {
+		grid-column: span 4;
+		margin: 0;
+		font-size: 16px;
+		line-height: 1.45;
+		text-wrap: pretty;
+	}
+
+	.project-stack {
+		grid-column: span 2;
+		margin: 0;
+		font-size: 12px;
+		line-height: 1.6;
+	}
+
+	.project-year {
+		grid-column: span 1;
+		text-align: right;
+		font-size: 13px;
+		white-space: nowrap;
+	}
+
+	@media (min-width: 861px) and (max-width: 1100px) {
+		.project-name {
+			grid-column: 2 / span 5;
+		}
+
+		.project-description {
+			grid-column: 7 / span 6;
+		}
+
+		.project-stack {
+			grid-column: 2 / span 9;
+		}
+
+		.project-year {
+			grid-column: 11 / span 2;
+		}
+	}
+
+	/* Career */
+
+	.positions {
+		row-gap: 48px;
+		padding-top: 40px;
+	}
+
+	.position {
+		grid-column: span 4;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding-top: 18px;
+		border-top: 4px solid var(--color-ink);
+	}
+
+	.position[data-current] {
+		border-top-color: var(--color-accent);
+	}
+
+	.position-year {
+		font-size: clamp(64px, 7.4vw, 108px);
+		line-height: 0.82;
+		font-weight: 800;
+		font-stretch: 62%;
+	}
+
+	.position-meta {
+		margin: 0;
+		font-size: 12px;
+		color: var(--color-ink-muted);
+	}
+
+	.position h3 {
+		margin: 0;
+		font-size: 26px;
+		line-height: 1.15;
+		font-weight: 700;
+		letter-spacing: -0.015em;
+	}
+
+	.position-role {
+		margin: 0;
+		font-size: 15px;
+		color: var(--color-ink-muted);
+	}
+
+	.position ul {
+		margin: 6px 0 0;
+		padding: 0;
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+		gap: 9px;
+		font-size: 15px;
+		line-height: 1.45;
+	}
+
+	.position li {
+		display: flex;
+		gap: 10px;
+	}
+
+	.position li > :first-child {
+		color: var(--color-ink-muted);
+	}
+
+	.education {
+		row-gap: 14px;
+		margin-top: 72px;
+	}
+
+	.education h3 {
+		grid-column: span 3;
+		margin: 0;
+		padding-top: 14px;
+		font-size: 13px;
+		font-weight: 400;
+		color: var(--color-ink-muted);
+	}
+
+	.education ol {
+		grid-column: span 9;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.education li {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 4px 20px;
+		padding: 14px 0;
+		border-top: 1px solid var(--color-rule);
+		font-size: 17px;
+	}
+
+	.education-period {
+		width: 110px;
+		flex-shrink: 0;
+		font-size: 13px;
+		color: var(--color-ink-muted);
+	}
+
+	.education-title {
+		flex: 1 1 260px;
+		font-weight: 600;
+	}
+
+	/* Stack */
+
+	.stack {
+		margin: 0;
+	}
+
+	.stack-row {
+		row-gap: 6px;
+		align-items: baseline;
+		padding: 22px 0;
+		border-bottom: 1px solid var(--color-rule);
+	}
+
+	.stack-row dt {
+		grid-column: span 3;
+		font-size: 13px;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--color-ink-muted);
+	}
+
+	.stack-row dd {
+		grid-column: span 9;
+		margin: 0;
+	}
+
+	.stack-items {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		font-size: clamp(22px, 2.4vw, 34px);
+		line-height: 1.22;
+		font-weight: 500;
+		letter-spacing: -0.015em;
+	}
+
+	.stack-items li {
+		display: inline;
+	}
+
+	/* The separator is drawn, not read: the empty alternative text keeps it out of the accessible name. */
+	.stack-items li:not(:last-child)::after {
+		content: ' / ';
+		content: ' / ' / '';
+		color: var(--color-ink-faint);
+	}
+
+	.stack-note {
+		margin: 22px 0 0;
+		font-size: 13px;
+		color: var(--color-ink-muted);
+	}
+
+	/* Contact */
+
+	.contact-section {
+		padding: clamp(72px, 9vw, 136px) 0 clamp(56px, 6vw, 96px);
+	}
+
+	.contact {
+		row-gap: 18px;
+	}
+
+	.contact-body {
+		grid-column: 2 / span 11;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 22px;
+	}
+
+	.contact-wq {
+		margin: 0;
+		font-size: clamp(88px, 14vw, 216px);
+		line-height: 0.78;
+		font-weight: 900;
+		font-stretch: 62%;
+		color: var(--color-accent);
+	}
+
+	.contact-lede {
+		margin: 0;
+		font-size: clamp(20px, 2vw, 28px);
+		line-height: 1.25;
+		letter-spacing: -0.01em;
+	}
+
+	.contact-mail {
+		max-width: 100%;
+		/* Down to 22px rather than 30px: the address stays on one line on a 320px phone. */
+		font-size: clamp(22px, 6.2vw, 92px);
+		line-height: 1.05;
+		font-weight: 800;
+		font-stretch: 70%;
+		letter-spacing: -0.02em;
+		text-decoration: none;
+		background-image: linear-gradient(currentColor, currentColor);
+		background-size: 0 0.06em;
+		background-position: 0 100%;
+		background-repeat: no-repeat;
+		transition: background-size 0.35s ease;
+	}
+
+	.contact-mail:hover {
+		background-size: 100% 0.06em;
+		color: var(--color-ink);
+	}
+
+	.contact-links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px 28px;
+		margin-top: 10px;
+		font-size: 16px;
+		font-weight: 500;
+	}
+
+	.contact-links a {
+		text-underline-offset: 4px;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.marquee-track {
+			animation: none;
+		}
+
+		.contact-mail {
+			transition: none;
+		}
 	}
 </style>

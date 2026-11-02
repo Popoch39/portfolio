@@ -1,0 +1,74 @@
+---
+import { person } from '../data/profile';
+
+// Absolute anchors: from the 404 page, they lead back to the home page sections.
+const sections = [
+	{ href: '/#projets', label: 'Projets' },
+	{ href: '/#parcours', label: 'Parcours' },
+	{ href: '/#stack', label: 'Stack' },
+	{ href: '/#contact', label: 'Contact' },
+];
+---
+
+<div class="wrap">
+	<header class="site-header grid-12">
+		<a class="name" href="/#top">{person.name}</a>
+		<p class="mono meta">{person.jobTitle}</p>
+		<p class="mono meta">{person.city} — {person.coordinates}</p>
+		<nav aria-label="Sections">
+			{sections.map((section) => <a href={section.href}>{section.label}</a>)}
+		</nav>
+	</header>
+</div>
+
+<style>
+	.site-header {
+		row-gap: 8px;
+		align-items: baseline;
+		padding: 22px 0;
+		border-bottom: 1px solid var(--color-ink);
+		font-size: 13px;
+	}
+
+	.name {
+		grid-column: span 3;
+		font-size: 15px;
+		font-weight: 700;
+		text-decoration: none;
+	}
+
+	.meta {
+		grid-column: span 3;
+		margin: 0;
+		color: var(--color-ink-muted);
+	}
+
+	nav {
+		grid-column: span 3;
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+		gap: 6px 20px;
+		font-size: 14px;
+		font-weight: 500;
+	}
+
+	nav a {
+		display: inline-flex;
+		align-items: center;
+		/* WCAG 2.5.8: a 24px target, the header stays as tall as in the mockup. */
+		min-height: 24px;
+		text-decoration: none;
+	}
+
+	nav a:hover {
+		text-decoration: underline;
+		text-underline-offset: 4px;
+	}
+
+	@media (max-width: 860px) {
+		.meta {
+			display: none;
+		}
+	}
+</style>

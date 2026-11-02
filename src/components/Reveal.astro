@@ -1,0 +1,29 @@
+---
+/**
+ * Reveal: the content slides in and fades up as it enters the view.
+ * Never on what is visible at first paint (hero, LCP element).
+ */
+---
+
+{/* The trigger stays still: measured on the animated element, the threshold would be offset by its starting state. */}
+<div data-reveal>
+	<div data-reveal-target>
+		<slot />
+	</div>
+</div>
+
+<script>
+	import { gsap, registerScene } from '../animation/base';
+
+	registerScene(() => {
+		for (const trigger of document.querySelectorAll<HTMLElement>('[data-reveal]')) {
+			gsap.from(trigger.querySelector(':scope > [data-reveal-target]'), {
+				opacity: 0,
+				y: 48,
+				duration: 0.8,
+				ease: 'power2.out',
+				scrollTrigger: { trigger, start: 'top 85%', once: true },
+			});
+		}
+	});
+</script>

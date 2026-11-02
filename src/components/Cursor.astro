@@ -1,0 +1,28 @@
+---
+/** Vim block cursor after a display title, sized in `em` against it. */
+---
+
+<span class="cursor" aria-hidden="true"></span>
+
+<style>
+	.cursor {
+		display: inline-block;
+		width: 0.3em;
+		height: 0.7em;
+		margin-left: 0.05em;
+		background: var(--color-accent);
+		animation: blink 1.1s steps(1) infinite;
+	}
+
+	@keyframes blink {
+		50% {
+			opacity: 0;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.cursor {
+			animation: none;
+		}
+	}
+</style>

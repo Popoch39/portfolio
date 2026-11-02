@@ -22,3 +22,15 @@ mouvement.add(MOUVEMENT_AUTORISE, () => {
 		smoothTouch: false,
 	});
 });
+
+/**
+ * Enregistre une scène : son code ne s'exécute que si le mouvement est autorisé, et tout ce
+ * qu'elle crée (tweens, ScrollTriggers, styles inline) est annulé puis recréé quand la préférence bascule.
+ * Le HTML/CSS rend l'état final : la scène anime vers lui (`from()` / `fromTo()`).
+ */
+export function enregistrerScene(scene: gsap.ContextFunc) {
+	mouvement.add(MOUVEMENT_AUTORISE, scene);
+}
+
+// Les scènes prennent GSAP ici, jamais à part : une seule instance, plugins déjà enregistrés.
+export { gsap, ScrollTrigger };

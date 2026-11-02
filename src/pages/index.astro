@@ -1,4 +1,5 @@
 ---
+import Revelation from '../components/Revelation.astro';
 import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
 
@@ -8,4 +9,19 @@ import Layout from '../layouts/Layout.astro';
 
 <Layout>
 	<Welcome />
+	<Revelation>
+		<section class="suite">
+			<h2>Scroll-driven scenes</h2>
+			<p>This block is revealed as it enters the viewport, and is fully visible without JavaScript.</p>
+		</section>
+	</Revelation>
 </Layout>
+
+<style>
+	.suite {
+		max-width: 40rem;
+		margin: 0 auto;
+		padding: 4rem 1rem 8rem;
+		font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
+	}
+</style>

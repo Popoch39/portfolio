@@ -114,9 +114,33 @@ const bagues = stack.map((group, rank) => {
 const halfWidth = BASE_RADIUS + PASTILLE_RADIUS + 1;
 const above = Math.max(...bagues.map((b) => -b.height + b.radius / 2)) + PASTILLE_RADIUS + 8;
 const below = Math.max(...bagues.map((b) => b.height + b.radius / 2)) + PASTILLE_RADIUS + THICKNESS + 4;
+/**
+ * How far the drawing reaches around the axis before the tower rises (target, gyroscope, atom, drift):
+ * the scene enlarges that much in the middle of the frame. A bague tilted by X then turned by Z projects
+ * its circle to an ellipse whose half-extents follow from those two angles; its spin doesn't change them.
+ */
+const INTRO_POSES = 4;
+const degrees = (angle: number) => (angle * Math.PI) / 180;
+const introPoses = bagues.flatMap((bague) =>
+	bague.choreography.poses.slice(0, INTRO_POSES).map(({ y, heading, tilt, scale }) => {
+		const [h, t] = [degrees(heading), degrees(tilt)];
+		const radius = bague.radius * scale + PASTILLE_RADIUS;
+		return {
+			y,
+			across: radius * Math.hypot(Math.cos(h), Math.cos(t) * Math.sin(h)),
+			down: radius * Math.hypot(Math.sin(h), Math.cos(t) * Math.cos(h)),
+		};
+	}),
+);
+const introAbove = Math.max(...introPoses.map(({ y, down }) => down - y));
+const introBelow = Math.max(...introPoses.map(({ y, down }) => y + down)) + THICKNESS;
+const introAcross = Math.max(...introPoses.map(({ across }) => across));
 const frame = [
 	`--tower-width: ${2 * halfWidth}px`,
 	`--tower-height: ${above + below}px`,
+	`--intro-above: ${round(introAbove)}px`,
+	`--intro-below: ${round(introBelow)}px`,
+	`--intro-across: ${round(introAcross)}px`,
 	`--axis-x: ${halfWidth}px`,
 	`--axis-y: ${above}px`,
 	`--label-x: ${halfWidth + LABEL_OFFSET}px`,
@@ -260,6 +284,9 @@ const frame = [
 	/** When the pastilles start going round their bague, and when the finished tower holds still, the SIG accent last in. */
 	const TRAVEL_START = 0.04;
 	const HOLD_START = 0.9;
+	/** When the enlarged drawing starts sliding back to its place, as the first bagues rise, and when it is there with the labels. */
+	const INTRO_LEAVE = 0.66;
+	const INTRO_END = 0.84;
 
 	/** Breathing room kept above the pinned frame, and below it when the title scrolls out. */
 	const ROOM = 24;
@@ -301,22 +328,58 @@ const frame = [
 		return Math.max(0, height - frame);
 	}
 
+	/** The most the drawing grows in the middle of the frame before the tower rises. */
+	const INTRO_MAX_SCALE = 1.6;
+	/** Share of the Atome's width the enlarged drawing may take. */
+	const INTRO_WIDTH_SHARE = 0.9;
+
+	/**
+	 * Where the tower box sits while the bagues swing, before the tower rises and the labels come in: the
+	 * drawing is centred in the Atome's width and in the tower's height, enlarged as far as it still fits
+	 * the box. The box scales from its top left corner. Reads layout, so it only runs at setup and refresh.
+	 */
+	function introFrame(atome: HTMLElement, tower: HTMLElement) {
+		const style = getComputedStyle(atome);
+		const length = (name: string) => Number.parseFloat(style.getPropertyValue(name));
+		const scale = length('--tower-scale');
+		const [above, below, across] = ['--intro-above', '--intro-below', '--intro-across'].map(length);
+		const [axisX, axisY] = [length('--axis-x') * scale, length('--axis-y') * scale];
+		const height = length('--tower-height') * scale;
+		const width = atome.clientWidth;
+		const grow = Math.max(
+			1,
+			Math.min(
+				INTRO_MAX_SCALE,
+				height / ((above + below) * scale),
+				(width * INTRO_WIDTH_SHARE) / (2 * across * scale),
+			),
+		);
+		return {
+			scale: grow,
+			x: width / 2 - tower.offsetLeft - axisX * grow,
+			y: height / 2 - ((below - above) / 2) * scale * grow - axisY * grow,
+		};
+	}
+
 	registerScene(() => {
 		const atome = document.querySelector<HTMLElement>('[data-atome]');
 		const section = atome?.closest('section');
 		if (!atome || !section) return;
 
+		const tower = atome.querySelector<HTMLElement>('.atome-tower')!;
 		// Before every refresh measures the pin, so the section has its fitted height by then.
 		let pinOffset = fitToScreen(section, atome);
+		let intro = introFrame(atome, tower);
 		const refit = () => {
 			pinOffset = fitToScreen(section, atome);
+			intro = introFrame(atome, tower);
 		};
 		ScrollTrigger.addEventListener('refreshInit', refit);
 
 		// Their own layers, for as long as the scene runs: under the smoother the pin moves the section
 		// with a 2D transform, and the 3D drawing changes inside it at every frame. Left in the page's
 		// layer, both repaint and re-raster the section at every frame.
-		gsap.set([section, atome.querySelector('.atome-tower')], { willChange: 'transform' });
+		gsap.set([section, tower], { willChange: 'transform' });
 
 		// One timeline over the whole pin, its progress running from 0 to 1 in "seconds".
 		const scene = gsap.timeline({
@@ -328,6 +391,8 @@ const frame = [
 				// As long as the Frise's pin, so the scene doesn't rush past before its phases can be read.
 				end: '+=400%',
 				scrub: true,
+				// The enlarged, centred drawing depends on the screen: its tween takes the refreshed values.
+				invalidateOnRefresh: true,
 				// Under a finger the page scrolls natively, off the main thread: the pin is set a frame early.
 				anticipatePin: 1,
 			},
@@ -397,6 +462,15 @@ const frame = [
 			scene.fromTo(labels[rank], { opacity: 0, x: -14 }, { opacity: 1, x: 0, ease: LABEL_EASE, duration: 0.06 }, end - 0.03);
 		}
 
+		// Enlarged in the middle while the bagues swing; as the tower rises and the labels come in, the
+		// drawing slides back to its place in the tower's box, the labels to its right.
+		scene.fromTo(
+			tower,
+			{ x: () => intro.x, y: () => intro.y, scale: () => intro.scale },
+			{ x: 0, y: 0, scale: 1, ease: 'power2.inOut', duration: INTRO_END - INTRO_LEAVE },
+			INTRO_LEAVE,
+		);
+
 		const nucleus = atome.querySelector('.atome-nucleus');
 		scene.fromTo(nucleus, { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, ease: NUCLEUS_EASE, duration: 0.065 }, 0.44);
 		scene.fromTo(
@@ -443,6 +517,8 @@ const frame = [
 		left: 0;
 		width: calc(var(--tower-width) * var(--tower-scale));
 		height: calc(var(--tower-height) * var(--tower-scale));
+		/* The scene enlarges and centres it from this corner before the tower rises. */
+		transform-origin: 0 0;
 		/* Chromium counts the unscaled boxes of the 3D layers as scrollable overflow; the scaled drawing fits the box. */
 		overflow: clip;
 	}
@@ -647,6 +723,13 @@ const frame = [
 		content: ' / ';
 		content: ' / ' / '';
 		color: var(--color-ink-faint);
+	}
+
+	/* A wide screen: the tower grows, as far as the scene's screen fit lets it in the height. */
+	@media (min-width: 1200px) {
+		.atome {
+			--tower-scale: 1.3;
+		}
 	}
 
 	/* A low window: the labels sit closer together beside the scaled tower, so their lines tighten. */

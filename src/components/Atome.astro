@@ -29,17 +29,29 @@ const LABEL_OFFSET = BASE_RADIUS + 60;
 
 /**
  * Per-rank values from the mockup, cycled when there are more bagues than rows: the final spin of the
- * bague in its own plane, and the angle of its first pastille.
+ * bague in its own plane, the angle of its first pastille, and the scene's tilts. A tilt is the mockup's
+ * Z · X · Z chain: `gyro` is the gyroscope pose, `nested` the laid-down atom pose, which then drifts
+ * in its own plane up to `drift`.
  */
 const RANKS = [
-	{ spin: 405, firstPastille: 20 },
-	{ spin: 225, firstPastille: 40 },
-	{ spin: 45, firstPastille: 10 },
-	{ spin: 585, firstPastille: 60 },
-	{ spin: 45, firstPastille: 30 },
-	{ spin: 765, firstPastille: 0 },
-	{ spin: -315, firstPastille: 45 },
+	{ spin: 405, firstPastille: 20, gyro: [20, 70, 140], nested: [0, 225], drift: 265 },
+	{ spin: 225, firstPastille: 40, gyro: [80, -55, 210], nested: [60, 405], drift: 365 },
+	{ spin: 45, firstPastille: 10, gyro: [140, 80, -60], nested: [120, -135], drift: -95 },
+	{ spin: 585, firstPastille: 60, gyro: [-30, 40, 250], nested: [0, 405], drift: 445 },
+	{ spin: 45, firstPastille: 30, gyro: [100, -75, 60], nested: [60, 225], drift: 185 },
+	{ spin: 765, firstPastille: 0, gyro: [160, 60, 300], nested: [120, 585], drift: 625 },
+	{ spin: -315, firstPastille: 45, gyro: [45, -35, 120], nested: [0, -135], drift: -175 },
 ];
+/** Tilt of every bague once laid down in the atom: steeper than the tower's, so the nest reads as a sphere. */
+const NESTED_TILT = 68;
+/** In the atom, the bagues spread out to these radii: 8px between two bands, so none touches another. */
+const NESTED_BASE_RADIUS = BASE_RADIUS - 10;
+const NESTED_TOP_RADIUS = TOP_RADIUS + 14;
+/** Where the target sits, then the gyroscope, below the tower axis. */
+const TARGET_HEIGHT = 150;
+const GYRO_HEIGHT = 40;
+/** Each bague starts and ends its choreography a little after the one below it, over this share of the scene. */
+const STAGGER = 0.03;
 
 const sources = import.meta.glob<string>('../assets/logos/*.svg', {
 	query: '?raw',
@@ -55,20 +67,45 @@ function logoPath(slug: string) {
 	return path;
 }
 
+/**
+ * The lift that keeps a pastille clear of its own bague at a given tilt: the band it covers runs up to
+ * radius × tan(tilt) deep. It grows with the tilt as a convex curve, so interpolating it with the same
+ * ease as the tilt between two poses never falls short of it.
+ */
+const liftAt = (tilt: number) =>
+	Math.max(PASTILLE_LIFT, PASTILLE_RADIUS * Math.tan((Math.abs(tilt) * Math.PI) / 180) + 3);
+
+const round = (value: number) => +value.toFixed(2);
 const steps = Math.max(stack.length - 1, 1);
 const bagues = stack.map((group, rank) => {
-	const radius = BASE_RADIUS - ((BASE_RADIUS - TOP_RADIUS) / steps) * rank;
-	const height = stack.length > 1 ? BASE_HEIGHT - ((BASE_HEIGHT - TOP_HEIGHT) / steps) * rank : 0;
-	const { spin, firstPastille } = RANKS[rank % RANKS.length];
+	const share = rank / steps;
+	const radius = BASE_RADIUS - (BASE_RADIUS - TOP_RADIUS) * share;
+	const height = stack.length > 1 ? BASE_HEIGHT - (BASE_HEIGHT - TOP_HEIGHT) * share : 0;
+	const { spin, firstPastille, gyro, nested, drift } = RANKS[rank % RANKS.length];
+	const nestedRadius = NESTED_BASE_RADIUS - (NESTED_BASE_RADIUS - NESTED_TOP_RADIUS) * share;
 	const logos = group.items.map((item) => toolLogos[item]).filter(Boolean);
-	return {
-		...group,
-		radius,
-		height,
-		spin,
-		box: 2 * (radius + BAND_ROOM),
-		pastilles: logos.map((slug, index) => ({ slug, angle: firstPastille + (360 / logos.length) * index })),
+	const pastilles = logos.map((slug, index) => ({ slug, angle: firstPastille + (360 / logos.length) * index }));
+	/** The scene's poses, from the target to the tower: height, Z · X · Z tilt, radius as a scale of the tower's. */
+	const pose = (y: number, [a, b, c]: number[], scale: number) => ({ y, a, b, c, scale: round(scale), lift: round(liftAt(b)) });
+	const choreography = {
+		start: round(0.06 + STAGGER * share),
+		end: round(0.8 + STAGGER * share),
+		// The pastilles go round their bague this far during the scene, the direction alternating from one bague to the next.
+		orbit: (rank % 2 ? 1 : -1) * (300 + 40 * rank),
+		poses: [
+			pose(TARGET_HEIGHT, [0, TILT, 45], 1),
+			pose(GYRO_HEIGHT, gyro, (radius + nestedRadius) / 2 / radius),
+			pose(0, [nested[0], NESTED_TILT, nested[1]], nestedRadius / radius),
+			pose(0, [nested[0], NESTED_TILT, drift], nestedRadius / radius),
+			pose(0, [0, TILT, spin], 1),
+			pose(round(height), [0, TILT, spin], 1),
+		],
+		pastilles: pastilles.map(({ angle }) => {
+			const radians = (angle * Math.PI) / 180;
+			return [round(radius * Math.cos(radians)), round(radius * Math.sin(radians))];
+		}),
 	};
+	return { ...group, radius, height, spin, box: 2 * (radius + BAND_ROOM), pastilles, choreography };
 });
 
 const slugs = [...new Set(bagues.flatMap((bague) => bague.pastilles.map((pastille) => pastille.slug)))];
@@ -87,7 +124,7 @@ const frame = [
 const px = (value: number) => `${+value.toFixed(2)}px`;
 ---
 
-<div class="atome" style={frame}>
+<div class="atome" style={frame} data-atome>
 	<div class="atome-tower" aria-hidden="true">
 		<svg class="logo-sprite" width="0" height="0">
 			{
@@ -99,6 +136,8 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 			}
 		</svg>
 		<div class="atome-drawing">
+			{/* Only the scene shows it, while the bagues form the atom around it. */}
+			<span class="atome-nucleus"></span>
 			{
 				bagues.map((bague) => {
 					const centre = bague.box / 2;
@@ -126,6 +165,7 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 						<div
 							class:list={['bague', { 'bague--accent': bague.accent }]}
 							style={`transform: translate3d(0, ${px(bague.height)}, 0) rotateX(${TILT}deg)`}
+							data-choreography={JSON.stringify(bague.choreography)}
 						>
 							{layer('side', -THICKNESS)}
 							{layer('top', 0)}
@@ -133,30 +173,33 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 							{bague.accent && layer('side-accent', -THICKNESS + 0.5)}
 							{bague.accent && layer('top-accent', 0.5)}
 							<div class="bague-plane" style={`transform: rotate(${bague.spin}deg)`}>
-								{bague.pastilles.map((pastille) => (
-									<div
-										class="pastille-slot"
-										style={`transform: rotate(${pastille.angle}deg) translateX(${px(bague.radius)}) rotate(${-pastille.angle}deg)`}
-									>
-										{/* Undoes the bague's tilt and spin, so the pastille faces the screen. */}
-										<div class="pastille-untilt" style={`transform: rotate(${-bague.spin}deg) rotateX(${-TILT}deg)`}>
-											<div class="pastille" style={`transform: translateZ(${PASTILLE_LIFT}px)`}>
-												<span class="pastille-face">
-													<svg class="pastille-logo" viewBox="0 0 24 24">
-														<use href={`#logo-${pastille.slug}`} />
-													</svg>
-												</span>
-												{bague.accent && (
-													<span class="pastille-face pastille-face--accent">
+								{/* Carries the pastilles round the bague during the scene, on top of the bague's own spin. */}
+								<div class="bague-orbit">
+									{bague.pastilles.map((pastille) => (
+										<div
+											class="pastille-slot"
+											style={`transform: rotate(${pastille.angle}deg) translateX(${px(bague.radius)}) rotate(${-pastille.angle}deg)`}
+										>
+											{/* Undoes the bague's tilt and spin, so the pastille faces the screen. */}
+											<div class="pastille-untilt" style={`transform: rotate(${-bague.spin}deg) rotateX(${-TILT}deg)`}>
+												<div class="pastille" style={`transform: translateZ(${PASTILLE_LIFT}px)`}>
+													<span class="pastille-face">
 														<svg class="pastille-logo" viewBox="0 0 24 24">
 															<use href={`#logo-${pastille.slug}`} />
 														</svg>
 													</span>
-												)}
+													{bague.accent && (
+														<span class="pastille-face pastille-face--accent">
+															<svg class="pastille-logo" viewBox="0 0 24 24">
+																<use href={`#logo-${pastille.slug}`} />
+															</svg>
+														</span>
+													)}
+												</div>
 											</div>
 										</div>
-									</div>
-								))}
+									))}
+								</div>
 							</div>
 						</div>
 					);
@@ -185,6 +228,144 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 	</dl>
 </div>
 
+<script>
+	import { gsap, registerScene } from '../animation/base';
+
+	type Pose = { y: number; a: number; b: number; c: number; scale: number; lift: number };
+	type Choreography = {
+		start: number;
+		end: number;
+		orbit: number;
+		poses: Pose[];
+		pastilles: [number, number][];
+	};
+
+	/**
+	 * The mockup's CSS easing curves, kept as they are: GSAP only knows them through CustomEase, a plugin
+	 * the animation base does not load for this one scene.
+	 */
+	function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
+		const along = (p1: number, p2: number, t: number) => 3 * (1 - t) ** 2 * t * p1 + 3 * (1 - t) * t ** 2 * p2 + t ** 3;
+		return (progress: number) => {
+			// The x curve rises from 0 to 1 when x1 and x2 lie in [0, 1]: a bisection always finds t.
+			let low = 0;
+			let high = 1;
+			for (let step = 0; step < 20; step++) {
+				const middle = (low + high) / 2;
+				if (along(x1, x2, middle) < progress) low = middle;
+				else high = middle;
+			}
+			return along(y1, y2, (low + high) / 2);
+		};
+	}
+
+	/** Where each pose sits in a bague's own stretch of the scene: target, gyroscope, atom, drift, flat, tower. */
+	const POSE_AT = [0, 0.28, 0.58, 0.7, 0.85, 1];
+	/** The ease from each pose to the next, for the tilt and the height, then for the radius. */
+	const TURN_EASES = [
+		cubicBezier(0.55, 0, 0.4, 1),
+		cubicBezier(0.35, 0, 0.15, 1),
+		'none',
+		cubicBezier(0.6, 0, 0.3, 1),
+		cubicBezier(0.5, 0, 0.2, 1),
+	];
+	const RADIUS_EASES = [cubicBezier(0.5, 0, 0.25, 1), cubicBezier(0.5, 0, 0.25, 1), 'none', cubicBezier(0.6, 0, 0.3, 1), 'none'];
+	const LABEL_EASE = cubicBezier(0.2, 0.7, 0.2, 1);
+	const NUCLEUS_EASE = cubicBezier(0.3, 1.6, 0.5, 1);
+
+	registerScene(() => {
+		const atome = document.querySelector<HTMLElement>('[data-atome]');
+		const section = atome?.closest('section');
+		if (!atome || !section) return;
+
+		// One timeline over the whole pin, its progress running from 0 to 1 in "seconds".
+		const scene = gsap.timeline({
+			defaults: { ease: 'none' },
+			scrollTrigger: { trigger: section, pin: true, start: 'top top', end: '+=200%', scrub: true },
+		});
+
+		const labels = atome.querySelectorAll('.atome-label');
+		for (const [rank, bague] of atome.querySelectorAll<HTMLElement>('[data-choreography]').entries()) {
+			const { start, end, orbit, poses, pastilles }: Choreography = JSON.parse(bague.dataset.choreography!);
+			const plane = bague.querySelector('.bague-plane');
+			const layers = bague.querySelectorAll('.bague-layer');
+			const slots = bague.querySelectorAll('.pastille-slot');
+			const untilts = bague.querySelectorAll('.pastille-untilt');
+			const faces = bague.querySelectorAll('.pastille');
+
+			// Each element pairs with its counterpart in the pastille chain, so the pastille faces the screen
+			// at every frame: the bague's tilt (Z, X) then its spin (Z), undone by the untilt (Z, X) then the
+			// pastille (Z). Paired tweens share their position and ease, so they stay exact inverses.
+			const shape = {
+				bague: ({ y, a, b }: Pose) => ({ y, rotation: a, rotationX: b }),
+				plane: ({ c }: Pose) => ({ rotation: c }),
+				untilt: ({ b, c }: Pose) => ({ rotation: -c, rotationX: -b }),
+				pastille: ({ a, lift }: Pose) => ({ rotation: -a, z: lift }),
+				layer: ({ scale }: Pose) => ({ scale }),
+				slot: ({ scale }: Pose) => ({
+					x: (index: number) => pastilles[index][0] * scale,
+					y: (index: number) => pastilles[index][1] * scale,
+				}),
+			};
+			const pairs = [
+				[bague, shape.bague, TURN_EASES],
+				[plane, shape.plane, TURN_EASES],
+				[untilts, shape.untilt, TURN_EASES],
+				[faces, shape.pastille, TURN_EASES],
+				[layers, shape.layer, RADIUS_EASES],
+				[slots, shape.slot, RADIUS_EASES],
+			] as const;
+
+			const at = (share: number) => start + (end - start) * share;
+			for (const [targets, values, eases] of pairs) {
+				for (let index = 0; index < poses.length - 1; index++) {
+					const from = values(poses[index]);
+					const to = values(poses[index + 1]);
+					scene.fromTo(
+						targets,
+						from,
+						{
+							...to,
+							ease: eases[index],
+							duration: at(POSE_AT[index + 1]) - at(POSE_AT[index]),
+							// Only the first pose is laid down up front; the later ones wait for their turn.
+							immediateRender: index === 0,
+						},
+						at(POSE_AT[index]),
+					);
+				}
+			}
+
+			// The pastilles go round only as the page scrolls, ending where the HTML draws them.
+			scene.fromTo(bague.querySelector('.bague-orbit'), { rotation: -orbit }, { rotation: 0, duration: 0.92 }, 0.04);
+			scene.fromTo(slots, { rotation: orbit }, { rotation: 0, duration: 0.92 }, 0.04);
+
+			// Its label comes in as the bague takes its place in the tower.
+			scene.fromTo(labels[rank], { opacity: 0, x: -14 }, { opacity: 1, x: 0, ease: LABEL_EASE, duration: 0.06 }, end - 0.03);
+		}
+
+		const nucleus = atome.querySelector('.atome-nucleus');
+		scene.fromTo(nucleus, { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, ease: NUCLEUS_EASE, duration: 0.065 }, 0.44);
+		scene.fromTo(
+			nucleus,
+			{ opacity: 1, scale: 1 },
+			{ opacity: 0, scale: 0, duration: 0.065, immediateRender: false },
+			0.635,
+		);
+
+		// The SIG accent is a layer laid over the bague: only its opacity moves, never a colour.
+		scene.fromTo(
+			atome.querySelectorAll('.bague-side-accent, .bague-top-accent, .pastille-face--accent'),
+			{ opacity: 0 },
+			{ opacity: 1, duration: 0.04 },
+			0.88,
+		);
+
+		// A hold on the finished tower before the page moves on.
+		scene.set({}, {}, 1);
+	});
+</script>
+
 <style>
 	.atome {
 		--tower-scale: 1;
@@ -212,6 +393,7 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 	.atome-drawing,
 	.bague,
 	.bague-plane,
+	.bague-orbit,
 	.pastille-slot,
 	.pastille-untilt,
 	.pastille {
@@ -227,6 +409,33 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 		top: var(--axis-y);
 		left: var(--axis-x);
 		transform: scale(var(--tower-scale));
+	}
+
+	.atome-nucleus {
+		position: absolute;
+		top: -15px;
+		left: -15px;
+		box-sizing: border-box;
+		width: 30px;
+		height: 30px;
+		border: 0.6px solid var(--accent-deep);
+		border-radius: 50%;
+		background: radial-gradient(
+			circle at 34% 30%,
+			#c9cfff 0,
+			#5866ff 30%,
+			var(--color-accent) 58%,
+			var(--accent-deep) 100%
+		);
+		opacity: 0;
+	}
+
+	.atome-nucleus::after {
+		content: '';
+		position: absolute;
+		inset: -10px;
+		border: 0.6px solid #8e9bff;
+		border-radius: 50%;
 	}
 
 	.bague-layer {

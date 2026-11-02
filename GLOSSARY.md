@@ -45,7 +45,7 @@ L'anneau d'une catégorie de la stack, une par catégorie, dans l'ordre du profi
 _À éviter_ : ring, orbite.
 
 **Pastille**
-Le logo d'un outil posé seul sur la bande de sa bague, sans disque, toujours face à l'écran et devant sa bague. Un outil sans logo n'a pas de pastille : il reste dans l'étiquette.
+Le logo d'un outil imprimé seul sur la bande de sa bague, sans disque, incliné avec elle. Un outil sans logo n'a pas de pastille : il reste dans l'étiquette.
 _À éviter_ : chip, icône, électron.
 
 **Tour**

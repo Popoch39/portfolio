@@ -22,17 +22,16 @@ const TILT = 60;
 const THICKNESS = 2;
 /** How far the accent layers sit above their base ones, so the two never fight over depth. */
 const ACCENT_RAISE = 0.5;
-/** Half the band's width (its stroke is twice this in the CSS): wide enough for a logo to sit on it. */
+/**
+ * Half the band's width (its stroke is twice this in the CSS). A pastille's 10px logo is printed on the
+ * band, in its plane, so it stays inside it at every tilt, even at a box corner with the band shrunk to
+ * 0.94 in the atom.
+ */
 const BAND_HALF = 7;
 /** Room around the band and its 0.6px edges inside a bague's SVG box. */
 const BAND_ROOM = BAND_HALF + 1;
-/** Half the footprint of a pastille: its 14px logo, with a pixel to spare. */
-const PASTILLE_RADIUS = 8;
-/**
- * How far a pastille is lifted towards the screen. Facing the screen, it would otherwise cut its own
- * tilted bague: beside the bague, the band covered by the pastille runs up to radius × tan(60°) ≈ 14px deep.
- */
-const PASTILLE_LIFT = 18;
+/** How far a logo sits above its band, past the accent layer, so the two never fight over depth. */
+const LOGO_RAISE = 1;
 /** Label text starts this far right of the tower axis, past the widest bague and its leader line. */
 const LABEL_OFFSET = BASE_RADIUS + 60;
 
@@ -62,14 +61,6 @@ const GYRO_HEIGHT = 40;
 /** Each bague starts and ends its choreography a little after the one below it, over this share of the scene. */
 const STAGGER = 0.03;
 
-/**
- * The lift that keeps a pastille clear of its own bague at a given tilt: the band it covers runs up to
- * radius × tan(tilt) deep. It grows with the tilt as a convex curve, so interpolating it with the same
- * ease as the tilt between two poses never falls short of it.
- */
-const liftAt = (tilt: number) =>
-	Math.max(PASTILLE_LIFT, PASTILLE_RADIUS * Math.tan((Math.abs(tilt) * Math.PI) / 180) + 3);
-
 const round = (value: number) => +value.toFixed(2);
 const px = (value: number) => `${round(value)}px`;
 const steps = Math.max(stack.length - 1, 1);
@@ -91,7 +82,6 @@ const bagues = stack.map((group, rank) => {
 		tilt,
 		spin,
 		scale: round(scale),
-		lift: round(liftAt(tilt)),
 	});
 	const choreography = {
 		start: round(0.06 + STAGGER * share),
@@ -114,9 +104,9 @@ const bagues = stack.map((group, rank) => {
 	return { ...group, radius, height, spin, box: 2 * (radius + BAND_ROOM), pastilles, choreography };
 });
 
-const halfWidth = BASE_RADIUS + PASTILLE_RADIUS + 1;
-const above = Math.max(...bagues.map((b) => -b.height + b.radius / 2)) + PASTILLE_RADIUS + 8;
-const below = Math.max(...bagues.map((b) => b.height + b.radius / 2)) + PASTILLE_RADIUS + THICKNESS + 4;
+const halfWidth = BASE_RADIUS + BAND_HALF + 1;
+const above = Math.max(...bagues.map((b) => -b.height + b.radius / 2)) + BAND_HALF + 8;
+const below = Math.max(...bagues.map((b) => b.height + b.radius / 2)) + BAND_HALF + THICKNESS + 4;
 /**
  * How far the drawing reaches around the axis before the tower rises (target, gyroscope, atom, drift):
  * the scene enlarges that much in the middle of the frame. A bague tilted by X then turned by Z projects
@@ -127,7 +117,7 @@ const degrees = (angle: number) => (angle * Math.PI) / 180;
 const introPoses = bagues.flatMap((bague) =>
 	bague.choreography.poses.slice(0, INTRO_POSES).map(({ y, heading, tilt, scale }) => {
 		const [h, t] = [degrees(heading), degrees(tilt)];
-		const radius = bague.radius * scale + PASTILLE_RADIUS;
+		const radius = (bague.radius + BAND_HALF) * scale;
 		return {
 			y,
 			across: radius * Math.hypot(Math.cos(h), Math.cos(t) * Math.sin(h)),
@@ -196,15 +186,13 @@ const frame = [
 									{bague.pastilles.map((pastille) => (
 										<div
 											class="pastille-slot"
-											style={`transform: rotate(${pastille.angle}deg) translateX(${px(bague.radius)}) rotate(${-pastille.angle}deg)`}
+											style={`transform: rotate(${pastille.angle}deg) translateX(${px(bague.radius)})`}
 										>
-											{/* Undoes the bague's tilt and spin, so the pastille faces the screen. */}
-											<div class="pastille-untilt" style={`transform: rotate(${-bague.spin}deg) rotateX(${-TILT}deg)`}>
-												<div class="pastille" style={`transform: translateZ(${PASTILLE_LIFT}px)`}>
-													<svg class="pastille-logo" viewBox="0 0 24 24">
-														<use href={pastille.href} />
-													</svg>
-												</div>
+											{/* Printed on the band, its top pointing out of the ring. */}
+											<div class="pastille" style={`transform: rotate(90deg) translateZ(${LOGO_RAISE}px)`}>
+												<svg class="pastille-logo" viewBox="0 0 24 24">
+													<use href={pastille.href} />
+												</svg>
 											</div>
 										</div>
 									))}
@@ -240,7 +228,7 @@ const frame = [
 <script>
 	import { gsap, registerScene, ScrollTrigger } from '../animation/base';
 
-	type Pose = { y: number; heading: number; tilt: number; spin: number; scale: number; lift: number };
+	type Pose = { y: number; heading: number; tilt: number; spin: number; scale: number };
 	type Choreography = {
 		start: number;
 		end: number;
@@ -431,17 +419,12 @@ const frame = [
 			const plane = bague.querySelector('.bague-plane');
 			const layers = bague.querySelectorAll('.bague-layer');
 			const slots = bague.querySelectorAll('.pastille-slot');
-			const untilts = bague.querySelectorAll('.pastille-untilt');
-			const faces = bague.querySelectorAll('.pastille');
 
-			// Each element pairs with its counterpart in the pastille chain, so the pastille faces the screen
-			// at every frame: the bague's tilt (Z, X) then its spin (Z), undone by the untilt (Z, X) then the
-			// pastille (Z). Paired tweens share their position and ease, so they stay exact inverses.
+			// The bague's tilt (Z, X) then its spin (Z). The pastilles are printed on the band, so they follow
+			// it; a slot only moves with the radius, keeping the rotation the HTML gives it.
 			const shape = {
 				bague: ({ y, heading, tilt }: Pose) => ({ y, rotation: heading, rotationX: tilt }),
 				plane: ({ spin }: Pose) => ({ rotation: spin }),
-				untilt: ({ tilt, spin }: Pose) => ({ rotation: -spin, rotationX: -tilt }),
-				pastille: ({ heading, lift }: Pose) => ({ rotation: -heading, z: lift }),
 				layer: ({ scale }: Pose) => ({ scale }),
 				slot: ({ scale }: Pose) => ({
 					x: (index: number) => pastilles[index][0] * scale,
@@ -452,8 +435,6 @@ const frame = [
 			const channels = [
 				[bague, shape.bague, TURN_EASES],
 				[plane, shape.plane, TURN_EASES],
-				[untilts, shape.untilt, TURN_EASES],
-				[faces, shape.pastille, TURN_EASES],
 				[layers, shape.layer, RADIUS_EASES],
 				[slots, shape.slot, RADIUS_EASES],
 			] as const;
@@ -483,7 +464,6 @@ const frame = [
 			// rest with the bague rather than stop dead.
 			const settle = { ease: 'sine.inOut', duration: end - TRAVEL_START };
 			scene.fromTo(bague.querySelector('.bague-track'), { rotation: -travel }, { rotation: 0, ...settle }, TRAVEL_START);
-			scene.fromTo(slots, { rotation: travel }, { rotation: 0, ...settle }, TRAVEL_START);
 
 			// Its label comes in as the bague takes its place in the tower.
 			scene.fromTo(labels[rank], { opacity: 0, x: -14 }, { opacity: 1, x: 0, ease: LABEL_EASE, duration: 0.06 }, end - 0.03);
@@ -578,7 +558,6 @@ const frame = [
 	.bague-plane,
 	.bague-track,
 	.pastille-slot,
-	.pastille-untilt,
 	.pastille {
 		position: absolute;
 		top: 0;
@@ -668,20 +647,20 @@ const frame = [
 
 	/* Sized like its logo: Chromium clips a flat element in a 3D context to its own box. */
 	.pastille {
-		top: -7px;
-		left: -7px;
-		width: 14px;
-		height: 14px;
+		top: -5px;
+		left: -5px;
+		width: 10px;
+		height: 10px;
 		transform-style: flat;
 	}
 
-	/* The logo alone, laid on the band: no disc behind it. */
+	/* The logo alone, printed on the band: no disc behind it. */
 	.pastille-logo {
 		position: absolute;
 		top: 0;
 		left: 0;
-		width: 14px;
-		height: 14px;
+		width: 10px;
+		height: 10px;
 		fill: var(--color-ink);
 		/* Without it, Chromium repaints every pastille at every frame of the scene, as its bague turns. */
 		contain: paint;

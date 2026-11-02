@@ -8,9 +8,14 @@ import {
 	topOnceStill,
 	verticalTranslation,
 } from './helpers';
-
-const section = (page: Page) => page.getByRole('region', { name: 'Parcours', exact: true });
-const band = (page: Page) => page.getByRole('region', { name: 'Frise du parcours' });
+import {
+	friseBand as band,
+	friseLegend as legend,
+	friseSection as section,
+	headOnScreen,
+	PIN_HEIGHTS,
+	scrollToScene,
+} from './frise-helpers';
 
 /** Every commit of the career, oldest first: studies, jobs, then the current missions up to HEAD. */
 const COMMITS_IN_ORDER = [
@@ -113,19 +118,7 @@ for (const { name, use } of FINAL_STATE_CONTEXTS) {
 	});
 }
 
-const legend = (page: Page) => page.locator('[data-frise-legend]');
-
-/**
- * Where the HEAD commit stands on screen, horizontally: as HEAD moves forward, the graph slides
- * under the camera and brings it closer from the right.
- */
-async function headOnScreen(page: Page) {
-	const box = await band(page).getByRole('listitem').last().boundingBox();
-	if (!box) throw new Error('HEAD commit missing');
-	return box.x;
-}
-
-/** Same, once the smoothing has settled: a reading taken mid-glide would leave HEAD still moving forward. */
+/** Where the HEAD commit stands on screen once the smoothing has settled: a reading taken mid-glide would leave HEAD still moving forward. */
 function headOnceStill(page: Page): Promise<number> {
 	return band(page)
 		.getByRole('listitem')
@@ -164,18 +157,6 @@ async function poleRatio(commit: Locator) {
 		const card = el.querySelector('.commit-card')?.getBoundingClientRect().height ?? 1;
 		return pole / card;
 	});
-}
-
-/** The scene stays pinned for four window heights (400svh). */
-const PIN_HEIGHTS = 4;
-
-/**
- * Scrolls to a point of the scene, 0 at the start of the pinning and 1 at its end, and waits until
- * the section is still. The section's place in the page is taken before the pinning moves it.
- */
-async function scrollToScene(page: Page, start: number, progress: number) {
-	await page.evaluate(([top, at, heights]) => scrollTo(0, top + at * heights * innerHeight), [start, progress, PIN_HEIGHTS]);
-	await topOnceStill(section(page));
 }
 
 test.describe('Frise, scene', () => {

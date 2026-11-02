@@ -147,8 +147,8 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 	const RISE = 80;
 	/** How far past the next commit a label takes to fade to its floor. */
 	const FADE_OUT = 220;
-	/** A lowered pole, in px: its foot stays on the plane. */
-	const LOWERED = 18;
+	/** A lowered pole, as a share of its height (the mock-up's 18 of 138 px): its foot stays on the plane. */
+	const LOWERED = 0.13;
 	const AHEAD_OPACITY = 0.4;
 	/** Lowest opacity at which the muted lines (#d4d7ff) keep 4.5:1 on the accent: past labels stay AA. */
 	const PAST_OPACITY = 0.93;
@@ -166,7 +166,8 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 		const legend = section?.querySelector<HTMLElement>('[data-frise-legend]');
 		if (!section || !band || !plane || !legend) return;
 
-		const commits = [...section.querySelectorAll<HTMLElement>('.commit')].map((commit) => ({
+		const labels = [...section.querySelectorAll<HTMLElement>('.commit')];
+		const commits = labels.map((commit) => ({
 			x: Number(commit.dataset.x),
 			meta: commit.querySelector('.commit-meta')?.textContent ?? '',
 			title: commit.querySelector('.commit-title')?.textContent ?? '',
@@ -214,6 +215,7 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 				start: 'top top',
 				end: `+=${PIN_HEIGHTS * 100}%`,
 				scrub: true,
+				invalidateOnRefresh: true,
 			},
 			onUpdate: () => showActiveCommit(from + travel * timeline.progress()),
 		});
@@ -232,8 +234,11 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 			0,
 		);
 
-		/** Lays a property's keyframes along HEAD's travel, eased into each key; keys before the start are clipped. */
-		const track = (target: Element, property: string, keys: Key[]) => {
+		/**
+		 * Lays a property's keyframes along HEAD's travel, eased into each key; keys before the start are
+		 * clipped. Values are in `unit`s, read again when the layout changes (`invalidateOnRefresh`).
+		 */
+		const track = (target: Element, property: string, keys: Key[], unit = () => 1) => {
 			const valueAt = (at: number) => {
 				const next = keys.findIndex((key) => key.at >= at);
 				if (next === -1) return keys[keys.length - 1].value;
@@ -241,7 +246,7 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 				const [a, b] = [keys[next - 1], keys[next]];
 				return a.value + (b.value - a.value) * gsap.parseEase(b.ease ?? 'none')((at - a.at) / (b.at - a.at));
 			};
-			timeline.set(target, { [property]: valueAt(0) }, 0);
+			timeline.set(target, { [property]: () => valueAt(0) * unit() }, 0);
 			for (let i = 1; i < keys.length; i++) {
 				const start = Math.max(keys[i - 1].at, 0);
 				const end = Math.min(keys[i].at, travel);
@@ -250,8 +255,8 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 				const ease = start === keys[i - 1].at ? (keys[i].ease ?? 'none') : 'none';
 				timeline.fromTo(
 					target,
-					{ [property]: valueAt(start) },
-					{ [property]: valueAt(end), duration: end - start, ease, immediateRender: false },
+					{ [property]: () => valueAt(start) * unit() },
+					{ [property]: () => valueAt(end) * unit(), duration: end - start, ease, immediateRender: false },
 					start,
 				);
 			}
@@ -259,7 +264,6 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 
 		/** When HEAD reaches a commit, on the timeline. */
 		const cue = (element: HTMLElement) => Number(element.dataset.x) - from - ARRIVAL;
-		const labels = [...section.querySelectorAll<HTMLElement>('.commit')];
 		labels.forEach((label, i) => {
 			const at = cue(label);
 			const next = i + 1 < labels.length ? cue(labels[i + 1]) : Number.POSITIVE_INFINITY;
@@ -274,16 +278,20 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 			const pole = label.querySelector<HTMLElement>('.commit-pole');
 			const card = label.querySelector<HTMLElement>('.commit-card');
 			if (!pole || !card) return;
-			// The pole rises as HEAD comes, the card riding on top of it.
-			const height = pole.offsetHeight;
+			// The pole rises as HEAD comes, the card riding on top of it; its height follows the framing.
 			track(pole, 'scaleY', [
-				{ at: at - RISE, value: LOWERED / height },
+				{ at: at - RISE, value: LOWERED },
 				{ at, value: 1, ease: 'power3.out' },
 			]);
-			track(card, 'y', [
-				{ at: at - RISE, value: height - LOWERED },
-				{ at, value: 0, ease: 'power3.out' },
-			]);
+			track(
+				card,
+				'y',
+				[
+					{ at: at - RISE, value: 1 - LOWERED },
+					{ at, value: 0, ease: 'power3.out' },
+				],
+				() => pole.offsetHeight,
+			);
 		});
 		for (const fill of section.querySelectorAll<HTMLElement>('[data-frise-fill]')) {
 			const at = cue(fill);

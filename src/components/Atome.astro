@@ -348,16 +348,20 @@ const frame = [
 		// on a phone, a page made wider for a moment widens the layout viewport, and a drawing centred on
 		// that width would keep it wide.
 		// Where the Atome's top stands on screen while pinned: the pin holds the section's top pinOffset
-		// above the top of the window. The drawing centres in the room left under the title.
-		const atomeTop = atomeBox.top - section.getBoundingClientRect().top - pinOffset;
-		const [centreX, centreY] = [atomeBox.left + atome.clientWidth / 2, (atomeTop + frame) / 2];
+		// above the top of the window. The drawing centres in the room between the title and the note
+		// that closes the frame, so it never runs over either.
+		const sectionTop = section.getBoundingClientRect().top;
+		const atomeTop = atomeBox.top - sectionTop - pinOffset;
+		const frameEnd = section.querySelector('[data-atome-frame-end]');
+		const roomBottom = frameEnd ? Math.min(frame, frameEnd.getBoundingClientRect().top - sectionTop - pinOffset) : frame;
+		const [centreX, centreY] = [atomeBox.left + atome.clientWidth / 2, (atomeTop + roomBottom) / 2];
 		const boxLeft = atomeBox.left + tower.offsetLeft;
 		const boxTop = atomeTop + tower.offsetTop;
 		const grow = Math.max(
 			1,
 			Math.min(
 				INTRO_MAX_SCALE / scale,
-				((frame - atomeTop) / 2 - ROOM) / (Math.max(above, below) * scale),
+				(roomBottom - atomeTop) / 2 / (Math.max(above, below) * scale),
 				(atome.clientWidth * INTRO_WIDTH_SHARE) / (2 * across * scale),
 			),
 		);

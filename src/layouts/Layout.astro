@@ -9,7 +9,15 @@
 		<title>Astro Basics</title>
 	</head>
 	<body>
-		<slot />
+		<!-- Enveloppe du défilement lissé : les éléments fixes (header, barres) se placent hors de ces deux div. -->
+		<div id="smooth-wrapper">
+			<div id="smooth-content">
+				<slot />
+			</div>
+		</div>
+		<script>
+			import '../animation/socle';
+		</script>
 	</body>
 </html>
 
@@ -18,6 +26,5 @@
 	body {
 		margin: 0;
 		width: 100%;
-		height: 100%;
 	}
 </style>

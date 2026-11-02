@@ -4,6 +4,9 @@
 	--couleur-texte-secondaire: #4b5563;
 	--couleur-lien: #3245ff;
 	--police-texte: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
+	/* Le header est fixe : ancres et focus s'arrêtent sous lui. Le socle lit `scroll-padding-top` pour le défilement lissé. */
+	--hauteur-entete: 3rem;
+	scroll-padding-top: var(--hauteur-entete);
 }
 
 /*

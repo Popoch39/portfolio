@@ -52,7 +52,7 @@ import background from '../assets/background.svg';
 
 <style>
 	#background {
-		position: fixed;
+		position: absolute;
 		top: 0;
 		left: 0;
 		width: 100%;
@@ -61,7 +61,12 @@ import background from '../assets/background.svg';
 		filter: blur(100px);
 	}
 
+	/*
+	 * Bloc conteneur du fond et de l'encart : sans lui, ils se placeraient par rapport à la fenêtre
+	 * sans JS, puis par rapport à l'enveloppe du smoother dès qu'il démarre (décalage de mise en page).
+	 */
 	#container {
+		position: relative;
 		font-family: var(--police-texte);
 		height: 100%;
 	}

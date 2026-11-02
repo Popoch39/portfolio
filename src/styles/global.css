@@ -8,6 +8,8 @@
 	--color-on-ink-muted: #bdbdb6;
 	--color-accent: #2433ff;
 	--color-on-accent: #fff;
+	/* Small text on the accent: the maquette's lilac (#c5caff, 4.4:1), lightened to pass AA (5:1). */
+	--color-on-accent-muted: #d4d7ff;
 	--color-accent-soft: color-mix(in oklab, var(--color-accent) 55%, #fff);
 
 	--page-max-width: 1440px;

@@ -234,15 +234,59 @@ export const education: Education[] = [
 	},
 ];
 
-export const stack: { category: string; items: string[] }[] = [
+/**
+ * In order from the base of the Atome's tower to its top: one bague per category.
+ * `accent` marks the specialty, drawn in the accent colour wherever it sits in the list.
+ */
+export const stack: { category: string; items: string[]; accent?: true }[] = [
 	{ category: 'Langages', items: ['TypeScript', 'Rust', 'PHP', 'SQL', 'Go', 'Lua'] },
 	{ category: 'Back-end', items: ['NestJS', 'Laravel', 'Axum', 'Elysia', 'Node', 'GraphQL', 'REST'] },
 	{ category: 'Front-end', items: ['React', 'Next.js', 'Vue', 'Vite', 'Tailwind'] },
-	{ category: 'SIG · CAD · 3D', items: ['OpenLayers', 'MapLibre GL', 'PostGIS', 'Turf.js', 'Three.js', 'DWG/DXF'] },
+	{
+		category: 'SIG · CAD · 3D',
+		items: ['OpenLayers', 'MapLibre GL', 'PostGIS', 'Turf.js', 'Three.js', 'DWG/DXF'],
+		accent: true,
+	},
 	{ category: 'Data', items: ['PostgreSQL', 'Redis', 'Prisma', 'Drizzle'] },
 	{ category: 'DevOps', items: ['Docker', 'CI/CD', 'Cloudflare', 'AWS', 'Sentry'] },
 	{ category: 'Outils', items: ['Bun', 'Monorepo', 'Git', 'Neovim', 'tmux', 'Agile/Scrum'] },
 ];
+
+/**
+ * Stack tool → logo file in `src/assets/logos/` (its simple-icons slug). A tool listed here gets a
+ * pastille on its bague; the others stay in the label only. AWS is left out on purpose (see the
+ * logos' README).
+ */
+export const toolLogos: Record<string, string> = {
+	TypeScript: 'typescript',
+	Rust: 'rust',
+	PHP: 'php',
+	Go: 'go',
+	Lua: 'lua',
+	NestJS: 'nestjs',
+	Laravel: 'laravel',
+	Node: 'nodedotjs',
+	GraphQL: 'graphql',
+	React: 'react',
+	'Next.js': 'nextdotjs',
+	Vue: 'vuedotjs',
+	Vite: 'vite',
+	Tailwind: 'tailwindcss',
+	OpenLayers: 'openlayers',
+	'MapLibre GL': 'maplibre',
+	'Three.js': 'threedotjs',
+	PostgreSQL: 'postgresql',
+	Redis: 'redis',
+	Prisma: 'prisma',
+	Drizzle: 'drizzle',
+	Docker: 'docker',
+	Cloudflare: 'cloudflare',
+	Sentry: 'sentry',
+	Bun: 'bun',
+	Git: 'git',
+	Neovim: 'neovim',
+	tmux: 'tmux',
+};
 
 /** Whole years since the first salaried position (internships do not count), at build time. */
 export function yearsOfExperience(now = new Date()) {

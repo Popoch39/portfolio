@@ -7,7 +7,7 @@ Toute animation dont le déclenchement ou l'avancement dépend du défilement : 
 _À éviter_ : effet, animation de scroll.
 
 **Révélation**
-Scène la plus simple : un élément entre dans la vue et anime une fois vers son état final. Jamais sur ce qui est visible au premier affichage (hero, élément LCP).
+Scène la plus simple : un élément entre dans la vue et anime une fois vers son état final. Jamais sur ce qui est visible au premier affichage (hero, élément LCP). Le site n'en porte plus : la dernière, sur la liste de la Stack, a été remplacée par l'Atome (#15).
 
 **Animation d'interface**
 Animation qui ne dépend pas du défilement : survol, chargement, hero, transition entre pages. Elle reste en CSS (les transitions entre pages sont des view transitions cross-document).
@@ -33,3 +33,20 @@ Une formation : elle part de `main` à son début et y revient par le poste qui 
 
 **HEAD**
 Le point courant de la progression dans la Frise ; à l'état final, le dernier commit, daté « aujourd'hui ».
+
+## Stack
+
+**Atome**
+La scène de la section Stack : les bagues passent de la cible au gyroscope, puis à l'atome autour d'un noyau, se recouchent emboîtées et montent en tour. Son état final est la tour.
+_À éviter_ : gyroscope, vue éclatée.
+
+**Bague**
+L'anneau d'une catégorie de la stack, une par catégorie, dans l'ordre du profil de la base au sommet de la tour. La bague SIG est en accent.
+_À éviter_ : ring, orbite.
+
+**Pastille**
+Le disque qui porte le logo d'un outil sur sa bague, toujours face à l'écran et posé devant sa bague. Un outil sans logo n'a pas de pastille : il reste dans l'étiquette.
+_À éviter_ : chip, icône, électron.
+
+**Tour**
+L'empilement final des bagues, chacune à sa hauteur, avec son étiquette (catégorie et outils) à côté : l'état final de l'Atome.

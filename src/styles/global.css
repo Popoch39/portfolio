@@ -11,6 +11,10 @@
 	/* Small text on the accent: the maquette's lilac (#c5caff, 4.4:1), lightened to pass AA (5:1). */
 	--color-on-accent-muted: #d4d7ff;
 	--color-accent-soft: color-mix(in oklab, var(--color-accent) 55%, #fff);
+	/* The shade of the accent on drawn volumes (the Atome's accent bague and its nucleus). */
+	--color-accent-deep: color-mix(in srgb, var(--color-accent) 57%, var(--color-ink));
+	/* The lit side of drawn volumes, lighter than the paper they stand on. */
+	--color-light: #fff;
 
 	--page-max-width: 1440px;
 	--page-gutter: clamp(16px, 4vw, 56px);

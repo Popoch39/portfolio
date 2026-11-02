@@ -16,12 +16,6 @@ export const person = {
 	nvimConfig: 'https://github.com/Popoch39/nvim',
 } as const;
 
-export const profile = {
-	role: 'Concepteur & développeur d’applications, fullstack',
-	specialty: 'SIG & cartographie à échelle industrielle',
-	today: 'Da Viking Code, Dijon — depuis 2023',
-} as const;
-
 export const marqueeWords = [
 	'TypeScript',
 	'Rust',
@@ -88,11 +82,11 @@ export const projects: Project[] = [
 export interface Position {
 	/** First month in the job, `YYYY-MM`. */
 	start: string;
-	period: string;
+	/** Last month in the job, `YYYY-MM`; none for the current one. */
+	end?: string;
 	company: string;
 	city: string;
 	role: string;
-	current?: boolean;
 	internship?: boolean;
 	missions: string[];
 }
@@ -100,11 +94,9 @@ export interface Position {
 export const positions: Position[] = [
 	{
 		start: '2023-03',
-		period: 'mars 2023 → aujourd’hui',
 		company: 'Da Viking Code',
 		city: 'Dijon',
-		role: 'Concepteur & développeur d’applications',
-		current: true,
+		role: person.jobTitle,
 		missions: [
 			'SIG & cartographie pour un grand acteur de l’énergie — OpenLayers, PostGIS, Laravel 12, React 19',
 			'Back-office d’une plateforme de santé — NestJS 11, Prisma, PostgreSQL, GraphQL',
@@ -115,10 +107,10 @@ export const positions: Position[] = [
 	},
 	{
 		start: '2022-02',
-		period: 'fév. 2022 → fév. 2023',
+		end: '2023-02',
 		company: 'Conseil départemental olympique et sportif',
 		city: 'Dijon',
-		role: 'Concepteur & développeur d’applications',
+		role: person.jobTitle,
 		missions: [
 			'Application web sous Symfony',
 			'Application mobile React Native',
@@ -127,7 +119,7 @@ export const positions: Position[] = [
 	},
 	{
 		start: '2021-09',
-		period: 'sept. → déc. 2021',
+		end: '2021-12',
 		company: 'Jordel Média',
 		city: 'Doucier',
 		role: 'Stage — développeur web',
@@ -135,6 +127,40 @@ export const positions: Position[] = [
 		missions: ['Nouvelles fonctionnalités sur le CMS interne de l’entreprise'],
 	},
 ];
+
+export const salariedPositions = positions.filter((position) => !position.internship);
+
+export const currentPosition = positions.find((position) => !position.end);
+
+export const profile = {
+	role: `${person.jobTitle}, fullstack`,
+	specialty: 'SIG & cartographie à échelle industrielle',
+	today: currentPosition && `${currentPosition.company}, ${currentPosition.city} — depuis ${year(currentPosition.start)}`,
+};
+
+const monthAndYear = new Intl.DateTimeFormat('fr-FR', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+const monthOnly = new Intl.DateTimeFormat('fr-FR', { month: 'short', timeZone: 'UTC' });
+
+function year(month: string) {
+	return month.slice(0, 4);
+}
+
+function firstDayOf(month: string) {
+	const [y, m] = month.split('-').map(Number);
+	return new Date(Date.UTC(y, m - 1));
+}
+
+/** Section and project numbering: `1` → `01`. */
+export function twoDigits(n: number) {
+	return String(n).padStart(2, '0');
+}
+
+/** "mars 2023 → aujourd’hui", "févr. 2022 → févr. 2023", or "sept. → déc. 2021" within a single year. */
+export function formatPeriod({ start, end }: Pick<Position, 'start' | 'end'>) {
+	if (!end) return `${monthAndYear.format(firstDayOf(start))} → aujourd’hui`;
+	const from = year(start) === year(end) ? monthOnly : monthAndYear;
+	return `${from.format(firstDayOf(start))} → ${monthAndYear.format(firstDayOf(end))}`;
+}
 
 export interface Education {
 	period: string;
@@ -172,8 +198,7 @@ export const stack: { category: string; items: string[] }[] = [
 
 /** Whole years since the first salaried position (internships do not count), at build time. */
 export function yearsOfExperience(now = new Date()) {
-	const salaried = positions.filter((position) => !position.internship);
-	const first = salaried.map((position) => position.start).sort()[0];
+	const first = salariedPositions.map((position) => position.start).sort()[0];
 	const [year, month] = first.split('-').map(Number);
 	const months = (now.getFullYear() - year) * 12 + (now.getMonth() + 1 - month);
 	return Math.floor(months / 12);

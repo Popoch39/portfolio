@@ -28,3 +28,4 @@ Le fournisseur Google de l'API Fonts d'Astro sait restreindre les glyphes (`expe
 - Budget polices : 85 Ko pour les trois fichiers, vérifié par un test (90 Ko au plus).
 - Un caractère hors du jeu de glyphes s'affiche dans la police de repli : on l'ajoute à `GLYPHS` dans `scripts/fonts.sh` et on relance le script.
 - Archivo n'a pas ↗ : la flèche des liens en Archivo vient de la police de repli, comme dans la maquette ; en Fragment Mono, elle est dessinée.
+- Aucune des deux polices n'a ★ (étoiles GitHub de la liste des projets) : il vient toujours du repli, l'ajouter au jeu de glyphes n'y changerait rien.

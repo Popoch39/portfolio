@@ -1,13 +1,15 @@
 ---
+import { twoDigits } from '../data/profile';
+
 interface Props {
-	number: string;
+	number: number;
 }
 
 const { number } = Astro.props;
 ---
 
 {/* Numbering is decorative: the heading that follows names the section. */}
-<span class="section-number mono" aria-hidden="true"><span class="square"></span>{number}</span>
+<span class="section-number mono" aria-hidden="true"><span class="square"></span>{twoDigits(number)}</span>
 
 <style>
 	.section-number {

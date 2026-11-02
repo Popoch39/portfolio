@@ -1,17 +1,22 @@
 ---
+import Cursor from '../components/Cursor.astro';
 import Reveal from '../components/Reveal.astro';
 import SectionHeading from '../components/SectionHeading.astro';
 import SectionNumber from '../components/SectionNumber.astro';
 import Layout from '../layouts/Layout.astro';
 import {
+	currentPosition,
 	education,
+	formatPeriod,
 	marqueeWords,
 	person,
 	positions,
 	profile,
 	projects,
 	publicRepoCount,
+	salariedPositions,
 	stack,
+	twoDigits,
 	yearsOfExperience,
 } from '../data/profile';
 
@@ -23,15 +28,13 @@ const repoCount = await publicRepoCount();
 const projectsAside = [`${projects.length} sélectionnés`, repoCount && `${repoCount} dépôts publics`]
 	.filter(Boolean)
 	.join(' · ');
-const cities = [...new Set(positions.filter((p) => !p.internship).map((p) => p.city)), person.city];
+const cities = [...new Set(salariedPositions.map((p) => p.city)), person.city];
 const positionsAside = `~${yearsOfExperience()} ans · ${cities.join(' & ')}`;
 
-const twoDigits = (n: number) => String(n).padStart(2, '0');
 const mailto = `mailto:${person.email}`;
 const [mailUser, mailDomain] = person.email.split('@');
 
 const canonical = new URL('/', Astro.site).href;
-const current = positions.find((p) => p.current);
 // `<` escaped: the JSON sits inside a <script> and must not be able to close it.
 const jsonLd = JSON.stringify({
 	'@context': 'https://schema.org',
@@ -47,14 +50,14 @@ const jsonLd = JSON.stringify({
 		givenName: person.givenName,
 		familyName: person.familyName,
 		url: canonical,
-		email: `mailto:${person.email}`,
+		email: mailto,
 		jobTitle: person.jobTitle,
 		description: profile.specialty,
 		address: { '@type': 'PostalAddress', addressLocality: person.city, addressCountry: person.country },
-		worksFor: current && {
+		worksFor: currentPosition && {
 			'@type': 'Organization',
-			name: current.company,
-			address: { '@type': 'PostalAddress', addressLocality: current.city, addressCountry: 'FR' },
+			name: currentPosition.company,
+			address: { '@type': 'PostalAddress', addressLocality: currentPosition.city, addressCountry: 'FR' },
 		},
 		alumniOf: [...new Set(education.map((e) => e.school))].map((name) => ({
 			'@type': 'EducationalOrganization',
@@ -78,7 +81,7 @@ const jsonLd = JSON.stringify({
 				</p>
 				<h1 id="hero-title" class="hero-title">
 					<span>{person.givenName}</span>
-					<span class="hero-last">{person.familyName}<span class="cursor" aria-hidden="true"></span></span>
+					<span class="hero-last">{person.familyName}<Cursor /></span>
 				</h1>
 				<div class="hero-grid grid-12">
 					<p class="hero-lede">
@@ -125,8 +128,8 @@ const jsonLd = JSON.stringify({
 		</div>
 
 		<div class="wrap">
-			<section id="projets" class="projects-section" aria-labelledby="projets-title">
-				<SectionHeading number="01" title="Projets" titleId="projets-title" aside={projectsAside} />
+			<section id="projets" class="projects-section" aria-labelledby="projects-title">
+				<SectionHeading number={1} title="Projets" titleId="projects-title" aside={projectsAside} />
 				<ol class="projects">
 					{
 						projects.map((project, i) => (
@@ -148,18 +151,18 @@ const jsonLd = JSON.stringify({
 				</ol>
 			</section>
 
-			<section id="parcours" class="section" aria-labelledby="parcours-title">
-				<SectionHeading number="02" title="Parcours" titleId="parcours-title" aside={positionsAside} />
+			<section id="parcours" class="section" aria-labelledby="career-title">
+				<SectionHeading number={2} title="Parcours" titleId="career-title" aside={positionsAside} />
 				<Reveal>
 					<div class="positions grid-12">
 						{
 							positions.map((position) => (
-								<article class="position" data-current={position.current}>
+								<article class="position" data-current={!position.end}>
 									<span class="position-year" aria-hidden="true">
 										{position.start.slice(0, 4)}
 									</span>
 									<p class="mono position-meta">
-										<time datetime={position.start}>{position.period}</time> · {position.city}
+										<time datetime={position.start}>{formatPeriod(position)}</time> · {position.city}
 									</p>
 									<h3>{position.company}</h3>
 									<p class="position-role">{position.role}</p>
@@ -176,46 +179,42 @@ const jsonLd = JSON.stringify({
 						}
 					</div>
 				</Reveal>
-				<Reveal>
-					<div class="education grid-12">
-						<h3 class="mono">Formation</h3>
-						<ol>
-							{
-								education.map((entry) => (
-									<li>
-										<span class="mono education-period">{entry.period}</span>
-										<span class="education-title">{entry.title}</span>
-										<span class="dim">
-											{entry.school}, {entry.city}
-										</span>
-									</li>
-								))
-							}
-						</ol>
-					</div>
-				</Reveal>
+				<div class="education grid-12">
+					<h3 class="mono">Formation</h3>
+					<ol>
+						{
+							education.map((entry) => (
+								<li>
+									<span class="mono education-period">{entry.period}</span>
+									<span class="education-title">{entry.title}</span>
+									<span class="dim">
+										{entry.school}, {entry.city}
+									</span>
+								</li>
+							))
+						}
+					</ol>
+				</div>
 			</section>
 
 			<section id="stack" class="section" aria-labelledby="stack-title">
-				<SectionHeading number="03" title="Stack" titleId="stack-title" aside=":set stack?" />
-				<Reveal>
-					<dl class="stack">
-						{
-							stack.map((group) => (
-								<div class="stack-row grid-12">
-									<dt class="mono">{group.category}</dt>
-									<dd>
-										<ul class="stack-items">
-											{group.items.map((item) => (
-												<li>{item}</li>
-											))}
-										</ul>
-									</dd>
-								</div>
-							))
-						}
-					</dl>
-				</Reveal>
+				<SectionHeading number={3} title="Stack" titleId="stack-title" aside=":set stack?" />
+				<dl class="stack">
+					{
+						stack.map((group) => (
+							<div class="stack-row grid-12">
+								<dt class="mono">{group.category}</dt>
+								<dd>
+									<ul class="stack-items">
+										{group.items.map((item) => (
+											<li>{item}</li>
+										))}
+									</ul>
+								</dd>
+							</div>
+						))
+					}
+				</dl>
 				<p class="mono stack-note">
 					éditeur : neovim · multiplexeur : tmux · runtime : bun — <a href={person.nvimConfig}
 						>la config est sur GitHub</a
@@ -224,24 +223,22 @@ const jsonLd = JSON.stringify({
 			</section>
 
 			<section id="contact" class="contact-section" aria-labelledby="contact-title">
-				<Reveal>
-					<div class="contact grid-12">
-						<SectionNumber number="04" />
-						<div class="contact-body">
-							<h2 id="contact-title" class="visually-hidden">Contact</h2>
-							<p class="contact-wq" aria-hidden="true">:wq</p>
-							<p class="contact-lede">Un projet carto, une API, une interface React&nbsp;? Écrivez-moi.</p>
-							<a class="contact-mail" href={mailto}>{mailUser}@<wbr />{mailDomain}</a>
-							<div class="contact-links">
-								<a href={person.github.url} rel="me"
-									>GitHub — {person.github.user} <span aria-hidden="true">↗</span></a
-								>
-								<a href={person.nvimConfig}>Config Neovim <span aria-hidden="true">↗</span></a>
-								<span class="dim">{person.city}, France</span>
-							</div>
+				<div class="contact grid-12">
+					<SectionNumber number={4} />
+					<div class="contact-body">
+						<h2 id="contact-title" class="visually-hidden">Contact</h2>
+						<p class="contact-wq" aria-hidden="true">:wq</p>
+						<p class="contact-lede">Un projet carto, une API, une interface React&nbsp;? Écrivez-moi.</p>
+						<a class="contact-mail" href={mailto}>{mailUser}@<wbr />{mailDomain}</a>
+						<div class="contact-links">
+							<a href={person.github.url} rel="me"
+								>GitHub — {person.github.user} <span aria-hidden="true">↗</span></a
+							>
+							<a href={person.nvimConfig}>Config Neovim <span aria-hidden="true">↗</span></a>
+							<span class="dim">{person.city}, France</span>
 						</div>
 					</div>
-				</Reveal>
+				</div>
 			</section>
 		</div>
 	</main>
@@ -255,6 +252,8 @@ const jsonLd = JSON.stringify({
 	/* Hero */
 
 	.hero {
+		/* The title is sized against the column, measured as a container. */
+		container-type: inline-size;
 		padding: clamp(28px, 4vw, 52px) 0 clamp(48px, 6vw, 88px);
 	}
 
@@ -274,10 +273,10 @@ const jsonLd = JSON.stringify({
 	.hero-title {
 		margin: 0;
 		/*
-		 * "POCHERON" and its cursor take 4.3em: the size follows the width of the column, gutters
-		 * excluded, so the cursor never bleeds out of it (the mockup's 22vw did, down to 320px screens).
+		 * "POCHERON" and its cursor take 4.3em: the size follows the width of the column so the
+		 * cursor never bleeds out of it (the mockup's 22vw did, down to 320px screens).
 		 */
-		font-size: min((100vw - 2 * var(--page-gutter)) / 4.35, 305px);
+		font-size: min(100cqi / 4.35, 305px);
 		line-height: 0.8;
 		font-weight: 800;
 		font-stretch: 62%;
@@ -291,21 +290,6 @@ const jsonLd = JSON.stringify({
 
 	.hero-last {
 		white-space: nowrap;
-	}
-
-	.cursor {
-		display: inline-block;
-		width: 0.3em;
-		height: 0.7em;
-		margin-left: 0.05em;
-		background: var(--color-accent);
-		animation: blink 1.1s steps(1) infinite;
-	}
-
-	@keyframes blink {
-		50% {
-			opacity: 0;
-		}
 	}
 
 	.hero-grid {
@@ -360,29 +344,9 @@ const jsonLd = JSON.stringify({
 		gap: 12px;
 	}
 
-	.button {
-		display: inline-flex;
-		align-items: center;
-		gap: 10px;
-		min-height: 48px;
-		padding: 0 20px;
-		background: var(--color-ink);
-		color: var(--color-paper);
-		font-weight: 600;
-		text-decoration: none;
-		white-space: nowrap;
-		transition: background-color 0.2s ease;
-	}
-
 	.button .mono {
 		font-size: 13px;
 		color: var(--color-on-ink-muted);
-	}
-
-	/* The accent hover of links would put blue text on black: the button turns blue instead. */
-	.button:hover {
-		background: var(--color-accent);
-		color: var(--color-on-accent);
 	}
 
 	.button:hover .mono {
@@ -782,8 +746,7 @@ const jsonLd = JSON.stringify({
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.marquee-track,
-		.cursor {
+		.marquee-track {
 			animation: none;
 		}
 

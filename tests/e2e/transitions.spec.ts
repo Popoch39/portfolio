@@ -7,8 +7,9 @@ const NOT_FOUND = '/this-page-does-not-exist/';
 function errorsOf(page: Page): string[] {
 	const errors: string[] = [];
 	page.on('console', (message) => {
-		// The browser logs the expected 404 status of the not found page as an error.
-		if (message.type() === 'error' && !message.text().includes('404')) errors.push(message.text());
+		// The browser logs the expected 404 status of the not found page itself as an error.
+		const notFoundDocument = message.location().url.endsWith(NOT_FOUND) && message.text().includes('404');
+		if (message.type() === 'error' && !notFoundDocument) errors.push(message.text());
 	});
 	page.on('pageerror', (error) => errors.push(error.message));
 	return errors;

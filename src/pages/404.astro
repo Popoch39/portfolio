@@ -1,4 +1,5 @@
 ---
+import Cursor from '../components/Cursor.astro';
 import Layout from '../layouts/Layout.astro';
 ---
 
@@ -9,9 +10,9 @@ import Layout from '../layouts/Layout.astro';
 >
 	<main class="wrap not-found">
 		<p class="mono status">E486: Pattern not found</p>
-		<h1>404<span class="cursor" aria-hidden="true"></span></h1>
+		<h1>404<Cursor /></h1>
 		<p class="lede">Cette page n’existe pas, ou plus.</p>
-		<a class="home" href="/">Retour à l’accueil</a>
+		<a class="button" href="/">Retour à l’accueil</a>
 	</main>
 </Layout>
 
@@ -40,34 +41,10 @@ import Layout from '../layouts/Layout.astro';
 		letter-spacing: -0.015em;
 	}
 
-	.cursor {
-		display: inline-block;
-		width: 0.3em;
-		height: 0.7em;
-		margin-left: 0.05em;
-		background: var(--color-accent);
-	}
-
 	.lede {
 		margin: 0;
 		font-size: clamp(22px, 2.35vw, 34px);
 		line-height: 1.2;
 		letter-spacing: -0.012em;
-	}
-
-	.home {
-		display: inline-flex;
-		align-items: center;
-		min-height: 48px;
-		padding: 0 20px;
-		background: var(--color-ink);
-		color: var(--color-paper);
-		font-weight: 600;
-		text-decoration: none;
-	}
-
-	.home:hover {
-		background: var(--color-accent);
-		color: var(--color-on-accent);
 	}
 </style>

@@ -3,7 +3,7 @@
 Logos monochromes des outils de la Stack, portés par les pastilles de l’Atome (ADR 0004). Chaque fichier vient tel quel de [simple-icons](https://simpleicons.org) et garde le nom de son slug ; le tracé (`d`) a été comparé octet par octet aux versions publiées sur jsDelivr le 2026-11-02.
 
 - **Licence** : CC0 1.0 (`"license": "CC0-1.0"` dans le `package.json` de simple-icons). La licence couvre les fichiers SVG, pas les marques : chaque logo reste la marque de son titulaire, utilisé ici pour nommer l’outil (usage nominatif).
-- **Rendu** : le build les assemble en un sprite de symboles inline, en `currentColor` (encre) ; leur `<title>` et leur `role` sont retirés, le nom de l’outil étant déjà dans la liste de la Stack.
+- **Rendu** : le build les assemble en un sprite de symboles servi à part (`/logos/<empreinte>.svg`, voir `src/components/logo-sprite.ts`), en `currentColor` (encre) ; leur `<title>` et leur `role` sont retirés, le nom de l’outil étant déjà dans la liste de la Stack.
 
 | fichier | outil | slug simple-icons | version |
 |---|---|---|---|

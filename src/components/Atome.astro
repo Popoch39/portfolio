@@ -320,7 +320,8 @@ const frame = [
 				trigger: section,
 				pin: true,
 				start: () => `top+=${pinOffset} top`,
-				end: '+=200%',
+				// As long as the Frise's pin, so the scene doesn't rush past before its phases can be read.
+				end: '+=400%',
 				scrub: true,
 				// Under a finger the page scrolls natively, off the main thread: the pin is set a frame early.
 				anticipatePin: 1,

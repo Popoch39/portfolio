@@ -229,7 +229,7 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 </div>
 
 <script>
-	import { gsap, registerScene } from '../animation/base';
+	import { gsap, registerScene, ScrollTrigger } from '../animation/base';
 
 	type Pose = { y: number; a: number; b: number; c: number; scale: number; lift: number };
 	type Choreography = {
@@ -273,15 +273,68 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 	const LABEL_EASE = cubicBezier(0.2, 0.7, 0.2, 1);
 	const NUCLEUS_EASE = cubicBezier(0.3, 1.6, 0.5, 1);
 
+	/** Breathing room kept above the pinned frame, and below it when the title scrolls out. */
+	const ROOM = 24;
+	/** Below this share of the screen-width scale, the tower would shrink too much to keep the title in the frame. */
+	const MIN_SHARE_WITH_TITLE = 0.75;
+
+	/**
+	 * Fits the pinned frame to the screen: the tower takes the largest scale at which it fits the height
+	 * left under the title (or under the top of the window, when keeping the title would shrink it too
+	 * much) and above the statusline, without going past the width-fitting scale set in CSS. The label
+	 * text keeps its size. Returns how far into the section the pin starts. Reads layout, so it only runs
+	 * at setup and on refresh, never on a frame.
+	 */
+	function fitToScreen(section: HTMLElement, atome: HTMLElement) {
+		atome.style.removeProperty('--tower-scale');
+		const style = getComputedStyle(atome);
+		const widthScale = Number.parseFloat(style.getPropertyValue('--tower-scale'));
+		const towerHeight = Number.parseFloat(style.getPropertyValue('--tower-height'));
+		const frame =
+			innerHeight - (Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingBottom) || 0);
+		const padding = Number.parseFloat(getComputedStyle(section).paddingTop) || 0;
+		const sectionTop = section.getBoundingClientRect().top;
+		const { top, bottom } = atome.getBoundingClientRect();
+		// Whatever follows the Atome in the section, down to its end (the note on the editor).
+		const note = section.lastElementChild!.getBoundingClientRect().bottom - bottom;
+		// What does not scale: the title above the Atome, the list below the tower in portrait, the note.
+		const title = top - sectionTop - padding;
+		const list = bottom - top - towerHeight * widthScale;
+
+		const withTitle = (frame - ROOM - title - list - note) / towerHeight;
+		const keepsTitle = withTitle >= widthScale * MIN_SHARE_WITH_TITLE;
+		const scale = Math.min(widthScale, keepsTitle ? withTitle : (frame - 2 * ROOM - list) / towerHeight);
+		atome.style.setProperty('--tower-scale', `${+scale.toFixed(3)}`);
+		if (!keepsTitle) return padding + title - ROOM;
+		// The whole section fits: the pin only skips as much of its top padding as it takes.
+		const height = padding + title + list + towerHeight * scale + note;
+		return Math.max(0, height - frame);
+	}
+
 	registerScene(() => {
 		const atome = document.querySelector<HTMLElement>('[data-atome]');
 		const section = atome?.closest('section');
 		if (!atome || !section) return;
 
+		// Before every refresh measures the pin, so the section has its fitted height by then.
+		let pinOffset = fitToScreen(section, atome);
+		const refit = () => {
+			pinOffset = fitToScreen(section, atome);
+		};
+		ScrollTrigger.addEventListener('refreshInit', refit);
+
 		// One timeline over the whole pin, its progress running from 0 to 1 in "seconds".
 		const scene = gsap.timeline({
 			defaults: { ease: 'none' },
-			scrollTrigger: { trigger: section, pin: true, start: 'top top', end: '+=200%', scrub: true },
+			scrollTrigger: {
+				trigger: section,
+				pin: true,
+				start: () => `top+=${pinOffset} top`,
+				end: '+=200%',
+				scrub: true,
+				// Under a finger the page scrolls natively, off the main thread: the pin is set a frame early.
+				anticipatePin: 1,
+			},
 		});
 
 		const labels = atome.querySelectorAll('.atome-label');
@@ -363,6 +416,11 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 
 		// A hold on the finished tower before the page moves on.
 		scene.set({}, {}, 1);
+
+		return () => {
+			ScrollTrigger.removeEventListener('refreshInit', refit);
+			atome.style.removeProperty('--tower-scale');
+		};
 	});
 </script>
 
@@ -373,16 +431,19 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 		--side: #c9c9c2;
 		--accent-deep: #121b9e;
 		position: relative;
-		height: var(--tower-height);
+		height: calc(var(--tower-height) * var(--tower-scale));
 		margin-top: clamp(32px, 4vw, 56px);
 	}
 
+	/* The tower's box follows its scale, so the page around it is laid out for the scaled drawing. */
 	.atome-tower {
 		position: absolute;
 		top: 0;
 		left: 0;
-		width: var(--tower-width);
-		height: var(--tower-height);
+		width: calc(var(--tower-width) * var(--tower-scale));
+		height: calc(var(--tower-height) * var(--tower-scale));
+		/* Chromium counts the unscaled boxes of the 3D layers as scrollable overflow; the scaled drawing fits the box. */
+		overflow: clip;
 	}
 
 	.logo-sprite {
@@ -406,8 +467,8 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 	}
 
 	.atome-drawing {
-		top: var(--axis-y);
-		left: var(--axis-x);
+		top: calc(var(--axis-y) * var(--tower-scale));
+		left: calc(var(--axis-x) * var(--tower-scale));
 		transform: scale(var(--tower-scale));
 	}
 
@@ -524,10 +585,12 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 		margin: 0;
 	}
 
+	/* Placed and linked to the scaled tower; the text itself never scales. */
 	.atome-label {
+		--leader-scaled: calc(var(--leader) * var(--tower-scale));
 		position: absolute;
-		top: calc(var(--axis-y) + var(--label-y));
-		left: var(--label-x);
+		top: calc((var(--axis-y) + var(--label-y)) * var(--tower-scale));
+		left: calc(var(--label-x) * var(--tower-scale));
 		right: 0;
 		/* A zero-height row centres its text on the bague's height, whatever the number of lines. */
 		display: flex;
@@ -540,8 +603,8 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 		content: '';
 		position: absolute;
 		top: 0;
-		left: calc(-12px - var(--leader));
-		width: var(--leader);
+		left: calc(-12px - var(--leader-scaled));
+		width: var(--leader-scaled);
 		height: 0.6px;
 		background: var(--color-ink);
 	}
@@ -550,7 +613,7 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 		content: '';
 		position: absolute;
 		top: -1.2px;
-		left: calc(-13.5px - var(--leader));
+		left: calc(-13.5px - var(--leader-scaled));
 		width: 3px;
 		height: 3px;
 		border-radius: 50%;
@@ -593,35 +656,43 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 		color: var(--color-ink-faint);
 	}
 
-	/* Until the portrait layout lands, narrow screens get the tower centred and the labels listed below it. */
-	@media (max-width: 860px) {
+	/* A low window: the labels sit closer together beside the scaled tower, so their lines tighten. */
+	@media (max-height: 560px) {
+		.atome-category {
+			line-height: 14px;
+		}
+
+		.atome-tools {
+			font-size: 14px;
+			line-height: 18px;
+		}
+	}
+
+	/*
+	 * Portrait, or too narrow for the labels beside the tower: the tower is centred on top and the labels
+	 * are listed below it, each a single run of text so the list stays short enough for the pinned frame.
+	 */
+	@media (orientation: portrait), (max-width: 639px) {
 		.atome {
 			height: auto;
 		}
 
 		.atome-tower {
 			position: relative;
-			width: 100%;
-			height: calc(var(--tower-height) * var(--tower-scale));
-			/* Chromium counts the unscaled boxes of the 3D layers as scrollable overflow; the scaled drawing fits the box. */
-			overflow: clip;
-		}
-
-		.atome-drawing {
-			top: calc(var(--axis-y) * var(--tower-scale));
-			left: 50%;
+			margin-inline: auto;
 		}
 
 		.atome-labels {
 			position: static;
-			margin-top: 24px;
+			margin-top: 16px;
+			border-top: 1px solid var(--color-rule);
 		}
 
 		.atome-label {
 			position: static;
 			display: block;
 			height: auto;
-			padding: 12px 0;
+			padding: 6px 0 7px;
 			border-bottom: 1px solid var(--color-rule);
 		}
 
@@ -629,12 +700,48 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 		.atome-label::after {
 			content: none;
 		}
+
+		.atome-category,
+		.atome-tools-cell,
+		.atome-tools {
+			display: inline;
+		}
+
+		.atome-category {
+			margin-right: 10px;
+			line-height: 20px;
+		}
+
+		.atome-tools {
+			font-size: 14px;
+			line-height: 20px;
+		}
 	}
 
-	/* The widest bague with its pastilles no longer fits the column. */
-	@media (max-width: 420px) {
+	/* A phone in portrait: the tower is about 300px wide, and narrower still when the column is. */
+	@media (max-width: 599px) {
+		.atome {
+			--tower-scale: 0.82;
+		}
+	}
+
+	/* The narrowest phones: every row wraps, so the list tightens to leave the tower some height. */
+	@media (max-width: 359px) {
 		.atome {
 			--tower-scale: 0.78;
+		}
+
+		.atome-label {
+			padding: 4px 0 5px;
+		}
+
+		.atome-category {
+			line-height: 18px;
+		}
+
+		.atome-tools {
+			font-size: 13px;
+			line-height: 18px;
 		}
 	}
 </style>

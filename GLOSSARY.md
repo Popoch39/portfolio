@@ -7,7 +7,7 @@ Toute animation dont le déclenchement ou l'avancement dépend du défilement : 
 _À éviter_ : effet, animation de scroll.
 
 **Révélation**
-Scène la plus simple : un élément entre dans la vue et anime une fois vers son état final. Jamais sur ce qui est visible au premier affichage (hero, élément LCP).
+Scène la plus simple : un élément entre dans la vue et anime une fois vers son état final. Jamais sur ce qui est visible au premier affichage (hero, élément LCP). Le site n'en porte plus : la dernière, sur la liste de la Stack, a été remplacée par l'Atome (#15).
 
 **Animation d'interface**
 Animation qui ne dépend pas du défilement : survol, chargement, hero, transition entre pages. Elle reste en CSS (les transitions entre pages sont des view transitions cross-document).

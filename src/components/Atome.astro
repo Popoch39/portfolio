@@ -15,14 +15,11 @@ const BASE_HEIGHT = 170;
 const TOP_HEIGHT = -178;
 /** Tilt of every bague in the tower: the band reads as an ellipse half as tall as it is wide. */
 const TILT = 60;
-/** Thickness of a bague, drawn by a single side layer under the band. */
-const THICKNESS = 8;
 /**
- * Thickness while the bagues swing through the gyroscope and the atom. Seen edge-on, the lone side layer
- * 8px under the band leaves an empty wall between them and the bague reads as two thin open rings; 2px
- * closes it. The full thickness only shows where the bagues lie at the tower's tilt.
+ * Thickness of a bague, drawn by a single side layer under the band. Nothing fills the wall between the
+ * two: any thicker, the bague reads as two thin open rings, edge-on in the atom as at the tower's tilt.
  */
-const SWING_THICKNESS = 2;
+const THICKNESS = 2;
 /** How far the accent layers sit above their base ones, so the two never fight over depth. */
 const ACCENT_RAISE = 0.5;
 /** Room around the band (±5px) and its 0.6px edges inside a bague's SVG box. */
@@ -83,28 +80,26 @@ const bagues = stack.map((group, rank) => {
 	const pastilles = logos.map((href, index) => ({ href, angle: firstPastille + (360 / logos.length) * index }));
 	/**
 	 * The scene's poses, from the target to the tower: height, Z · X · Z tilt (the heading of the bague's
-	 * axis, its tilt, then its spin in its own plane), radius as a scale of the tower's, thickness.
+	 * axis, its tilt, then its spin in its own plane), radius as a scale of the tower's.
 	 */
-	const pose = (y: number, [heading, tilt, spin]: number[], scale: number, thickness = THICKNESS) => ({
+	const pose = (y: number, [heading, tilt, spin]: number[], scale: number) => ({
 		y,
 		heading,
 		tilt,
 		spin,
 		scale: round(scale),
 		lift: round(liftAt(tilt)),
-		thickness,
 	});
 	const choreography = {
 		start: round(0.06 + STAGGER * share),
 		end: round(0.8 + STAGGER * share),
 		// The pastilles travel this far round their bague during the scene, the direction alternating from one bague to the next.
 		travel: (rank % 2 ? 1 : -1) * (300 + 40 * rank),
-		accentRaise: ACCENT_RAISE,
 		poses: [
 			pose(TARGET_HEIGHT, [0, TILT, 45], 1),
-			pose(GYRO_HEIGHT, gyro, (radius + nestedRadius) / 2 / radius, SWING_THICKNESS),
-			pose(0, [nested[0], NESTED_TILT, nested[1]], nestedRadius / radius, SWING_THICKNESS),
-			pose(0, [nested[0], NESTED_TILT, drift], nestedRadius / radius, SWING_THICKNESS),
+			pose(GYRO_HEIGHT, gyro, (radius + nestedRadius) / 2 / radius),
+			pose(0, [nested[0], NESTED_TILT, nested[1]], nestedRadius / radius),
+			pose(0, [nested[0], NESTED_TILT, drift], nestedRadius / radius),
 			pose(0, [0, TILT, spin], 1),
 			pose(round(height), [0, TILT, spin], 1),
 		],
@@ -220,12 +215,11 @@ const frame = [
 <script>
 	import { gsap, registerScene, ScrollTrigger } from '../animation/base';
 
-	type Pose = { y: number; heading: number; tilt: number; spin: number; scale: number; lift: number; thickness: number };
+	type Pose = { y: number; heading: number; tilt: number; spin: number; scale: number; lift: number };
 	type Choreography = {
 		start: number;
 		end: number;
 		travel: number;
-		accentRaise: number;
 		poses: Pose[];
 		pastilles: [number, number][];
 	};
@@ -341,10 +335,9 @@ const frame = [
 
 		const labels = atome.querySelectorAll('.atome-label');
 		for (const [rank, bague] of atome.querySelectorAll<HTMLElement>('[data-choreography]').entries()) {
-			const { start, end, travel, accentRaise, poses, pastilles }: Choreography = JSON.parse(bague.dataset.choreography!);
+			const { start, end, travel, poses, pastilles }: Choreography = JSON.parse(bague.dataset.choreography!);
 			const plane = bague.querySelector('.bague-plane');
-			const tops = bague.querySelectorAll('.bague-top, .bague-top-accent');
-			const sides = bague.querySelectorAll('.bague-side, .bague-side-accent');
+			const layers = bague.querySelectorAll('.bague-layer');
 			const slots = bague.querySelectorAll('.pastille-slot');
 			const untilts = bague.querySelectorAll('.pastille-untilt');
 			const faces = bague.querySelectorAll('.pastille');
@@ -357,12 +350,7 @@ const frame = [
 				plane: ({ spin }: Pose) => ({ rotation: spin }),
 				untilt: ({ tilt, spin }: Pose) => ({ rotation: -spin, rotationX: -tilt }),
 				pastille: ({ heading, lift }: Pose) => ({ rotation: -heading, z: lift }),
-				top: ({ scale }: Pose) => ({ scale }),
-				side: ({ scale, thickness }: Pose) => ({
-					scale,
-					z: (index: number, layer: Element) =>
-						-thickness + (layer.classList.contains('bague-side-accent') ? accentRaise : 0),
-				}),
+				layer: ({ scale }: Pose) => ({ scale }),
 				slot: ({ scale }: Pose) => ({
 					x: (index: number) => pastilles[index][0] * scale,
 					y: (index: number) => pastilles[index][1] * scale,
@@ -374,8 +362,7 @@ const frame = [
 				[plane, shape.plane, TURN_EASES],
 				[untilts, shape.untilt, TURN_EASES],
 				[faces, shape.pastille, TURN_EASES],
-				[tops, shape.top, RADIUS_EASES],
-				[sides, shape.side, RADIUS_EASES],
+				[layers, shape.layer, RADIUS_EASES],
 				[slots, shape.slot, RADIUS_EASES],
 			] as const;
 

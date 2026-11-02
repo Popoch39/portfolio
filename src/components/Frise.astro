@@ -60,8 +60,8 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 			data-head-from={x(0)}
 			data-head-to={x(1)}
 		>
+			<div class="frise-grid" aria-hidden="true" data-frise-grid></div>
 			<div class="frise-camera" data-frise-camera>
-				<div class="frise-grid" aria-hidden="true"></div>
 				<svg class="frise-graph frise-ahead" aria-hidden="true" {...graphBox}>
 					<path d={graph} />
 				</svg>
@@ -78,6 +78,20 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 						))
 					}
 				</svg>
+				{/* Laid over the hollow dots, so that filling one is a change of opacity, not of colour. A merge stays hollow. */}
+				{
+					commits
+						.filter((commit) => commit.kind !== 'merge')
+						.map((commit) => (
+							<span
+								class="frise-fill"
+								aria-hidden="true"
+								data-frise-fill
+								data-x={x(commit.position)}
+								style={`--x: ${x(commit.position)}px; --y: ${y(commit.lane)}px`}
+							/>
+						))
+				}
 				<ol class="frise-commits">
 					{
 						commits
@@ -121,6 +135,29 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 
 	/** Pinning length, in window heights (400svh). */
 	const PIN_HEIGHTS = 4;
+
+	// Cues, in plane px of HEAD travel (the mock-up's 440 px a year).
+	/** How far ahead of HEAD a label starts showing. */
+	const FADE_IN = 500;
+	/** How close HEAD gets before a label lights up and its dot fills. */
+	const LIGHT_UP = 14;
+	/** The smoother can stop a hair short of a commit, the end of the travel included: cues land just before. */
+	const ARRIVAL = 2;
+	/** How far HEAD travels while a pole rises, before reaching its commit. */
+	const RISE = 80;
+	/** How far past the next commit a label takes to fade to its floor. */
+	const FADE_OUT = 220;
+	/** A lowered pole, in px: its foot stays on the plane. */
+	const LOWERED = 18;
+	const AHEAD_OPACITY = 0.4;
+	/** Lowest opacity at which the muted lines (#d4d7ff) keep 4.5:1 on the accent: past labels stay AA. */
+	const PAST_OPACITY = 0.93;
+
+	interface Key {
+		at: number;
+		value: number;
+		ease?: string;
+	}
 
 	registerScene(() => {
 		const section = document.querySelector<HTMLElement>('[data-frise]');
@@ -167,8 +204,10 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 		};
 		showActiveCommit(from);
 
+		// The timeline counts in plane px of HEAD travel: a commit's cue sits at its distance from the start.
+		const travel = to - from;
 		const timeline = gsap.timeline({
-			defaults: { ease: 'none' },
+			defaults: { ease: 'none', duration: travel },
 			scrollTrigger: {
 				trigger: section,
 				pin: true,
@@ -176,13 +215,83 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 				end: `+=${PIN_HEIGHTS * 100}%`,
 				scrub: true,
 			},
-			onUpdate: () => showActiveCommit(from + (to - from) * timeline.progress()),
+			onUpdate: () => showActiveCommit(from + travel * timeline.progress()),
 		});
 		// HEAD stays under the camera: the plane slides back by as much as HEAD moves forward.
 		timeline
 			.fromTo('[data-frise-camera]', { x: -from }, { x: -to }, 0)
 			.fromTo('[data-frise-trail]', { x: from - width }, { x: to - width }, 0)
 			.fromTo('[data-frise-trail-graph]', { x: width - from }, { x: width - to }, 0);
+
+		// A frame-sized grid stands for the endless one: shifted modulo its mesh, its lines move with the plane.
+		const mesh = parseFloat(getComputedStyle(section).getPropertyValue('--frise-mesh'));
+		timeline.fromTo(
+			'[data-frise-grid]',
+			{ x: -from },
+			{ x: -to, modifiers: { x: gsap.utils.unitize(gsap.utils.wrap(-mesh, 0)) } },
+			0,
+		);
+
+		/** Lays a property's keyframes along HEAD's travel, eased into each key; keys before the start are clipped. */
+		const track = (target: Element, property: string, keys: Key[]) => {
+			const valueAt = (at: number) => {
+				const next = keys.findIndex((key) => key.at >= at);
+				if (next === -1) return keys[keys.length - 1].value;
+				if (next === 0) return keys[0].value;
+				const [a, b] = [keys[next - 1], keys[next]];
+				return a.value + (b.value - a.value) * gsap.parseEase(b.ease ?? 'none')((at - a.at) / (b.at - a.at));
+			};
+			timeline.set(target, { [property]: valueAt(0) }, 0);
+			for (let i = 1; i < keys.length; i++) {
+				const start = Math.max(keys[i - 1].at, 0);
+				const end = Math.min(keys[i].at, travel);
+				if (end <= start) continue;
+				// A clipped segment no longer starts at its key: a linear run between the clipped values stays close.
+				const ease = start === keys[i - 1].at ? (keys[i].ease ?? 'none') : 'none';
+				timeline.fromTo(
+					target,
+					{ [property]: valueAt(start) },
+					{ [property]: valueAt(end), duration: end - start, ease, immediateRender: false },
+					start,
+				);
+			}
+		};
+
+		/** When HEAD reaches a commit, on the timeline. */
+		const cue = (element: HTMLElement) => Number(element.dataset.x) - from - ARRIVAL;
+		const labels = [...section.querySelectorAll<HTMLElement>('.commit')];
+		labels.forEach((label, i) => {
+			const at = cue(label);
+			const next = i + 1 < labels.length ? cue(labels[i + 1]) : Number.POSITIVE_INFINITY;
+			// Lit while active, until the next commit takes over; discreet ahead, faded behind but readable.
+			track(label, 'opacity', [
+				{ at: at - FADE_IN, value: 0 },
+				{ at: at - LIGHT_UP, value: AHEAD_OPACITY },
+				{ at, value: 1 },
+				{ at: next, value: 1 },
+				{ at: next + FADE_OUT, value: PAST_OPACITY },
+			]);
+			const pole = label.querySelector<HTMLElement>('.commit-pole');
+			const card = label.querySelector<HTMLElement>('.commit-card');
+			if (!pole || !card) return;
+			// The pole rises as HEAD comes, the card riding on top of it.
+			const height = pole.offsetHeight;
+			track(pole, 'scaleY', [
+				{ at: at - RISE, value: LOWERED / height },
+				{ at, value: 1, ease: 'power3.out' },
+			]);
+			track(card, 'y', [
+				{ at: at - RISE, value: height - LOWERED },
+				{ at, value: 0, ease: 'power3.out' },
+			]);
+		});
+		for (const fill of section.querySelectorAll<HTMLElement>('[data-frise-fill]')) {
+			const at = cue(fill);
+			track(fill, 'opacity', [
+				{ at: at - LIGHT_UP, value: 0 },
+				{ at, value: 1 },
+			]);
+		}
 
 		return () => {
 			band.removeEventListener('scroll', keepBandStill);
@@ -278,6 +387,15 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 		mask-image: linear-gradient(to top, #000 50%, transparent);
 	}
 
+	/*
+	 * The scene's grid covers what the tilted plane shows of the frame, not the whole graph. Its left edge
+	 * stays on the mesh, so that the lines fall where the final state's would.
+	 */
+	.frise[data-scene] .frise-grid {
+		left: round(down, -40vw, var(--frise-mesh));
+		width: 200vw;
+	}
+
 	.frise-graph {
 		position: absolute;
 		top: -200px;
@@ -325,15 +443,23 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 		top: 0;
 	}
 
+	/* Hollow, as a merge stays in `git log --graph`; the other commits get a filled dot on top. */
 	.frise-graph circle {
-		fill: var(--color-on-accent);
+		fill: var(--color-accent);
 		stroke: var(--color-on-accent);
 		stroke-width: 3;
 	}
 
-	/* A merge stays hollow, as in `git log --graph`. */
-	.frise-graph circle[data-kind='merge'] {
-		fill: var(--color-accent);
+	/* The size of the circle with its stroke. */
+	.frise-fill {
+		position: absolute;
+		top: var(--y);
+		left: var(--x);
+		width: 18px;
+		height: 18px;
+		margin: -9px 0 0 -9px;
+		border-radius: 50%;
+		background: var(--color-on-accent);
 	}
 
 	.frise-commits {
@@ -404,6 +530,8 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 		width: 1px;
 		height: 138px;
 		background: var(--color-on-accent);
+		/* The scene raises it from its foot. */
+		transform-origin: 50% 100%;
 	}
 
 	.commit[data-lane='branch'] .commit-pole {

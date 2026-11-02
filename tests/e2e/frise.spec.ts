@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
 	content,
 	header,
@@ -47,6 +47,15 @@ for (const { name, use } of FINAL_STATE_CONTEXTS) {
 				await expect(commit).toBeVisible();
 				await expect(commit).toHaveCSS('opacity', '1');
 			}
+		});
+
+		test('the graph is fully built: every dot but the merges filled, every pole raised', async ({ page }) => {
+			await page.goto('/');
+
+			const fills = page.locator('[data-frise-fill]');
+			await expect(fills).toHaveCount(await page.locator('.frise-graph circle:not([data-kind="merge"])').count());
+			for (const fill of await fills.all()) await expect(fill).toHaveCSS('opacity', '1');
+			for (const pole of await band(page).locator('.commit-pole').all()) await expect(pole).toHaveCSS('transform', 'none');
 		});
 
 		test('the section keeps its single heading, with the branches as its aside and the years of experience', async ({
@@ -116,6 +125,47 @@ async function headOnScreen(page: Page) {
 	return box.x;
 }
 
+/** Same, once the smoothing has settled: a reading taken mid-glide would leave HEAD still moving forward. */
+function headOnceStill(page: Page): Promise<number> {
+	return band(page)
+		.getByRole('listitem')
+		.last()
+		.evaluate(
+			(el) =>
+				new Promise<number>((resolve) => {
+					let previous = Number.NaN;
+					let stillFrames = 0;
+					const measure = () => {
+						const { x } = el.getBoundingClientRect();
+						stillFrames = Math.abs(x - previous) < 0.5 ? stillFrames + 1 : 0;
+						previous = x;
+						if (stillFrames >= 10) resolve(x);
+						else requestAnimationFrame(measure);
+					};
+					requestAnimationFrame(measure);
+				}),
+		);
+}
+
+const opacity = (element: Locator) => element.evaluate((el) => Number(getComputedStyle(el).opacity));
+
+/**
+ * Lowest opacity at which a label's muted lines (#d4d7ff) keep a 4.5:1 contrast on the accent (#2433ff).
+ */
+const AA_FLOOR = 0.93;
+
+/**
+ * Height of a commit's pole against its card: both stand in the same upright label, so the
+ * perspective scales them alike and the ratio only tells how far the pole has risen.
+ */
+async function poleRatio(commit: Locator) {
+	return commit.evaluate((el) => {
+		const pole = el.querySelector('.commit-pole')?.getBoundingClientRect().height ?? 0;
+		const card = el.querySelector('.commit-card')?.getBoundingClientRect().height ?? 1;
+		return pole / card;
+	});
+}
+
 /** The scene stays pinned for four window heights (400svh). */
 const PIN_HEIGHTS = 4;
 
@@ -153,7 +203,7 @@ test.describe('Frise, scene', () => {
 
 		await scrollWithWheel(page, 600);
 		await expect.poll(() => headOnScreen(page)).toBeLessThan(before - 50);
-		const forward = await headOnScreen(page);
+		const forward = await headOnceStill(page);
 
 		await scrollWithWheel(page, -300);
 		await expect.poll(() => headOnScreen(page)).toBeGreaterThan(forward + 25);
@@ -166,7 +216,7 @@ test.describe('Frise, scene', () => {
 
 		await page.keyboard.press('PageDown');
 		await expect.poll(() => headOnScreen(page)).toBeLessThan(before - 50);
-		const forward = await headOnScreen(page);
+		const forward = await headOnceStill(page);
 
 		await page.keyboard.press('PageUp');
 		await expect.poll(() => headOnScreen(page)).toBeGreaterThan(forward + 25);
@@ -216,6 +266,54 @@ test.describe('Frise, scene', () => {
 		const changes = Number(await legend(page).getAttribute('data-test-changes'));
 		expect(changes).toBeGreaterThan(0);
 		expect(changes).toBeLessThanOrEqual(12 * 3);
+	});
+
+	test('the commit HEAD has reached stands raised and lit, those ahead stay low and discreet, those behind dim but stay readable', async ({
+		page,
+	}) => {
+		await page.goto('/');
+		const start = await topInPage(section(page));
+		const commits = band(page).getByRole('listitem');
+		const diploma = commits.first();
+		const head = commits.last();
+
+		await scrollToScene(page, start, 0);
+		await expect(diploma).toHaveCSS('opacity', '1');
+		await expect.poll(() => opacity(head)).toBeLessThan(0.5);
+		const lowered = await poleRatio(head);
+		expect(await poleRatio(diploma)).toBeGreaterThan(2 * lowered);
+
+		await scrollToScene(page, start, 1);
+		await expect(head).toHaveCSS('opacity', '1');
+		expect(await poleRatio(head)).toBeGreaterThan(2 * lowered);
+		await expect.poll(() => opacity(diploma)).toBeLessThan(1);
+		expect(await opacity(diploma)).toBeGreaterThanOrEqual(AA_FLOOR);
+	});
+
+	test('a dot fills once HEAD reaches it, a merge stays hollow', async ({ page }) => {
+		await page.goto('/');
+		const start = await topInPage(section(page));
+		const fills = page.locator('[data-frise-fill]');
+		// One filled dot over every hollow one, merges aside.
+		await expect(fills).toHaveCount(await page.locator('.frise-graph circle:not([data-kind="merge"])').count());
+
+		await scrollToScene(page, start, 0);
+		await expect(fills.first()).toHaveCSS('opacity', '1');
+		await expect(fills.last()).toHaveCSS('opacity', '0');
+
+		await scrollToScene(page, start, 1);
+		await expect(fills.last()).toHaveCSS('opacity', '1');
+	});
+
+	test('the grid is a layer the size of the frame, not of the graph', async ({ page }) => {
+		await page.goto('/');
+		await scrollToScene(page, await topInPage(section(page)), 0.5);
+
+		const { grid, frame } = await page.locator('.frise-grid').evaluate((el) => ({
+			grid: (el as HTMLElement).offsetWidth,
+			frame: el.closest('[data-frise-band]')?.clientWidth ?? 0,
+		}));
+		expect(grid).toBeLessThanOrEqual(2.1 * frame);
 	});
 
 	test('at the end, the page scrolls on to the Stack without a jump', async ({ page }) => {

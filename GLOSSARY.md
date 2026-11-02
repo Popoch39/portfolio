@@ -41,7 +41,7 @@ La scène de la section Stack : les bagues passent de la cible au gyroscope, pui
 _À éviter_ : gyroscope, vue éclatée.
 
 **Bague**
-L'anneau d'une catégorie de la stack, une par catégorie, dans l'ordre du profil de la base au sommet de la tour. La bague SIG est en accent.
+L'anneau d'une catégorie de la stack, une par catégorie, dans l'ordre du profil de la base au sommet de la tour. Chaque bague passe en accent quand le défilement la met en avant ; l'étiquette SIG est en accent.
 _À éviter_ : ring, orbite.
 
 **Pastille**

@@ -181,15 +181,15 @@ const frame = [
 					);
 					return (
 						<div
-							class:list={['bague', { 'bague--accent': bague.accent }]}
+							class="bague"
 							style={`transform: translate3d(0, ${px(bague.height)}, 0) rotateX(${TILT}deg)`}
 							data-choreography={JSON.stringify(bague.choreography)}
 						>
 							{layer({ side: true, accent: false })}
 							{layer({ side: false, accent: false })}
-							{/* The accent is a layer laid over the base one, so the scene can fade it in with opacity alone. */}
-							{bague.accent && layer({ side: true, accent: true })}
-							{bague.accent && layer({ side: false, accent: true })}
+							{/* The accent is a layer laid over the base one, so the scene can light it with opacity alone. */}
+							{layer({ side: true, accent: true })}
+							{layer({ side: false, accent: true })}
 							<div class="bague-plane" style={`transform: rotate(${bague.spin}deg)`}>
 								{/* Carries the pastilles round the bague during the scene, on top of the bague's own spin. */}
 								<div class="bague-track">
@@ -282,9 +282,8 @@ const frame = [
 	const RADIUS_EASES = [RADIUS_OUT, RADIUS_OUT, 'none', cubicBezier(0.6, 0, 0.3, 1), 'none'];
 	const LABEL_EASE = cubicBezier(0.2, 0.7, 0.2, 1);
 	const NUCLEUS_EASE = cubicBezier(0.3, 1.6, 0.5, 1);
-	/** When the pastilles start going round their bague, and when the finished tower holds still, the SIG accent last in. */
+	/** When the pastilles start going round their bague. */
 	const TRAVEL_START = 0.04;
-	const HOLD_START = 0.9;
 	/** When the enlarged drawing starts sliding back to its place, as the first bagues rise, and when it is there with the labels. */
 	const INTRO_LEAVE = 0.66;
 	const INTRO_END = 0.84;
@@ -508,27 +507,30 @@ const frame = [
 			0.635,
 		);
 
-		// The SIG accent is a layer laid over the bague: only its opacity moves, never a colour.
-		scene.fromTo(
-			atome.querySelectorAll('.bague-side-accent, .bague-top-accent'),
-			{ opacity: 0 },
-			{ opacity: 1, duration: 0.04 },
-			HOLD_START - 0.04,
-		);
-
-		// The bagues lit one by one. The dimming goes on the layers and logos, never on the bague: an
-		// opacity below 1 on an element that preserves 3D flattens it, and its pastilles would cut the band.
-		const parts = [...bagues].map((bague, rank) => [...bague.querySelectorAll('.bague-layer, .pastille-logo'), labels[rank]]);
+		// The bagues lit one by one: the lit one takes the accent, the others dim. The dimming goes on the
+		// layers and logos, never on the bague: an opacity below 1 on an element that preserves 3D flattens
+		// it, and its pastilles would cut the band. The accent is a layer laid over the bague: only its
+		// opacity moves, never a colour.
+		const parts = [...bagues].map((bague, rank) => [
+			...bague.querySelectorAll('.bague-side, .bague-top, .pastille-logo'),
+			labels[rank],
+		]);
+		const accents = [...bagues].map((bague) => [...bague.querySelectorAll('.bague-side-accent, .bague-top-accent')]);
 		const others = (rank: number) => parts.filter((_, other) => other !== rank).flat();
 		const fade = (targets: Element[], from: number, to: number, at: number) =>
 			scene.fromTo(targets, { opacity: from }, { opacity: to, duration: FOCUS_FADE, immediateRender: false }, at);
+		const last = parts.length - 1;
 		fade(others(0), 1, DIMMED, FOCUS_START);
-		for (let rank = 1; rank < parts.length; rank++) {
+		fade(accents[0], 0, 1, FOCUS_START);
+		for (let rank = 1; rank <= last; rank++) {
 			const at = FOCUS_START + rank * FOCUS_STEP;
 			fade(parts[rank - 1], 1, DIMMED, at);
+			fade(accents[rank - 1], 1, 0, at);
 			fade(parts[rank], DIMMED, 1, at);
+			fade(accents[rank], 0, 1, at);
 		}
-		fade(others(parts.length - 1), DIMMED, 1, focusEnd - FOCUS_FADE);
+		fade(others(last), DIMMED, 1, focusEnd - FOCUS_FADE);
+		fade(accents[last], 1, 0, focusEnd - FOCUS_FADE);
 
 		// A hold on the finished tower before the page moves on: nothing moves past this point.
 		scene.set({}, {}, sceneLength);
@@ -648,6 +650,12 @@ const frame = [
 	.bague-edge {
 		stroke: var(--color-ink);
 		stroke-width: 0.6;
+	}
+
+	/* Only lit by the scene, one bague at a time: the finished tower carries no accent. */
+	.bague-top-accent,
+	.bague-side-accent {
+		opacity: 0;
 	}
 
 	.bague-top-accent .bague-band {

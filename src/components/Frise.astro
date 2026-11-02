@@ -197,6 +197,18 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 		/* Straight at the final state; the scene turns the graph onto the mock-up's diagonal. */
 		--frise-turn: 0deg;
 		--frise-mesh: 110px;
+		/* Framing: the scene is cropped to the window, never scaled down (see the media queries below). */
+		--frise-perspective: 1100px;
+		/* Narrower on a small phone: the first card, 120px into the strip, must end inside the window. */
+		--frise-card: min(240px, 100vw - 136px);
+		/* Where `main` crosses the band: HEAD in the scene, the strip's line at the final state. */
+		--frise-scene-x: min(40%, 100% - var(--frise-card) - var(--page-gutter));
+		--frise-scene-y: 48%;
+		--frise-rest-y: 78%;
+		--frise-pole: 138px;
+		--frise-branch-pole: 88px;
+		--frise-legend-title: 44px;
+		--frise-legend-width: min(520px, 100% - 2 * var(--page-gutter));
 		position: relative;
 		display: flex;
 		flex-direction: column;
@@ -206,6 +218,36 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 		padding-top: clamp(28px, 4vw, 40px);
 		background: var(--color-accent);
 		color: var(--color-on-accent);
+	}
+
+	/*
+	 * Short phone upright: the heading leaves about 340px of band, to share between the active card
+	 * on its pole and the legend below HEAD.
+	 */
+	@media (orientation: portrait) and (max-height: 700px) {
+		.frise {
+			--frise-scene-y: 53%;
+			--frise-pole: 60px;
+			--frise-branch-pole: 40px;
+			--frise-legend-title: 28px;
+		}
+	}
+
+	/*
+	 * Phone on its side: about 160px of band under the heading. `main` comes down near the statusline,
+	 * the poles shorten, and HEAD moves to the middle so that the legend, to its left, stays low
+	 * enough to clear the heading.
+	 */
+	@media (orientation: landscape) and (max-height: 500px) {
+		.frise {
+			--frise-scene-x: min(50%, 100% - var(--frise-card) - var(--page-gutter));
+			--frise-scene-y: 74%;
+			--frise-rest-y: 82%;
+			--frise-pole: 40px;
+			--frise-branch-pole: 25px;
+			--frise-legend-title: 22px;
+			--frise-legend-width: calc(var(--frise-scene-x) - 2 * var(--page-gutter));
+		}
 	}
 
 	.frise-summary {
@@ -220,8 +262,9 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 		min-height: 0;
 		overflow-x: auto;
 		overflow-y: hidden;
-		perspective: 1100px;
-		perspective-origin: 40% 20%;
+		perspective: var(--frise-perspective);
+		/* Above HEAD, so that the graph runs away from the camera on both sides of it. */
+		perspective-origin: var(--frise-scene-x) 20%;
 		scrollbar-color: var(--color-on-accent-muted) transparent;
 	}
 
@@ -233,7 +276,7 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 	/* Tilted back around `main`; the labels stand back up on it. */
 	.frise-plane {
 		position: absolute;
-		top: 78%;
+		top: var(--frise-rest-y);
 		left: 0;
 		width: var(--frise-width);
 		height: 0;
@@ -259,8 +302,8 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 	}
 
 	.frise[data-scene] .frise-plane {
-		top: 48%;
-		left: 40%;
+		top: var(--frise-scene-y);
+		left: var(--frise-scene-x);
 	}
 
 	.frise-grid {
@@ -368,7 +411,7 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 		flex-direction: column;
 		gap: 4px;
 		box-sizing: border-box;
-		width: 240px;
+		width: var(--frise-card);
 		padding-left: 10px;
 		border-left: 1px solid var(--color-on-accent);
 	}
@@ -377,8 +420,9 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 		margin: 0;
 	}
 
+	/* Branch labels stand 180px behind `main`, where the perspective shrinks them: still 11px on screen. */
 	.commit-meta {
-		font-size: 11px;
+		font-size: 13px;
 		color: var(--color-on-accent-muted);
 	}
 
@@ -402,12 +446,12 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 	/* Fully raised at the final state. */
 	.commit-pole {
 		width: 1px;
-		height: 138px;
+		height: var(--frise-pole);
 		background: var(--color-on-accent);
 	}
 
 	.commit[data-lane='branch'] .commit-pole {
-		height: 88px;
+		height: var(--frise-branch-pole);
 	}
 
 	/* Over the band, clear of the statusline; only the scene has an active commit. */
@@ -418,7 +462,7 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 		display: none;
 		flex-direction: column;
 		gap: 8px;
-		max-width: min(520px, calc(100% - 2 * var(--page-gutter)));
+		max-width: var(--frise-legend-width);
 		pointer-events: none;
 	}
 
@@ -432,7 +476,7 @@ const graphBox = { width, height: -LANE + 40, viewBox: `0 ${LANE - 20} ${width} 
 	}
 
 	.frise-legend-title {
-		font-size: 44px;
+		font-size: var(--frise-legend-title);
 		font-weight: 800;
 		font-stretch: 75%;
 		line-height: 1;

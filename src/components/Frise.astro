@@ -63,77 +63,75 @@ const geometry = [
 	</div>
 
 	{/* Focusable at the final state, so that the keyboard scrolls it; the perspective sits on it, so the camera stays still. */}
-	<div class="frise-band" role="region" aria-label="Frise du parcours" tabindex="0" data-frise-band>
-		<div
-			class="frise-plane"
-			style={geometry}
-			data-frise-plane
-			data-width={width}
-			data-head-from={x(0)}
-			data-head-to={x(1)}
-		>
-			<div class="frise-grid" aria-hidden="true" data-frise-grid></div>
-			<div class="frise-camera" data-frise-camera>
-				<svg class="frise-graph frise-ahead" aria-hidden="true" {...graphBox}>
-					<path d={graph} />
-				</svg>
-				{/* A window over the trail: they slide in opposite directions, so the trail stays put and shows up to HEAD. */}
-				<div class="frise-trail" aria-hidden="true" data-frise-trail>
-					<svg class="frise-graph" {...graphBox} data-frise-trail-graph>
+	<div class="frise-band" role="region" aria-label="Frise du parcours" tabindex="0" style={geometry} data-frise-band>
+		{/* The grid and the graph lie on two copies of the plane, so that the scene can fade the graph alone under the heading. */}
+		<div class="frise-plane" aria-hidden="true">
+			<div class="frise-grid" data-frise-grid></div>
+		</div>
+		<div class="frise-graph-layer">
+			<div class="frise-plane" data-frise-plane data-width={width} data-head-from={x(0)} data-head-to={x(1)}>
+				<div class="frise-camera" data-frise-camera>
+					<svg class="frise-graph frise-ahead" aria-hidden="true" {...graphBox}>
 						<path d={graph} />
 					</svg>
-				</div>
-				<svg class="frise-graph" aria-hidden="true" {...graphBox}>
-					{
-						commits.map((commit) => (
-							<circle cx={x(commit.position)} cy={y(commit.lane)} r="7.5" data-kind={commit.kind} />
-						))
-					}
-				</svg>
-				{/* Laid over the hollow dots, so that filling one is a change of opacity, not of colour. A merge stays hollow. */}
-				{
-					commits
-						.filter((commit) => commit.kind !== 'merge')
-						.map((commit) => (
-							<span
-								class="frise-fill"
-								aria-hidden="true"
-								data-frise-fill
-								data-x={x(commit.position)}
-								style={`--x: ${x(commit.position)}px; --y: ${y(commit.lane)}px`}
-							/>
-						))
-				}
-				<ol class="frise-commits">
+					{/* A window over the trail: they slide in opposite directions, so the trail stays put and shows up to HEAD. */}
+					<div class="frise-trail" aria-hidden="true" data-frise-trail>
+						<svg class="frise-graph" {...graphBox} data-frise-trail-graph>
+							<path d={graph} />
+						</svg>
+					</div>
+					<svg class="frise-graph" aria-hidden="true" {...graphBox}>
+						{
+							commits.map((commit) => (
+								<circle cx={x(commit.position)} cy={y(commit.lane)} r="7.5" data-kind={commit.kind} />
+							))
+						}
+					</svg>
+					{/* Laid over the hollow dots, so that filling one is a change of opacity, not of colour. A merge stays hollow. */}
 					{
 						commits
-							.filter((commit) => !commit.unlabeled)
+							.filter((commit) => commit.kind !== 'merge')
 							.map((commit) => (
-								<li
-									class="commit"
-									data-lane={onMain(commit.lane) ? 'main' : 'branch'}
+								<span
+									class="frise-fill"
+									aria-hidden="true"
+									data-frise-fill
 									data-x={x(commit.position)}
-									style={`--x: ${x(commit.position)}px`}
-								>
-									<div class="commit-card">
-										<p class="mono commit-meta">
-											{commit.datetime ? <time datetime={commit.datetime}>{commit.date}</time> : commit.date}
-											{` · ${commit.lane}`}
-										</p>
-										<p class="commit-title">
-											{commit.titleExpansion ? <abbr title={commit.titleExpansion}>{commit.title}</abbr> : commit.title}
-										</p>
-										<p class="commit-place">{commit.place}</p>
-									</div>
-									{/* The label stays short on the band; the list still gives the whole job. */}
-									{(commit.role || commit.details) && (
-										<p class="visually-hidden">{[commit.role, ...(commit.details ?? [])].filter(Boolean).join(' · ')}</p>
-									)}
-									<span class="commit-pole" aria-hidden="true" />
-								</li>
+									style={`--x: ${x(commit.position)}px; --y: ${y(commit.lane)}px`}
+								/>
 							))
 					}
-				</ol>
+					<ol class="frise-commits">
+						{
+							commits
+								.filter((commit) => !commit.unlabeled)
+								.map((commit) => (
+									<li
+										class="commit"
+										data-lane={onMain(commit.lane) ? 'main' : 'branch'}
+										data-x={x(commit.position)}
+										style={`--x: ${x(commit.position)}px`}
+									>
+										<div class="commit-card">
+											<p class="mono commit-meta">
+												{commit.datetime ? <time datetime={commit.datetime}>{commit.date}</time> : commit.date}
+												{` · ${commit.lane}`}
+											</p>
+											<p class="commit-title">
+												{commit.titleExpansion ? <abbr title={commit.titleExpansion}>{commit.title}</abbr> : commit.title}
+											</p>
+											<p class="commit-place">{commit.place}</p>
+										</div>
+										{/* The label stays short on the band; the list still gives the whole job. */}
+										{(commit.role || commit.details) && (
+											<p class="visually-hidden">{[commit.role, ...(commit.details ?? [])].filter(Boolean).join(' · ')}</p>
+										)}
+										<span class="commit-pole" aria-hidden="true" />
+									</li>
+								))
+						}
+					</ol>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -343,15 +341,28 @@ const geometry = [
 		--frise-card: min(240px, 100vw - 136px);
 		/* Where `main` crosses the band: HEAD in the scene, the strip's line at the final state. */
 		--frise-scene-x: min(40%, 100% - var(--frise-card) - var(--page-gutter));
-		--frise-scene-y: 48%;
-		--frise-rest-y: 78%;
+		/*
+		 * The band spans the whole aplat, so that the grid runs behind the heading too, but the graph is
+		 * framed in what the heading leaves below it (159 to 201px tall from the phone to the 1440p screen).
+		 */
+		--frise-head: 190px;
+		--frise-scene-y: 0.48;
+		--frise-rest-y: 0.78;
+		/*
+		 * The eye stands at the aplat's top edge: the horizon, 687px above it (the perspective times
+		 * cot 58°), stays far enough out of the frame for a grid less than two windows deep to reach the top.
+		 */
+		--frise-eye-y: 0%;
+		/* The grid's box, fitted to what the tilted plane shows of the aplat from 320 to 2560px wide. */
+		--frise-grid-depth: 175svh;
+		--frise-grid-front: calc(40px + 10svh);
+		--frise-grid-left: calc(-50vw - max(0px, 60svh - 400px));
+		--frise-grid-right: calc(85vw + 120svh - 160px);
 		--frise-pole: 138px;
 		--frise-branch-pole: 88px;
 		--frise-legend-title: 44px;
 		--frise-legend-width: min(520px, 100% - 2 * var(--page-gutter));
 		position: relative;
-		display: flex;
-		flex-direction: column;
 		box-sizing: border-box;
 		height: 100svh;
 		margin-top: clamp(64px, 8vw, 120px);
@@ -366,7 +377,13 @@ const geometry = [
 	 */
 	@media (orientation: portrait) and (max-height: 700px) {
 		.frise {
-			--frise-scene-y: 53%;
+			/* Seen from higher up, the branches would rise into the heading: the eye stays low, for a deeper grid. */
+			--frise-eye-y: calc(var(--frise-head) + (100% - var(--frise-head)) * 0.2);
+			--frise-grid-depth: 275svh;
+			--frise-grid-front: calc(40px + 15svh);
+			--frise-grid-left: -60vw;
+			--frise-grid-right: calc(100vw + 150svh - 100px);
+			--frise-scene-y: 0.53;
 			--frise-pole: 60px;
 			--frise-branch-pole: 40px;
 			--frise-legend-title: 28px;
@@ -381,17 +398,28 @@ const geometry = [
 	@media (orientation: landscape) and (max-height: 500px) {
 		.frise {
 			--frise-scene-x: min(50%, 100% - var(--frise-card) - var(--page-gutter));
-			--frise-scene-y: 74%;
-			--frise-rest-y: 82%;
+			--frise-scene-y: 0.76;
+			--frise-rest-y: 0.82;
+			/* As on a short phone upright, the eye stays low. */
+			--frise-eye-y: calc(var(--frise-head) + (100% - var(--frise-head)) * 0.2);
+			--frise-grid-depth: 310svh;
+			--frise-grid-right: calc(100vw + 150svh - 100px);
 			--frise-pole: 40px;
 			--frise-branch-pole: 25px;
 			--frise-legend-title: 22px;
 			--frise-legend-width: calc(var(--frise-scene-x) - 2 * var(--page-gutter));
 		}
+
+		/* The branch labels can't fit under the heading at the final state: it covers them, grid included. */
+		.frise:not([data-scene]) .frise-head {
+			background: var(--color-accent);
+		}
 	}
 
 	/* The aplat is full-bleed, so its heading hugs the screen edge rather than the centred column. */
 	.frise-head {
+		position: relative;
+		z-index: 1;
 		padding: 0 var(--page-gutter);
 	}
 
@@ -402,14 +430,13 @@ const geometry = [
 	}
 
 	.frise-band {
-		position: relative;
-		flex: 1;
-		min-height: 0;
+		position: absolute;
+		inset: 0;
 		overflow-x: auto;
 		overflow-y: hidden;
 		perspective: var(--frise-perspective);
 		/* Above HEAD, so that the graph runs away from the camera on both sides of it. */
-		perspective-origin: var(--frise-scene-x) 20%;
+		perspective-origin: var(--frise-scene-x) var(--frise-eye-y);
 		scrollbar-color: var(--color-on-accent-muted) transparent;
 	}
 
@@ -421,7 +448,7 @@ const geometry = [
 	/* Tilted back around `main`; the labels stand back up on it. */
 	.frise-plane {
 		position: absolute;
-		top: var(--frise-rest-y);
+		top: calc(var(--frise-head) + (100% - var(--frise-head)) * var(--frise-rest-y));
 		left: 0;
 		width: var(--frise-width);
 		height: 0;
@@ -446,44 +473,58 @@ const geometry = [
 		overflow: hidden;
 	}
 
-	/* The far labels climb past the band's top edge: they fade out there instead of being cut on a line. */
-	.frise[data-scene] .frise-band::after {
-		content: '';
+	/* At the final state, the graph's plane stays under the band's perspective, so that the strip scrolls under a still camera. */
+	.frise-graph-layer {
+		display: contents;
+	}
+
+	/*
+	 * The scene's strip stays still, so a layer the size of the band can carry the same perspective. The far
+	 * labels climb into the heading: they fade out under it instead of crossing it, while the grid runs on.
+	 */
+	.frise[data-scene] .frise-graph-layer {
+		display: block;
 		position: absolute;
-		inset: 0 0 auto;
-		/* A phone on its side keeps most of its short band clear. */
-		height: min(64px, 20%);
-		background: linear-gradient(var(--color-accent), transparent);
-		pointer-events: none;
+		inset: 0;
+		perspective: var(--frise-perspective);
+		perspective-origin: var(--frise-scene-x) var(--frise-eye-y);
+		mask-image: linear-gradient(
+			transparent var(--frise-head),
+			#000 calc(var(--frise-head) + min(64px, (100% - var(--frise-head)) * 0.2))
+		);
 	}
 
 	.frise[data-scene] .frise-plane {
-		top: var(--frise-scene-y);
+		top: calc(var(--frise-head) + (100% - var(--frise-head)) * var(--frise-scene-y));
 		left: var(--frise-scene-x);
 	}
 
+	/*
+	 * Deep enough to reach the aplat's top edge, and in front of `main`, just down to its bottom edge:
+	 * magnified by the perspective, a nearer edge would widen the strip's scroll further. The left edge
+	 * runs past the strip's start, where the receding plane narrows in: that overflow is not scrollable.
+	 */
 	.frise-grid {
 		position: absolute;
-		/* Barely in front of `main`: magnified by the perspective, a nearer edge would widen the strip's scroll. */
-		top: -540px;
-		left: 0;
-		width: 100%;
-		height: 620px;
+		top: calc(-1 * var(--frise-grid-depth));
+		left: var(--frise-grid-left);
+		width: calc(100% - var(--frise-grid-left));
+		height: calc(var(--frise-grid-depth) + var(--frise-grid-front));
 		background-image:
 			linear-gradient(rgb(255 255 255 / 0.13) 1px, transparent 1px),
 			linear-gradient(90deg, rgb(255 255 255 / 0.13) 1px, transparent 1px);
 		background-size: var(--frise-mesh) var(--frise-mesh);
-		/* The far edge fades into the band rather than stopping on a line. */
-		mask-image: linear-gradient(to top, #000 50%, transparent);
+		/* Lines run along `main` and the strip's start whatever the edges, as in the scene's frame-sized grid. */
+		background-position: left calc(-1 * var(--frise-grid-left)) bottom var(--frise-grid-front);
 	}
 
 	/*
-	 * The scene's grid covers what the tilted plane shows of the frame, not the whole graph. Its left edge
-	 * stays on the mesh, so that the lines fall where the final state's would.
+	 * The scene's grid covers what the turned plane shows of the frame, not the whole graph: about the
+	 * smallest box around it along the grid's own axes, plus a mesh for the scene's shift.
 	 */
 	.frise[data-scene] .frise-grid {
-		left: round(down, -40vw, var(--frise-mesh));
-		width: 200vw;
+		--frise-grid-front: 70svh;
+		width: calc(var(--frise-grid-right) + var(--frise-mesh) - var(--frise-grid-left));
 	}
 
 	.frise-graph {

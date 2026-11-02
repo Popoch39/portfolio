@@ -25,5 +25,7 @@ La section Parcours devient la **Frise** (maquette D · Maquette inclinée) : un
 
 - La liste ordonnée des commits est le contenu : le SVG du graphe et la grille sont en `aria-hidden`.
 - Firefox ne peint pas un SVG non transformé dans un contexte 3D (`preserve-3d`) : le SVG du graphe porte un `translateZ(0)`.
-- La perspective agrandit ce qui est devant `main` et élargit d'autant le défilement de la bande : la grille ne déborde presque pas devant le trait.
+- La bande couvre tout l'aplat, le titre posé dessus : la grille court jusqu'en haut de l'aplat, derrière le titre. L'œil (`perspective-origin`) est remonté au bord haut de l'aplat pour que l'horizon reste hors cadre et que la grille n'ait pas à être démesurément profonde ; sur les petits téléphones, debout ou couchés, il reste bas comme avant, la grille étant alors plus profonde par rapport à la fenêtre.
+- La perspective agrandit ce qui est devant `main` et élargit d'autant le défilement de la bande : la grille ne déborde devant le trait que jusqu'au bord bas de l'aplat. Au bout du défilement, le coin haut droit reste sans grille : une grille assez large pour le couvrir élargirait encore le défilement.
+- Grille et graphe sont posés sur deux copies du plan : la scène estompe les étiquettes lointaines sous le titre sans estomper la grille. À l'état final, sur un téléphone couché, les étiquettes des branches ne tiennent pas sous le titre : celui-ci les couvre, grille comprise.
 - La mémoire graphique du plan (calques de la largeur du graphe) est à mesurer en DPR 3 ; la scène remplace la grille géante par un calque de la taille du cadre.

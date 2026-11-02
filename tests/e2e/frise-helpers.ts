@@ -55,7 +55,7 @@ export function friseFraming(page: Page) {
 		return {
 			viewport: { width: innerWidth, height: innerHeight },
 			horizontalOverflow: document.documentElement.scrollWidth - innerWidth,
-			heading: boxOf(section?.querySelector('h2')?.closest('.wrap') ?? null),
+			heading: boxOf(section?.querySelector('.frise-head') ?? null),
 			legend: boxOf(section?.querySelector('[data-frise-legend]') ?? null),
 			band: boxOf(band ?? null),
 			statuslineTop: document.querySelector('#statusline')?.getBoundingClientRect().top ?? innerHeight,
@@ -68,13 +68,16 @@ export type Framing = Awaited<ReturnType<typeof friseFraming>>;
 
 const overlap = (a: Box, b: Box) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
 
-/** The card is fully inside the band, between its edges and above the statusline. */
+/**
+ * The card is fully inside the band, between its edges, below the heading block (the band runs
+ * behind it, for the grid) and above the statusline.
+ */
 export const inFrame = (framing: Framing, box: Box | null) =>
 	!!box &&
 	!!framing.band &&
 	box.left >= 0 &&
 	box.right <= framing.viewport.width &&
-	box.top >= framing.band.top &&
+	box.top >= Math.max(framing.band.top, framing.heading?.bottom ?? framing.band.top) &&
 	box.bottom <= Math.min(framing.band.bottom, framing.statuslineTop);
 
 /** The smallest text that passes for readable on the accent band (AA is checked on the colours). */

@@ -57,7 +57,7 @@ const geometry = [
 ---
 
 <section id="parcours" class="frise" aria-labelledby={titleId} data-frise>
-	<div class="wrap frise-head">
+	<div class="frise-head">
 		<SectionHeading number={number} title="Parcours" titleId={titleId} aside={aside} onAccent />
 		<p class="mono frise-summary">{summary}</p>
 	</div>
@@ -390,6 +390,11 @@ const geometry = [
 		}
 	}
 
+	/* The aplat is full-bleed, so its heading hugs the screen edge rather than the centred column. */
+	.frise-head {
+		padding: 0 var(--page-gutter);
+	}
+
 	.frise-summary {
 		margin: 12px 0 0;
 		font-size: 13px;
@@ -628,7 +633,7 @@ const geometry = [
 	.frise-legend {
 		position: absolute;
 		bottom: calc(var(--statusline-height) + 28px);
-		left: max(var(--page-gutter), calc((100% - var(--page-max-width)) / 2 + var(--page-gutter)));
+		left: var(--page-gutter);
 		display: none;
 		flex-direction: column;
 		gap: 8px;

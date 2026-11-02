@@ -267,8 +267,10 @@ const px = (value: number) => `${+value.toFixed(2)}px`;
 		const padding = Number.parseFloat(getComputedStyle(section).paddingTop) || 0;
 		const sectionTop = section.getBoundingClientRect().top;
 		const { top, bottom } = atome.getBoundingClientRect();
-		// Whatever follows the Atome in the section, down to its end (the note on the editor).
-		const note = section.lastElementChild!.getBoundingClientRect().bottom - bottom;
+		// What follows the Atome in the frame, down to the element the page marks as its end (the note on
+		// the editor); nothing when none is marked.
+		const frameEnd = section.querySelector('[data-atome-frame-end]') ?? atome;
+		const note = Math.max(0, frameEnd.getBoundingClientRect().bottom - bottom);
 		// What does not scale: the title above the Atome, the list below the tower in portrait, the note.
 		const title = top - sectionTop - padding;
 		const list = bottom - top - towerHeight * widthScale;

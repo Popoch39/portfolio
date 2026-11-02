@@ -201,7 +201,8 @@ const jsonLd = JSON.stringify({
 			<section id="stack" class="section" aria-labelledby="stack-title">
 				<SectionHeading number={3} title="Stack" titleId="stack-title" aside=":set stack?" />
 				<Atome />
-				<p class="mono stack-note">
+				{/* The last element the Atome's pinned frame keeps in view: its screen fit measures down to it. */}
+				<p class="mono stack-note" data-atome-frame-end>
 					éditeur : neovim · multiplexeur : tmux · runtime : bun — <a href={person.nvimConfig}
 						>la config est sur GitHub</a
 					>

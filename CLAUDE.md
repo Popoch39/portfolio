@@ -1,5 +1,3 @@
-@AGENTS.md
-
 # Portfolio
 
 Site vitrine statique sous Astro. Le site *est* la démonstration du savoir-faire : sa vitesse, son accessibilité et son référencement comptent autant que son contenu.
@@ -7,6 +5,25 @@ Site vitrine statique sous Astro. Le site *est* la démonstration du savoir-fair
 ## Documentation Astro à jour
 
 Le projet tourne sur une version d'Astro plus récente que ce que tu connais de mémoire. Le code existant fait foi pour tout ce qu'il utilise déjà. Pour toute API, directive, intégration ou option de config **absente du code**, lis d'abord la doc actuelle : outil MCP `search_astro_docs` (serveur `astro-docs`), sinon https://docs.astro.build. Vérifie au passage qu'Astro ne fournit pas déjà la fonctionnalité en natif avant d'ajouter une dépendance.
+
+Consult these guides before working on related tasks:
+
+- [Adding pages, dynamic routes, or middleware](https://docs.astro.build/en/guides/routing/)
+- [Working with Astro components](https://docs.astro.build/en/basics/astro-components/)
+- [Using React, Vue, Svelte, or other framework components](https://docs.astro.build/en/guides/framework-components/)
+- [Adding or managing content](https://docs.astro.build/en/guides/content-collections/)
+- [Adding styles or using Tailwind](https://docs.astro.build/en/guides/styling/)
+- [Supporting multiple languages](https://docs.astro.build/en/guides/internationalization/)
+
+## Development
+
+When starting the dev server, use background mode:
+
+```
+astro dev --background
+```
+
+Manage the background server with `astro dev stop`, `astro dev status`, and `astro dev logs`.
 
 ## Calculé au build
 
@@ -18,6 +35,9 @@ Tout ce qui peut être calculé au build l'est : récupération de données, tra
 - Interaction nécessaire : un `<script>` Astro en vanilla d'abord ; un framework d'UI seulement si l'état le justifie, en île avec la directive la plus tardive possible (`client:visible`, `client:idle`).
 - Aucun script tiers (analytics, widgets, embeds) sans accord explicite.
 - **Exception assumée : GSAP.** GSAP + ScrollTrigger + ScrollSmoother sont chargés sur chaque page par le socle d'animation (`src/animation/base.ts`) : défilement lissé et toutes les scènes. Ce n'est pas une violation à corriger ; voir [ADR 0001](docs/adr/0001-gsap-pour-les-scenes.md). Une scène s'enregistre auprès du socle (`registerScene`), n'importe jamais `gsap` pour créer son propre smoother, n'anime que `transform` et `opacity`, et épingle avec `pin` (jamais `position: sticky` dans le contenu lissé). Les animations d'interface restent en CSS.
+- **Toucher à GSAP = charger les skills GSAP d'abord.** Avant d'écrire ou de modifier du code GSAP (socle, scène, timeline, ScrollTrigger, ScrollSmoother), charge les skills concernés : `gsap-core`, `gsap-timeline`, `gsap-scrolltrigger`, `gsap-plugins`, `gsap-utils` selon le besoin, et `gsap-performance` à chaque fois.
+- **Fuites mémoire.** Tout ce qu'une scène crée (tweens, timelines, ScrollTriggers, écouteurs, observers, `requestAnimationFrame`) est créé dans le contexte `matchMedia` du socle pour être annulé par son `revert()` ; ce qui vit hors du contexte renvoie sa fonction de nettoyage. Rien ne survit à un changement de préférence ou à une navigation : vérifie au besoin avec un instantané de tas (skill `memory-leak-debugging`).
+- **FPS.** Une scène GSAP tient les 60 fps de la section Fluidité : pas de lecture de layout dans un `onUpdate`, pas de `will-change` permanent sur des dizaines d'éléments, `scrub` et `pin` mesurés par une trace de performance en mobile avant de conclure.
 
 ## Assets
 
@@ -40,3 +60,17 @@ Cible : **60 fps minimum partout** : défilement, animations, transitions et int
 ## Lighthouse
 
 Cible : **100 dans les quatre catégories, en mobile**, sur le build (`astro build` puis `astro preview`), jamais sur le serveur de dev. Tout changement qui touche au rendu (page, composant, asset, police, script) se termine par un audit Lighthouse mobile ; une baisse de score se corrige avant de conclure ou se signale avec sa cause.
+
+## Agent skills
+
+### Issue tracker
+
+Issues tracked in GitHub Issues (Popoch39/portfolio) via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.

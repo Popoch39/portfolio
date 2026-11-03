@@ -7,7 +7,8 @@
 
 <div id="statusline" class="statusline mono" aria-hidden="true" data-intro="statusline">
 	<div class="side">
-		<span class="mode">NORMAL</span>
+		{/* The home page's lede types in Vim: its mode is echoed here (`src/lede/typist.ts`). */}
+		<span class="mode" data-vim-mode>NORMAL</span>
 		<span class="segment branch">
 			<svg
 				width="12"
@@ -25,7 +26,7 @@
 			>
 			<span>main</span>
 		</span>
-		<span class="file">~/louis/portfolio.md</span>
+		<span class="file">~/louis/portfolio.md<span data-vim-modified hidden> [+]</span></span>
 	</div>
 	<div class="side">
 		<span class="encoding">utf-8 · markdown</span>
@@ -67,6 +68,11 @@
 		background: var(--color-accent);
 		color: var(--color-on-accent);
 		font-weight: 700;
+	}
+
+	.mode[data-mode='INSERT'] {
+		background: var(--color-paper);
+		color: var(--color-ink);
 	}
 
 	.segment {

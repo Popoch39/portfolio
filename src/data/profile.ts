@@ -156,6 +156,27 @@ export const profile = {
 	today: currentPosition && `${currentPosition.company}, ${currentPosition.city} — depuis ${year(currentPosition.start)}`,
 };
 
+/**
+ * The hero's lede, rewritten in Vim from one version to the next: each version speaks to one
+ * audience. `summary` is what assistive technologies read instead, all versions at once.
+ */
+export const lede = {
+	before: 'Je construis ',
+	between: ' de votre ',
+	after: '.',
+	versions: [
+		{ what: 'les cartes', whose: 'réseau électrique', audience: 'les grands comptes de l’énergie' },
+		{ what: 'le site', whose: 'gîte', audience: 'les gîtes et chambres d’hôtes' },
+		{ what: 'l’API', whose: 'back-office', audience: 'les équipes produit' },
+		{ what: 'la carte', whose: 'commune', audience: 'les mairies et collectivités' },
+		{ what: 'l’outil', whose: 'équipe terrain', audience: 'les métiers de terrain' },
+	],
+	summary:
+		'Je construis des cartes, des sites, des API et des outils : pour votre réseau électrique, votre gîte, votre back-office, votre commune ou votre équipe terrain.',
+};
+
+export type Lede = typeof lede;
+
 const monthAndYear = new Intl.DateTimeFormat('fr-FR', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 const monthOnly = new Intl.DateTimeFormat('fr-FR', { month: 'short', timeZone: 'UTC' });
 

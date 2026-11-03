@@ -1,0 +1,182 @@
+---
+/**
+ * The hero's lede: a one-line Vim buffer that rewrites itself from one version to the next
+ * (`src/lede/typist.ts`). The first version is the final state, rendered here; screen readers get
+ * a stable sentence instead of the show.
+ */
+import { lede } from '../data/profile';
+import { restingOn, runs, tallestLines } from '../lede/buffer';
+
+const first = lede.versions[0];
+---
+
+<div class="hero-lede" data-intro="lede" data-lede={JSON.stringify(lede)}>
+	<p class="visually-hidden">{lede.summary}</p>
+	<p class="sentence" aria-hidden="true" data-nosnippet>
+		{tallestLines(lede).map((line) => <span class="ghost">{line}</span>)}
+		<span data-buffer
+			>{
+				runs(lede, restingOn(lede, 0)).map(({ text, kind }) =>
+					kind === 'text' ? (
+						text
+					) : (
+						// The Intro's point becomes this block: it shows once the point has landed.
+						<span data-kind={kind} data-intro={kind === 'block' ? 'late' : undefined}>{text}</span>
+					),
+				)
+			}</span
+		>
+	</p>
+	<p class="mono version" aria-hidden="true" data-version>
+		<span class="version-number">version <span data-version-number>1/{lede.versions.length}</span></span>
+		<span data-audience>pour&nbsp;: {first.audience}</span>
+	</p>
+	<div class="mono keys" aria-hidden="true" data-keys data-on="false"></div>
+</div>
+
+<script>
+	import '../lede/typist';
+</script>
+
+<style>
+	.hero-lede {
+		display: flex;
+		flex-direction: column;
+	}
+
+	/* Every version stacked in one cell: the lede keeps the height of its tallest wrap while it is retyped. */
+	.sentence {
+		display: grid;
+		margin: 0;
+		font-size: clamp(22px, 2.35vw, 34px);
+		line-height: 1.2;
+		letter-spacing: -0.012em;
+	}
+
+	.sentence > * {
+		grid-area: 1 / 1;
+	}
+
+	.ghost {
+		visibility: hidden;
+	}
+
+	/* Built by the typist too: its spans carry no scoping attribute. */
+	.sentence :global([data-kind='slot']) {
+		color: var(--color-accent);
+	}
+
+	.sentence :global([data-kind='selected']),
+	.sentence :global([data-kind='block']) {
+		background: var(--color-accent);
+		color: var(--color-on-accent);
+	}
+
+	.sentence :global([data-kind='bar']) {
+		display: inline-block;
+		width: 3px;
+		height: 1.02em;
+		margin: 0 -1.5px;
+		vertical-align: -0.16em;
+		background: var(--color-accent);
+	}
+
+	/*
+	 * Always two lines: side by side, the audiences' lengths and the mono font's swap would wrap the
+	 * line differently and move what follows.
+	 */
+	.version {
+		display: flex;
+		flex-direction: column;
+		margin: 20px 0 0;
+		padding-top: 8px;
+		border-top: 1px solid var(--color-rule);
+		font-size: 12px;
+		line-height: 1.5;
+		color: var(--color-ink-muted);
+	}
+
+	.version-number {
+		color: var(--color-ink);
+	}
+
+	[data-audience][data-run='a'] {
+		animation: audience-a 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+	}
+
+	[data-audience][data-run='b'] {
+		animation: audience-b 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+	}
+
+	@keyframes audience-a {
+		from {
+			opacity: 0;
+			transform: translateY(6px);
+		}
+	}
+
+	@keyframes audience-b {
+		from {
+			opacity: 0;
+			transform: translateY(6px);
+		}
+	}
+
+	/* Screencast keys: a group pops in key by key, then fades as a whole. Room kept: nothing moves. */
+	.keys {
+		display: flex;
+		justify-content: flex-end;
+		align-items: flex-end;
+		gap: 6px;
+		min-height: 34px;
+		margin-top: 16px;
+		transition: opacity 0.5s ease;
+	}
+
+	.keys[data-on='false'] {
+		opacity: 0;
+	}
+
+	.keys :global(kbd) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
+		min-width: 32px;
+		height: 34px;
+		padding: 0 9px;
+		border: 1px solid var(--color-ink);
+		border-bottom-width: 3px;
+		border-radius: 6px;
+		background: var(--color-light);
+		color: var(--color-ink);
+		font: inherit;
+		font-size: 15px;
+		line-height: 1;
+		animation: key-in 0.22s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+	}
+
+	.keys :global(kbd[data-wide]) {
+		font-size: 12px;
+		letter-spacing: 0.02em;
+	}
+
+	.keys :global(kbd:last-child) {
+		background: var(--color-ink);
+		color: var(--color-paper);
+	}
+
+	@keyframes key-in {
+		from {
+			opacity: 0;
+			transform: translateY(8px) scale(0.9);
+		}
+	}
+
+	/* A phone shows the last keys only: ten would run out of the column. */
+	@media (max-width: 600px) {
+		.keys :global(kbd:nth-last-child(n + 7)) {
+			display: none;
+		}
+	}
+</style>

@@ -1,9 +1,9 @@
 ---
 import Atome from '../components/Atome.astro';
-import Cursor from '../components/Cursor.astro';
 import Frise from '../components/Frise.astro';
 import Intro from '../components/Intro.astro';
 import IntroTrigger from '../components/IntroTrigger.astro';
+import Lede from '../components/Lede.astro';
 import SectionHeading from '../components/SectionHeading.astro';
 import SectionNumber from '../components/SectionNumber.astro';
 import Layout from '../layouts/Layout.astro';
@@ -80,13 +80,10 @@ const jsonLd = JSON.stringify({
 				</p>
 				<h1 id="hero-title" class="hero-title">
 					<span class="hero-line"><span data-intro="line">{person.givenName}</span></span>
-					<span class="hero-line"><span class="hero-last" data-intro="line">{person.familyName}<Cursor data-intro="late" /></span></span>
+					<span class="hero-line"><span class="hero-last" data-intro="line">{person.familyName}</span></span>
 				</h1>
 				<div class="hero-grid grid-12">
-					<p class="hero-lede" data-intro="lede">
-						Je construis la plomberie derrière les cartes — serveurs de tuiles, caches, nuages de points —
-						et les interfaces <em>React</em> qui vont dessus.
-					</p>
+					<Lede />
 					<dl class="hero-facts" data-intro="facts">
 						<div>
 							<dt class="mono">Rôle</dt>
@@ -216,8 +213,8 @@ const jsonLd = JSON.stringify({
 	.hero-title {
 		margin: 0;
 		/*
-		 * "POCHERON" and its cursor take 4.3em: the size follows the width of the column so the
-		 * cursor never bleeds out of it (the mockup's 22vw did, down to 320px screens).
+		 * "POCHERON" takes 3.9em, with room to spare: the size follows the width of the column so the
+		 * name never bleeds out of it (the mockup's 22vw did, down to 320px screens).
 		 */
 		font-size: min(100cqi / 4.35, 305px);
 		line-height: 0.8;
@@ -248,11 +245,11 @@ const jsonLd = JSON.stringify({
 
 	/*
 	 * Mockup fit on the glyphs' ink, not their boxes: the stems of L and P touch the edge of column 1,
-	 * the N ends on the edge of column 11 and the block cursor fills column 12. Archivo's ink (800,
-	 * 62% wide, -0.015em tracking), measured once in em in Chromium and Firefox alike:
+	 * the N ends on the edge of column 11, column 12 left empty. Archivo's ink (800, 62% wide,
+	 * -0.015em tracking), measured once in em in Chromium and Firefox alike:
 	 *   - the side bearing left of L and of P: 0.045;
 	 *   - the ink of "POCHERON", from the P's stem to the N's: 3.828;
-	 *   - what is left of the N's box after its ink, tracking included: 0.03 (unused, see the cursor).
+	 *   - what is left of the N's box after its ink, tracking included: 0.03.
 	 * Measured against Archivo itself: change the font, the weight or the tracking, measure them again.
 	 */
 	@media (min-width: 861px) {
@@ -262,21 +259,6 @@ const jsonLd = JSON.stringify({
 			/* Moves the text, not the line boxes: nothing spills out of the column. */
 			text-indent: -0.045em;
 		}
-
-		/*
-		 * The cursor is pushed against the end of the line rather than placed after the N's box:
-		 * Chromium on Linux rounds glyph advances to whole pixels, which would shift it by a pixel or two.
-		 * Baseline alignment keeps it sitting on the baseline, as inline.
-		 */
-		.hero-line > .hero-last {
-			display: flex;
-			align-items: baseline;
-		}
-
-		.hero-last :global(.cursor) {
-			width: var(--column);
-			margin-left: auto;
-		}
 	}
 
 	.hero-grid {
@@ -285,17 +267,9 @@ const jsonLd = JSON.stringify({
 		margin-top: clamp(32px, 4.5vw, 68px);
 	}
 
-	.hero-lede {
+	/* The lede is a component: its root carries the component's scope, not the page's. */
+	.hero-grid > :global(.hero-lede) {
 		grid-column: 1 / span 6;
-		margin: 0;
-		font-size: clamp(22px, 2.35vw, 34px);
-		line-height: 1.2;
-		letter-spacing: -0.012em;
-		text-wrap: pretty;
-	}
-
-	.hero-lede em {
-		color: var(--color-accent);
 	}
 
 	.hero-facts {
@@ -350,7 +324,7 @@ const jsonLd = JSON.stringify({
 
 	/* Tablet: the three hero columns are too narrow for the button. */
 	@media (min-width: 861px) and (max-width: 1100px) {
-		.hero-lede {
+		.hero-grid > :global(.hero-lede) {
 			grid-column: 1 / -1;
 		}
 

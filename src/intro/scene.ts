@@ -61,9 +61,9 @@ registerScene(() => {
 	function measure(): Layout {
 		const grid = header.getBoundingClientRect();
 		const point = cursor.getBoundingClientRect();
-		// The title line may be rising: the cursor is aimed at its resting place.
-		const line = cursor.closest<HTMLElement>('[data-intro="line"]');
-		const rising = line ? new DOMMatrixReadOnly(getComputedStyle(line).transform).m42 : 0;
+		// The lede may be rising: the cursor is aimed at its resting place.
+		const lede = cursor.closest<HTMLElement>('[data-intro="lede"]');
+		const rising = lede ? new DOMMatrixReadOnly(getComputedStyle(lede).transform).m42 : 0;
 		const coordinates = meta.getBoundingClientRect();
 		const view = { width: over.clientWidth, height: over.clientHeight };
 		const { columns, gutter } = fitColumns(view, {
@@ -250,7 +250,7 @@ function introParts() {
 		over,
 		canvas: canvas instanceof HTMLCanvasElement ? canvas : null,
 		header,
-		cursor: document.querySelector<HTMLElement>('h1 .cursor'),
+		cursor: document.querySelector<HTMLElement>('.hero-lede [data-kind="block"]'),
 		meta: header?.querySelector<HTMLElement>('[data-intro="late"]'),
 		label: part('label'),
 		labelText: part('label')?.firstElementChild,

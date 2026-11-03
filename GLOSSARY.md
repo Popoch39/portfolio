@@ -16,6 +16,10 @@ Animation qui ne dépend ni du défilement ni d'un état JS : survol, curseur qu
 La séquence jouée une fois au chargement de l'accueil, sous le Voile : le globe tourne vers Besançon, se découpe en fuseaux qui deviennent les colonnes de la page, puis le header, le hero et la statusline se révèlent. Timeline GSAP enregistrée auprès du socle (ADR 0005). Elle ne se joue ni au retour par l'historique, ni depuis une autre page du site, ni avec une ancre, ni en mouvement réduit, et n'importe quel geste la passe.
 _À éviter_ : loader, splash screen.
 
+**Accroche**
+La phrase du hero (« Je construis les cartes de votre réseau électrique. »), réécrite en Vim d'une version à l'autre : chaque version parle à un public. Minuteries en JS, pas une scène : elle attend la fin de l'Intro, se fige hors de l'écran et ne démarre pas en mouvement réduit. Son état final est la première version ; les lecteurs d'écran lisent une phrase stable. Le point de l'Intro devient son curseur bloc.
+_À éviter_ : lede (réservé au code), typewriter.
+
 **Voile**
 La couche papier opaque qui couvre la fenêtre pendant l'Intro, au-dessus de la page déjà peinte à son état final. Elle s'efface en une frame quand la page se révèle. Sans la classe `intro` posée avant la première peinture (sans JS, notamment), elle n'existe pas.
 _À éviter_ : overlay, masque.

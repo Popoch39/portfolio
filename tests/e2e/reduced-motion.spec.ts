@@ -13,11 +13,9 @@ test.describe('reduced motion', () => {
 		await expectNativeScrolling(page);
 	});
 
-	test('the marquee and the title cursor stand still', async ({ page }) => {
+	test('the marquee stands still', async ({ page }) => {
 		await page.goto('/');
 
-		for (const element of await page.locator('.marquee-track, .cursor').all()) {
-			await expect(element).toHaveCSS('animation-name', 'none');
-		}
+		await expect(page.locator('.marquee-track')).toHaveCSS('animation-name', 'none');
 	});
 });

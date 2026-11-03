@@ -43,11 +43,16 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: stretch;
-		height: var(--statusline-height);
+		/* The row, then the ink carried on under the home indicator and beside a notch, like a native tab bar. */
+		height: var(--statusline-row);
+		padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 		background: var(--color-ink);
 		color: var(--color-paper);
 		font-size: 12px;
-		line-height: var(--statusline-height);
+		line-height: var(--statusline-row);
+		/* Decorative: a long press must not select it. */
+		-webkit-user-select: none;
+		user-select: none;
 	}
 
 	.side {

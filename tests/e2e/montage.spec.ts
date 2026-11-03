@@ -296,8 +296,9 @@ test.describe('Montage, scene', () => {
 		const start = await sceneStart(page);
 		const lines = section(page).getByRole('heading', { level: 2 }).locator('[data-cafe-line]');
 		const rule = section(page).locator('[data-cafe-rule]');
+		// Drawn share: its width on screen against its laid-out width.
 		const ruleShare = () =>
-			rule.evaluate((el) => el.getBoundingClientRect().width / (el.parentElement?.clientWidth || 1));
+			rule.evaluate((el: HTMLElement) => el.getBoundingClientRect().width / (el.offsetWidth || 1));
 
 		// The section's top a third of the way down the window, past the middle where the entrance begins.
 		await page.evaluate((top) => scrollTo(0, top - innerHeight * 0.3), start);

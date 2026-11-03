@@ -256,6 +256,11 @@ const camera = JSON.stringify(
 	const TEXT: [number, number] = [0.76, 0.82];
 	const ACTIONS: [number, number] = [0.8, 0.86];
 	const RISE_FROM = 14;
+	/**
+	 * The Café's two-column layout (Cafe.astro, same query), where the paragraph and the actions share the
+	 * pinned screen with the moka. Stacked, they wait after it.
+	 */
+	const TWO_COLUMNS = '(min-width: 861px) and (min-height: 520px)';
 
 	type CameraKey = { at: number; scale: number; xPercent: number; yPercent: number };
 
@@ -304,6 +309,8 @@ const camera = JSON.stringify(
 				end: `+=${PIN_HEIGHTS * 100}%`,
 				scrub: true,
 				invalidateOnRefresh: true,
+				// A refresh moves the timeline without its update callback (a page loaded past the scene, on its anchor).
+				onRefresh: (trigger) => showStep(trigger.progress),
 			},
 			onUpdate: () => showStep(scene.progress()),
 		});
@@ -428,11 +435,6 @@ const camera = JSON.stringify(
 				STEAM[0],
 			);
 
-		const rise = (target: Element | null, range: [number, number]) =>
-			scene.fromTo(target, { opacity: 0, y: RISE_FROM }, { opacity: 1, y: 0, ease: RISE, duration: length(range) }, range[0]);
-		rise(section.querySelector('[data-cafe-text]'), TEXT);
-		rise(section.querySelector('[data-cafe-actions]'), ACTIONS);
-
 		// The end is held until the pinning lets go.
 		scene.set({}, {}, 1);
 		showStep(scene.progress());
@@ -450,10 +452,18 @@ const camera = JSON.stringify(
 			const shown = trigger.start + (trigger.end - trigger.start) * ACTIONS[1];
 			if (smoother.scrollTop() < shown) smoother.scrollTo(shown, false);
 		};
-		addEventListener('focusin', showFocusedAction);
+
+		// In a context of their own, reverted and rebuilt as the layout flips while the rest of the scene stands.
+		const rise = (target: Element | null, range: [number, number]) =>
+			scene.fromTo(target, { opacity: 0, y: RISE_FROM }, { opacity: 1, y: 0, ease: RISE, duration: length(range) }, range[0]);
+		gsap.matchMedia().add(TWO_COLUMNS, () => {
+			rise(section.querySelector('[data-cafe-text]'), TEXT);
+			rise(actions, ACTIONS);
+			addEventListener('focusin', showFocusedAction);
+			return () => removeEventListener('focusin', showFocusedAction);
+		});
 
 		return () => {
-			removeEventListener('focusin', showFocusedAction);
 			counter.textContent = finalLabel;
 			delete montage.dataset.lit;
 			approach?.disconnect();

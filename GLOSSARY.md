@@ -34,7 +34,7 @@ Rendu que donnent le HTML et le CSS seuls : tout le contenu visible, à sa place
 ## Parcours
 
 **Frise**
-La scène de la section Parcours : la carrière dessinée en graphe de commits sur un plan incliné, sur l'aplat accent. À l'état final, le graphe est droit dans une bande qui défile à l'horizontale (ADR 0003).
+La scène de la section Parcours : la carrière dessinée en graphe de commits sur un plan incliné, sur l'aplat sombre. À l'état final, le graphe est droit dans une bande qui défile à l'horizontale (ADR 0003).
 _À éviter_ : timeline, git graph.
 
 **commit**
@@ -53,7 +53,7 @@ La scène de la section Stack : les bagues passent de la cible au gyroscope, pui
 _À éviter_ : gyroscope, vue éclatée.
 
 **Bague**
-L'anneau d'une catégorie de la stack, une par catégorie, dans l'ordre du profil de la base au sommet de la tour. Chaque bague passe en accent quand le défilement la met en avant ; l'étiquette SIG est en accent.
+L'anneau d'une catégorie de la stack, une par catégorie, dans l'ordre du profil de la base au sommet de la tour. Chaque bague passe en accent quand le défilement la met en avant ; l'étiquette SIG est en encre pleine, l'accent ne portant jamais de texte sur le papier (ADR 0006).
 _À éviter_ : ring, orbite.
 
 **Pastille**

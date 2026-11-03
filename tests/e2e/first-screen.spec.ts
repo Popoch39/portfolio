@@ -27,10 +27,10 @@ for (const viewport of SCREENS) {
 	});
 }
 
-test("the title's blue caret stays, still", async ({ page }) => {
+test("the title's signal caret stays, still", async ({ page }) => {
 	await page.goto('/');
 
 	const caret = page.locator('h1 .cursor');
-	await expect(caret).toHaveCSS('background-color', 'rgb(36, 51, 255)');
+	await expect(caret).toHaveCSS('background-color', 'rgb(255, 91, 20)');
 	await expect(caret).toHaveCSS('animation-name', 'none');
 });

@@ -80,7 +80,7 @@ export const inFrame = (framing: Framing, box: Box | null) =>
 	box.top >= Math.max(framing.band.top, framing.heading?.bottom ?? framing.band.top) &&
 	box.bottom <= Math.min(framing.band.bottom, framing.statuslineTop);
 
-/** The smallest text that passes for readable on the accent band (AA is checked on the colours). */
+/** The smallest text that passes for readable on the aplat (AA is checked on the colours). */
 export const READABLE_TEXT = 11;
 
 /** No horizontal scroll, and the legend clear of the heading block and of the statusline. */

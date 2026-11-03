@@ -3,15 +3,13 @@ import { twoDigits } from '../data/profile';
 
 interface Props {
 	number: number;
-	/** Set on the accent background, where the accent square would vanish. */
-	onAccent?: boolean;
 }
 
-const { number, onAccent = false } = Astro.props;
+const { number } = Astro.props;
 ---
 
 {/* Numbering is decorative: the heading that follows names the section. */}
-<span class="section-number mono" data-on-accent={onAccent || undefined} aria-hidden="true"><span class="square"></span>{twoDigits(number)}</span>
+<span class="section-number mono" aria-hidden="true"><span class="square"></span>{twoDigits(number)}</span>
 
 <style>
 	.section-number {
@@ -27,9 +25,5 @@ const { number, onAccent = false } = Astro.props;
 		width: 9px;
 		height: 9px;
 		background: var(--color-accent);
-	}
-
-	[data-on-accent] .square {
-		background: var(--color-on-accent);
 	}
 </style>

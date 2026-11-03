@@ -7,15 +7,15 @@ interface Props {
 	/** Referenced by the section's `aria-labelledby`. */
 	titleId: string;
 	aside: string;
-	/** White on the accent background instead of ink on paper. */
-	onAccent?: boolean;
+	/** Paper on the dark aplat instead of ink on paper. */
+	onAplat?: boolean;
 }
 
-const { number, title, titleId, aside, onAccent = false } = Astro.props;
+const { number, title, titleId, aside, onAplat = false } = Astro.props;
 ---
 
-<div class="section-heading grid-12" data-on-accent={onAccent || undefined}>
-	<SectionNumber number={number} onAccent={onAccent} />
+<div class="section-heading grid-12" data-on-aplat={onAplat || undefined}>
+	<SectionNumber number={number} />
 	<h2 id={titleId}>{title}</h2>
 	<p class="mono aside">{aside}</p>
 </div>
@@ -28,9 +28,9 @@ const { number, title, titleId, aside, onAccent = false } = Astro.props;
 		border-bottom: 1px solid var(--color-ink);
 	}
 
-	.section-heading[data-on-accent] {
-		border-bottom-color: var(--color-on-accent);
-		color: var(--color-on-accent);
+	.section-heading[data-on-aplat] {
+		border-bottom-color: var(--color-on-aplat);
+		color: var(--color-on-aplat);
 	}
 
 	h2 {
@@ -38,7 +38,7 @@ const { number, title, titleId, aside, onAccent = false } = Astro.props;
 		margin: 0;
 		font-size: clamp(52px, 8vw, 120px);
 		line-height: 0.84;
-		font-weight: 800;
+		font-weight: 900;
 		font-stretch: 62%;
 		text-transform: uppercase;
 	}
@@ -51,7 +51,7 @@ const { number, title, titleId, aside, onAccent = false } = Astro.props;
 		color: var(--color-ink-muted);
 	}
 
-	[data-on-accent] .aside {
-		color: var(--color-on-accent-muted);
+	[data-on-aplat] .aside {
+		color: var(--color-on-aplat-muted);
 	}
 </style>

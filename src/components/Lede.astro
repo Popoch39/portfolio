@@ -57,11 +57,19 @@ const first = lede.versions[0];
 	}
 
 	/* Built by the typist too: its spans carry no scoping attribute. */
+	/* The accent never carries text on the paper: it underlines the slot instead. */
 	.sentence :global([data-kind='slot']) {
-		color: var(--color-accent);
+		text-decoration: underline;
+		text-decoration-color: var(--color-accent);
+		text-decoration-thickness: 0.15em;
+		text-underline-offset: 0.19em;
 	}
 
-	.sentence :global([data-kind='selected']),
+	.sentence :global([data-kind='selected']) {
+		background: var(--color-ink);
+		color: var(--color-paper);
+	}
+
 	.sentence :global([data-kind='block']) {
 		background: var(--color-accent);
 		color: var(--color-on-accent);

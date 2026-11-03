@@ -170,7 +170,7 @@ function headOnceStill(page: Page): Promise<number> {
 const opacity = (element: Locator) => element.evaluate((el) => Number(getComputedStyle(el).opacity));
 
 /**
- * Lowest opacity at which a label's muted lines (#d4d7ff) keep a 4.5:1 contrast on the accent (#2433ff).
+ * An opacity at which a label's muted lines (#b3b1a9) keep at least 4.5:1 on the aplat (#1c1b19).
  */
 const AA_FLOOR = 0.93;
 

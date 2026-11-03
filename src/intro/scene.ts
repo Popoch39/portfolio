@@ -27,8 +27,8 @@ import {
 const reveal = cubicBezier(...REVEAL_EASE);
 
 const PLAYING = 'intro';
-/** Base width of the HUD's scale bar, px (`Intro.astro`). */
-const SCALE_BAR = 100;
+/** On `#intro-over` once the veil has lifted: the grid goes under the statusline (`Intro.astro`). */
+const LOWERED = 'lowered';
 
 /** The inputs that scroll the page, and the keys among them. */
 const HELD_INPUTS = ['wheel', 'touchmove', 'keydown'] as const;
@@ -105,12 +105,16 @@ registerScene(() => {
 	};
 	let paperStep = -1;
 	let scaled = Number.NaN;
+	// The scale bar's width at rest, in its CSS.
+	const scaleBar = bar.offsetWidth;
 	let labelOpacity = Number.NaN;
 	const clock = { t: 0 };
 	let skipping = false;
 	function render() {
 		if (skipping || finished) return;
 		const { t } = clock;
+		// The grid stays over the page once the veil has lifted, under the statusline that rises later.
+		over.classList.toggle(LOWERED, t >= VEIL_LIFT);
 		const frame = painter.draw(t, layout);
 		label.style.transform = `translate(${frame.label.x}px, ${frame.label.y}px)`;
 		if (frame.label.opacity !== labelOpacity) {
@@ -125,8 +129,8 @@ registerScene(() => {
 		}
 		if (goreWidth !== scaled) {
 			scaled = goreWidth;
-			tick.style.transform = `translateX(${SCALE_BAR - goreWidth}px)`;
-			bar.style.transform = `scaleX(${goreWidth / SCALE_BAR})`;
+			tick.style.transform = `translateX(${scaleBar - goreWidth}px)`;
+			bar.style.transform = `scaleX(${goreWidth / scaleBar})`;
 		}
 		const step = boilStep(t + BOIL.paperLead);
 		if (step !== paperStep) {
@@ -152,8 +156,6 @@ registerScene(() => {
 	const statusline = marked('statusline');
 	timeline
 		.set([veil, paper], { autoAlpha: 0 }, VEIL_LIFT)
-		// The grid stays over the page, under the statusline that rises later.
-		.set(over, { zIndex: 0 }, VEIL_LIFT)
 		.set(reveals, { opacity: 0, y: REVEAL.rise }, VEIL_LIFT)
 		.set(lines, { yPercent: TITLE_RISE.from }, VEIL_LIFT)
 		.set(late, { opacity: 0 }, VEIL_LIFT)
@@ -186,8 +188,8 @@ registerScene(() => {
 		skipping = true;
 		timeline.progress(1, true);
 		fade = gsap.timeline({ onComplete: finish });
-		// Under the veil, the globe stays above it while both fade.
-		if (veilShown) fade.set(over, { zIndex: 3 });
+		// Under the veil, the grid is not lowered yet (`render` no longer runs): it stays above the veil
+		// while both fade.
 		fade.fromTo(
 			veilShown ? [veil, paper, over] : [over],
 			{ autoAlpha: 1 },
@@ -224,6 +226,7 @@ registerScene(() => {
 		removeEventListener('pageshow', onCacheRestore);
 		removeEventListener('resize', relayout);
 		root.classList.remove(PLAYING);
+		over.classList.remove(LOWERED);
 		for (const type of HELD_INPUTS) removeEventListener(type, holdScroll);
 		smoother?.paused(false);
 		fade?.revert();

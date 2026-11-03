@@ -265,6 +265,8 @@ const camera = JSON.stringify(
 	type CameraKey = { at: number; scale: number; xPercent: number; yPercent: number };
 
 	const length = ([start, end]: [number, number]) => end - start;
+	/** An ease that is the end value strictly inside the tween and the start value at both ends: a state held over a range. */
+	const ONLY_INSIDE = (progress: number) => (progress > 0 && progress < 1 ? 1 : 0);
 
 	registerScene(() => {
 		const montage = document.querySelector<HTMLElement>('[data-montage]');
@@ -363,7 +365,7 @@ const camera = JSON.stringify(
 			const hide = gsap.fromTo(
 				collector,
 				{ opacity: 1 },
-				{ opacity: 0, duration: length(TURN), ease: (progress: number) => (progress > 0 && progress < 1 ? 1 : 0) },
+				{ opacity: 0, duration: length(TURN), ease: ONLY_INSIDE },
 			);
 			scene.add(hide, TURN[0]);
 			// `steps(n)` holds n + 1 levels of equal length: from a notch before the turn, view k starts k notches in.
@@ -415,9 +417,23 @@ const camera = JSON.stringify(
 				moveEnd = end;
 			}
 		}
-		// A layer of its own only while it moves: at rest, at the close-up, it is drawn again at full resolution.
+		/*
+		 * A layer of its own only while it moves: at rest, at the close-up, it is drawn again at full resolution. One
+		 * tween stepped like the collector's `hide`, for the same reason: two sets would leave the layer on at revert.
+		 */
 		if (moveStart < moveEnd) {
-			scene.set(stack, { willChange: 'transform' }, moveStart).set(stack, { willChange: 'auto' }, moveEnd);
+			scene.add(
+				gsap.fromTo(
+					stack,
+					{ willChange: 'auto' },
+					{
+						willChange: 'transform',
+						duration: moveEnd - moveStart,
+						ease: ONLY_INSIDE,
+					},
+				),
+				moveStart,
+			);
 		}
 		scene.fromTo(progress, { scaleX: 0 }, { scaleX: 1, duration: length(CAMERA) }, CAMERA[0]);
 

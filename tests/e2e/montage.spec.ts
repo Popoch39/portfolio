@@ -509,6 +509,20 @@ test.describe('Montage, scene', () => {
 		}
 	});
 
+	test('the camera gives its layer back once the preference flips, wherever the scene stood', async ({ page }) => {
+		const stack = montage(page).locator('[data-montage-stack]');
+		// Before the camera moves, while it moves, and once it has closed in.
+		for (const progress of [0.5, 0.8, 1]) {
+			await page.emulateMedia({ reducedMotion: 'no-preference' });
+			await page.goto('/');
+			await scrollToScene(page, await sceneStart(page), progress);
+
+			await page.emulateMedia({ reducedMotion: 'reduce' });
+			await expect(counter(page)).toHaveText('6/6 · sur le feu');
+			await expect(stack, `flipped at ${progress}`).toHaveCSS('will-change', 'auto');
+		}
+	});
+
 	test('the paragraph and the actions rise in at the end of the scene', async ({ page }) => {
 		await page.goto('/');
 		const start = await sceneStart(page);

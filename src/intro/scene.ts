@@ -29,6 +29,10 @@ const PLAYING = 'intro';
 /** Base width of the HUD's scale bar, px (`Intro.astro`). */
 const SCALE_BAR = 100;
 
+/** The inputs that scroll the page, and the keys among them. */
+const HELD_INPUTS = ['wheel', 'touchmove', 'keydown'] as const;
+const SCROLL_KEYS = new Set([' ', 'PageDown', 'PageUp', 'Home', 'End', 'ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight']);
+
 const marked = (name: string) => gsap.utils.toArray<HTMLElement>(`[data-intro="${name}"]`);
 
 registerScene(() => {
@@ -39,9 +43,16 @@ registerScene(() => {
 	const texts = [parts.phase, parts.gore, parts.lat, parts.lon, parts.scale];
 	let finished = false;
 
-	// Native scrolling and smoothing alike: the paused smoother swallows wheel, touch and scroll.
+	// The page does not scroll until the Intro has ended, fade included: the inputs that would scroll
+	// it are cancelled. Not `overflow: hidden`: the scrollbar would go and come back, and with it the
+	// width that `vw` measures (the page gutter). A dragged scrollbar cannot be cancelled: the paused
+	// smoother brings the page straight back.
 	const smoother = ScrollSmoother.get();
 	smoother?.paused(true);
+	const holdScroll = (event: Event) => {
+		if (!(event instanceof KeyboardEvent) || SCROLL_KEYS.has(event.key)) event.preventDefault();
+	};
+	for (const type of HELD_INPUTS) addEventListener(type, holdScroll, { passive: false });
 
 	// The globe lands on the real page: measured now, again once the fonts are in, and on every resize.
 	const painter = globeCanvas(canvas);
@@ -206,6 +217,7 @@ registerScene(() => {
 		removeEventListener('pageshow', onCacheRestore);
 		removeEventListener('resize', relayout);
 		root.classList.remove(PLAYING);
+		for (const type of HELD_INPUTS) removeEventListener(type, holdScroll);
 		smoother?.paused(false);
 		fade?.revert();
 		timeline.revert();

@@ -1,6 +1,6 @@
 // Not `./fixtures`: these visits are direct, without a referrer from the site.
-import { expect, test, type Locator, type Page } from '@playwright/test';
-import { scrollPosition, scrollWithWheel, statusline } from './helpers';
+import { devices, expect, test, type Locator, type Page } from '@playwright/test';
+import { scrollPosition, scrollWithWheel, statusline, swipeUp } from './helpers';
 
 // Decorative and hidden from assistive technologies: targeted by its id, like the statusline.
 const veil = (page: Page) => page.locator('#veil');
@@ -45,6 +45,23 @@ async function expectFinalState(page: Page) {
 async function visitHome(page: Page, path = '/') {
 	await page.clock.install();
 	await page.goto(path);
+}
+
+/** From now on, how far down the page has ever been scrolled, even for a single frame. */
+async function recordFarthestScroll(page: Page) {
+	await page.evaluate(() => {
+		window.testFarthestScroll = scrollY;
+		addEventListener('scroll', () => {
+			window.testFarthestScroll = Math.max(window.testFarthestScroll ?? 0, scrollY);
+		});
+	});
+	return () => page.evaluate(() => window.testFarthestScroll);
+}
+
+declare global {
+	interface Window {
+		testFarthestScroll?: number;
+	}
 }
 
 async function box(element: Locator) {
@@ -123,6 +140,19 @@ for (const [screen, viewport] of SCREENS) {
 			await scrollWithWheel(page, 600);
 			await page.clock.runFor(1_000);
 			await expect.poll(() => scrollPosition(page)).toBeGreaterThan(0);
+		});
+
+		test('the keyboard does not scroll the page under the Intro either', async ({ page }) => {
+			await visitHome(page);
+			await page.clock.runFor(2_000);
+			const farthest = await recordFarthestScroll(page);
+
+			await page.keyboard.press('PageDown');
+			await page.keyboard.press('End');
+			await page.clock.runFor(400);
+
+			await expect(veil(page)).toBeHidden();
+			expect(await farthest()).toBe(0);
 		});
 
 		test('the title is painted at its final state from the first paint, under the veil', async ({ page }) => {
@@ -258,6 +288,35 @@ test.describe('Intro, motion allowed, on a phone only', () => {
 		await expect(grid(page)).toBeHidden();
 		await expectFinalState(page);
 		expect(errors).toEqual([]);
+	});
+});
+
+test.describe('Intro, under a finger', () => {
+	const { userAgent, deviceScaleFactor } = devices['iPhone SE'];
+	test.use({
+		reducedMotion: 'no-preference',
+		viewport: PHONE,
+		userAgent,
+		deviceScaleFactor,
+		hasTouch: true,
+		isMobile: true,
+	});
+
+	test('a swipe skips it without scrolling the page under it', async ({ page, browserName }) => {
+		test.skip(browserName === 'firefox', 'Playwright does not emulate touch under Firefox');
+		// A paused clock: the skip's fade must not end on its own halfway through the swipe.
+		await page.clock.install({ time: 0 });
+		await page.clock.pauseAt(1_000);
+		await page.goto('/');
+		await page.clock.runFor(2_000);
+		const farthest = await recordFarthestScroll(page);
+
+		await swipeUp(page, 400);
+		await page.clock.runFor(400);
+
+		await expect(veil(page)).toBeHidden();
+		expect(await farthest()).toBe(0);
+		expect(await scrollPosition(page)).toBe(0);
 	});
 });
 

@@ -1,6 +1,6 @@
 import { expect, test } from './fixtures';
 
-// Variable Archivo, its italic and Fragment Mono, subsets included (ADR 0002).
+// Variable Archivo and Fragment Mono, subsets included (ADR 0002).
 const FONT_BUDGET = 90 * 1024;
 
 test('the home page requests nothing outside the site, and its self-hosted fonts fit the budget', async ({

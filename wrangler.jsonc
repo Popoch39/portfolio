@@ -1,0 +1,31 @@
+// Cloudflare Workers, static assets only (no adapter needed): `bun run deploy`.
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "portfolio",
+	"compatibility_date": "2026-11-03",
+	"assets": {
+		"directory": "./dist",
+		// Serves dist/404.html with a 404 status instead of an empty 404.
+		"not_found_handling": "404-page"
+	},
+	// Only the apex domain answers: the workers.dev and preview URLs would be indexable duplicates.
+	"workers_dev": false,
+	"preview_urls": false,
+	"routes": [{ "pattern": "louis-pocheron.com", "custom_domain": true }],
+	"observability": {
+		"logs": {
+			"enabled": true,
+			"head_sampling_rate": 1,
+			"invocation_logs": true,
+			"persist": true
+		},
+		"traces": {
+			"enabled": true,
+			"head_sampling_rate": 1,
+			"persist": true
+		},
+		"issue_detection": {
+			"enabled": true
+		}
+	}
+}

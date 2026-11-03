@@ -78,6 +78,16 @@ test.describe('home page', () => {
 		expect(person.url).toBe(await canonical(page));
 		expect(person.sameAs).toContain('https://github.com/Popoch39');
 	});
+
+	test('the JSON-LD names the website at its canonical URL', async ({ page }) => {
+		await page.goto('/');
+
+		const blocks = await page
+			.locator('script[type="application/ld+json"]')
+			.evaluateAll((scripts) => scripts.map((s) => JSON.parse(s.textContent ?? '')));
+		const website = blocks.map((block) => block.isPartOf).find((node) => node?.['@type'] === 'WebSite');
+		expect(website).toMatchObject({ name: 'Louis Pocheron', url: await canonical(page) });
+	});
 });
 
 test.describe('not found page', () => {

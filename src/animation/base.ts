@@ -31,6 +31,10 @@ motion.add(MOTION_ALLOWED, () => {
 		smoothTouch: false,
 		onFocusIn: bringFocusIntoView,
 	});
+	// Without smoothing (under a finger), the browser scrolls the page itself, off the main thread on
+	// a phone: a pin held by a transform written each frame trails behind it, the section scrolling
+	// past its place then jumping back. Fixed, it is held by the browser.
+	ScrollTrigger.defaults({ pinType: smoother.smooth() ? 'transform' : 'fixed' });
 	// ScrollTrigger refreshes on its own at `load`, but not when a web font arrives later.
 	pageSettled.then(() => ScrollTrigger.refresh());
 	// Page restored from the back/forward cache: the window may have changed while it was frozen.

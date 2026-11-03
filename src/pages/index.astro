@@ -42,6 +42,8 @@ const jsonLd = JSON.stringify({
 	name: title,
 	description,
 	inLanguage: 'fr-FR',
+	// Google reads the site name shown above the result from a WebSite node on the home page.
+	isPartOf: { '@type': 'WebSite', '@id': `${canonical}#website`, name: person.name, url: canonical },
 	mainEntity: {
 		'@type': 'Person',
 		'@id': `${canonical}#person`,
@@ -313,6 +315,34 @@ const jsonLd = JSON.stringify({
 		white-space: nowrap;
 	}
 
+	/*
+	 * A phone held upright: fitted to the height left over, the name shrank to a line of text under
+	 * the stacked lede and facts. It takes the column's width instead, each line fitted on its own,
+	 * "LOUIS" twice the size of "POCHERON", and the rest of the hero runs past the first screen.
+	 */
+	@media (max-width: 600px) and (orientation: portrait) {
+		.hero-fit {
+			flex: none;
+			/* The title's height comes from its content again; `cqi` now reads the hero's column. */
+			container-type: normal;
+			min-height: 0;
+		}
+
+		.hero-title {
+			font-size: calc(100cqi / 4.35);
+		}
+
+		/* `text-indent` inherits as a length: each line works it out against its own size. */
+		.hero-line {
+			text-indent: -0.045em;
+		}
+
+		.hero-line:first-child {
+			/* "LOUIS" takes 2.13em, less the indent: its S lines up with the cursor's edge. */
+			font-size: calc(100cqi / 2.12);
+		}
+	}
+
 	.hero-grid {
 		row-gap: 32px;
 		align-items: start;
@@ -450,8 +480,11 @@ const jsonLd = JSON.stringify({
 			color 0.2s ease;
 	}
 
-	/* Hover only where a pointer hovers: a tap must not leave the row inverted. */
-	@media (hover: hover) {
+	/*
+	 * Hover only where a pointer hovers: a tap must not leave the row inverted. Under a finger the row
+	 * inverts while pressed, at once like a list cell, and fades back on release.
+	 */
+	@media (hover: hover) and (pointer: fine) {
 		.project:hover {
 			background: var(--color-ink);
 			color: var(--color-paper);
@@ -464,6 +497,20 @@ const jsonLd = JSON.stringify({
 		.project:hover .project-year > [aria-hidden] {
 			color: var(--color-accent);
 		}
+	}
+
+	.project:active {
+		background: var(--color-ink);
+		color: var(--color-paper);
+		transition-duration: 0s;
+	}
+
+	.project:active .dim {
+		color: var(--color-on-ink-muted);
+	}
+
+	.project:active .project-year > [aria-hidden] {
+		color: var(--color-accent);
 	}
 
 	.project-number {
@@ -581,7 +628,15 @@ const jsonLd = JSON.stringify({
 		transition: background-size 0.35s ease;
 	}
 
-	.contact-mail:hover {
+	@media (hover: hover) and (pointer: fine) {
+		.contact-mail:hover {
+			background-size: 100% 0.06em;
+			color: var(--color-ink);
+		}
+	}
+
+	/* Pressed: the underline is drawn, the address keeps its ink (the muted press of links would grey it). */
+	.contact-mail:active {
 		background-size: 100% 0.06em;
 		color: var(--color-ink);
 	}

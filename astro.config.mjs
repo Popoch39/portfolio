@@ -3,9 +3,8 @@ import { defineConfig, fontProviders } from 'astro/config';
 
 // https://astro.build/config
 export default defineConfig({
-	// Provisional: no production domain yet. Canonical URLs, Open Graph, the sitemap and the
-	// JSON-LD all derive from it, so it must be replaced before going live.
-	site: 'https://louis-pocheron.example',
+	// Canonical URLs, Open Graph, the sitemap and the JSON-LD all derive from it.
+	site: 'https://louis-pocheron.com',
 	// A single page of about 10 KB of CSS: inlined, it no longer blocks the first paint on a request.
 	build: { inlineStylesheets: 'always' },
 	// Subsets built by `scripts/fonts.sh` (ADR 0002).

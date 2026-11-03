@@ -1,0 +1,137 @@
+---
+/**
+ * Montage: a Moka Express put back together piece by piece over its stove, then set on the fire (board M1 · Le montage).
+ * This markup is its final state: every piece seated, the fire lit with its glow, the camera closed in on the top of
+ * the pot, the steam still. The layers come from the generator (`scripts/moka/build.mjs`), each cropped to its box
+ * and placed by `moka.json`, in the board's paint order.
+ */
+import moka from '../assets/moka/moka.json';
+
+type LayerName = keyof typeof moka.layers;
+
+// URLs rather than inlined data: the layers stay out of the page's HTML and load only as the section comes near.
+const urls = import.meta.glob<string>('../assets/moka/*.svg', {
+	query: '?url&no-inline',
+	import: 'default',
+	eager: true,
+});
+
+/**
+ * Back to front. `opacity` is the layer's at the final state, carried by a box around the image, which stays
+ * opaque: the silhouettes glint only while their piece comes down, the knob's off position goes out with the
+ * fire. `clip` hides the basket of the funnel below the front of the boiler's neck as it sinks in.
+ */
+const paintOrder: { name: LayerName; opacity?: number; clip?: string }[] = [
+	{ name: 'stove' },
+	{ name: 'knob-off', opacity: 0 },
+	{ name: 'knob-on' },
+	{ name: 'glow', opacity: 0.3 },
+	{ name: 'grate' },
+	{ name: 'boiler' },
+	{ name: 'edge-boiler', opacity: 0 },
+	{ name: 'funnel-low', clip: `polygon(${moka.basketPolygon})` },
+	{ name: 'neck-front' },
+	{ name: 'funnel-top' },
+	{ name: 'edge-funnel', opacity: 0 },
+	{ name: 'filter' },
+	{ name: 'edge-filter', opacity: 0 },
+	{ name: 'gasket' },
+	{ name: 'edge-gasket', opacity: 0 },
+	{ name: 'collector' },
+	{ name: 'lid' },
+	{ name: 'edge-lid', opacity: 0 },
+	// Still at the final state: the steam only drifts once the scene has lit the fire.
+	{ name: 'steam-0', opacity: 0.8 },
+	{ name: 'steam-1', opacity: 0.8 },
+	{ name: 'steam-2', opacity: 0.8 },
+];
+
+const [frameWidth, frameHeight] = moka.size;
+const layers = paintOrder.map(({ name, opacity, clip }) => {
+	const box = moka.layers[name];
+	const src = urls[`../assets/moka/${name}.svg`];
+	if (!src) throw new Error(`Montage: no layer ${name} in src/assets/moka`);
+	return {
+		name,
+		src,
+		width: Math.round((box.w * frameWidth) / 100),
+		height: Math.round((box.h * frameHeight) / 100),
+		place: `--x: ${box.x}%; --y: ${box.y}%; --w: ${box.w}%; --h: ${box.h}%`,
+		wrapper: opacity === undefined && !clip ? null : [opacity !== undefined && `opacity: ${opacity}`, clip && `clip-path: ${clip}`].filter(Boolean).join('; '),
+	};
+});
+
+/*
+ * The stack is laid out at its zoomed size, the camera's final framing: the scene scales it down at the start and
+ * back up to none, so the close-up is drawn at full resolution instead of magnified.
+ */
+const { scale, tx, ty } = moka.fitAtOne;
+const stack = `--zoom: ${scale}; --left: ${tx}%; --top: ${ty}%`;
+---
+
+<div
+	class="montage"
+	role="img"
+	aria-label="Une Moka Express en pièces au-dessus d’un réchaud, que le défilement remonte pièce par pièce avant d’allumer le feu."
+	data-montage
+>
+	<div class="montage-stack" style={stack} data-montage-stack>
+		{
+			layers.map(({ name, src, width, height, place, wrapper }) => {
+				const image = (
+					<img
+						src={src}
+						alt=""
+						width={width}
+						height={height}
+						loading="lazy"
+						decoding="async"
+						style={place}
+						data-layer={name}
+					/>
+				);
+				return wrapper ? (
+					<div class="montage-box" style={wrapper} data-layer-box={name}>
+						{image}
+					</div>
+				) : (
+					image
+				);
+			})
+		}
+	</div>
+</div>
+
+<style>
+	.montage {
+		position: relative;
+		width: 100%;
+		height: 100%;
+		/* The stack runs past the figure on every side but the drawing: only the drawing shows. */
+		overflow: clip;
+	}
+
+	.montage-stack {
+		position: absolute;
+		left: var(--left);
+		top: var(--top);
+		width: calc(var(--zoom) * 100%);
+		height: calc(var(--zoom) * 100%);
+		transform-origin: 0 0;
+	}
+
+	/* A layer's box spans the whole stack, so its image is placed in percent of the frame like the others. */
+	.montage-box {
+		position: absolute;
+		inset: 0;
+	}
+
+	img {
+		position: absolute;
+		left: var(--x);
+		top: var(--y);
+		width: var(--w);
+		height: var(--h);
+		display: block;
+	}
+</style>

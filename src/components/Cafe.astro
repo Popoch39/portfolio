@@ -1,0 +1,222 @@
+---
+/**
+ * Café: an invitation to talk about a project over a coffee, beside the Montage (board M1 · Le montage).
+ * This markup is its final state, the last frame of the board: the moka on the fire, the counter at its last step,
+ * the progress rule full, the paragraph and both actions in place.
+ */
+import Montage from './Montage.astro';
+import SectionNumber from './SectionNumber.astro';
+import { person } from '../data/profile';
+
+interface Props {
+	number: number;
+	titleId: string;
+}
+
+const { number, titleId } = Astro.props;
+
+const mailto = (subject: string) => `mailto:${person.email}?subject=${encodeURIComponent(subject)}`;
+---
+
+<section id="cafe" class="cafe" aria-labelledby={titleId} data-cafe>
+	<div class="cafe-head">
+		<SectionNumber number={number} />
+		<p class="mono cafe-aside">on monte, puis on en parle</p>
+	</div>
+	<div class="cafe-rule" aria-hidden="true" data-cafe-rule></div>
+
+	{/* Each line clips its own rise. */}
+	<h2 id={titleId} class="cafe-title">
+		<span class="cafe-line"><span data-cafe-line>Parlons de</span></span>
+		<span class="cafe-line"><span data-cafe-line>votre projet</span></span>
+		<span class="cafe-line"><span data-cafe-line>autour d’un café.</span></span>
+	</h2>
+	{/* Plain text, not a live region: the scene rewrites it at each step without interrupting a screen reader. */}
+	<p class="mono cafe-counter" data-cafe-counter>6/6 · sur le feu</p>
+	<div class="cafe-progress" aria-hidden="true">
+		<div class="cafe-progress-fill" data-cafe-progress></div>
+	</div>
+
+	<div class="cafe-figure">
+		<Montage />
+	</div>
+
+	<p class="cafe-text">
+		À {person.city}, ou en visio si vous êtes plus loin. Comme une moka&nbsp;: on assemble les pièces dans l’ordre, sans
+		rien forcer. Et sans engagement&nbsp;: au pire, on aura bu un café.
+	</p>
+	<div class="cafe-actions">
+		<a class="button" href={mailto('Un café ?')}>Proposer un café <span class="mono" aria-hidden="true">↵</span></a>
+		<a class="cafe-visio" href={mailto('Une visio ?')}>Plutôt en visio</a>
+	</div>
+</section>
+
+<style>
+	/*
+	 * One screen above the statusline, as on the board (1280×770): the text on the left, the moka on the right.
+	 * Below 861px, everything in one column, the moka under the progress rule.
+	 */
+	.cafe {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		align-content: start;
+		box-sizing: border-box;
+		max-width: var(--page-max-width);
+		min-height: calc(100svh - var(--statusline-height));
+		margin: clamp(64px, 8vw, 120px) auto 0;
+		padding: 24px var(--page-gutter) 0;
+	}
+
+	.cafe-head {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 16px;
+	}
+
+	.cafe-aside {
+		margin: 0;
+		font-size: 13px;
+		color: var(--color-ink-muted);
+	}
+
+	.cafe-rule {
+		height: 1px;
+		margin-top: 14.5px;
+		background: var(--color-ink);
+		transform-origin: 0 50%;
+	}
+
+	.cafe-title {
+		margin: 53px 0 0;
+		font-size: clamp(36px, 12vw, 80px);
+		line-height: 0.84;
+		font-weight: 900;
+		font-stretch: 62%;
+		letter-spacing: -0.01em;
+		text-transform: uppercase;
+	}
+
+	/* The padding gives the caps room above the 0.84 line height; the negative margin keeps the lines in place. */
+	.cafe-line {
+		display: block;
+		overflow: hidden;
+		padding-top: 0.22em;
+		margin-top: -0.22em;
+	}
+
+	.cafe-line > span {
+		display: block;
+	}
+
+	.cafe-counter {
+		margin: 30px 0 0;
+		font-size: 13px;
+		color: var(--color-ink-muted);
+	}
+
+	.cafe-progress {
+		position: relative;
+		max-width: 500px;
+		height: 1px;
+		margin-top: 10px;
+		background: var(--color-rule);
+	}
+
+	.cafe-progress-fill {
+		position: absolute;
+		inset: 0;
+		background: var(--color-ink);
+		transform-origin: 0 50%;
+	}
+
+	.cafe-figure {
+		justify-self: center;
+		width: min(100%, 444px);
+		aspect-ratio: 600 / 1000;
+		margin-top: 24px;
+	}
+
+	.cafe-text {
+		max-width: 500px;
+		margin: 34px 0 0;
+		font-size: 19px;
+		line-height: 1.45;
+		text-wrap: pretty;
+	}
+
+	.cafe-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 12px 26px;
+		margin-top: 30px;
+	}
+
+	.cafe-visio {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		font-weight: 600;
+		text-underline-offset: 4px;
+	}
+
+	/*
+	 * Two columns: the text in the board's 560px, the figure beside it, as tall as the screen minus the board's
+	 * 30px of margins (740px for 770), up from beside the section number.
+	 */
+	@media (min-width: 861px) {
+		.cafe {
+			grid-template-columns: minmax(0, 560px) minmax(0, 1fr);
+			grid-template-rows: repeat(7, auto) 1fr;
+			column-gap: 44px;
+		}
+
+		/* Under the figure, which runs up beside them. */
+		.cafe-head {
+			grid-area: 1 / 1 / 2 / -1;
+		}
+
+		.cafe-rule {
+			grid-area: 2 / 1 / 3 / -1;
+		}
+
+		.cafe-title,
+		.cafe-counter,
+		.cafe-progress,
+		.cafe-text,
+		.cafe-actions {
+			grid-column: 1;
+		}
+
+		.cafe-figure {
+			grid-column: 2;
+			grid-row: 1 / -1;
+			align-self: start;
+			width: min(100%, (100svh - var(--statusline-height) - 30px) * 0.6);
+			margin-top: -6px;
+			/* It runs up beside the aside, which stays selectable through its empty top. */
+			pointer-events: none;
+		}
+
+		.cafe-title {
+			grid-row: 3;
+		}
+
+		.cafe-counter {
+			grid-row: 4;
+		}
+
+		.cafe-progress {
+			grid-row: 5;
+		}
+
+		.cafe-text {
+			grid-row: 6;
+		}
+
+		.cafe-actions {
+			grid-row: 7;
+		}
+	}
+</style>

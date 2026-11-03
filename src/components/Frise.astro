@@ -56,98 +56,101 @@ const geometry = [
 ].join('; ');
 ---
 
-<section id="parcours" class="frise" aria-labelledby={titleId} data-frise>
-	<div class="frise-head">
-		<SectionHeading number={number} title="Parcours" titleId={titleId} aside={aside} onDark />
-		<p class="mono frise-summary">{summary}</p>
-	</div>
-
-	{/* Focusable at the final state, so that the keyboard scrolls it; the perspective sits on it, so the camera stays still. */}
-	<div class="frise-band" role="region" aria-label="Frise du parcours" tabindex="0" style={geometry} data-frise-band>
-		{/* The grid and the graph lie on two copies of the plane, so that the scene can fade the graph alone under the heading. */}
-		<div class="frise-plane" aria-hidden="true">
-			<div class="frise-grid" data-frise-grid></div>
+{/* The scrolling room of the pinning under a finger, where the section stays `sticky` (see the scene). */}
+<div class="frise-track" data-frise-track>
+	<section id="parcours" class="frise" aria-labelledby={titleId} data-frise>
+		<div class="frise-head">
+			<SectionHeading number={number} title="Parcours" titleId={titleId} aside={aside} onDark />
+			<p class="mono frise-summary">{summary}</p>
 		</div>
-		<div class="frise-graph-layer">
-			<div class="frise-plane" data-frise-plane data-width={width} data-head-from={x(0)} data-head-to={x(1)}>
-				<div class="frise-camera" data-frise-camera>
-					<svg class="frise-graph frise-ahead" aria-hidden="true" {...graphBox}>
-						<path d={graph} />
-					</svg>
-					{/* A window over the trail: they slide in opposite directions, so the trail stays put and shows up to HEAD. */}
-					<div class="frise-trail" aria-hidden="true" data-frise-trail>
-						<svg class="frise-graph" {...graphBox} data-frise-trail-graph>
+
+		{/* Focusable at the final state, so that the keyboard scrolls it; the perspective sits on it, so the camera stays still. */}
+		<div class="frise-band" role="region" aria-label="Frise du parcours" tabindex="0" style={geometry} data-frise-band>
+			{/* The grid and the graph lie on two copies of the plane, so that the scene can fade the graph alone under the heading. */}
+			<div class="frise-plane" aria-hidden="true">
+				<div class="frise-grid" data-frise-grid></div>
+			</div>
+			<div class="frise-graph-layer">
+				<div class="frise-plane" data-frise-plane data-width={width} data-head-from={x(0)} data-head-to={x(1)}>
+					<div class="frise-camera" data-frise-camera>
+						<svg class="frise-graph frise-ahead" aria-hidden="true" {...graphBox}>
 							<path d={graph} />
 						</svg>
-					</div>
-					<svg class="frise-graph" aria-hidden="true" {...graphBox}>
-						{
-							commits.map((commit) => (
-								<circle cx={x(commit.position)} cy={y(commit.lane)} r="7.5" data-kind={commit.kind} />
-							))
-						}
-					</svg>
-					{/* Laid over the hollow dots, so that filling one is a change of opacity, not of colour. A merge stays hollow. */}
-					{
-						commits
-							.filter((commit) => commit.kind !== 'merge')
-							.map((commit) => (
-								<span
-									class="frise-fill"
-									aria-hidden="true"
-									data-frise-fill
-									data-x={x(commit.position)}
-									style={`--x: ${x(commit.position)}px; --y: ${y(commit.lane)}px`}
-								/>
-							))
-					}
-					<ol class="frise-commits">
+						{/* A window over the trail: they slide in opposite directions, so the trail stays put and shows up to HEAD. */}
+						<div class="frise-trail" aria-hidden="true" data-frise-trail>
+							<svg class="frise-graph" {...graphBox} data-frise-trail-graph>
+								<path d={graph} />
+							</svg>
+						</div>
+						<svg class="frise-graph" aria-hidden="true" {...graphBox}>
+							{
+								commits.map((commit) => (
+									<circle cx={x(commit.position)} cy={y(commit.lane)} r="7.5" data-kind={commit.kind} />
+								))
+							}
+						</svg>
+						{/* Laid over the hollow dots, so that filling one is a change of opacity, not of colour. A merge stays hollow. */}
 						{
 							commits
-								.filter((commit) => !commit.unlabeled)
+								.filter((commit) => commit.kind !== 'merge')
 								.map((commit) => (
-									<li
-										class="commit"
-										data-lane={onMain(commit.lane) ? 'main' : 'branch'}
+									<span
+										class="frise-fill"
+										aria-hidden="true"
+										data-frise-fill
 										data-x={x(commit.position)}
-										style={`--x: ${x(commit.position)}px`}
-									>
-										<div class="commit-card">
-											<p class="mono commit-meta">
-												{commit.datetime ? <time datetime={commit.datetime}>{commit.date}</time> : commit.date}
-												{` · ${commit.lane}`}
-											</p>
-											<p class="commit-title">
-												{commit.titleExpansion ? <abbr title={commit.titleExpansion}>{commit.title}</abbr> : commit.title}
-											</p>
-											<p class="commit-place">{commit.place}</p>
-										</div>
-										{/* The label stays short on the band; the list still gives the whole job. */}
-										{(commit.role || commit.details) && (
-											<p class="visually-hidden">{[commit.role, ...(commit.details ?? [])].filter(Boolean).join(' · ')}</p>
-										)}
-										<span class="commit-pole" aria-hidden="true" />
-									</li>
+										style={`--x: ${x(commit.position)}px; --y: ${y(commit.lane)}px`}
+									/>
 								))
 						}
-					</ol>
+						<ol class="frise-commits">
+							{
+								commits
+									.filter((commit) => !commit.unlabeled)
+									.map((commit) => (
+										<li
+											class="commit"
+											data-lane={onMain(commit.lane) ? 'main' : 'branch'}
+											data-x={x(commit.position)}
+											style={`--x: ${x(commit.position)}px`}
+										>
+											<div class="commit-card">
+												<p class="mono commit-meta">
+													{commit.datetime ? <time datetime={commit.datetime}>{commit.date}</time> : commit.date}
+													{` · ${commit.lane}`}
+												</p>
+												<p class="commit-title">
+													{commit.titleExpansion ? <abbr title={commit.titleExpansion}>{commit.title}</abbr> : commit.title}
+												</p>
+												<p class="commit-place">{commit.place}</p>
+											</div>
+											{/* The label stays short on the band; the list still gives the whole job. */}
+											{(commit.role || commit.details) && (
+												<p class="visually-hidden">{[commit.role, ...(commit.details ?? [])].filter(Boolean).join(' · ')}</p>
+											)}
+											<span class="commit-pole" aria-hidden="true" />
+										</li>
+									))
+							}
+						</ol>
+					</div>
 				</div>
 			</div>
 		</div>
-	</div>
 
-	{/* The scene's reading of the active commit, already in the list: left out of the accessibility tree. */}
-	<div class="frise-legend" aria-hidden="true" data-frise-legend>
-		<span class="mono frise-legend-meta" data-legend-meta></span>
-		<span class="frise-legend-title" data-legend-title></span>
-		<span class="frise-legend-place" data-legend-place></span>
-	</div>
-</section>
+		{/* The scene's reading of the active commit, already in the list: left out of the accessibility tree. */}
+		<div class="frise-legend" aria-hidden="true" data-frise-legend>
+			<span class="mono frise-legend-meta" data-legend-meta></span>
+			<span class="frise-legend-title" data-legend-title></span>
+			<span class="frise-legend-place" data-legend-place></span>
+		</div>
+	</section>
+</div>
 
 <script>
-	import { gsap, registerScene } from '../animation/base';
+	import { gsap, registerScene, ScrollSmoother, type ScrollTrigger } from '../animation/base';
 
-	/** Pinning length, in window heights (400svh). */
+	/** Pinning length, in window heights (400svh, also in the track's CSS). */
 	const PIN_HEIGHTS = 4;
 
 	// Cues, in plane px of HEAD travel (the mock-up's 440 px a year).
@@ -179,11 +182,12 @@ const geometry = [
 	}
 
 	registerScene(() => {
-		const section = document.querySelector<HTMLElement>('[data-frise]');
+		const pinTrack = document.querySelector<HTMLElement>('[data-frise-track]');
+		const section = pinTrack?.querySelector<HTMLElement>('[data-frise]');
 		const band = section?.querySelector<HTMLElement>('[data-frise-band]');
 		const plane = section?.querySelector<HTMLElement>('[data-frise-plane]');
 		const legend = section?.querySelector<HTMLElement>('[data-frise-legend]');
-		if (!section || !band || !plane || !legend) return;
+		if (!pinTrack || !section || !band || !plane || !legend) return;
 
 		const labels = [...section.querySelectorAll<HTMLElement>('.commit')];
 		const commits = labels.map((commit) => ({
@@ -193,9 +197,9 @@ const geometry = [
 			place: commit.querySelector('.commit-place')?.textContent ?? '',
 		}));
 		const fields = {
-			meta: legend.querySelector('[data-legend-meta]'),
-			title: legend.querySelector('[data-legend-title]'),
-			place: legend.querySelector('[data-legend-place]'),
+			meta: legend.querySelector<HTMLElement>('[data-legend-meta]'),
+			title: legend.querySelector<HTMLElement>('[data-legend-title]'),
+			place: legend.querySelector<HTMLElement>('[data-legend-place]'),
 		};
 		const width = Number(plane.dataset.width);
 		const from = Number(plane.dataset.headFrom);
@@ -216,6 +220,8 @@ const geometry = [
 		for (const [name] of bandAttributes) band.removeAttribute(name);
 
 		// Written only when HEAD reaches another commit: text changes cost a layout, never per frame.
+		// Each line is a fresh element: a line that wraps differently would otherwise push the others,
+		// a layout shift; new content is not one. The legend's box keeps its height whatever the text (CSS).
 		let active = -1;
 		const showActiveCommit = (head: number) => {
 			const index = Math.max(0, commits.findLastIndex((commit) => commit.x <= head + 0.5));
@@ -223,22 +229,38 @@ const geometry = [
 			active = index;
 			for (const key of ['meta', 'title', 'place'] as const) {
 				const field = fields[key];
-				if (field) field.textContent = commits[index][key];
+				if (!field) continue;
+				const line = field.cloneNode() as HTMLElement;
+				line.textContent = commits[index][key];
+				field.replaceWith(line);
+				fields[key] = line;
 			}
 		};
 		showActiveCommit(from);
+
+		// Without a smoother, the window scrolls, under a finger. `pin` would switch the section to
+		// `position: fixed` and back at its edges, which Chromium counts as a layout shift of the whole 3D
+		// graph (about 0.5 in, 1 out, ADR 0001): `sticky` holds it instead, natively, in a track as long
+		// as the pinning, and the trigger ends where the track lets go of it.
+		const sticky = !ScrollSmoother.get();
+		if (sticky) pinTrack.dataset.sticky = '';
+		const pinning: ScrollTrigger.Vars = sticky
+			? { trigger: pinTrack, end: () => `bottom top+=${section.offsetHeight}` }
+			: { trigger: section, pin: true, end: `+=${PIN_HEIGHTS * 100}%` };
 
 		// The timeline counts in plane px of HEAD travel: a commit's cue sits at its distance from the start.
 		const travel = to - from;
 		const timeline = gsap.timeline({
 			defaults: { ease: 'none', duration: travel },
 			scrollTrigger: {
-				trigger: section,
-				pin: true,
+				...pinning,
 				start: 'top top',
-				end: `+=${PIN_HEIGHTS * 100}%`,
 				scrub: true,
 				invalidateOnRefresh: true,
+				// The cues past the start only take their values once played through (`immediateRender: false`):
+				// a `pin` plays the timeline to its end at each refresh to measure it, `sticky` does not, which
+				// would leave the labels ahead raised and lit, at their final state.
+				onRefresh: (self) => timeline.progress(1, true).progress(self.progress, true),
 			},
 			onUpdate: () => showActiveCommit(from + travel * timeline.progress()),
 		});
@@ -328,6 +350,7 @@ const geometry = [
 			band.removeEventListener('scroll', keepBandStill);
 			for (const [name, value] of bandAttributes) if (value !== null) band.setAttribute(name, value);
 			delete section.dataset.scene;
+			delete pinTrack.dataset.sticky;
 		};
 	});
 </script>
@@ -365,19 +388,37 @@ const geometry = [
 		--frise-branch-pole: 88px;
 		--frise-legend-title: 44px;
 		--frise-legend-width: min(520px, 100% - 2 * var(--page-gutter));
+		/* The longest legend on a 320px-wide phone: three lines of title, three of place. */
+		--frise-legend-title-lines: 3;
+		--frise-legend-place-lines: 3;
 		position: relative;
 		box-sizing: border-box;
 		height: 100svh;
-		margin-top: clamp(64px, 8vw, 120px);
 		padding-top: clamp(28px, 4vw, 40px);
 		background: var(--color-dark);
 		color: var(--color-on-dark);
 	}
 
+	.frise-track {
+		margin-top: clamp(64px, 8vw, 120px);
+	}
+
+	/* Under a finger: the 100svh frame, then the 400svh it stays pinned for (the scene's `PIN_HEIGHTS`). */
+	.frise-track[data-sticky] {
+		height: 500svh;
+	}
+
+	.frise-track[data-sticky] > .frise {
+		position: sticky;
+		top: 0;
+	}
+
 	/*
 	 * Pinned, the aplat stays `100svh` tall, while a phone's window grows once its bars slide away:
-	 * the pin's spacer, behind it for the whole pinning, carries the aplat down to the window's edge.
+	 * what stays behind it for the whole pinning (the track, the pin's spacer) carries the aplat down
+	 * to the window's edge.
 	 */
+	.frise-track[data-sticky],
 	:global(.pin-spacer):has(> .frise) {
 		background: var(--color-dark);
 	}
@@ -419,6 +460,8 @@ const geometry = [
 			--frise-branch-pole: 25px;
 			--frise-legend-title: 22px;
 			--frise-legend-width: calc(var(--frise-scene-x) - 2 * var(--page-gutter));
+			/* No room under the heading for more: the longest legends here take four lines in all. */
+			--frise-legend-title-lines: 1;
 		}
 
 		/* The branch labels can't fit under the heading at the final state: it covers them, grid included. */
@@ -682,14 +725,25 @@ const geometry = [
 		height: var(--frise-branch-pole);
 	}
 
-	/* Over the band, clear of the statusline; only the scene has an active commit. */
+	/*
+	 * Over the band, clear of the statusline; only the scene has an active commit. Tall enough for the
+	 * longest legend of the layout, its lines sitting at the bottom: a commit that wraps differently
+	 * leaves its box where it is (a box that grew upwards would shift).
+	 */
 	.frise-legend {
+		--frise-legend-gap: 8px;
 		position: absolute;
 		bottom: calc(var(--statusline-height) + 28px);
 		left: var(--page-gutter);
 		display: none;
 		flex-direction: column;
-		gap: 8px;
+		justify-content: flex-end;
+		gap: var(--frise-legend-gap);
+		box-sizing: border-box;
+		height: calc(
+			12px * 1.5 + var(--frise-legend-title) * var(--frise-legend-title-lines) + 15px * 1.5 *
+				var(--frise-legend-place-lines) + 2 * var(--frise-legend-gap)
+		);
 		max-width: var(--frise-legend-width);
 		pointer-events: none;
 	}
@@ -700,6 +754,7 @@ const geometry = [
 
 	.frise-legend-meta {
 		font-size: 12px;
+		line-height: 1.5;
 		color: var(--color-on-dark-muted);
 	}
 
@@ -713,6 +768,7 @@ const geometry = [
 
 	.frise-legend-place {
 		font-size: 15px;
+		line-height: 1.5;
 		color: var(--color-on-dark-muted);
 	}
 </style>

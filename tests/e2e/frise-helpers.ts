@@ -26,6 +26,54 @@ export async function headOnScreen(page: Page) {
 	return box.x;
 }
 
+export interface LayoutShift {
+	value: number;
+	scrolled: number;
+	/**
+	 * An input in the last 500ms excuses the shift from CLS. A scroll is not one, but the end of a
+	 * replayed swipe can count as a tap: such shifts are kept, so that they can still be checked.
+	 */
+	hadRecentInput: boolean;
+	/** The shifted elements, by tag and classes, and whether each lies inside the Frise. */
+	sources: { element: string; inFrise: boolean }[];
+}
+
+/** Starts recording the layout shifts; the returned function reads what has been recorded so far. */
+export async function recordLayoutShifts(page: Page) {
+	await page.evaluate(() => {
+		const shifts: LayoutShift[] = [];
+		window.testLayoutShifts = shifts;
+		const frise = document.querySelector('#parcours');
+		new PerformanceObserver((list) => {
+			for (const entry of list.getEntries() as LayoutShiftEntry[]) {
+				shifts.push({
+					value: entry.value,
+					scrolled: scrollY,
+					hadRecentInput: entry.hadRecentInput,
+					sources: entry.sources.map(({ node }) => ({
+						element: node instanceof Element ? `${node.localName}.${[...node.classList].join('.')}` : String(node),
+						inFrise: !!node && !!frise?.contains(node),
+					})),
+				});
+			}
+		}).observe({ type: 'layout-shift' });
+	});
+	return () => page.evaluate(() => window.testLayoutShifts ?? []);
+}
+
+/** Not in the DOM typings yet. */
+interface LayoutShiftEntry extends PerformanceEntry {
+	value: number;
+	hadRecentInput: boolean;
+	sources: { node: Node | null }[];
+}
+
+declare global {
+	interface Window {
+		testLayoutShifts?: LayoutShift[];
+	}
+}
+
 type Box = { left: number; top: number; right: number; bottom: number };
 
 /**

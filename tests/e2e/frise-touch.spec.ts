@@ -8,6 +8,7 @@ import {
 	friseSection,
 	headOnScreen,
 	PIN_HEIGHTS,
+	recordLayoutShifts,
 	sceneStart,
 	scrollToScene,
 } from './frise-helpers';
@@ -83,6 +84,33 @@ for (const { width, height } of PHONES) {
 			await expect.poll(() => friseBand(page).evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
 			expect(await page.evaluate(() => scrollX)).toBe(0);
 		});
+
+		test('crossing the scene shifts no layout, neither at the pinning edges nor when the legend changes', async ({
+			page,
+		}) => {
+			await page.emulateMedia({ reducedMotion: 'no-preference' });
+			await page.goto('/');
+			await page.evaluate(() => document.fonts.ready);
+			const start = await sceneStart(page);
+			const end = start + PIN_HEIGHTS * height;
+			await page.evaluate((y) => scrollTo(0, y), start - 300);
+			await topOnceStill(friseSection(page));
+			const shifts = await recordLayoutShifts(page);
+
+			while ((await page.evaluate(() => scrollY)) < end + 300) {
+				await swipeUp(page, height * 0.6);
+				await topOnceStill(friseSection(page));
+			}
+
+			const recorded = await shifts();
+			// What CLS counts, page-wide; any shift of the Frise is checked, excused or not.
+			const counted = recorded.filter(({ hadRecentInput }) => !hadRecentInput);
+			const total = counted.reduce((sum, shift) => sum + shift.value, 0);
+			expect(total, JSON.stringify(counted)).toBeLessThan(0.1);
+			for (const shift of recorded.filter(({ sources }) => sources.some(({ inFrise }) => inFrise))) {
+				expect(shift.value, JSON.stringify(shift)).toBeLessThanOrEqual(0.01);
+			}
+		});
 	});
 }
 
@@ -108,13 +136,14 @@ test.describe('Frise under a finger, scrolling', () => {
 	});
 
 	// A phone scrolls under the finger off the main thread: a pin rewritten by script each frame
-	// trails behind (the section scrolls past its place, then jumps back), a fixed one does not.
+	// trails behind (the section scrolls past its place, then jumps back), a sticky one does not.
 	// Headless Chromium scrolls in step with the script, so only the means of pinning can be checked.
 	test('the pinned section is held by the browser, not by a transform written each frame', async ({ page }) => {
 		await page.goto('/');
 		await scrollToScene(page, await sceneStart(page), 0.5);
 
-		await expect(friseSection(page)).toHaveCSS('position', 'fixed');
+		await expect(friseSection(page)).toHaveCSS('position', 'sticky');
+		await expect(friseSection(page)).toHaveCSS('transform', 'none');
 	});
 
 	test('no jump when the pinning starts nor when it ends', async ({ page }) => {

@@ -4,7 +4,7 @@
  * revealed in the mockup's order. The inline script in the `<head>` decides whether it plays (class
  * on `<html>`); without that class, nothing happens here.
  */
-import { gsap, registerScene, ScrollSmoother } from '../animation/base';
+import { gsap, registerOpening, ScrollSmoother } from '../animation/base';
 import { globeCanvas, readPalette } from './canvas';
 import { cubicBezier } from './ease';
 import { decimal, fitColumns, type Layout } from './globe';
@@ -36,7 +36,7 @@ const SCROLL_KEYS = new Set([' ', 'PageDown', 'PageUp', 'Home', 'End', 'ArrowDow
 
 const marked = (name: string) => gsap.utils.toArray<HTMLElement>(`[data-intro="${name}"]`);
 
-registerScene(() => {
+registerOpening((end) => {
 	const root = document.documentElement;
 	const parts = introParts();
 	if (!root.classList.contains(PLAYING) || !parts) return;
@@ -235,6 +235,7 @@ registerScene(() => {
 		label.style.removeProperty('opacity');
 		// Releases the bitmap.
 		canvas.width = canvas.height = 0;
+		end();
 	}
 	return finish;
 });

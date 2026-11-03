@@ -174,6 +174,20 @@ for (const [screen, viewport] of SCREENS) {
 			expect(await farthest()).toBe(0);
 		});
 
+		// The Intro has the main thread to itself: the other scenes would cost it frames while nobody can
+		// scroll to them anyway.
+		test('the scenes further down are only built once it has ended', async ({ page }) => {
+			const pinned = page.locator('.pin-spacer');
+			await visitHome(page);
+			await page.clock.runFor(6_000);
+			await expect(veil(page)).toBeVisible();
+			expect(await pinned.count()).toBe(0);
+
+			await page.clock.runFor(4_000);
+			await expect(veil(page)).toBeHidden();
+			await expect.poll(() => pinned.count()).toBeGreaterThan(0);
+		});
+
 		test('the title is painted at its final state from the first paint, under the veil', async ({ page }) => {
 			await visitHome(page);
 			await expect(veil(page)).toBeVisible();

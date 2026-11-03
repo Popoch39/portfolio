@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { expect, test, type Page } from './fixtures';
 import {
 	content,
@@ -22,13 +23,14 @@ import {
  * if needed. Applies from the first load, landing anchor included.
  */
 async function serveHomePage(page: Page, { id = 'contact' } = {}) {
+	const room = '[data-testid=contact]::after{content:"";display:block;height:300vh}';
+	// The page's Content Security Policy only lets hashed styles in: this one gets its hash too.
+	const roomHash = `'sha256-${createHash('sha256').update(room).digest('base64')}'`;
 	await page.route('/', async (route) => {
 		const response = await route.fetch();
 		const html = (await response.text())
-			.replace(
-				'</head>',
-				'<style>[data-testid=contact]::after{content:"";display:block;height:300vh}</style></head>',
-			)
+			.replace('</head>', `<style>${room}</style></head>`)
+			.replace("style-src 'self'", `style-src 'self' ${roomHash}`)
 			.replace('id="contact"', `id="${id}" data-testid="contact"`)
 			.replace('href="/#contact"', `href="/#${id}"`);
 		await route.fulfill({ response, body: html });

@@ -34,20 +34,17 @@ export function globeCanvas(canvas: HTMLCanvasElement) {
 	let sphereKey = '';
 	let ratio = 1;
 
+	// Until the grain has loaded (or if it never does), the sphere has its shading alone.
 	const noise = new Image();
+	noise.onload = () => {
+		// Rasterised at the device's resolution, then scaled back in the pattern: crisp specks.
+		const tile = document.createElement('canvas');
+		tile.width = tile.height = Math.round(GRAIN_TILE * ratio);
+		tile.getContext('2d')?.drawImage(noise, 0, 0, tile.width, tile.height);
+		grainPattern = ctx?.createPattern(tile, 'repeat') ?? null;
+		sphereKey = '';
+	};
 	noise.src = SPHERE_GRAIN;
-	noise
-		.decode()
-		.then(() => {
-			// Rasterised at the device's resolution, then scaled back in the pattern: crisp specks.
-			const tile = document.createElement('canvas');
-			tile.width = tile.height = Math.round(GRAIN_TILE * ratio);
-			tile.getContext('2d')?.drawImage(noise, 0, 0, tile.width, tile.height);
-			grainPattern = ctx?.createPattern(tile, 'repeat') ?? null;
-			sphereKey = '';
-		})
-		// Without grain, the sphere keeps its shading.
-		.catch(() => {});
 
 	function paintSphere(radius: number, step: number) {
 		const key = `${radius}/${ratio}/${grainPattern ? step : -1}`;

@@ -4,7 +4,7 @@ import { scrollPosition, scrollWithWheel, statusline, swipeUp } from './helpers'
 
 // Decorative and hidden from assistive technologies: targeted by its id, like the statusline.
 const veil = (page: Page) => page.locator('#veil');
-// The globe, then the blue grid it becomes, drawn over the page.
+// The globe, then the accent grid it becomes, drawn over the page.
 const grid = (page: Page) => page.locator('#intro-grid');
 // The Besançon label that rides with the point.
 const label = (page: Page) => page.locator('#intro-over p', { hasText: 'Besançon' });

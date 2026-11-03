@@ -23,11 +23,6 @@ export default defineConfig({
 						style: 'normal',
 						src: ['./src/assets/fonts/archivo-variable.woff2'],
 					},
-					{
-						weight: 400,
-						style: 'italic',
-						src: ['./src/assets/fonts/archivo-italic-400.woff2'],
-					},
 				],
 			},
 		},

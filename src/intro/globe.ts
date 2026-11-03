@@ -381,8 +381,8 @@ export function globe(t: number, layout: Layout, pens: Pens, { ink, accent }: Pa
 	}
 
 	// Ink to accent as the strips straighten: the gores become the layout grid.
-	const blue = smoothstep(0.4, 1, straightened);
-	const mix = (i: number) => Math.round(ink[i] + (accent[i] - ink[i]) * blue);
+	const toAccent = smoothstep(0.4, 1, straightened);
+	const mix = (i: number) => Math.round(ink[i] + (accent[i] - ink[i]) * toAccent);
 
 	// The grid fades out over the page: parallels first, then the strips.
 	const parallelsFade = 1 - phase(t, { start: GRID_FADE.start, duration: GRID_FADE.parallels });

@@ -282,7 +282,7 @@ const jsonLd = JSON.stringify({
 		/* Moves the text, not the line boxes: the stems of L and P touch the edge of column 1. */
 		text-indent: -0.045em;
 		line-height: 0.8;
-		font-weight: 800;
+		font-weight: 900;
 		font-stretch: 62%;
 		letter-spacing: -0.015em;
 		text-transform: uppercase;
@@ -403,14 +403,14 @@ const jsonLd = JSON.stringify({
 		gap: 26px;
 		padding: 18px 0 18px 26px;
 		font-size: clamp(22px, 2.6vw, 38px);
-		font-weight: 700;
+		font-weight: 800;
 		font-stretch: 72%;
 		text-transform: uppercase;
 		white-space: nowrap;
 	}
 
 	.marquee-slash {
-		color: var(--color-accent-soft);
+		color: var(--color-on-ink-faint);
 	}
 
 	@keyframes marquee {
@@ -462,6 +462,10 @@ const jsonLd = JSON.stringify({
 
 		.project:hover .dim {
 			color: var(--color-on-ink-muted);
+		}
+
+		.project:hover .project-year > [aria-hidden] {
+			color: var(--color-accent);
 		}
 	}
 
@@ -553,7 +557,8 @@ const jsonLd = JSON.stringify({
 		line-height: 0.78;
 		font-weight: 900;
 		font-stretch: 62%;
-		color: var(--color-accent);
+		/* Its descender runs into the lede: in ink, the two would merge; ink keeps 5:1 over this shade. */
+		color: var(--color-accent-display);
 	}
 
 	.contact-lede {
@@ -568,7 +573,7 @@ const jsonLd = JSON.stringify({
 		/* Down to 22px rather than 30px: the address stays on one line on a 320px phone. */
 		font-size: clamp(22px, 6.2vw, 92px);
 		line-height: 1.05;
-		font-weight: 800;
+		font-weight: 900;
 		font-stretch: 70%;
 		letter-spacing: -0.02em;
 		text-decoration: none;

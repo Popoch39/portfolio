@@ -64,10 +64,15 @@ export const NARROW_BELOW = 861;
 const GLOBE_HEIGHT = 0.8;
 /** A gutter takes at most this share of a pitch: the grid's own (24 px) at 1280 px and above. */
 const GUTTER_SHARE = 0.24;
+/** The unrolled lenses run from pole to pole: half the equator, π/2 diameters tall. */
+const LENS_SPAN = Math.PI / 2;
+/** The lenses fit in this share of the window's height. */
+const LENS_HEIGHT = 0.85;
 
 /**
  * How many strips the page width holds, and the gutter between them: the first column count whose
- * globe (twelve pitches round) fits in the window's height, or the smallest globe when none does.
+ * globe (twelve pitches round) and unrolled lenses fit in the window's height, or the smallest
+ * globe when none does (its lenses are then flattened, see `globe`).
  */
 export function fitColumns(
 	window: { width: number; height: number },
@@ -86,7 +91,10 @@ export function fitColumns(
 	};
 	const tried = choices.map(fits);
 	const chosen =
-		tried.find(({ diameter }) => diameter <= GLOBE_HEIGHT * window.height) ??
+		tried.find(
+			({ diameter }) =>
+				diameter <= GLOBE_HEIGHT * window.height && LENS_SPAN * diameter <= LENS_HEIGHT * window.height,
+		) ??
 		tried.reduce((small, next) => (next.diameter < small.diameter ? next : small));
 	return { columns: chosen.columns, gutter: chosen.gutter };
 }
@@ -155,10 +163,13 @@ export function globe(t: number, layout: Layout, pens: Pens): Frame {
 	const narrow = (pitch - gutter) / pitch;
 	const cx0 = width / 2;
 	const cy0 = height / 2;
+	// Where even the smallest globe's lenses would overrun the window (a phone on its side), the
+	// latitudes close up as the gores unroll, then stretch from there: 1 everywhere else.
+	const flatLatitudes = Math.min(1, (LENS_HEIGHT * height) / (2 * LENS_SPAN * R));
 	// Greenwich falls in the middle gutter, which puts Besançon's gore (0°–30° E) right of it.
 	const cx1 = layout.gridLeft + layout.gridWidth / 2 + (pitch * LON) / 30;
 	// The flat lenses are centred on the equator, whole from tip to tip, before they straighten.
-	const cy1 = cy0 - R * LAT * D2R;
+	const cy1 = cy0 - R * flatLatitudes * LAT * D2R;
 	const cy2 = layout.headerBottom - 0.5 + R * STRETCH * (TOP_PARALLEL - LAT) * D2R;
 
 	// 1. The globe turns to Besançon.
@@ -171,10 +182,11 @@ export function globe(t: number, layout: Layout, pens: Pens): Frame {
 	//    each keeps its true width along every parallel, so it lands as a sinusoidal lens.
 	const fl = cubicInOut(phase(t, UNROLL));
 	const a = 1 - fl;
+	const closeUp = 1 - (1 - flatLatitudes) * fl;
 	// 4. The lenses straighten into strips while the latitudes stretch: both poles leave the frame and
 	//    the 60° parallel settles on the header rule.
 	const st = cubicInOut(phase(t, STRAIGHTEN));
-	const v = 1 + (STRETCH - 1) * st;
+	const v = flatLatitudes + (STRETCH - flatLatitudes) * st;
 	const Cx = cx0 + (cx1 - cx0) * fl;
 	const Cy = cy0 + (cy1 - cy0) * fl + (cy2 - cy1) * st;
 	const straight = a <= 0.001;
@@ -190,7 +202,7 @@ export function globe(t: number, layout: Layout, pens: Pens): Frame {
 		const cP = Math.cos(P);
 		const sP = Math.sin(P);
 		const cL = Math.cos(L);
-		return [Cx + k * cP * Math.sin(L), Cy - k * (cC * sP - sC * cP * cL), sC * sP + cC * cP * cL, lx, phi];
+		return [Cx + k * cP * Math.sin(L), Cy - k * closeUp * (cC * sP - sC * cP * cL), sC * sP + cC * cP * cL, lx, phi];
 	};
 	// Where a line turns behind the sphere it stops on the limb itself, not at the last sample in front.
 	const cross = (p: Point, q: Point) => {
@@ -218,8 +230,8 @@ export function globe(t: number, layout: Layout, pens: Pens): Frame {
 	};
 	// The stretch of limb that closes a gore where it turns behind the sphere; it is also that gore's rim.
 	const arc = (p: Point, q: Point) => {
-		const a1 = Math.atan2(p[1] - Cy, p[0] - Cx);
-		let da = Math.atan2(q[1] - Cy, q[0] - Cx) - a1;
+		const a1 = Math.atan2((p[1] - Cy) / closeUp, p[0] - Cx);
+		let da = Math.atan2((q[1] - Cy) / closeUp, q[0] - Cx) - a1;
 		if (da > Math.PI) da -= 2 * Math.PI;
 		else if (da < -Math.PI) da += 2 * Math.PI;
 		const n = Math.ceil(Math.abs(da) / 0.07);
@@ -227,7 +239,7 @@ export function globe(t: number, layout: Layout, pens: Pens): Frame {
 		for (let i = 1; i < n; i++) {
 			const an = a1 + (da * i) / n;
 			const x = Cx + k * Math.cos(an);
-			const y = Cy + k * Math.sin(an);
+			const y = Cy + k * closeUp * Math.sin(an);
 			pens.gores.lineTo(x, y);
 			pens.rim.lineTo(x, y);
 		}

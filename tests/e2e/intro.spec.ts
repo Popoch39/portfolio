@@ -64,6 +64,25 @@ declare global {
 	}
 }
 
+/** First and last rows of the window where the globe's canvas has drawn something, in CSS px. */
+function drawnRows(page: Page) {
+	return grid(page).evaluate((canvas: HTMLCanvasElement) => {
+		const context = canvas.getContext('2d');
+		if (!context) throw new Error('canvas without a 2D context');
+		const { data, width, height } = context.getImageData(0, 0, canvas.width, canvas.height);
+		const inked = (y: number) => {
+			for (let x = 0; x < width; x++) if (data[(y * width + x) * 4 + 3] > 8) return true;
+			return false;
+		};
+		let top = 0;
+		while (top < height && !inked(top)) top++;
+		let bottom = height - 1;
+		while (bottom > top && !inked(bottom)) bottom--;
+		const ratio = canvas.width / canvas.clientWidth;
+		return { top: top / ratio, bottom: (bottom + 1) / ratio };
+	});
+}
+
 async function box(element: Locator) {
 	const found = await element.boundingBox();
 	if (!found) throw new Error('element without a box');
@@ -254,6 +273,21 @@ test.describe('Intro, motion allowed, on a phone only', () => {
 			}
 		});
 	}
+
+	test('held on its side, the unrolling gores are never cut by the window', async ({ page }) => {
+		await page.setViewportSize(PHONE_LANDSCAPE);
+		await visitHome(page);
+		await page.clock.runFor(3_900);
+
+		// From the cut (4.1 s) to just before the lenses straighten (5.55 s): from then on, the strips
+		// are meant to run off the window.
+		for (let i = 0; i < 7; i++) {
+			await page.clock.runFor(200);
+			const { top, bottom } = await drawnRows(page);
+			expect(top).toBeGreaterThan(0);
+			expect(bottom).toBeLessThan(PHONE_LANDSCAPE.height);
+		}
+	});
 
 	// The header coordinates are hidden on a phone: the label has nowhere to land.
 	test('the label fades where it stands instead of flying to the header', async ({ page }) => {

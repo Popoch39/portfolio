@@ -173,6 +173,16 @@ const first = lede.versions[0];
 		}
 	}
 
+	/* The typist never starts under reduced motion, but stopping it on a preference flip fades. */
+	@media (prefers-reduced-motion: reduce) {
+		[data-audience],
+		.keys,
+		.keys :global(kbd) {
+			animation: none !important;
+			transition: none;
+		}
+	}
+
 	/* A phone shows the last keys only: ten would run out of the column. */
 	@media (max-width: 600px) {
 		.keys :global(kbd:nth-last-child(n + 7)) {

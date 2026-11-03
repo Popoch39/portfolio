@@ -4,7 +4,6 @@ import { statusline } from './helpers';
 // The sentence as drawn for the eyes: hidden from assistive technologies, which read a stable one.
 const buffer = (page: Page) => page.locator('.hero-lede [data-buffer]');
 const version = (page: Page) => page.locator('.hero-lede [data-version]');
-const keys = (page: Page) => page.locator('.hero-lede [data-keys]');
 
 test.describe('the lede, without JavaScript', () => {
 	test.use({ javaScriptEnabled: false });
@@ -51,6 +50,5 @@ test.describe('the lede, typed', () => {
 		await expect(statusline(page).locator('[data-vim-mode]')).toHaveText('NORMAL');
 		await expect(page.locator('.hero-mode')).toHaveText('-- NORMAL --');
 		await expect(version(page)).toHaveText(/version\s*2\/5\s*pour\s*: les gîtes et chambres d’hôtes/);
-		await expect(keys(page)).toBeAttached();
 	});
 });

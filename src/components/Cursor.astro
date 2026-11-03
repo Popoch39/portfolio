@@ -1,8 +1,11 @@
 ---
 /** Vim block cursor after a display title, sized in `em` against it. */
+import type { HTMLAttributes } from 'astro/types';
+
+type Props = HTMLAttributes<'span'>;
 ---
 
-<span class="cursor" aria-hidden="true"></span>
+<span class="cursor" aria-hidden="true" {...Astro.props}></span>
 
 <style>
 	.cursor {

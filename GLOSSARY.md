@@ -10,7 +10,15 @@ _À éviter_ : effet, animation de scroll.
 Scène la plus simple : un élément entre dans la vue et anime une fois vers son état final. Jamais sur ce qui est visible au premier affichage (hero, élément LCP). Le site n'en porte plus : la dernière, sur la liste de la Stack, a été remplacée par l'Atome (#15).
 
 **Animation d'interface**
-Animation qui ne dépend pas du défilement : survol, chargement, hero, transition entre pages. Elle reste en CSS (les transitions entre pages sont des view transitions cross-document).
+Animation qui ne dépend ni du défilement ni d'un état JS : survol, curseur qui clignote, transition entre pages. Elle reste en CSS (les transitions entre pages sont des view transitions cross-document). Le chargement de l'accueil n'en fait plus partie : c'est l'Intro.
+
+**Intro**
+La séquence jouée une fois au chargement de l'accueil, sous le Voile : le globe tourne vers Besançon, se découpe en fuseaux qui deviennent les colonnes de la page, puis le header, le hero et la statusline se révèlent. Timeline GSAP enregistrée auprès du socle (ADR 0005). Elle ne se joue ni au retour par l'historique, ni depuis une autre page du site, ni avec une ancre, ni en mouvement réduit, et n'importe quel geste la passe.
+_À éviter_ : loader, splash screen.
+
+**Voile**
+La couche papier opaque qui couvre la fenêtre pendant l'Intro, au-dessus de la page déjà peinte à son état final. Elle s'efface en une frame quand la page se révèle. Sans la classe `intro` posée avant la première peinture (sans JS, notamment), elle n'existe pas.
+_À éviter_ : overlay, masque.
 
 **Défilement lissé**
 Défilement à la molette et au trackpad interpolé par ScrollSmoother (environ 1 s d'inertie). Jamais au doigt, jamais sous `prefers-reduced-motion: reduce`, jamais sans JS : le défilement reste alors natif.

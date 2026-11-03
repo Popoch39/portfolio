@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { computedTransform, content, expectSmoothScrolling, scrollPosition, scrollWithWheel, wrapper } from './helpers';
 
 test.describe('smoothed scrolling, motion allowed', () => {

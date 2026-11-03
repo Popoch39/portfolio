@@ -1,0 +1,23 @@
+---
+/**
+ * Decides, before the first paint, whether the Intro plays (ADR 0005): the class it sets on
+ * `<html>` shows the veil and lets the scene run. Inline in the `<head>` of the home page only,
+ * so that the veil is there from the very first frame, never after a flash of the page.
+ */
+---
+
+<script is:inline>
+	(() => {
+		const navigation = performance.getEntriesByType('navigation')[0];
+		const type = navigation && navigation.type;
+		// Empty on a direct visit or a bookmark. The slash keeps out a host that merely starts the same.
+		const fromThisSite = document.referrer.startsWith(`${location.origin}/`);
+		// A reload replays it, even when the page was first reached from another page of the site.
+		const skip =
+			type === 'back_forward' ||
+			location.hash !== '' ||
+			(fromThisSite && type !== 'reload') ||
+			matchMedia('(prefers-reduced-motion: reduce)').matches;
+		if (!skip) document.documentElement.classList.add('intro');
+	})();
+</script>

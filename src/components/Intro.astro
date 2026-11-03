@@ -1,0 +1,250 @@
+---
+/**
+ * The Intro's layers (ADR 0005), shown only when the inline trigger has set the `intro` class on
+ * `<html>`: without JS, or when the Intro does not play, they do not exist.
+ * - The veil: an opaque paper layer over the window, while the page underneath is already painted
+ *   at its final state.
+ * - Above it, the globe's canvas (it outlives the veil as the blue grid over the page), the
+ *   Besançon label, then the paper's HUD and grain, which go with the veil.
+ */
+import { PAPER_GRAIN } from '../intro/grain';
+import { person } from '../data/profile';
+---
+
+<div id="veil" class="veil" aria-hidden="true" data-nosnippet></div>
+<div id="intro-over" class="over" aria-hidden="true" data-nosnippet>
+	<canvas id="intro-grid" class="grid"></canvas>
+	<p class="mono label" data-hud="label"><span>{person.city} — {person.coordinates}</span></p>
+	<div class="paper" data-hud="paper">
+		<div class="mono hud" data-hud="hud">
+			<p class="hud-phase" data-hud="phase">projection orthographique · EPSG:4326</p>
+			<p class="hud-gore"><span class="dim">fuseau</span><span data-hud="gore">05 / 12</span></p>
+			<p class="hud-centre">
+				<small>centre de la projection</small><span data-hud="lat">8,0000° N</span><span data-hud="lon"
+					>40,0000° O</span
+				>
+			</p>
+			<p class="hud-scale">
+				<span class="scale-bar"><i data-hud="tick"></i><i data-hud="bar"></i><i></i></span><span data-hud="scale"
+					>fuseau 100,1 px · gouttière 0,0 px</span
+				>
+			</p>
+		</div>
+		<div class="grain-layer">
+			<div class="grain" style={`background-image: url("${PAPER_GRAIN}")`}></div>
+		</div>
+	</div>
+</div>
+
+<script>
+	import '../intro/scene';
+</script>
+
+<style>
+	.veil,
+	.over {
+		display: none;
+		position: fixed;
+		inset: 0;
+		pointer-events: none;
+	}
+
+	.veil {
+		/* Above the statusline. */
+		z-index: 2;
+		background: var(--color-paper);
+	}
+
+	/* Above the veil; once the veil has lifted, the Intro brings it under the statusline. */
+	.over {
+		z-index: 3;
+		overflow: hidden;
+	}
+
+	.over.lowered {
+		z-index: 0;
+	}
+
+	:global(html.intro) .veil,
+	:global(html.intro) .over {
+		display: block;
+	}
+
+	.grid {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+	}
+
+	/* Placed by the Intro on the point, then on the header coordinates. */
+	.label {
+		position: absolute;
+		left: 0;
+		top: 0;
+		margin: 0;
+		font-size: 13px;
+		line-height: 1.5;
+		white-space: nowrap;
+		color: var(--color-ink-muted);
+		will-change: transform;
+	}
+
+	.label span {
+		display: block;
+		background: var(--color-paper);
+		box-shadow: 0 0 0 4px var(--color-paper);
+		opacity: 0;
+	}
+
+	.paper {
+		position: absolute;
+		inset: 0;
+	}
+
+	/* The HUD sits on the page's content box, like the header. */
+	.hud {
+		--edge: calc(max(0px, (100% - var(--page-max-width)) / 2) + var(--page-gutter));
+		position: absolute;
+		inset: 0;
+		opacity: 0;
+		font-size: 12px;
+		letter-spacing: 0.02em;
+	}
+
+	.hud p {
+		position: absolute;
+		margin: 0;
+	}
+
+	.hud-phase,
+	.hud-gore {
+		top: 26px;
+		text-transform: uppercase;
+	}
+
+	.hud-phase {
+		left: var(--edge);
+	}
+
+	.hud-gore {
+		right: var(--edge);
+		display: flex;
+		gap: 10px;
+	}
+
+	.dim,
+	.hud small {
+		color: var(--color-ink-muted);
+	}
+
+	.hud-centre {
+		left: var(--edge);
+		bottom: 54px;
+		display: flex;
+		flex-direction: column;
+		font-weight: 800;
+		font-size: 92px;
+		line-height: 0.86;
+		letter-spacing: -0.01em;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.hud small {
+		display: block;
+		margin-bottom: 12px;
+		font-weight: 400;
+		font-size: 12px;
+		line-height: 1.5;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+	}
+
+	.hud-scale {
+		right: var(--edge);
+		bottom: 54px;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 6px;
+	}
+
+	/* A gore's width at the equator: the left tick slides and the rule scales, from the right end. */
+	.scale-bar {
+		position: relative;
+		display: block;
+		width: 100px;
+		height: 6px;
+	}
+
+	.scale-bar i {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 1px;
+		background: var(--color-ink);
+	}
+
+	.scale-bar i:first-child {
+		left: 0;
+	}
+
+	.scale-bar i:nth-child(2) {
+		top: auto;
+		left: 0;
+		width: 100%;
+		height: 1px;
+		transform-origin: 100% 0;
+	}
+
+	.scale-bar i:last-child {
+		right: 0;
+	}
+
+	/* Phones, upright or on their side: smaller HUD, the scale under the centre of the projection. */
+	@media (max-width: 860px), (max-height: 500px) {
+		.label {
+			font-size: 11px;
+		}
+
+		.hud {
+			font-size: 10px;
+		}
+
+		.hud-phase,
+		.hud-gore {
+			top: 16px;
+		}
+
+		.hud-gore {
+			gap: 6px;
+		}
+
+		.hud-centre {
+			bottom: 64px;
+			font-size: 40px;
+		}
+
+		.hud small {
+			margin-bottom: 6px;
+			font-size: 10px;
+		}
+
+		.hud-scale {
+			bottom: 24px;
+		}
+	}
+
+	.grain-layer {
+		position: absolute;
+		inset: 0;
+		overflow: hidden;
+		opacity: 0.16;
+	}
+
+	/* Boils by jumps, moved by the Intro. */
+	.grain {
+		position: absolute;
+		inset: -120px;
+	}
+</style>

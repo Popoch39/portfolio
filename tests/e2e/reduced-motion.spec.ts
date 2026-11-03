@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { expectNativeScrolling, scrollPosition, scrollWithWheel } from './helpers';
 
 test.describe('reduced motion', () => {

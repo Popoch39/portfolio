@@ -1,4 +1,4 @@
-import { devices, expect, test } from '@playwright/test';
+import { devices, expect, test } from './fixtures';
 import { expectNativeScrolling, scrollPosition, swipeUp } from './helpers';
 
 // Chromium project only (see playwright.config.ts): Firefox does not emulate `isMobile`.

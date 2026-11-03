@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 import { statusline, wrapper } from './helpers';
 
 // The smoother fixes the wrapper and transforms the content: an element positioned against the

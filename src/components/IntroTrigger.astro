@@ -13,11 +13,17 @@
 		// Empty on a direct visit or a bookmark. The slash keeps out a host that merely starts the same.
 		const fromThisSite = document.referrer.startsWith(`${location.origin}/`);
 		// A reload replays it, even when the page was first reached from another page of the site.
+		const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+		// A reload replays the Intro, which opens on the top of the page: the browser must not bring
+		// back the scroll the visitor had left. It reads this mode as it was when the page was left,
+		// so it is set for the next reload now, whether or not the Intro plays this time.
+		// The price: a return through history that misses the back/forward cache lands at the top.
+		history.scrollRestoration = reducedMotion ? 'auto' : 'manual';
 		const skip =
 			type === 'back_forward' ||
 			location.hash !== '' ||
 			(fromThisSite && type !== 'reload') ||
-			matchMedia('(prefers-reduced-motion: reduce)').matches;
+			reducedMotion;
 		if (!skip) document.documentElement.classList.add('intro');
 	})();
 </script>

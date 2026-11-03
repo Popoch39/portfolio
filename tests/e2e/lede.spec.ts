@@ -15,9 +15,9 @@ test.describe('the lede, without JavaScript', () => {
 
 		await expect(buffer(page)).toHaveText('Je construis les cartes de votre réseau électrique.');
 		await expect(buffer(page).locator('[data-kind="block"]')).toHaveText('e');
-		await expect(version(page)).toHaveText(/version\s*1\/5\s*pour\s*: les grands comptes de l’énergie/);
+		await expect(version(page)).toHaveText(/version\s*1\/8\s*pour\s*: les grands comptes de l’énergie/);
 		await expect(page.locator('.hero-lede')).toMatchAriaSnapshot(`
-			- paragraph: "Je construis des cartes, des sites, des API et des outils : pour votre réseau électrique, votre gîte, votre back-office, votre commune ou votre équipe terrain."
+			- paragraph: "Je construis des cartes, des sites vitrines, des boutiques en ligne, des prises de rendez-vous, des API et des outils : pour votre réseau électrique, votre gîte, votre commerce, votre restaurant, votre salon, votre back-office, votre commune ou votre équipe terrain."
 		`);
 	});
 });
@@ -49,6 +49,6 @@ test.describe('the lede, typed', () => {
 		expect(seen).toEqual({ insert: true, keys: true, status: true });
 		await expect(statusline(page).locator('[data-vim-mode]')).toHaveText('NORMAL');
 		await expect(page.locator('.hero-mode')).toHaveText('-- NORMAL --');
-		await expect(version(page)).toHaveText(/version\s*2\/5\s*pour\s*: les gîtes et chambres d’hôtes/);
+		await expect(version(page)).toHaveText(/version\s*2\/8\s*pour\s*: les gîtes et chambres d’hôtes/);
 	});
 });

@@ -167,12 +167,15 @@ export const lede = {
 	versions: [
 		{ what: 'les cartes', whose: 'réseau électrique', audience: 'les grands comptes de l’énergie' },
 		{ what: 'le site', whose: 'gîte', audience: 'les gîtes et chambres d’hôtes' },
+		{ what: 'la boutique en ligne', whose: 'commerce', audience: 'les commerces de proximité' },
+		{ what: 'le site vitrine', whose: 'restaurant', audience: 'les restaurants, cafés et boulangeries' },
+		{ what: 'la prise de rendez-vous', whose: 'salon', audience: 'les artisans, coiffeurs et instituts' },
 		{ what: 'l’API', whose: 'back-office', audience: 'les équipes produit' },
 		{ what: 'la carte', whose: 'commune', audience: 'les mairies et collectivités' },
 		{ what: 'l’outil', whose: 'équipe terrain', audience: 'les métiers de terrain' },
 	],
 	summary:
-		'Je construis des cartes, des sites, des API et des outils : pour votre réseau électrique, votre gîte, votre back-office, votre commune ou votre équipe terrain.',
+		'Je construis des cartes, des sites vitrines, des boutiques en ligne, des prises de rendez-vous, des API et des outils : pour votre réseau électrique, votre gîte, votre commerce, votre restaurant, votre salon, votre back-office, votre commune ou votre équipe terrain.',
 };
 
 export type Lede = typeof lede;

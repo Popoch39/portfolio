@@ -18,4 +18,4 @@ La charte de la maquette D (encre sur papier, accent bleu `#2433ff` en aplat et 
 
 - Le compteur de l'Intro reste à 800 : il est en Fragment Mono, qui n'a qu'une graisse (gras synthétique, identique à 800 et 900).
 - Le bouton au survol devient papier, contour encre et ombre portée signal, dessinés en `box-shadow` pour que sa boîte ne bouge pas.
-- L'image Open Graph (`src/assets/og.png`) reprend sa composition aux nouvelles couleurs, titre en 900 ; « SIG & cartographie » y passe en encre/papier comme la sélection de l'accroche.
+- L'image Open Graph (`src/assets/og.png`) reprend sa composition aux nouvelles couleurs, titre en 900 ; « SIG & cartographie » y passe en encre/papier comme la sélection de l'accroche. Elle se redessine avec `node scripts/og.mjs` (Playwright et ImageMagick), à relancer si le nom, l'accroche ou la palette changent.

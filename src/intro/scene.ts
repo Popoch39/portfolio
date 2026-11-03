@@ -1,27 +1,123 @@
 /**
- * The Intro (ADR 0005): a timeline played once under the veil on loading the home page, then the
- * header, the hero and the statusline revealed in the mockup's order. The inline script in the
- * `<head>` decides whether it plays (class on `<html>`); without that class, nothing happens here.
+ * The Intro (ADR 0005): a timeline played once under the veil on loading the home page: the globe
+ * drawn in a canvas on the timeline's progress, then the header, the hero and the statusline
+ * revealed in the mockup's order. The inline script in the `<head>` decides whether it plays (class
+ * on `<html>`); without that class, nothing happens here.
  */
 import { gsap, registerScene, ScrollSmoother } from '../animation/base';
-import { END, LATE, REVEAL, REVEAL_EASE, RULE, SKIP_FADE, STATUSLINE, TITLE_RISE, VEIL_LIFT } from './timing';
+import { globeCanvas } from './canvas';
+import { cubicBezier } from './ease';
+import { decimal, type Layout } from './globe';
+import {
+	BOIL,
+	END,
+	HUD,
+	LATE,
+	POINT,
+	REVEAL,
+	REVEAL_EASE,
+	RULE,
+	SKIP_FADE,
+	STATUSLINE,
+	TITLE_RISE,
+	VEIL_LIFT,
+} from './timing';
 
 const reveal = cubicBezier(...REVEAL_EASE);
 
 const PLAYING = 'intro';
+/** Columns the strips land on. */
+const COLUMNS = 12;
+/** Base width of the HUD's scale bar, px (`Intro.astro`). */
+const SCALE_BAR = 100;
 
 const marked = (name: string) => gsap.utils.toArray<HTMLElement>(`[data-intro="${name}"]`);
 
 registerScene(() => {
 	const root = document.documentElement;
-	const veil = document.getElementById('veil');
-	if (!root.classList.contains(PLAYING) || !veil) return;
+	const parts = introParts();
+	if (!root.classList.contains(PLAYING) || !parts) return;
+	const { veil, over, canvas, header, cursor, meta, label, labelText, paper, hud, grain, tick, bar } = parts;
+	const texts = [parts.phase, parts.gore, parts.lat, parts.lon, parts.scale];
+	let finished = false;
 
 	// Native scrolling and smoothing alike: the paused smoother swallows wheel, touch and scroll.
 	const smoother = ScrollSmoother.get();
 	smoother?.paused(true);
 
+	// The globe lands on the real page: measured now, again once the fonts are in, and on every resize.
+	const painter = globeCanvas(canvas);
+	let layout = measure();
+	function measure(): Layout {
+		const grid = header.getBoundingClientRect();
+		const point = cursor.getBoundingClientRect();
+		// The title line may be rising: the cursor is aimed at its resting place.
+		const line = cursor.closest<HTMLElement>('[data-intro="line"]');
+		const rising = line ? new DOMMatrixReadOnly(getComputedStyle(line).transform).m42 : 0;
+		const coordinates = meta.getBoundingClientRect();
+		return {
+			width: over.clientWidth,
+			height: over.clientHeight,
+			columns: COLUMNS,
+			gridLeft: grid.left,
+			gridWidth: grid.width,
+			gutter: Number.parseFloat(getComputedStyle(header).columnGap) || 0,
+			headerBottom: grid.bottom,
+			cursor: { x: point.left, y: point.top - rising, w: point.width, h: point.height },
+			meta: { x: coordinates.left, y: coordinates.top },
+		};
+	}
+	const relayout = () => {
+		if (finished) return;
+		layout = measure();
+		painter.resize(layout.width, layout.height, devicePixelRatio);
+		render();
+	};
+	painter.resize(layout.width, layout.height, devicePixelRatio);
+	addEventListener('resize', relayout);
+	document.fonts.ready.then(relayout);
+
+	// The HUD's text only changes when its value does.
+	const shown = new Map<HTMLElement, string>();
+	const write = (node: HTMLElement, text: string) => {
+		if (shown.get(node) === text) return;
+		shown.set(node, text);
+		node.textContent = text;
+	};
+	let boilStep = -1;
+	let scaled = Number.NaN;
+	const clock = { t: 0 };
+	let skipping = false;
+	function render() {
+		if (skipping || finished) return;
+		const { t } = clock;
+		const frame = painter.draw(t, layout);
+		label.style.transform = `translate(${frame.label.x}px, ${frame.label.y}px)`;
+		const { phase, gore, lat, lon, goreWidth, gutter } = frame.hud;
+		const values = [phase, gore, lat, lon, `fuseau ${decimal(goreWidth)} px · gouttière ${decimal(gutter)} px`];
+		texts.forEach((node, i) => write(node, values[i]));
+		if (goreWidth !== scaled) {
+			scaled = goreWidth;
+			tick.style.transform = `translateX(${SCALE_BAR - goreWidth}px)`;
+			bar.style.transform = `scaleX(${goreWidth / SCALE_BAR})`;
+		}
+		const step = Math.floor((t + BOIL.paperLead) / BOIL.step) % BOIL.offsets.length;
+		if (step !== boilStep) {
+			boilStep = step;
+			const [x, y] = BOIL.offsets[step];
+			grain.style.transform = `translate(${x}px, ${y}px)`;
+		}
+	}
+
 	const timeline = gsap.timeline({ onComplete: () => finish() });
+	// The globe's clock: the canvas is drawn on the timeline's progress, until the grid has faded.
+	timeline.to(clock, { t: END, duration: END, ease: 'none', onUpdate: render }, 0);
+	timeline
+		.to(hud, { opacity: 1, duration: HUD.in.duration, ease: 'none' }, HUD.in.start)
+		.to(hud, { opacity: 0, duration: HUD.out.duration, ease: 'none' }, HUD.out.start)
+		.to(labelText, { opacity: 1, duration: POINT.label.duration, ease: 'none' }, POINT.label.start)
+		.to(label, { opacity: 0, duration: POINT.handOver.duration, ease: 'none' }, POINT.handOver.start);
+
 	// The hero is painted at its final state under the veil (it is the LCP): the reveals' starting
 	// states are only set when the veil lifts, never before.
 	const reveals = Object.keys(REVEAL.offsets).flatMap(marked);
@@ -29,14 +125,16 @@ registerScene(() => {
 	const late = marked('late');
 	const statusline = marked('statusline');
 	timeline
-		.set(veil, { autoAlpha: 0 }, VEIL_LIFT)
+		.set([veil, paper], { autoAlpha: 0 }, VEIL_LIFT)
+		// The grid stays over the page, under the statusline that rises later.
+		.set(over, { zIndex: 0 }, VEIL_LIFT)
 		.set(reveals, { opacity: 0, y: REVEAL.rise }, VEIL_LIFT)
 		.set(lines, { yPercent: TITLE_RISE.from }, VEIL_LIFT)
 		.set(late, { opacity: 0 }, VEIL_LIFT)
 		.set(statusline, { yPercent: 100 }, VEIL_LIFT);
 	// The rule is a pseudo-element: it scales through a custom property of the header.
 	timeline.fromTo(
-		marked('rule'),
+		header,
 		{ '--rule-scale': 0 },
 		{ '--rule-scale': 1, duration: RULE.duration, ease: reveal, immediateRender: false },
 		RULE.start,
@@ -47,23 +145,27 @@ registerScene(() => {
 	timeline
 		.to(lines, { yPercent: 0, duration: TITLE_RISE.duration, stagger: TITLE_RISE.stagger, ease: reveal }, TITLE_RISE.start)
 		.to(late, { opacity: 1, duration: LATE.duration, ease: 'none' }, LATE.start)
-		.to(statusline, { yPercent: 0, duration: STATUSLINE.duration, ease: reveal }, STATUSLINE.start)
-		// The canvas layer (grid fading out over the page) lasts until here.
-		.call(() => {}, [], END);
+		.to(statusline, { yPercent: 0, duration: STATUSLINE.duration, ease: reveal }, STATUSLINE.start);
+	render();
 
-	let fade: gsap.core.Tween | undefined;
+	let fade: gsap.core.Timeline | undefined;
 	const firstLink = document.querySelector<HTMLElement>('#smooth-content a[href]');
 
-	// Any gesture skips the Intro: the page jumps to its final state and the veil fades out over it.
+	// Any gesture skips the Intro: the page jumps to its final state and the Intro's last frame
+	// fades out over it.
 	const skip = () => {
 		if (fade) return;
 		stopListening();
 		const veilShown = timeline.time() < VEIL_LIFT;
+		skipping = true;
 		timeline.progress(1, true);
-		fade = gsap.fromTo(
-			veil,
-			{ autoAlpha: veilShown ? 1 : 0 },
-			{ autoAlpha: 0, duration: SKIP_FADE, ease: 'power1.out', onComplete: finish },
+		fade = gsap.timeline({ onComplete: finish });
+		// Under the veil, the globe stays above it while both fade.
+		if (veilShown) fade.set(over, { zIndex: 3 });
+		fade.fromTo(
+			veilShown ? [veil, paper, over] : [over],
+			{ autoAlpha: 1 },
+			{ autoAlpha: 0, duration: SKIP_FADE, ease: 'power1.out' },
 		);
 	};
 	// Focus never disappears under the veil: Tab lands on the first link of the page.
@@ -89,36 +191,52 @@ registerScene(() => {
 	}
 
 	// Ended, skipped or reverted by a change of motion preference: nothing of the Intro survives.
-	let finished = false;
 	function finish() {
 		if (finished) return;
 		finished = true;
 		stopListening();
 		removeEventListener('pageshow', onCacheRestore);
+		removeEventListener('resize', relayout);
 		root.classList.remove(PLAYING);
 		smoother?.paused(false);
 		fade?.revert();
 		timeline.revert();
+		for (const node of [label, grain, tick, bar]) node.style.removeProperty('transform');
+		// Releases the bitmap.
+		canvas.width = canvas.height = 0;
 	}
 	return finish;
 });
 
-/**
- * A CSS `cubic-bezier()` as a GSAP ease: finds the curve parameter whose x is the progress
- * (Newton's method), then returns its y. Written out rather than CustomEase, which would add
- * about 4 KB gzip to the home page for this one curve.
- */
-function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
-	const at = (a: number, b: number, t: number) => 3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3;
-	const slope = (a: number, b: number, t: number) =>
-		3 * a * (1 - t) ** 2 + 6 * (b - a) * t * (1 - t) + 3 * (1 - b) * t * t;
-	return (progress: number) => {
-		let t = progress;
-		for (let i = 0; i < 8; i++) {
-			const s = slope(x1, x2, t);
-			if (Math.abs(s) < 1e-6) break;
-			t = Math.min(1, Math.max(0, t - (at(x1, x2, t) - progress) / s));
-		}
-		return at(y1, y2, t);
+/** The page and Intro elements the scene works on; `null` when one is missing. */
+function introParts() {
+	const over = document.getElementById('intro-over');
+	const canvas = document.getElementById('intro-grid');
+	const header = marked('rule')[0];
+	const part = (name: string) => over?.querySelector<HTMLElement>(`[data-hud="${name}"]`);
+	const parts = {
+		veil: document.getElementById('veil'),
+		over,
+		canvas: canvas instanceof HTMLCanvasElement ? canvas : null,
+		header,
+		cursor: document.querySelector<HTMLElement>('h1 .cursor'),
+		meta: header?.querySelector<HTMLElement>('[data-intro="late"]'),
+		label: part('label'),
+		labelText: part('label')?.firstElementChild,
+		paper: part('paper'),
+		hud: part('hud'),
+		grain: over?.querySelector<HTMLElement>('.grain'),
+		tick: part('tick'),
+		bar: part('bar'),
+		phase: part('phase'),
+		gore: part('gore'),
+		lat: part('lat'),
+		lon: part('lon'),
+		scale: part('scale'),
 	};
+	return allPresent(parts) ? parts : null;
+}
+
+function allPresent<T extends object>(parts: T): parts is { [K in keyof T]: NonNullable<T[K]> } {
+	return Object.values(parts).every(Boolean);
 }

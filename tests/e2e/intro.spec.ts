@@ -4,6 +4,8 @@ import { scrollPosition, scrollWithWheel, statusline } from './helpers';
 
 // Decorative and hidden from assistive technologies: targeted by its id, like the statusline.
 const veil = (page: Page) => page.locator('#veil');
+// The globe, then the blue grid it becomes, drawn over the page.
+const grid = (page: Page) => page.locator('#intro-grid');
 
 // The elements the Intro reveals, as a visitor sees them on the page.
 const revealed = (page: Page) => [
@@ -48,6 +50,18 @@ test.describe('Intro, motion allowed', () => {
 		await expectFinalState(page);
 	});
 
+	test('the grid stays over the page once the veil has lifted, then goes with the Intro', async ({ page }) => {
+		await visitHome(page);
+		await expect(grid(page)).toBeVisible();
+
+		await page.clock.runFor(7_500);
+		await expect(veil(page)).toBeHidden();
+		await expect(grid(page)).toBeVisible();
+
+		await page.clock.runFor(2_500);
+		await expect(grid(page)).toBeHidden();
+	});
+
 	const gestures: [string, (page: Page) => Promise<void>][] = [
 		['a key', (page) => page.keyboard.press('a')],
 		['a click', (page) => page.mouse.click(400, 300)],
@@ -62,6 +76,7 @@ test.describe('Intro, motion allowed', () => {
 			await page.clock.runFor(400);
 
 			await expect(veil(page)).toBeHidden();
+			await expect(grid(page)).toBeHidden();
 			await expectFinalState(page);
 		});
 	}

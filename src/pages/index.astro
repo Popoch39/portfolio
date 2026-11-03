@@ -309,6 +309,34 @@ const jsonLd = JSON.stringify({
 		white-space: nowrap;
 	}
 
+	/*
+	 * A phone held upright: fitted to the height left over, the name shrank to a line of text under
+	 * the stacked lede and facts. It takes the column's width instead, each line fitted on its own,
+	 * "LOUIS" twice the size of "POCHERON", and the rest of the hero runs past the first screen.
+	 */
+	@media (max-width: 600px) and (orientation: portrait) {
+		.hero-fit {
+			flex: none;
+			/* The title's height comes from its content again; `cqi` now reads the hero's column. */
+			container-type: normal;
+			min-height: 0;
+		}
+
+		.hero-title {
+			font-size: calc(100cqi / 4.35);
+		}
+
+		/* `text-indent` inherits as a length: each line works it out against its own size. */
+		.hero-line {
+			text-indent: -0.045em;
+		}
+
+		.hero-line:first-child {
+			/* "LOUIS" takes 2.13em, less the indent: its S lines up with the cursor's edge. */
+			font-size: calc(100cqi / 2.12);
+		}
+	}
+
 	.hero-grid {
 		row-gap: 32px;
 		align-items: start;

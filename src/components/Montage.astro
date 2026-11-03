@@ -338,9 +338,12 @@ const camera = JSON.stringify(
 		const showFocusedAction = (event: FocusEvent) => {
 			const smoother = ScrollSmoother.get();
 			const trigger = scene.scrollTrigger;
-			if (!smoother || !trigger || !(event.target instanceof Node) || !actions?.contains(event.target)) return;
+			if (!trigger || !(event.target instanceof Node) || !actions?.contains(event.target)) return;
 			const shown = trigger.start + (trigger.end - trigger.start) * ACTIONS[1];
-			if (smoother.scrollTop() < shown) smoother.scrollTo(shown, false);
+			// Without a smoother (no fine pointer: a tablet with a keyboard), the window scrolls.
+			if (smoother) {
+				if (smoother.scrollTop() < shown) smoother.scrollTo(shown, false);
+			} else if (scrollY < shown) scrollTo(0, shown);
 		};
 
 		// In a context of their own, reverted and rebuilt as the layout flips while the rest of the scene stands.

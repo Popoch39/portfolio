@@ -7,8 +7,7 @@ test.describe('without JavaScript', () => {
 	test('all the content is visible, at its final state', async ({ page }) => {
 		await page.goto('/');
 
-		// What a scene alone shows (the Montage's screwing strip) stays `hidden`: not content of the final state.
-		const elements = content(page).locator('h1, h2, h3, h4, p, a, img:not([hidden] img), li, figure, section');
+		const elements = content(page).locator('h1, h2, h3, h4, p, a, img, li, figure, section');
 		expect(await elements.count()).toBeGreaterThan(0);
 		for (const element of await elements.all()) {
 			await expect(element).toBeVisible();

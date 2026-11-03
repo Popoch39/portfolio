@@ -101,7 +101,8 @@ const layers = paintOrder.map(({ name, opacity, clip, piece, wisp }) => {
 /**
  * The screwing (ADR 0007): the collector's turn as one strip of views stacked top to bottom (`scripts/moka/strip.mjs`),
  * seen one at a time through a window at the box they share. The window is placed like a layer and comes down with
- * the collector, from its own lift and seat. Hidden until the scene shows it: under reduced motion, never downloaded.
+ * the collector, from its own lift and seat. Hidden and its strip left out until the scene puts it in: without
+ * JavaScript or under reduced motion, never downloaded.
  */
 const screwLift = lifts.get('collector');
 if (screwLift === undefined) throw new Error('Montage: no lift for the collector');
@@ -173,16 +174,19 @@ const camera = JSON.stringify(
 								data-seat={screw.seat}
 								hidden
 							>
-								<img
-									src={screwStrip}
-									alt=""
-									width={screw.width}
-									height={screw.height}
-									loading="lazy"
-									decoding="async"
-									style={screw.strip}
-									data-views={screw.views}
-								/>
+								{/* Inert until the scene puts it in: without JavaScript, browsers would load a lazy image anyway. */}
+								<template data-screw-strip>
+									<img
+										src={screwStrip}
+										alt=""
+										width={screw.width}
+										height={screw.height}
+										loading="lazy"
+										decoding="async"
+										style={screw.strip}
+										data-views={screw.views}
+									/>
+								</template>
 							</div>
 						</Fragment>
 					);
@@ -361,10 +365,11 @@ const camera = JSON.stringify(
 		}
 
 		const screw = montage.querySelector<HTMLElement>('[data-screw]');
-		const strip = screw?.querySelector('img');
+		const strip = screw?.querySelector<HTMLTemplateElement>('[data-screw-strip]')?.content.querySelector('img')?.cloneNode();
 		const collector = montage.querySelector<HTMLElement>('[data-layer="collector"]');
 		let approach: IntersectionObserver | undefined;
-		if (screw && strip && collector) {
+		if (screw && strip instanceof HTMLImageElement && collector) {
+			screw.append(strip);
 			screw.hidden = false;
 			const views = Number(strip.dataset.views);
 			const notch = length(TURN) / (views - 2);
@@ -496,6 +501,8 @@ const camera = JSON.stringify(
 			delete montage.dataset.lit;
 			approach?.disconnect();
 			if (screw) screw.hidden = true;
+			// The next run puts in its own copy.
+			if (strip instanceof HTMLImageElement) strip.remove();
 		};
 	});
 </script>

@@ -147,6 +147,19 @@ for (const { name, use } of FINAL_STATE_CONTEXTS) {
 			await expect(montage(page).locator('[data-screw]')).toBeHidden();
 		});
 
+		test('the screwing’s strip is never downloaded', async ({ page }) => {
+			const strips: string[] = [];
+			page.on('request', (request) => {
+				if (/screw.*\.webp/.test(request.url())) strips.push(request.url());
+			});
+			await page.goto('/');
+			await page.locator('#contact').scrollIntoViewIfNeeded();
+			await montage(page).scrollIntoViewIfNeeded();
+			await expect(montage(page).locator('[data-layer="collector"]')).toBeVisible();
+
+			expect(strips).toEqual([]);
+		});
+
 		test('nothing moves in the figure: the steam stands still', async ({ page }) => {
 			await page.goto('/');
 			await montage(page).scrollIntoViewIfNeeded();
@@ -161,24 +174,6 @@ for (const { name, use } of FINAL_STATE_CONTEXTS) {
 		});
 	});
 }
-
-// Without JavaScript, browsers load lazy images as eager ones: only reduced motion can spare the strip.
-test.describe('Café, final state, reduced motion, the screwing', () => {
-	test.use({ reducedMotion: 'reduce' });
-
-	test('the screwing’s strip is never downloaded', async ({ page }) => {
-		const strips: string[] = [];
-		page.on('request', (request) => {
-			if (/screw.*\.webp/.test(request.url())) strips.push(request.url());
-		});
-		await page.goto('/');
-		await page.locator('#contact').scrollIntoViewIfNeeded();
-		await montage(page).scrollIntoViewIfNeeded();
-		await expect(montage(page).locator('[data-layer="collector"]')).toBeVisible();
-
-		expect(strips).toEqual([]);
-	});
-});
 
 /** A point inside each step of the board, as a share of the pinning, and what the counter says there. */
 const STEPS: [number, string][] = [

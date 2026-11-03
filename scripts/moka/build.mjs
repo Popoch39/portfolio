@@ -1093,10 +1093,20 @@ function collectorFrame(theta, lit) {
   const content = collector();
   const frameDefs = `<defs><clipPath id="mk-opening"><path d="${poly(OPENING)}"/></clipPath></defs>`;
   ROT = 0;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WIDTH} ${HEIGHT}" width="${WIDTH}" height="${HEIGHT}">${resolve(frameDefs)}${resolve(content, { lit })}</svg>`;
+  return `${resolve(frameDefs)}${resolve(content, { lit })}`;
 }
-files["screw-start"] = collectorFrame(SCREW.turn, false);
-for (let i = 0; i <= SCREW.frames; i++) files[`screw-${i}`] = collectorFrame(SCREW.turn * (1 - i / SCREW.frames), true);
+files["screw-start"] = fullFrame(collectorFrame(SCREW.turn, false));
+// The views the strip stacks (scripts/moka/strip.mjs), all cropped to the box they share: the strip moves by
+// whole views in a window of that box.
+const views = Array.from({ length: SCREW.frames + 1 }, (_, i) => collectorFrame(SCREW.turn * (1 - i / SCREW.frames), true));
+const screwBox = views.map(boxOf).reduce((a, b) => {
+  const [x, y] = [Math.min(a.x, b.x), Math.min(a.y, b.y)];
+  return { x, y, w: Math.max(a.x + a.w, b.x + b.w) - x, h: Math.max(a.y + a.h, b.y + b.h) - y };
+});
+views.forEach((markup, i) => {
+  const { x, y, w, h } = screwBox;
+  files[`screw-${i}`] = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${w} ${h}" width="${w}" height="${h}">${markup}</svg>`;
+});
 for (const [name, text] of Object.entries(files)) writeFileSync(join(OUT, `${name}.svg`), text);
 
 // What the page needs: each layer's box and each piece's lift as a share of the frame, the basket's clip as a
@@ -1127,6 +1137,7 @@ const moka = {
   fitAtOne: cameraAt(1),
   steamOrigin: [pct(STEAM_FOOT[0], WIDTH), pct(STEAM_FOOT[1], HEIGHT)],
   screwSeat: pct(RISE * SCREW.drop, HEIGHT),
+  screw: { views: views.length, x: pct(screwBox.x, WIDTH), y: pct(screwBox.y, HEIGHT), w: pct(screwBox.w, WIDTH), h: pct(screwBox.h, HEIGHT) },
 };
 writeFileSync(join(ASSETS, "moka.json"), `${JSON.stringify(moka, null, 2)}\n`);
 const kb = (texts) => (texts.reduce((sum, text) => sum + text.length, 0) / 1024).toFixed(0);

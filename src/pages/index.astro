@@ -480,8 +480,11 @@ const jsonLd = JSON.stringify({
 			color 0.2s ease;
 	}
 
-	/* Hover only where a pointer hovers: a tap must not leave the row inverted. */
-	@media (hover: hover) {
+	/*
+	 * Hover only where a pointer hovers: a tap must not leave the row inverted. Under a finger the row
+	 * inverts while pressed, at once like a list cell, and fades back on release.
+	 */
+	@media (hover: hover) and (pointer: fine) {
 		.project:hover {
 			background: var(--color-ink);
 			color: var(--color-paper);
@@ -494,6 +497,20 @@ const jsonLd = JSON.stringify({
 		.project:hover .project-year > [aria-hidden] {
 			color: var(--color-accent);
 		}
+	}
+
+	.project:active {
+		background: var(--color-ink);
+		color: var(--color-paper);
+		transition-duration: 0s;
+	}
+
+	.project:active .dim {
+		color: var(--color-on-ink-muted);
+	}
+
+	.project:active .project-year > [aria-hidden] {
+		color: var(--color-accent);
 	}
 
 	.project-number {
@@ -611,7 +628,15 @@ const jsonLd = JSON.stringify({
 		transition: background-size 0.35s ease;
 	}
 
-	.contact-mail:hover {
+	@media (hover: hover) and (pointer: fine) {
+		.contact-mail:hover {
+			background-size: 100% 0.06em;
+			color: var(--color-ink);
+		}
+	}
+
+	/* Pressed: the underline is drawn, the address keeps its ink (the muted press of links would grey it). */
+	.contact-mail:active {
 		background-size: 100% 0.06em;
 		color: var(--color-ink);
 	}

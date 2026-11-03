@@ -16,6 +16,18 @@ interface Props {
 const { number, titleId } = Astro.props;
 
 const mailto = (subject: string) => `mailto:${person.email}?subject=${encodeURIComponent(subject)}`;
+
+/** What the counter says at each step of the Montage, in order; the last one is the final state's. */
+const steps = [
+	'0/6 · en pièces',
+	'0/6 · la chaudière',
+	'1/6 · l’entonnoir et le café',
+	'2/6 · le filtre',
+	'3/6 · le joint',
+	'4/6 · on visse le collecteur, un tour',
+	'5/6 · le couvercle',
+	'6/6 · sur le feu',
+];
 ---
 
 <section id="cafe" class="cafe" aria-labelledby={titleId} data-cafe>
@@ -32,7 +44,7 @@ const mailto = (subject: string) => `mailto:${person.email}?subject=${encodeURIC
 		<span class="cafe-line"><span data-cafe-line>autour d’un café.</span></span>
 	</h2>
 	{/* Plain text, not a live region: the scene rewrites it at each step without interrupting a screen reader. */}
-	<p class="mono cafe-counter" data-cafe-counter>6/6 · sur le feu</p>
+	<p class="mono cafe-counter" data-cafe-counter data-steps={JSON.stringify(steps)}>{steps.at(-1)}</p>
 	<div class="cafe-progress" aria-hidden="true">
 		<div class="cafe-progress-fill" data-cafe-progress></div>
 	</div>
@@ -41,11 +53,11 @@ const mailto = (subject: string) => `mailto:${person.email}?subject=${encodeURIC
 		<Montage />
 	</div>
 
-	<p class="cafe-text">
+	<p class="cafe-text" data-cafe-text>
 		À {person.city}, ou en visio si vous êtes plus loin. Comme une moka&nbsp;: on assemble les pièces dans l’ordre, sans
 		rien forcer. Et sans engagement&nbsp;: au pire, on aura bu un café.
 	</p>
-	<div class="cafe-actions">
+	<div class="cafe-actions" data-cafe-actions>
 		<a class="button" href={mailto('Un café ?')}>Proposer un café <span class="mono" aria-hidden="true">↵</span></a>
 		<a class="cafe-visio" href={mailto('Une visio ?')}>Plutôt en visio</a>
 	</div>

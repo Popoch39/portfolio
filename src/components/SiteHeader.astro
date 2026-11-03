@@ -22,12 +22,24 @@ const sections = [
 </div>
 
 <style>
+	/* The rule is a pseudo-element rather than a border so that it can be drawn in with `scaleX`. */
 	.site-header {
+		position: relative;
 		row-gap: 8px;
 		align-items: baseline;
-		padding: 22px 0;
-		border-bottom: 1px solid var(--color-ink);
+		padding: 22px 0 23px;
 		font-size: 13px;
+	}
+
+	.site-header::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 1px;
+		background: var(--color-ink);
+		transform-origin: 0 50%;
 	}
 
 	.name {

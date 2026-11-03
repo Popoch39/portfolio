@@ -75,8 +75,8 @@ const jsonLd = JSON.stringify({
 					<span>portfolio · {new Date().getFullYear()}</span>
 				</p>
 				<h1 id="hero-title" class="hero-title">
-					<span>{person.givenName}</span>
-					<span class="hero-last">{person.familyName}<Cursor /></span>
+					<span class="hero-line"><span>{person.givenName}</span></span>
+					<span class="hero-line"><span class="hero-last">{person.familyName}<Cursor /></span></span>
 				</h1>
 				<div class="hero-grid grid-12">
 					<p class="hero-lede">
@@ -223,12 +223,56 @@ const jsonLd = JSON.stringify({
 		text-transform: uppercase;
 	}
 
-	.hero-title > span {
+	/*
+	 * Each line clips its own rise. The padding gives the caps room above the 0.8 line height,
+	 * the negative margin keeps the lines where they were.
+	 */
+	.hero-line {
+		display: block;
+		overflow: hidden;
+		padding-top: 0.06em;
+		margin-top: -0.06em;
+	}
+
+	.hero-line > span {
 		display: block;
 	}
 
 	.hero-last {
 		white-space: nowrap;
+	}
+
+	/*
+	 * Mockup fit on the glyphs' ink, not their boxes: the stems of L and P touch the edge of column 1,
+	 * the N ends on the edge of column 11 and the block cursor fills column 12. Archivo's ink (800,
+	 * 62% wide, -0.015em tracking), measured once in em in Chromium and Firefox alike:
+	 *   - the side bearing left of L and of P: 0.045;
+	 *   - the ink of "POCHERON", from the P's stem to the N's: 3.828;
+	 *   - what is left of the N's box after its ink, tracking included: 0.03 (unused, see the cursor).
+	 * Measured against Archivo itself: change the font, the weight or the tracking, measure them again.
+	 */
+	@media (min-width: 861px) {
+		.hero-title {
+			--column: calc((100cqi + var(--grid-gap)) / 12 - var(--grid-gap));
+			font-size: calc((11 * var(--column) + 10 * var(--grid-gap)) / 3.828);
+			/* Moves the text, not the line boxes: nothing spills out of the column. */
+			text-indent: -0.045em;
+		}
+
+		/*
+		 * The cursor is pushed against the end of the line rather than placed after the N's box:
+		 * Chromium on Linux rounds glyph advances to whole pixels, which would shift it by a pixel or two.
+		 * Baseline alignment keeps it sitting on the baseline, as inline.
+		 */
+		.hero-line > .hero-last {
+			display: flex;
+			align-items: baseline;
+		}
+
+		.hero-last :global(.cursor) {
+			width: var(--column);
+			margin-left: auto;
+		}
 	}
 
 	.hero-grid {

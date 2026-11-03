@@ -36,6 +36,21 @@ test.describe('home page', () => {
 		await expect(page.locator('meta[name="viewport"]')).toHaveAttribute('content', /width=device-width/);
 	});
 
+	test('the title and the description name both sides of the offer: local websites and GIS, in Besançon', async ({
+		page,
+	}) => {
+		await page.goto('/');
+
+		const title = await page.title();
+		expect(title).toMatch(/\bweb\b/i);
+		expect(title).toMatch(/\bSIG\b/);
+		expect(title).toMatch(/Besançon/);
+		const description = await meta(page, 'description');
+		expect(description).toMatch(/site vitrine|sites vitrines/i);
+		expect(description).toMatch(/\bSIG\b|cartographie/i);
+		expect(description).toMatch(/Besançon/);
+	});
+
 	test('Open Graph and Twitter describe the page with a 1200×630 image served by the site', async ({
 		page,
 		request,

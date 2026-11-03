@@ -25,7 +25,7 @@ La couche papier opaque qui couvre la fenêtre pendant l'Intro, au-dessus de la 
 _À éviter_ : overlay, masque.
 
 **Défilement lissé**
-Défilement à la molette et au trackpad interpolé par ScrollSmoother (environ 1 s d'inertie). Jamais au doigt, jamais sous `prefers-reduced-motion: reduce`, jamais sans JS : le défilement reste alors natif.
+Défilement à la molette et au trackpad interpolé par ScrollSmoother (environ 1 s d'inertie). Jamais au doigt, jamais sous `prefers-reduced-motion: reduce`, jamais sans JS : le défilement reste alors natif. Sur un téléphone ou une tablette, il n'existe pas du tout, et les scènes épinglées défilent comme une page native.
 _À éviter_ : smooth scroll (qui désigne aussi `scroll-behavior: smooth`).
 
 **État final**

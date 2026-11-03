@@ -134,6 +134,17 @@ a:focus-visible {
 	}
 }
 
+.button .mono {
+	font-size: 13px;
+	color: var(--color-on-ink-muted);
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.button:hover .mono {
+		color: inherit;
+	}
+}
+
 /* Centred column shared by the header and every section; the marquee alone runs full bleed. */
 .wrap {
 	box-sizing: border-box;

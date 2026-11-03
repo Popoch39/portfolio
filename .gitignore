@@ -1,6 +1,9 @@
 # build output
 dist/
 
+# the moka generator's workshop outputs (scripts/moka/build.mjs)
+scripts/moka/out/
+
 # generated types
 .astro/
 

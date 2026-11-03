@@ -31,6 +31,10 @@ motion.add(MOTION_ALLOWED, () => {
 		smoothTouch: false,
 		onFocusIn: bringFocusIntoView,
 	});
+	// Without smoothing (under a finger), the browser scrolls the page itself, off the main thread on
+	// a phone: a pin held by a transform written each frame trails behind it, the section scrolling
+	// past its place then jumping back. Fixed, it is held by the browser.
+	ScrollTrigger.defaults({ pinType: smoother.smooth() ? 'transform' : 'fixed' });
 	// ScrollTrigger refreshes on its own at `load`, but not when a web font arrives later.
 	pageSettled.then(() => ScrollTrigger.refresh());
 	// Page restored from the back/forward cache: the window may have changed while it was frozen.
@@ -64,6 +68,25 @@ export function registerScene(scene: gsap.ContextFunc) {
 
 // Scenes take GSAP from here, never on their own: a single instance, plugins already registered.
 export { gsap, ScrollSmoother, ScrollTrigger };
+
+/**
+ * The mockups' CSS easing curves, kept as they are: GSAP only knows them through CustomEase, a plugin
+ * the animation base does not load for a few curves.
+ */
+export function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
+	const along = (p1: number, p2: number, t: number) => 3 * (1 - t) ** 2 * t * p1 + 3 * (1 - t) * t ** 2 * p2 + t ** 3;
+	return (progress: number) => {
+		// The x curve rises from 0 to 1 when x1 and x2 lie in [0, 1]: a bisection always finds t.
+		let low = 0;
+		let high = 1;
+		for (let step = 0; step < 20; step++) {
+			const middle = (low + high) / 2;
+			if (along(x1, x2, middle) < progress) low = middle;
+			else high = middle;
+		}
+		return along(y1, y2, (low + high) / 2);
+	};
+}
 
 /**
  * Brings in-page anchors through the smoother; returns a way to detach when the context is reverted.

@@ -1,5 +1,6 @@
 ---
 import Atome from '../components/Atome.astro';
+import Cafe from '../components/Cafe.astro';
 import Cursor from '../components/Cursor.astro';
 import Frise from '../components/Frise.astro';
 import Intro from '../components/Intro.astro';
@@ -168,10 +169,15 @@ const jsonLd = JSON.stringify({
 						>
 					</p>
 				</section>
+			</div>
 
+			{/* Out of the column: the moka's zoomed stack runs past it, clipped by the figure. */}
+			<Cafe number={4} titleId="cafe-title" />
+
+			<div class="wrap">
 				<section id="contact" class="contact-section" aria-labelledby="contact-title">
 					<div class="contact grid-12">
-						<SectionNumber number={4} />
+						<SectionNumber number={5} />
 						<div class="contact-body">
 							<h2 id="contact-title" class="visually-hidden">Contact</h2>
 							<p class="contact-wq" aria-hidden="true">:wq</p>
@@ -379,17 +385,6 @@ const jsonLd = JSON.stringify({
 		flex-direction: column;
 		align-items: flex-start;
 		gap: 12px;
-	}
-
-	.button .mono {
-		font-size: 13px;
-		color: var(--color-on-ink-muted);
-	}
-
-	@media (hover: hover) and (pointer: fine) {
-		.button:hover .mono {
-			color: inherit;
-		}
 	}
 
 	.hero-github {

@@ -107,6 +107,16 @@ test.describe('Frise under a finger, scrolling', () => {
 		expect(Math.abs(await topOnceStill(friseSection(page)))).toBeLessThanOrEqual(1);
 	});
 
+	// A phone scrolls under the finger off the main thread: a pin rewritten by script each frame
+	// trails behind (the section scrolls past its place, then jumps back), a fixed one does not.
+	// Headless Chromium scrolls in step with the script, so only the means of pinning can be checked.
+	test('the pinned section is held by the browser, not by a transform written each frame', async ({ page }) => {
+		await page.goto('/');
+		await scrollToScene(page, await sceneStart(page), 0.5);
+
+		await expect(friseSection(page)).toHaveCSS('position', 'fixed');
+	});
+
 	test('no jump when the pinning starts nor when it ends', async ({ page }) => {
 		await page.goto('/');
 		const start = await sceneStart(page);

@@ -55,7 +55,7 @@ export interface Layout {
 	gutter: number;
 	/** Bottom edge of the header: its 1 px rule is the last row above it. */
 	headerBottom: number;
-	/** The lede's block cursor, which the point becomes. */
+	/** The title's block cursor, which the point becomes. */
 	cursor: Box;
 	/** The header coordinates, where the label lands; `null` when they are hidden (phones). */
 	meta: { x: number; y: number } | null;

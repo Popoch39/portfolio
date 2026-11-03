@@ -17,12 +17,7 @@ const first = lede.versions[0];
 		<span data-buffer
 			>{
 				runs(lede, restingOn(lede, 0)).map(({ text, kind }) =>
-					kind === 'text' ? (
-						text
-					) : (
-						// The Intro's point becomes this block: it shows once the point has landed.
-						<span data-kind={kind} data-intro={kind === 'block' ? 'late' : undefined}>{text}</span>
-					),
+					kind === 'text' ? text : <span data-kind={kind}>{text}</span>,
 				)
 			}</span
 		>

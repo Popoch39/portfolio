@@ -31,26 +31,31 @@ const steps = [
 ---
 
 <section id="cafe" class="cafe" aria-labelledby={titleId} data-cafe>
-	<div class="cafe-head">
-		<SectionNumber number={number} />
-		<p class="mono cafe-aside">on monte, puis on en parle</p>
-	</div>
-	<div class="cafe-rule" aria-hidden="true" data-cafe-rule></div>
+	{/* What the pinning holds on screen when stacked; in two columns, the paragraph and the actions join it. */}
+	<div class="cafe-screen">
+		<div class="cafe-head">
+			<SectionNumber number={number} />
+			<p class="mono cafe-aside">on monte, puis on en parle</p>
+		</div>
+		<div class="cafe-rule" aria-hidden="true" data-cafe-rule></div>
 
-	{/* Each line clips its own rise. */}
-	<h2 id={titleId} class="cafe-title">
-		<span class="cafe-line"><span data-cafe-line>Parlons de</span></span>
-		<span class="cafe-line"><span data-cafe-line>votre projet</span></span>
-		<span class="cafe-line"><span data-cafe-line>autour d’un café.</span></span>
-	</h2>
-	{/* Plain text, not a live region: the scene rewrites it at each step without interrupting a screen reader. */}
-	<p class="mono cafe-counter" data-cafe-counter data-steps={JSON.stringify(steps)}>{steps.at(-1)}</p>
-	<div class="cafe-progress" aria-hidden="true">
-		<div class="cafe-progress-fill" data-cafe-progress></div>
-	</div>
+		{/* Each line clips its own rise. */}
+		<h2 id={titleId} class="cafe-title">
+			<span class="cafe-line"><span data-cafe-line>Parlons de</span></span>
+			<span class="cafe-line"><span data-cafe-line>votre projet</span></span>
+			<span class="cafe-line"><span data-cafe-line>autour d’un café.</span></span>
+		</h2>
+		{/* Plain text, not a live region: the scene rewrites it at each step without interrupting a screen reader. */}
+		<p class="mono cafe-counter" data-cafe-counter data-steps={JSON.stringify(steps)}>{steps.at(-1)}</p>
+		<div class="cafe-progress" aria-hidden="true">
+			<div class="cafe-progress-fill" data-cafe-progress></div>
+		</div>
 
-	<div class="cafe-figure">
-		<Montage />
+		<div class="cafe-figure">
+			<div class="cafe-moka">
+				<Montage />
+			</div>
+		</div>
 	</div>
 
 	<p class="cafe-text" data-cafe-text>
@@ -65,18 +70,24 @@ const steps = [
 
 <style>
 	/*
-	 * One screen above the statusline, as on the board (1280×770): the text on the left, the moka on the right.
-	 * Below 861px, everything in one column, the moka under the progress rule.
+	 * Stacked, the default: the screen the pinning holds is the window above the statusline, `svh` so that the
+	 * mobile address bar coming and going changes nothing. The title, the counter and the rule on top, scaled
+	 * on the screen's height too so that a phone on its side keeps room for the moka, which takes the rest.
+	 * The paragraph and the actions follow the screen.
 	 */
 	.cafe {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-		align-content: start;
 		box-sizing: border-box;
 		max-width: var(--page-max-width);
-		min-height: calc(100svh - var(--statusline-height));
 		margin: clamp(64px, 8vw, 120px) auto 0;
-		padding: 24px var(--page-gutter) 0;
+		padding: 0 var(--page-gutter);
+	}
+
+	.cafe-screen {
+		display: flex;
+		flex-direction: column;
+		box-sizing: border-box;
+		height: calc(100svh - var(--statusline-height));
+		padding: min(24px, 3svh) 0 16px;
 	}
 
 	.cafe-head {
@@ -93,15 +104,16 @@ const steps = [
 	}
 
 	.cafe-rule {
+		flex: none;
 		height: 1px;
-		margin-top: 14.5px;
+		margin-top: min(14.5px, 1.5svh);
 		background: var(--color-ink);
 		transform-origin: 0 50%;
 	}
 
 	.cafe-title {
-		margin: 53px 0 0;
-		font-size: clamp(36px, 12vw, 80px);
+		margin: min(53px, 4svh) 0 0;
+		font-size: clamp(28px, min(12vw, 7svh), 80px);
 		line-height: 0.84;
 		font-weight: 900;
 		font-stretch: 62%;
@@ -122,13 +134,14 @@ const steps = [
 	}
 
 	.cafe-counter {
-		margin: 30px 0 0;
+		margin: min(30px, 3svh) 0 0;
 		font-size: 13px;
 		color: var(--color-ink-muted);
 	}
 
 	.cafe-progress {
 		position: relative;
+		flex: none;
 		max-width: 500px;
 		height: 1px;
 		margin-top: 10px;
@@ -142,11 +155,18 @@ const steps = [
 		transform-origin: 0 50%;
 	}
 
+	/* The room left on the screen, which the moka fits whole, never cut, whatever the window's proportions. */
 	.cafe-figure {
-		justify-self: center;
-		width: min(100%, 444px);
+		flex: 1 1 0;
+		min-height: 0;
+		margin-top: min(24px, 3svh);
+		container-type: size;
+	}
+
+	.cafe-moka {
+		width: min(100cqw, 100cqh * 600 / 1000);
 		aspect-ratio: 600 / 1000;
-		margin-top: 24px;
+		margin: 0 auto;
 	}
 
 	.cafe-text {
@@ -174,61 +194,80 @@ const steps = [
 	}
 
 	/*
-	 * Two columns: the text in the board's 560px, the figure beside it, as tall as the screen minus the board's
-	 * 30px of margins (740px for 770), up from beside the section number.
+	 * Two columns, the board's layout (1280×770 above the statusline, 52px margins: 1176×770) at the scale `--u`
+	 * that fits it in the screen's height and the page column's width, the text on the left and the moka beside it.
+	 * The text keeps a readable size (16px at least), so a low window cannot hold the column: below the height
+	 * threshold, stacked. Measured on the build, 861 to 2560 wide: the column ends inside the frame from 464px of
+	 * window in Chromium, 472px in Firefox; lower, the actions wrap onto two rows and run under the statusline.
+	 * At 520px, 55px are left: the 14px the actions rise from and one more line of paragraph (23px) if the text
+	 * wraps otherwise. It keeps every phone on its side (430px tall at most) stacked. Keep the query in step with
+	 * the scene's (Montage.astro).
 	 */
-	@media (min-width: 861px) {
+	@media (min-width: 861px) and (min-height: 520px) {
+		/*
+		 * `cqi` resolves against the section in its descendants only: the scale is used there, never on it.
+		 * The board's height at scale, then divided: Firefox loses precision on a length divided inside `min()`.
+		 */
 		.cafe {
-			grid-template-columns: minmax(0, 560px) minmax(0, 1fr);
-			grid-template-rows: repeat(7, auto) 1fr;
-			column-gap: 44px;
+			--u: calc(min(100svh - var(--statusline-height), 100cqi * 770 / 1176) / 770);
+			position: relative;
+			min-height: calc(100svh - var(--statusline-height));
+			container-type: inline-size;
 		}
 
-		/* Under the figure, which runs up beside them. */
+		/* The text column flows in the section; the figure is placed beside it as on the board. */
+		.cafe-screen {
+			display: contents;
+		}
+
 		.cafe-head {
-			grid-area: 1 / 1 / 2 / -1;
+			padding-top: calc(24 * var(--u));
 		}
 
 		.cafe-rule {
-			grid-area: 2 / 1 / 3 / -1;
+			margin-top: calc(14.5 * var(--u));
 		}
 
 		.cafe-title,
 		.cafe-counter,
-		.cafe-progress,
 		.cafe-text,
 		.cafe-actions {
-			grid-column: 1;
-		}
-
-		.cafe-figure {
-			grid-column: 2;
-			grid-row: 1 / -1;
-			align-self: start;
-			width: min(100%, (100svh - var(--statusline-height) - 30px) * 0.6);
-			margin-top: -6px;
-			/* It runs up beside the aside, which stays selectable through its empty top. */
-			pointer-events: none;
+			max-width: calc(560 * var(--u));
 		}
 
 		.cafe-title {
-			grid-row: 3;
+			margin-top: calc(53 * var(--u));
+			font-size: calc(80 * var(--u));
 		}
 
 		.cafe-counter {
-			grid-row: 4;
+			margin-top: calc(30 * var(--u));
 		}
 
 		.cafe-progress {
-			grid-row: 5;
+			max-width: calc(500 * var(--u));
+			margin-top: calc(10 * var(--u));
 		}
 
 		.cafe-text {
-			grid-row: 6;
+			margin-top: calc(34 * var(--u));
+			font-size: max(16px, 19 * var(--u));
 		}
 
 		.cafe-actions {
-			grid-row: 7;
+			margin-top: calc(30 * var(--u));
+		}
+
+		/* The board's 444×740 at 668px into the column and 18px from its top: up beside the section number. */
+		.cafe-figure {
+			position: absolute;
+			top: calc(18 * var(--u));
+			left: calc(var(--page-gutter) + 668 * var(--u));
+			width: calc(444 * var(--u));
+			height: calc(740 * var(--u));
+			margin: 0;
+			/* It runs up beside the aside, which stays selectable through its empty top. */
+			pointer-events: none;
 		}
 	}
 </style>

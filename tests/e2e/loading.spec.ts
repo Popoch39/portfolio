@@ -1,4 +1,4 @@
-import { expect, test, type Response } from '@playwright/test';
+import { expect, test, type Response } from './fixtures';
 
 // Error message from the GSAP core: it survives minification and exists only once in the library.
 const GSAP_FINGERPRINT = 'GSAP target ';

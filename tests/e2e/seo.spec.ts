@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 
 const meta = (page: Page, key: string) =>
 	page.locator(`meta[name="${key}"], meta[property="${key}"]`).getAttribute('content');

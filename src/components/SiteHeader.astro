@@ -11,11 +11,11 @@ const sections = [
 ---
 
 <div class="wrap">
-	<header class="site-header grid-12">
-		<a class="name" href="/#top">{person.name}</a>
-		<p class="mono meta">{person.jobTitle}</p>
-		<p class="mono meta">{person.city} — {person.coordinates}</p>
-		<nav aria-label="Sections">
+	<header class="site-header grid-12" data-intro="rule">
+		<a class="name" href="/#top" data-intro="name">{person.name}</a>
+		<p class="mono meta" data-intro="role">{person.jobTitle}</p>
+		<p class="mono meta" data-intro="late">{person.city} — {person.coordinates}</p>
+		<nav aria-label="Sections" data-intro="nav">
 			{sections.map((section) => <a href={section.href}>{section.label}</a>)}
 		</nav>
 	</header>
@@ -40,6 +40,8 @@ const sections = [
 		height: 1px;
 		background: var(--color-ink);
 		transform-origin: 0 50%;
+		/* Set by the Intro while it draws the rule. */
+		transform: scaleX(var(--rule-scale, 1));
 	}
 
 	.name {

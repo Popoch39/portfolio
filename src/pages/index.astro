@@ -2,6 +2,8 @@
 import Atome from '../components/Atome.astro';
 import Cursor from '../components/Cursor.astro';
 import Frise from '../components/Frise.astro';
+import Intro from '../components/Intro.astro';
+import IntroTrigger from '../components/IntroTrigger.astro';
 import SectionHeading from '../components/SectionHeading.astro';
 import SectionNumber from '../components/SectionNumber.astro';
 import Layout from '../layouts/Layout.astro';
@@ -66,24 +68,26 @@ const jsonLd = JSON.stringify({
 
 <Layout title={title} description={description}>
 	<script slot="head" type="application/ld+json" set:html={jsonLd} />
+	<IntroTrigger slot="head" />
+	<Intro slot="overlay" />
 
 	<main>
 		<div class="wrap">
 			<section class="hero" aria-labelledby="hero-title">
-				<p class="mono hero-status">
+				<p class="mono hero-status" data-intro="status">
 					<span class="hero-mode">-- NORMAL --</span>
 					<span>portfolio · {new Date().getFullYear()}</span>
 				</p>
 				<h1 id="hero-title" class="hero-title">
-					<span class="hero-line"><span>{person.givenName}</span></span>
-					<span class="hero-line"><span class="hero-last">{person.familyName}<Cursor /></span></span>
+					<span class="hero-line"><span data-intro="line">{person.givenName}</span></span>
+					<span class="hero-line"><span class="hero-last" data-intro="line">{person.familyName}<Cursor data-intro="late" /></span></span>
 				</h1>
 				<div class="hero-grid grid-12">
-					<p class="hero-lede">
+					<p class="hero-lede" data-intro="lede">
 						Je construis la plomberie derrière les cartes — serveurs de tuiles, caches, nuages de points —
 						et les interfaces <em>React</em> qui vont dessus.
 					</p>
-					<dl class="hero-facts">
+					<dl class="hero-facts" data-intro="facts">
 						<div>
 							<dt class="mono">Rôle</dt>
 							<dd>{profile.role}</dd>
@@ -97,7 +101,7 @@ const jsonLd = JSON.stringify({
 							<dd>{profile.today}</dd>
 						</div>
 					</dl>
-					<div class="hero-actions">
+					<div class="hero-actions" data-intro="actions">
 						<a class="button" href={mailto}
 							>Écrire<span class="visually-hidden"> un e-mail</span>
 							<span class="mono" aria-hidden="true">:wq</span></a

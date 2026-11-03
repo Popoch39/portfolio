@@ -63,7 +63,7 @@ export function registerScene(scene: gsap.ContextFunc) {
 }
 
 // Scenes take GSAP from here, never on their own: a single instance, plugins already registered.
-export { gsap, ScrollTrigger };
+export { gsap, ScrollSmoother, ScrollTrigger };
 
 /**
  * Brings in-page anchors through the smoother; returns a way to detach when the context is reverted.

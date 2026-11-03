@@ -82,6 +82,8 @@ const ogImageAlt = `${person.name}, ${person.jobTitle.toLowerCase()} — portfol
 			</div>
 		</div>
 		<Statusline />
+		{/* Fixed layers over the whole window (the home page's Intro), above the statusline. */}
+		<slot name="overlay" />
 		<script>
 			import '../animation/base';
 		</script>

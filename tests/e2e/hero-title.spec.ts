@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 // From the first desktop width to past the page's max width, where the grid is centred.
 const VIEWPORTS = [

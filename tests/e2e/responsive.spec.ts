@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { scrolledToBottom, statusline, topOnceStill } from './helpers';
 
 // From the small phone to the 1440p screen, through the grid breakpoints.

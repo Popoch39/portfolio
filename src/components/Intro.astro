@@ -1,0 +1,28 @@
+---
+/**
+ * The Intro's veil (ADR 0005): an opaque paper layer over the window, while the page underneath is
+ * already painted at its final state. Shown only when the inline trigger has set the `intro` class
+ * on `<html>`: without JS, or when the Intro does not play, it does not exist.
+ */
+---
+
+<div id="veil" class="veil" aria-hidden="true" data-nosnippet></div>
+
+<script>
+	import '../intro/scene';
+</script>
+
+<style>
+	.veil {
+		display: none;
+		position: fixed;
+		inset: 0;
+		/* Above the statusline. */
+		z-index: 2;
+		background: var(--color-paper);
+	}
+
+	:global(html.intro) .veil {
+		display: block;
+	}
+</style>

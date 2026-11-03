@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 // Variable Archivo, its italic and Fragment Mono, subsets included (ADR 0002).
 const FONT_BUDGET = 90 * 1024;

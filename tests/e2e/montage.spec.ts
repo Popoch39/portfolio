@@ -75,7 +75,7 @@ for (const { name, use } of FINAL_STATE_CONTEXTS) {
 			const paragraph = section(page).getByText(/^À Besançon, ou en visio si vous êtes plus loin\./);
 			await expect(paragraph).toBeVisible();
 			await expect(paragraph).toHaveText(
-				'À Besançon, ou en visio si vous êtes plus loin. Comme une moka : on assemble les pièces dans l’ordre, sans rien forcer. Et sans engagement : au pire, on aura bu un café.',
+				'À Besançon, ou en visio si vous êtes plus loin. Comme un moka : on assemble les pièces dans l’ordre, sans rien forcer. Et sans engagement : au pire, on aura bu un café.',
 			);
 			const coffee = section(page).getByRole('link', { name: 'Proposer un café', exact: true });
 			const visio = section(page).getByRole('link', { name: 'Plutôt en visio', exact: true });
@@ -92,7 +92,7 @@ for (const { name, use } of FINAL_STATE_CONTEXTS) {
 
 			await expect(section(page).getByRole('img')).toHaveCount(1);
 			await expect(montage(page)).toHaveAccessibleName(
-				'Une Moka Express en pièces au-dessus d’un réchaud, que le défilement remonte pièce par pièce avant d’allumer le feu.',
+				'Un Moka Express en pièces au-dessus d’un réchaud, que le défilement remonte pièce par pièce avant d’allumer le feu.',
 			);
 			const layers = montage(page).locator('img');
 			expect(await layers.count()).toBeGreaterThan(0);

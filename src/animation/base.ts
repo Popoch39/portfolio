@@ -10,7 +10,12 @@ gsap.registerPlugin(ScrollTrigger, ScrollSmoother);
 
 // Everything that moves lives in this context: nothing is created under `reduce`, and everything
 // is reverted (inline styles included) as soon as the preference flips, without a reload.
-const MOTION_ALLOWED = '(prefers-reduced-motion: no-preference)';
+// The pointer is a condition of the scenes too: the smoother changes their default scroller, so they
+// are rebuilt when it comes or goes.
+const CONDITIONS = {
+	motionAllowed: '(prefers-reduced-motion: no-preference)',
+	finePointer: '(pointer: fine)',
+};
 const motion = gsap.matchMedia();
 
 const pageLoaded = new Promise((resolve) => {
@@ -20,19 +25,8 @@ const pageLoaded = new Promise((resolve) => {
 // Fonts and images have taken their place: scene thresholds and anchor positions will not move any more.
 const pageSettled = Promise.all([document.fonts.ready, pageLoaded]);
 
-motion.add(MOTION_ALLOWED, () => {
-	const smoother = ScrollSmoother.create({
-		wrapper: '#smooth-wrapper',
-		content: '#smooth-content',
-		smooth: 1,
-		// Under a finger, native scrolling stays under the finger: smoothing would make the page lag.
-		smoothTouch: false,
-		onFocusIn: bringFocusIntoView,
-	});
-	// Without smoothing (under a finger), the browser scrolls the page itself, off the main thread on
-	// a phone: a pin held by a transform written each frame trails behind it, the section scrolling
-	// past its place then jumping back. Fixed, it is held by the browser.
-	ScrollTrigger.defaults({ pinType: smoother.smooth() ? 'transform' : 'fixed' });
+motion.add(CONDITIONS, ({ conditions }) => {
+	if (!conditions?.motionAllowed) return;
 	// ScrollTrigger refreshes on its own at `load`, but not when a web font arrives later. Fonts already
 	// in by then were measured by that refresh: another one would follow it in the same task, doubling
 	// the longest task of the load.
@@ -44,15 +38,29 @@ motion.add(MOTION_ALLOWED, () => {
 		if (event.persisted) ScrollTrigger.refresh();
 	};
 	addEventListener('pageshow', onCacheRestore);
-	const releaseAnchors = followAnchors(smoother);
+	// No smoother without a mouse or a trackpad, not even an idle one: it would make its wrapper the
+	// scroller, and pins on it are transforms set by script a frame behind the compositor's scroll
+	// (on iOS the section jumps and the fling dies). On the window, the browser holds them `fixed`.
+	const releaseAnchors = conditions.finePointer ? followAnchors(createSmoother()) : undefined;
 	return () => {
 		removeEventListener('pageshow', onCacheRestore);
-		releaseAnchors();
+		releaseAnchors?.();
 	};
 });
 
+function createSmoother() {
+	return ScrollSmoother.create({
+		wrapper: '#smooth-wrapper',
+		content: '#smooth-content',
+		smooth: 1,
+		// A touchscreen on a computer with a mouse: native scrolling stays under the finger.
+		smoothTouch: false,
+		onFocusIn: bringFocusIntoView,
+	});
+}
+
 // Outside the context: the landing anchor only matters at load, a preference flip later on must
-// not bring the page back to it. Without a smoother (reduced motion), the browser handles it.
+// not bring the page back to it. Without a smoother (reduced motion, no fine pointer), the browser handles it.
 // It runs after ScrollTrigger's own refresh at `load`, and after a late font's refresh: that one
 // waits on `fonts.ready` directly, this one on a promise `fonts.ready` resolves.
 pageSettled.then(() => {
@@ -66,7 +74,7 @@ pageSettled.then(() => {
  * HTML/CSS render the final state: the scene animates towards it (`from()` / `fromTo()`).
  */
 export function registerScene(scene: gsap.ContextFunc) {
-	motion.add(MOTION_ALLOWED, scene);
+	motion.add(CONDITIONS, (context, contextSafe) => (context.conditions?.motionAllowed ? scene(context, contextSafe) : undefined));
 }
 
 // Scenes take GSAP from here, never on their own: a single instance, plugins already registered.

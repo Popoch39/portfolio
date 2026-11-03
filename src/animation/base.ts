@@ -66,6 +66,25 @@ export function registerScene(scene: gsap.ContextFunc) {
 export { gsap, ScrollSmoother, ScrollTrigger };
 
 /**
+ * The mockups' CSS easing curves, kept as they are: GSAP only knows them through CustomEase, a plugin
+ * the animation base does not load for a few curves.
+ */
+export function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
+	const along = (p1: number, p2: number, t: number) => 3 * (1 - t) ** 2 * t * p1 + 3 * (1 - t) * t ** 2 * p2 + t ** 3;
+	return (progress: number) => {
+		// The x curve rises from 0 to 1 when x1 and x2 lie in [0, 1]: a bisection always finds t.
+		let low = 0;
+		let high = 1;
+		for (let step = 0; step < 20; step++) {
+			const middle = (low + high) / 2;
+			if (along(x1, x2, middle) < progress) low = middle;
+			else high = middle;
+		}
+		return along(y1, y2, (low + high) / 2);
+	};
+}
+
+/**
  * Brings in-page anchors through the smoother; returns a way to detach when the context is reverted.
  * Native navigation carries on (URL, `:target`, focus starting point); only the scrolling changes hands.
  */

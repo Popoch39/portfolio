@@ -226,7 +226,7 @@ const frame = [
 </div>
 
 <script>
-	import { gsap, registerScene, ScrollTrigger } from '../animation/base';
+	import { cubicBezier, gsap, registerScene, ScrollTrigger } from '../animation/base';
 
 	type Pose = { y: number; heading: number; tilt: number; spin: number; scale: number };
 	type Choreography = {
@@ -236,25 +236,6 @@ const frame = [
 		poses: Pose[];
 		pastilles: [number, number][];
 	};
-
-	/**
-	 * The mockup's CSS easing curves, kept as they are: GSAP only knows them through CustomEase, a plugin
-	 * the animation base does not load for this one scene.
-	 */
-	function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
-		const along = (p1: number, p2: number, t: number) => 3 * (1 - t) ** 2 * t * p1 + 3 * (1 - t) * t ** 2 * p2 + t ** 3;
-		return (progress: number) => {
-			// The x curve rises from 0 to 1 when x1 and x2 lie in [0, 1]: a bisection always finds t.
-			let low = 0;
-			let high = 1;
-			for (let step = 0; step < 20; step++) {
-				const middle = (low + high) / 2;
-				if (along(x1, x2, middle) < progress) low = middle;
-				else high = middle;
-			}
-			return along(y1, y2, (low + high) / 2);
-		};
-	}
 
 	/** Where each pose sits in a bague's own stretch of the scene: target, gyroscope, atom, drift, flat, tower. */
 	const POSE_AT = [0, 0.28, 0.58, 0.7, 0.85, 1];

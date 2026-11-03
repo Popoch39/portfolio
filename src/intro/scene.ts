@@ -7,7 +7,7 @@
 import { gsap, registerScene, ScrollSmoother } from '../animation/base';
 import { globeCanvas } from './canvas';
 import { cubicBezier } from './ease';
-import { decimal, type Layout } from './globe';
+import { decimal, fitColumns, type Layout } from './globe';
 import {
 	BOIL,
 	END,
@@ -26,8 +26,6 @@ import {
 const reveal = cubicBezier(...REVEAL_EASE);
 
 const PLAYING = 'intro';
-/** Columns the strips land on. */
-const COLUMNS = 12;
 /** Base width of the HUD's scale bar, px (`Intro.astro`). */
 const SCALE_BAR = 100;
 
@@ -55,16 +53,22 @@ registerScene(() => {
 		const line = cursor.closest<HTMLElement>('[data-intro="line"]');
 		const rising = line ? new DOMMatrixReadOnly(getComputedStyle(line).transform).m42 : 0;
 		const coordinates = meta.getBoundingClientRect();
+		const view = { width: over.clientWidth, height: over.clientHeight };
+		const { columns, gutter } = fitColumns(view, {
+			width: grid.width,
+			gutter: Number.parseFloat(getComputedStyle(header).columnGap) || 0,
+		});
 		return {
-			width: over.clientWidth,
-			height: over.clientHeight,
-			columns: COLUMNS,
+			...view,
+			columns,
 			gridLeft: grid.left,
 			gridWidth: grid.width,
-			gutter: Number.parseFloat(getComputedStyle(header).columnGap) || 0,
+			gutter,
 			headerBottom: grid.bottom,
 			cursor: { x: point.left, y: point.top - rising, w: point.width, h: point.height },
-			meta: { x: coordinates.left, y: coordinates.top },
+			// Hidden on phones: no box.
+			meta: coordinates.width ? { x: coordinates.left, y: coordinates.top } : null,
+			labelWidth: label.offsetWidth,
 		};
 	}
 	const relayout = () => {
@@ -86,6 +90,7 @@ registerScene(() => {
 	};
 	let boilStep = -1;
 	let scaled = Number.NaN;
+	let labelOpacity = Number.NaN;
 	const clock = { t: 0 };
 	let skipping = false;
 	function render() {
@@ -93,6 +98,10 @@ registerScene(() => {
 		const { t } = clock;
 		const frame = painter.draw(t, layout);
 		label.style.transform = `translate(${frame.label.x}px, ${frame.label.y}px)`;
+		if (frame.label.opacity !== labelOpacity) {
+			labelOpacity = frame.label.opacity;
+			label.style.opacity = String(labelOpacity);
+		}
 		const { phase, gore, lat, lon, goreWidth, gutter } = frame.hud;
 		const values = [phase, gore, lat, lon, `fuseau ${decimal(goreWidth)} px · gouttière ${decimal(gutter)} px`];
 		texts.forEach((node, i) => write(node, values[i]));
@@ -115,8 +124,7 @@ registerScene(() => {
 	timeline
 		.to(hud, { opacity: 1, duration: HUD.in.duration, ease: 'none' }, HUD.in.start)
 		.to(hud, { opacity: 0, duration: HUD.out.duration, ease: 'none' }, HUD.out.start)
-		.to(labelText, { opacity: 1, duration: POINT.label.duration, ease: 'none' }, POINT.label.start)
-		.to(label, { opacity: 0, duration: POINT.handOver.duration, ease: 'none' }, POINT.handOver.start);
+		.to(labelText, { opacity: 1, duration: POINT.label.duration, ease: 'none' }, POINT.label.start);
 
 	// The hero is painted at its final state under the veil (it is the LCP): the reveals' starting
 	// states are only set when the veil lifts, never before.
@@ -202,6 +210,7 @@ registerScene(() => {
 		fade?.revert();
 		timeline.revert();
 		for (const node of [label, grain, tick, bar]) node.style.removeProperty('transform');
+		label.style.removeProperty('opacity');
 		// Releases the bitmap.
 		canvas.width = canvas.height = 0;
 	}

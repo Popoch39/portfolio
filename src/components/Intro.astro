@@ -197,6 +197,40 @@ import { person } from '../data/profile';
 		right: 0;
 	}
 
+	/* Phones, upright or on their side: smaller HUD, the scale under the centre of the projection. */
+	@media (max-width: 860px), (max-height: 500px) {
+		.label {
+			font-size: 11px;
+		}
+
+		.hud {
+			font-size: 10px;
+		}
+
+		.hud-phase,
+		.hud-gore {
+			top: 16px;
+		}
+
+		.hud-gore {
+			gap: 6px;
+		}
+
+		.hud-centre {
+			bottom: 64px;
+			font-size: 40px;
+		}
+
+		.hud small {
+			margin-bottom: 6px;
+			font-size: 10px;
+		}
+
+		.hud-scale {
+			bottom: 24px;
+		}
+	}
+
 	.grain-layer {
 		position: absolute;
 		inset: 0;

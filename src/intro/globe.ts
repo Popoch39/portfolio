@@ -24,6 +24,8 @@ const INK = [17, 17, 16];
 const ACCENT = [36, 51, 255];
 /** The point's size before it grows into the cursor, px. */
 const POINT_SIZE = 14;
+/** Where the label sits from the point's centre, px: right of it, or under it. */
+const LABEL_OFFSET = { x: 20, y: -10, below: 16 };
 
 const limbEase = cubicBezier(0.65, 0, 0.35, 1);
 const popEase = cubicBezier(0.34, 1.56, 0.64, 1);
@@ -49,8 +51,44 @@ export interface Layout {
 	headerBottom: number;
 	/** The title's block cursor, which the point becomes. */
 	cursor: Box;
-	/** The header coordinates, where the label lands. */
-	meta: { x: number; y: number };
+	/** The header coordinates, where the label lands; `null` when they are hidden (phones). */
+	meta: { x: number; y: number } | null;
+	/** Width of the Besançon label. */
+	labelWidth: number;
+}
+
+/** Column counts tried for the strips, in order: on desktop, then below this width. */
+const COLUMN_CHOICES = { desktop: [12, 6, 4], narrow: [4, 6, 12] };
+export const NARROW_BELOW = 861;
+/** The globe's diameter fits in this share of the window's height. */
+const GLOBE_HEIGHT = 0.8;
+/** A gutter takes at most this share of a pitch: the grid's own (24 px) at 1280 px and above. */
+const GUTTER_SHARE = 0.24;
+
+/**
+ * How many strips the page width holds, and the gutter between them: the first column count whose
+ * globe (twelve pitches round) fits in the window's height, or the smallest globe when none does.
+ */
+export function fitColumns(
+	window: { width: number; height: number },
+	grid: { width: number; gutter: number },
+): { columns: number; gutter: number } {
+	const choices = window.width < NARROW_BELOW ? COLUMN_CHOICES.narrow : COLUMN_CHOICES.desktop;
+	const fits = (columns: number) => {
+		let pitch = (grid.width + grid.gutter) / columns;
+		let gutter = grid.gutter;
+		// A small pitch keeps the grid's proportion between strip and gutter.
+		if (gutter > GUTTER_SHARE * pitch) {
+			pitch = grid.width / (columns - GUTTER_SHARE);
+			gutter = GUTTER_SHARE * pitch;
+		}
+		return { columns, gutter, diameter: (12 * pitch) / Math.PI };
+	};
+	const tried = choices.map(fits);
+	const chosen =
+		tried.find(({ diameter }) => diameter <= GLOBE_HEIGHT * window.height) ??
+		tried.reduce((small, next) => (next.diameter < small.diameter ? next : small));
+	return { columns: chosen.columns, gutter: chosen.gutter };
 }
 
 /** The subset of `CanvasPath` the geometry draws with (a `Path2D` fits). */
@@ -103,8 +141,8 @@ export interface Frame {
 		opacity: number;
 		ripples: { scale: number; opacity: number }[];
 	};
-	/** Top-left corner of the label. */
-	label: { x: number; y: number };
+	/** Top-left corner of the label, and its opacity once it has faded in. */
+	label: { x: number; y: number; opacity: number };
 	hud: { phase: string; gore: string; lat: string; lon: string; goreWidth: number; gutter: number };
 }
 
@@ -335,6 +373,12 @@ export function globe(t: number, layout: Layout, pens: Pens): Frame {
 	const pw = POINT_SIZE + (cursor.w - POINT_SIZE) * gr;
 	const ph = POINT_SIZE + (cursor.h - POINT_SIZE) * gr;
 	const handOver = 1 - phase(t, POINT.handOver);
+	// The label reads right of the point; where the grid ends too soon for it, under the point.
+	const room = layout.gridLeft + layout.gridWidth - layout.labelWidth;
+	const aside =
+		city[0] + LABEL_OFFSET.x <= room
+			? [city[0] + LABEL_OFFSET.x, city[1] + LABEL_OFFSET.y]
+			: [Math.max(layout.gridLeft, room), city[1] + LABEL_OFFSET.below];
 
 	let phaseName = 'projection orthographique · EPSG:4326';
 	if (t >= STRAIGHTEN.start) phaseName = 'redressement · 1 fuseau = 1 colonne';
@@ -376,7 +420,18 @@ export function globe(t: number, layout: Layout, pens: Pens): Frame {
 			opacity: handOver,
 			ripples: POINT.ripples.map((keys) => ripple(t, keys)),
 		},
-		label: { x: city[0] + 20 + (meta.x - city[0] - 20) * mv, y: city[1] - 10 + (meta.y - city[1] + 10) * mv },
+		label: meta
+			? {
+					x: aside[0] + (meta.x - aside[0]) * mv,
+					y: aside[1] + (meta.y - aside[1]) * mv,
+					opacity: handOver,
+				}
+			: // Nowhere to land: it fades where it stands as the point leaves.
+				{
+					x: aside[0],
+					y: aside[1],
+					opacity: 1 - phase(t, { start: POINT.move.start, duration: POINT.handOver.duration }),
+				},
 		hud: {
 			phase: phaseName,
 			gore: `${String(gi + 1).padStart(2, '0')} / 12`,

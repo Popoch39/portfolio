@@ -106,8 +106,8 @@ registerScene(() => {
 
 	function cycle() {
 		if (stopped) return;
-		// The Intro lands its point on the lede's cursor: typing waits until it has ended.
-		if (document.documentElement.classList.contains('intro') || !visible) {
+		// The Intro lands its point on the lede's cursor: the base only builds this scene once it has ended.
+		if (!visible) {
 			later(600, cycle);
 			return;
 		}

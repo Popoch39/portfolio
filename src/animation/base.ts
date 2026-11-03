@@ -7,6 +7,10 @@ import { ScrollSmoother } from 'gsap/ScrollSmoother';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger, ScrollSmoother);
+// Not at `DOMContentLoaded` nor at `load`: each of those refreshes measures every scene again, on a
+// phone a long task of its own. The scenes are built once the page has settled, followed by a single
+// refresh (`buildScenes`).
+ScrollTrigger.config({ autoRefreshEvents: 'visibilitychange,resize' });
 
 // Everything that moves lives in this context: nothing is created under `reduce`, and everything
 // is reverted (inline styles included) as soon as the preference flips, without a reload.
@@ -25,14 +29,22 @@ const pageLoaded = new Promise((resolve) => {
 // Fonts and images have taken their place: scene thresholds and anchor positions will not move any more.
 const pageSettled = Promise.all([document.fonts.ready, pageLoaded]);
 
+// The opening (the Intro) keeps the main thread to itself until it ends: nobody can scroll to the
+// other scenes meanwhile, and building them would cost it frames.
+let endOpening = () => {};
+const openingEnded = new Promise<void>((resolve) => {
+	endOpening = resolve;
+});
+// Only the home page's inline trigger sets this class, before the first paint: elsewhere, or when it
+// decided against the Intro, no opening will register to end.
+if (!document.documentElement.classList.contains('intro')) endOpening();
+
+/** The scenes waiting to be built, in page order (the order their modules register them). */
+const pendingScenes: gsap.ContextFunc[] = [];
+let scenesBuilt = false;
+
 motion.add(CONDITIONS, ({ conditions }) => {
 	if (!conditions?.motionAllowed) return;
-	// ScrollTrigger refreshes on its own at `load`, but not when a web font arrives later. Fonts already
-	// in by then were measured by that refresh: another one would follow it in the same task, doubling
-	// the longest task of the load.
-	pageLoaded.then(() => {
-		if (document.fonts.status === 'loading') document.fonts.ready.then(() => ScrollTrigger.refresh());
-	});
 	// Page restored from the back/forward cache: the window may have changed while it was frozen.
 	const onCacheRestore = (event: PageTransitionEvent) => {
 		if (event.persisted) ScrollTrigger.refresh();
@@ -59,22 +71,52 @@ function createSmoother() {
 	});
 }
 
-// Outside the context: the landing anchor only matters at load, a preference flip later on must
-// not bring the page back to it. Without a smoother (reduced motion, no fine pointer), the browser handles it.
-// It runs after ScrollTrigger's own refresh at `load`, and after a late font's refresh: that one
-// waits on `fonts.ready` directly, this one on a promise `fonts.ready` resolves.
-pageSettled.then(() => {
+// In a task of its own: the opening ends from its last frame.
+Promise.all([pageSettled, openingEnded]).then(() => setTimeout(buildScenes));
+
+/**
+ * Builds the waiting scenes once fonts and images have taken their place and the opening has ended,
+ * then measures them all with one refresh, top to bottom, in their final layout.
+ * All in one task: a pinned scene queues a full refresh for the next frame, which the one here
+ * cancels; split over several tasks, each pin would cost its own full refresh.
+ */
+function buildScenes() {
+	for (const scene of pendingScenes) addScene(scene);
+	scenesBuilt = true;
+	ScrollTrigger.refresh();
+	// Outside the context: the landing anchor only matters at load, a preference flip later on must not
+	// bring the page back to it. Without a smoother (reduced motion, no fine pointer), the browser
+	// handles it. After the refresh: the pins have changed where the anchor stands.
 	const target = anchorTarget(location.hash);
 	if (target) ScrollSmoother.get()?.scrollTo(target, false, atTopOfVisibleArea());
-});
+}
+
+function addScene(scene: gsap.ContextFunc) {
+	motion.add(CONDITIONS, (context, contextSafe) => (context.conditions?.motionAllowed ? scene(context, contextSafe) : undefined));
+}
 
 /**
  * Registers a scene: its code only runs when motion is allowed, and everything it creates (tweens,
- * ScrollTriggers, inline styles) is reverted then recreated when the preference flips.
+ * ScrollTriggers, inline styles) is reverted then recreated when the preference flips. It is built
+ * once the page has settled and the opening has ended, never during the load.
  * HTML/CSS render the final state: the scene animates towards it (`from()` / `fromTo()`).
  */
 export function registerScene(scene: gsap.ContextFunc) {
-	motion.add(CONDITIONS, (context, contextSafe) => (context.conditions?.motionAllowed ? scene(context, contextSafe) : undefined));
+	if (scenesBuilt) addScene(scene);
+	else pendingScenes.push(scene);
+}
+
+/**
+ * Registers the opening (the Intro): built at once, unlike the other scenes, which wait for it. While
+ * it plays, it calls `end` once it has ended (finished, skipped or reverted); when it does not play
+ * (no cleanup returned, or motion reduced), it ends straight away.
+ */
+export function registerOpening(scene: (end: () => void) => (() => void) | undefined) {
+	motion.add(CONDITIONS, ({ conditions }) => {
+		const cleanup = conditions?.motionAllowed ? scene(endOpening) : undefined;
+		if (!cleanup) endOpening();
+		return cleanup;
+	});
 }
 
 // Scenes take GSAP from here, never on their own: a single instance, plugins already registered.

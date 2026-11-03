@@ -1,0 +1,14 @@
+// Cloudflare Workers, static assets only: `astro build` then `wrangler deploy`.
+{
+	"name": "portfolio",
+	"compatibility_date": "2026-11-03",
+	"assets": {
+		"directory": "./dist",
+		// Serves dist/404.html with a 404 status instead of an empty 404.
+		"not_found_handling": "404-page"
+	},
+	// Only the apex domain answers: the workers.dev and preview URLs would be indexable duplicates.
+	"workers_dev": false,
+	"preview_urls": false,
+	"routes": [{ "pattern": "louis-pocheron.com", "custom_domain": true }]
+}

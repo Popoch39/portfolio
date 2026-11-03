@@ -41,6 +41,8 @@ const jsonLd = JSON.stringify({
 	name: title,
 	description,
 	inLanguage: 'fr-FR',
+	// Google reads the site name shown above the result from a WebSite node on the home page.
+	isPartOf: { '@type': 'WebSite', '@id': `${canonical}#website`, name: person.name, url: canonical },
 	mainEntity: {
 		'@type': 'Person',
 		'@id': `${canonical}#person`,

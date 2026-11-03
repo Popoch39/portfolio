@@ -115,7 +115,7 @@ export const LATE: Phase = { start: 7.8, duration: 0.1 };
 export const STATUSLINE: Phase = { start: 8.2, duration: 0.5 };
 
 /**
- * The blue grid fades out over the page; the Intro ends with it. The parallels go first (over
+ * The accent grid fades out over the page; the Intro ends with it. The parallels go first (over
  * `parallels` s), the strip edges and meridians `meridiansDelay` s later, until the end.
  */
 export const GRID_FADE = { start: 8.64, duration: 1.2, parallels: 0.84, meridiansDelay: 0.24 };

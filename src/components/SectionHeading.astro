@@ -8,13 +8,13 @@ interface Props {
 	titleId: string;
 	aside: string;
 	/** Paper on the dark aplat instead of ink on paper. */
-	onAplat?: boolean;
+	onDark?: boolean;
 }
 
-const { number, title, titleId, aside, onAplat = false } = Astro.props;
+const { number, title, titleId, aside, onDark = false } = Astro.props;
 ---
 
-<div class="section-heading grid-12" data-on-aplat={onAplat || undefined}>
+<div class="section-heading grid-12" data-on-dark={onDark || undefined}>
 	<SectionNumber number={number} />
 	<h2 id={titleId}>{title}</h2>
 	<p class="mono aside">{aside}</p>
@@ -28,9 +28,9 @@ const { number, title, titleId, aside, onAplat = false } = Astro.props;
 		border-bottom: 1px solid var(--color-ink);
 	}
 
-	.section-heading[data-on-aplat] {
-		border-bottom-color: var(--color-on-aplat);
-		color: var(--color-on-aplat);
+	.section-heading[data-on-dark] {
+		border-bottom-color: var(--color-on-dark);
+		color: var(--color-on-dark);
 	}
 
 	h2 {
@@ -51,7 +51,7 @@ const { number, title, titleId, aside, onAplat = false } = Astro.props;
 		color: var(--color-ink-muted);
 	}
 
-	[data-on-aplat] .aside {
-		color: var(--color-on-aplat-muted);
+	[data-on-dark] .aside {
+		color: var(--color-on-dark-muted);
 	}
 </style>

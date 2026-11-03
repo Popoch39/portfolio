@@ -170,7 +170,7 @@ function headOnceStill(page: Page): Promise<number> {
 const opacity = (element: Locator) => element.evaluate((el) => Number(getComputedStyle(el).opacity));
 
 /**
- * An opacity at which a label's muted lines (#b3b1a9) keep at least 4.5:1 on the aplat (#1c1b19).
+ * The scene's floor for past labels: their muted lines (#b3b1a9) keep about 7:1 on the aplat (#1c1b19), above AA's 4.5:1.
  */
 const AA_FLOOR = 0.93;
 

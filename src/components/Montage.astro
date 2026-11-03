@@ -248,6 +248,8 @@ const camera = JSON.stringify(
 				end: `+=${PIN_HEIGHTS * 100}%`,
 				scrub: true,
 				invalidateOnRefresh: true,
+				// A refresh moves the timeline without its update callback (a page loaded past the scene, on its anchor).
+				onRefresh: (trigger) => showStep(trigger.progress),
 			},
 			onUpdate: () => showStep(scene.progress()),
 		});

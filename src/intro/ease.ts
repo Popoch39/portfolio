@@ -1,9 +1,10 @@
 /** The Intro's curves, as plain functions of a progress in [0, 1]: usable by GSAP and by the globe alike. */
+import type { Phase } from './timing';
 
 export const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
 
-/** Progress through a phase `{ start, duration }` at time `t`, clamped to [0, 1]. */
-export const phase = (t: number, { start, duration }: { start: number; duration: number }) =>
+/** Progress through a phase at time `t`, clamped to [0, 1]. */
+export const phase = (t: number, { start, duration }: Phase) =>
 	clamp01((t - start) / duration);
 
 /** The mockup's geometry curve (cubic in-out, GSAP's `power2.inOut`). */

@@ -160,7 +160,14 @@ export interface Frame {
 	hud: { phase: string; gore: string; lat: string; lon: string; goreWidth: number; gutter: number };
 }
 
-type Point = [x: number, y: number, facing: number, lon: number, lat: number];
+/** A point of the globe projected in the window; `facing` > 0 on the near side of the sphere. */
+interface Point {
+	x: number;
+	y: number;
+	facing: number;
+	lon: number;
+	lat: number;
+}
 
 export function globe(t: number, layout: Layout, pens: Pens, { ink, accent }: Palette): Frame {
 	const { width, height, columns, gutter } = layout;
@@ -183,73 +190,80 @@ export function globe(t: number, layout: Layout, pens: Pens, { ink, accent }: Pa
 	const lam0 = START.lon + (LON - START.lon) * rot;
 	const phi0 = START.lat + (LAT - START.lat) * rot;
 	// 2. It is cut along the twelve gore boundaries: each gore narrows about its own central meridian.
-	const gam = 1 - (1 - narrow) * cubicInOut(phase(t, CUT));
+	const goreShare = 1 - (1 - narrow) * cubicInOut(phase(t, CUT));
 	// 3. The gores unroll as Aplat's map does, glued to a sphere of radius R/a whose angles are × a, but
 	//    each keeps its true width along every parallel, so it lands as a sinusoidal lens.
-	const fl = cubicInOut(phase(t, UNROLL));
-	const a = 1 - fl;
-	const closeUp = 1 - (1 - flatLatitudes) * fl;
+	const unrolled = cubicInOut(phase(t, UNROLL));
+	const a = 1 - unrolled;
+	const closeUp = 1 - (1 - flatLatitudes) * unrolled;
 	// 4. The lenses straighten into strips while the latitudes stretch: both poles leave the frame and
 	//    the 60° parallel settles on the header rule.
-	const st = cubicInOut(phase(t, STRAIGHTEN));
-	const v = flatLatitudes + (STRETCH - flatLatitudes) * st;
-	const Cx = cx0 + (cx1 - cx0) * fl;
-	const Cy = cy0 + (cy1 - cy0) * fl + (cy2 - cy1) * st;
+	const straightened = cubicInOut(phase(t, STRAIGHTEN));
+	const latitudeStretch = flatLatitudes + (STRETCH - flatLatitudes) * straightened;
+	const Cx = cx0 + (cx1 - cx0) * unrolled;
+	const Cy = cy0 + (cy1 - cy0) * unrolled + (cy2 - cy1) * straightened;
 	const straight = a <= 0.001;
-	const k = straight ? 0 : R / a;
-	const sC = Math.sin(a * phi0 * D2R);
-	const cC = Math.cos(a * phi0 * D2R);
+	const sphereRadius = straight ? 0 : R / a;
+	const sinTilt = Math.sin(a * phi0 * D2R);
+	const cosTilt = Math.cos(a * phi0 * D2R);
 
-	// Facing > 0 on the near side of the sphere.
-	const proj = (lx: number, phi: number): Point => {
-		if (straight) return [Cx + R * lx * D2R, Cy - R * v * (phi - LAT) * D2R, 1, lx, phi];
-		const L = a * lx * D2R;
-		const P = a * phi * D2R;
+	const proj = (lon: number, lat: number): Point => {
+		if (straight) {
+			return { x: Cx + R * lon * D2R, y: Cy - R * latitudeStretch * (lat - LAT) * D2R, facing: 1, lon, lat };
+		}
+		const L = a * lon * D2R;
+		const P = a * lat * D2R;
 		const cP = Math.cos(P);
 		const sP = Math.sin(P);
 		const cL = Math.cos(L);
-		return [Cx + k * cP * Math.sin(L), Cy - k * closeUp * (cC * sP - sC * cP * cL), sC * sP + cC * cP * cL, lx, phi];
+		return {
+			x: Cx + sphereRadius * cP * Math.sin(L),
+			y: Cy - sphereRadius * closeUp * (cosTilt * sP - sinTilt * cP * cL),
+			facing: sinTilt * sP + cosTilt * cP * cL,
+			lon,
+			lat,
+		};
 	};
 	// Where a line turns behind the sphere it stops on the limb itself, not at the last sample in front.
 	const cross = (p: Point, q: Point) => {
-		const u = p[2] / (p[2] - q[2]);
-		return proj(p[3] + (q[3] - p[3]) * u, p[4] + (q[4] - p[4]) * u);
+		const u = p.facing / (p.facing - q.facing);
+		return proj(p.lon + (q.lon - p.lon) * u, p.lat + (q.lat - p.lat) * u);
 	};
 	const seg = (pen: Pen, p: Point, q: Point) => {
-		pen.moveTo(p[0], p[1]);
-		pen.lineTo(q[0], q[1]);
+		pen.moveTo(p.x, p.y);
+		pen.lineTo(q.x, q.y);
 	};
 	const line = (pen: Pen, pts: Point[]) => {
 		for (let i = 0; i < pts.length; i++) {
 			const p = pts[i];
-			if (p[2] <= 0) continue;
+			if (p.facing <= 0) continue;
 			const prev = pts[i - 1];
-			if (!prev) pen.moveTo(p[0], p[1]);
-			else if (prev[2] <= 0) seg(pen, cross(prev, p), p);
-			else pen.lineTo(p[0], p[1]);
+			if (!prev) pen.moveTo(p.x, p.y);
+			else if (prev.facing <= 0) seg(pen, cross(prev, p), p);
+			else pen.lineTo(p.x, p.y);
 			const next = pts[i + 1];
-			if (next && next[2] <= 0) {
+			if (next && next.facing <= 0) {
 				const out = cross(p, next);
-				pen.lineTo(out[0], out[1]);
+				pen.lineTo(out.x, out.y);
 			}
 		}
 	};
 	// The stretch of limb that closes a gore where it turns behind the sphere; it is also that gore's rim.
 	const arc = (p: Point, q: Point) => {
-		const a1 = Math.atan2((p[1] - Cy) / closeUp, p[0] - Cx);
-		let da = Math.atan2((q[1] - Cy) / closeUp, q[0] - Cx) - a1;
+		const a1 = Math.atan2((p.y - Cy) / closeUp, p.x - Cx);
+		let da = Math.atan2((q.y - Cy) / closeUp, q.x - Cx) - a1;
 		if (da > Math.PI) da -= 2 * Math.PI;
 		else if (da < -Math.PI) da += 2 * Math.PI;
 		const n = Math.ceil(Math.abs(da) / 0.07);
-		pens.rim.moveTo(p[0], p[1]);
+		pens.rim.moveTo(p.x, p.y);
 		for (let i = 1; i < n; i++) {
 			const an = a1 + (da * i) / n;
-			const x = Cx + k * Math.cos(an);
-			const y = Cy + k * closeUp * Math.sin(an);
+			const x = Cx + sphereRadius * Math.cos(an);
+			const y = Cy + sphereRadius * closeUp * Math.sin(an);
 			pens.gores.lineTo(x, y);
 			pens.rim.lineTo(x, y);
 		}
-		pens.rim.lineTo(q[0], q[1]);
+		pens.rim.lineTo(q.x, q.y);
 	};
 	const ring = (pts: Point[]) => {
 		const pen = pens.gores;
@@ -257,14 +271,14 @@ export function globe(t: number, layout: Layout, pens: Pens, { ink, accent }: Pa
 		let s = -1;
 		let vis = 0;
 		for (let i = 0; i < n; i++) {
-			if (pts[i][2] <= 0) continue;
+			if (pts[i].facing <= 0) continue;
 			vis++;
-			if (s < 0 && pts[(i + n - 1) % n][2] <= 0) s = i;
+			if (s < 0 && pts[(i + n - 1) % n].facing <= 0) s = i;
 		}
 		if (!vis) return;
 		if (vis === n) {
-			pen.moveTo(pts[0][0], pts[0][1]);
-			for (let i = 1; i < n; i++) pen.lineTo(pts[i][0], pts[i][1]);
+			pen.moveTo(pts[0].x, pts[0].y);
+			for (let i = 1; i < n; i++) pen.lineTo(pts[i].x, pts[i].y);
 			pen.closePath();
 			return;
 		}
@@ -273,23 +287,23 @@ export function globe(t: number, layout: Layout, pens: Pens, { ink, accent }: Pa
 		for (let j = 0; j < n; j++) {
 			const i = (s + j) % n;
 			const p = pts[i];
-			if (p[2] <= 0) continue;
+			if (p.facing <= 0) continue;
 			const prev = pts[(i + n - 1) % n];
-			if (prev[2] <= 0) {
+			if (prev.facing <= 0) {
 				const e = cross(prev, p);
 				if (out) {
 					arc(out, e);
-					pen.lineTo(e[0], e[1]);
+					pen.lineTo(e.x, e.y);
 				} else {
 					first = e;
-					pen.moveTo(e[0], e[1]);
+					pen.moveTo(e.x, e.y);
 				}
 			}
-			pen.lineTo(p[0], p[1]);
+			pen.lineTo(p.x, p.y);
 			const next = pts[(i + 1) % n];
-			if (next[2] <= 0) {
+			if (next.facing <= 0) {
 				out = cross(p, next);
-				pen.lineTo(out[0], out[1]);
+				pen.lineTo(out.x, out.y);
 			}
 		}
 		if (out && first) arc(out, first);
@@ -300,33 +314,34 @@ export function globe(t: number, layout: Layout, pens: Pens, { ink, accent }: Pa
 	let lo = -90;
 	let hi = 90;
 	if (straight) {
-		const s = R * v * D2R;
+		const s = R * latitudeStretch * D2R;
 		lo = Math.max(-90, LAT - (height + 20 - Cy) / s);
 		hi = Math.min(90, LAT + (Cy + 20) / s);
 	}
 	// Half-width of a gore along a parallel, in degrees of longitude on the current sphere: its true
 	// width while it unrolls (a sinusoidal lens once flat), the full 30° once straightened.
-	const half = (phi: number) => {
-		if (a > 0.9999) return 15 * gam;
-		return (15 * gam * ((1 - st) * Math.cos(phi * D2R) + st)) / Math.cos(a * phi * D2R);
+	const half = (lat: number) => {
+		if (a > 0.9999) return 15 * goreShare;
+		return (15 * goreShare * ((1 - straightened) * Math.cos(lat * D2R) + straightened)) / Math.cos(a * lat * D2R);
 	};
-	const shade = 1 - smoothstep(0, 0.35, fl);
-	const rimOpacity = 1 - smoothstep(0, 0.2, fl);
-	const tint = smoothstep(0.15, 0.6, fl);
-	const whole = gam >= 0.9999;
+	const shade = 1 - smoothstep(0, 0.35, unrolled);
+	const rimOpacity = 1 - smoothstep(0, 0.2, unrolled);
+	const tint = smoothstep(0.15, 0.6, unrolled);
+	const whole = goreShare >= 0.9999;
 	const needRing = (!whole && shade > 0.001) || tint > 0.001;
 	// The 5° parallels come in once the stretch has spaced them out.
-	const fine = straight ? smoothstep(22, 32, R * v * 5 * D2R) : 0;
+	const fine = straight ? smoothstep(22, 32, R * latitudeStretch * 5 * D2R) : 0;
 
-	const ne = straight && st >= 1 ? 1 : 40;
-	const nm = straight ? 1 : 40;
-	const np = straight ? 1 : 6;
-	const ePhi: number[] = [];
-	const eHalf: number[] = [];
-	for (let j = 0; j <= ne; j++) {
-		const ph = lo + ((hi - lo) * j) / ne;
-		ePhi.push(ph);
-		eHalf.push(half(ph));
+	// Samples along a gore edge, a central meridian and a parallel: one segment once they are straight.
+	const edgeSamples = straight && straightened >= 1 ? 1 : 40;
+	const meridianSamples = straight ? 1 : 40;
+	const parallelSamples = straight ? 1 : 6;
+	const edgeLat: number[] = [];
+	const edgeHalf: number[] = [];
+	for (let j = 0; j <= edgeSamples; j++) {
+		const lat = lo + ((hi - lo) * j) / edgeSamples;
+		edgeLat.push(lat);
+		edgeHalf.push(half(lat));
 	}
 	const major: [number, number][] = [];
 	const minor: [number, number][] = [];
@@ -342,31 +357,31 @@ export function globe(t: number, layout: Layout, pens: Pens, { ink, accent }: Pa
 		else if (l0 <= -180) l0 += 360;
 		const lp: Point[] = [];
 		const rp: Point[] = [];
-		for (let j = 0; j <= ne; j++) {
-			lp.push(proj(l0 - eHalf[j], ePhi[j]));
-			rp.push(proj(l0 + eHalf[j], ePhi[j]));
+		for (let j = 0; j <= edgeSamples; j++) {
+			lp.push(proj(l0 - edgeHalf[j], edgeLat[j]));
+			rp.push(proj(l0 + edgeHalf[j], edgeLat[j]));
 		}
 		line(pens.edges, lp);
 		line(pens.edges, rp);
 		// A straightening lens has its tips cut square until they leave the frame.
-		if (straight && st > 0) {
-			if (hi >= 90) seg(pens.edges, lp[ne], rp[ne]);
+		if (straight && straightened > 0) {
+			if (hi >= 90) seg(pens.edges, lp[edgeSamples], rp[edgeSamples]);
 			if (lo <= -90) seg(pens.edges, lp[0], rp[0]);
 		}
 		const mp: Point[] = [];
-		for (let j = 0; j <= nm; j++) mp.push(proj(l0, lo + ((hi - lo) * j) / nm));
+		for (let j = 0; j <= meridianSamples; j++) mp.push(proj(l0, lo + ((hi - lo) * j) / meridianSamples));
 		line(pens.meridians, mp);
-		for (const [ph, hw] of major) {
+		for (const [lat, hw] of major) {
 			const pp: Point[] = [];
-			for (let j = 0; j <= np; j++) pp.push(proj(l0 - hw + (2 * hw * j) / np, ph));
+			for (let j = 0; j <= parallelSamples; j++) pp.push(proj(l0 - hw + (2 * hw * j) / parallelSamples, lat));
 			line(pens.parallels, pp);
 		}
-		for (const [ph, hw] of minor) seg(pens.fine, proj(l0 - hw, ph), proj(l0 + hw, ph));
+		for (const [lat, hw] of minor) seg(pens.fine, proj(l0 - hw, lat), proj(l0 + hw, lat));
 		if (needRing) ring(lp.concat(rp.slice().reverse()));
 	}
 
 	// Ink to accent as the strips straighten: the gores become the layout grid.
-	const blue = smoothstep(0.4, 1, st);
+	const blue = smoothstep(0.4, 1, straightened);
 	const mix = (i: number) => Math.round(ink[i] + (accent[i] - ink[i]) * blue);
 
 	// The grid fades out over the page: parallels first, then the strips.
@@ -379,33 +394,34 @@ export function globe(t: number, layout: Layout, pens: Pens, { ink, accent }: Pa
 		});
 
 	// Besançon rides on its gore, then becomes the block cursor.
-	let bl = 15 - lam0;
-	if (bl > 180) bl -= 360;
-	const here = proj(bl + ((LON - 15) * half(LAT)) / 15, LAT);
-	const city = here[2] > 0 ? here : [Cx, Cy];
+	// The centre of Besançon's gore (0°–30° E), seen from the centre of the projection.
+	let cityGore = 15 - lam0;
+	if (cityGore > 180) cityGore -= 360;
+	const here = proj(cityGore + ((LON - 15) * half(LAT)) / 15, LAT);
+	const city = here.facing > 0 ? here : { x: Cx, y: Cy };
 	const { cursor, meta } = layout;
-	const mv = cubicInOut(phase(t, POINT.move));
-	const gr = expoOut(phase(t, POINT.grow));
-	const dcx = city[0] + (cursor.x + cursor.w / 2 - city[0]) * mv;
-	const dcy = city[1] + (cursor.y + cursor.h / 2 - city[1]) * mv;
-	const pw = POINT_SIZE + (cursor.w - POINT_SIZE) * gr;
-	const ph = POINT_SIZE + (cursor.h - POINT_SIZE) * gr;
+	const moved = cubicInOut(phase(t, POINT.move));
+	const grown = expoOut(phase(t, POINT.grow));
+	const pointX = city.x + (cursor.x + cursor.w / 2 - city.x) * moved;
+	const pointY = city.y + (cursor.y + cursor.h / 2 - city.y) * moved;
+	const pointW = POINT_SIZE + (cursor.w - POINT_SIZE) * grown;
+	const pointH = POINT_SIZE + (cursor.h - POINT_SIZE) * grown;
 	const handOver = 1 - phase(t, POINT.handOver);
 	// The label reads right of the point; where the grid ends too soon for it, under the point.
 	const room = layout.gridLeft + layout.gridWidth - layout.labelWidth;
 	const aside =
-		city[0] + LABEL_OFFSET.x <= room
-			? [city[0] + LABEL_OFFSET.x, city[1] + LABEL_OFFSET.y]
-			: [Math.max(layout.gridLeft, room), city[1] + LABEL_OFFSET.below];
+		city.x + LABEL_OFFSET.x <= room
+			? { x: city.x + LABEL_OFFSET.x, y: city.y + LABEL_OFFSET.y }
+			: { x: Math.max(layout.gridLeft, room), y: city.y + LABEL_OFFSET.below };
 
 	let phaseName = 'projection orthographique · EPSG:4326';
 	if (t >= STRAIGHTEN.start) phaseName = 'redressement · 1 fuseau = 1 colonne';
 	else if (t >= UNROLL.start) phaseName = 'développement · fuseaux sinusoïdaux';
 	else if (t >= CUT.start) phaseName = 'découpe · 12 fuseaux de 30°';
 	// The gore under the centre of the projection, counted from 180° W.
-	const gi = Math.max(0, Math.min(11, Math.floor((lam0 + 180) / 30)));
+	const goreIndex = Math.max(0, Math.min(11, Math.floor((lam0 + 180) / 30)));
 	// A gore's width at the equator: one column pitch on the globe, one column once the gutters are open.
-	const goreWidth = pitch * gam;
+	const goreWidth = pitch * goreShare;
 
 	return {
 		sphere:
@@ -424,35 +440,35 @@ export function globe(t: number, layout: Layout, pens: Pens, { ink, accent }: Pa
 		parallels: parallelsFade,
 		fine: parallelsFade * fine,
 		// The central meridians step back: the strip edges are the columns, the parallels the rhythm.
-		meridians: meridiansFade * (1 - 0.6 * st),
+		meridians: meridiansFade * (1 - 0.6 * straightened),
 		edges: meridiansFade,
 		tint: parallelsFade * tint,
 		rim: whole ? 0 : rimOpacity,
 		point: {
-			x: dcx - pw / 2,
-			y: dcy - ph / 2,
-			w: pw,
-			h: ph,
-			radius: (POINT_SIZE / 2) * (1 - gr),
+			x: pointX - pointW / 2,
+			y: pointY - pointH / 2,
+			w: pointW,
+			h: pointH,
+			radius: (POINT_SIZE / 2) * (1 - grown),
 			scale: t < POINT.appear.start ? 0 : popEase(phase(t, POINT.appear)),
 			opacity: handOver,
 			ripples: POINT.ripples.map((keys) => ripple(t, keys)),
 		},
 		label: meta
 			? {
-					x: aside[0] + (meta.x - aside[0]) * mv,
-					y: aside[1] + (meta.y - aside[1]) * mv,
+					x: aside.x + (meta.x - aside.x) * moved,
+					y: aside.y + (meta.y - aside.y) * moved,
 					opacity: handOver,
 				}
 			: // Nowhere to land: it fades where it stands as the point leaves.
 				{
-					x: aside[0],
-					y: aside[1],
+					x: aside.x,
+					y: aside.y,
 					opacity: 1 - phase(t, { start: POINT.move.start, duration: POINT.handOver.duration }),
 				},
 		hud: {
 			phase: phaseName,
-			gore: `${String(gi + 1).padStart(2, '0')} / 12`,
+			gore: `${String(goreIndex + 1).padStart(2, '0')} / 12`,
 			lat: coordinate(phi0, 'N', 'S'),
 			lon: coordinate(lam0, 'E', 'O'),
 			goreWidth,

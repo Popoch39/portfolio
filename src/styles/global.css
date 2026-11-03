@@ -25,17 +25,23 @@
 	--color-light: #fff;
 
 	--page-max-width: 1440px;
-	--page-gutter: clamp(16px, 4vw, 56px);
+	/* A phone on its side reports the notch as a side inset (both sides on iOS): the gutter never gets thinner than it. */
+	--page-gutter: max(clamp(16px, 4vw, 56px), env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
 	--grid-gap: 24px;
 
 	/*
 	 * The statusline is fixed to the bottom: anchors and focus stop above it.
 	 * The animation base reads `scroll-padding-*` for smoothed scrolling; the browser uses it on its own otherwise.
+	 * Its row is 30px; on a phone without a home button it reaches down under the home indicator, so
+	 * the height it covers grows by that inset.
 	 */
-	--statusline-height: 30px;
+	--statusline-row: 30px;
+	--statusline-height: calc(var(--statusline-row) + env(safe-area-inset-bottom, 0px));
 	scroll-padding-bottom: var(--statusline-height);
 
 	color-scheme: light;
+	/* The browser's grey flash on tap fights the press states below. */
+	-webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -51,9 +57,21 @@ body {
 
 a {
 	color: var(--color-ink);
+	/* No double-tap zoom to wait for: the tap follows the link at once. */
+	touch-action: manipulation;
 }
 
-a:hover {
+/*
+ * Hover only under a pointer that hovers: a finger would leave the state stuck after the tap.
+ * Under a finger, the same feedback comes while pressing (`:active`).
+ */
+@media (hover: hover) and (pointer: fine) {
+	a:hover {
+		color: var(--color-ink-muted);
+	}
+}
+
+a:active {
 	color: var(--color-ink-muted);
 }
 
@@ -77,6 +95,9 @@ a:focus-visible {
 	font-weight: 600;
 	text-decoration: none;
 	white-space: nowrap;
+	/* A control, not content: a long press must not select its label. */
+	-webkit-user-select: none;
+	user-select: none;
 	transition: background-color 0.2s ease;
 }
 
@@ -84,12 +105,44 @@ a:focus-visible {
  * The muted hover of links would put grey text on black: the button turns to paper, outlined in ink
  * and cast in the accent. Shadows rather than a border, so that its box keeps its size.
  */
-.button:hover {
-	background: var(--color-paper);
-	color: var(--color-ink);
-	box-shadow:
-		inset 0 0 0 2px var(--color-ink),
-		4px 4px 0 var(--color-accent);
+@media (hover: hover) and (pointer: fine) {
+	.button:hover {
+		background: var(--color-paper);
+		color: var(--color-ink);
+		box-shadow:
+			inset 0 0 0 2px var(--color-ink),
+			4px 4px 0 var(--color-accent);
+	}
+}
+
+/* Pressed: the ink lifts a shade and the label keeps its paper, the moment the finger lands. */
+.button:active {
+	background: var(--color-bar);
+	color: var(--color-paper);
+	box-shadow: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.button {
+		transition:
+			background-color 0.2s ease,
+			transform 0.1s ease-out;
+	}
+
+	.button:active {
+		transform: scale(0.97);
+	}
+}
+
+.button .mono {
+	font-size: 13px;
+	color: var(--color-on-ink-muted);
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.button:hover .mono {
+		color: inherit;
+	}
 }
 
 /* Centred column shared by the header and every section; the marquee alone runs full bleed. */

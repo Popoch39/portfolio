@@ -73,11 +73,16 @@ const sections = [
 		/* WCAG 2.5.8: a 24px target, the header stays as tall as in the mockup. */
 		min-height: 24px;
 		text-decoration: none;
+		/* Section tabs are controls: a long press must not select their label. */
+		-webkit-user-select: none;
+		user-select: none;
 	}
 
-	nav a:hover {
-		text-decoration: underline;
-		text-underline-offset: 4px;
+	@media (hover: hover) and (pointer: fine) {
+		nav a:hover {
+			text-decoration: underline;
+			text-underline-offset: 4px;
+		}
 	}
 
 	@media (max-width: 860px) {

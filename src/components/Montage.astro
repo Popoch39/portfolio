@@ -1,0 +1,421 @@
+---
+/**
+ * Montage: a Moka Express put back together piece by piece over its stove, then set on the fire (board M1 · Le montage).
+ * This markup is its final state: every piece seated, the fire lit with its glow, the camera closed in on the top of
+ * the pot, the steam still. The layers come from the generator (`scripts/moka/build.mjs`), each cropped to its box
+ * and placed by `moka.json`, in the board's paint order.
+ */
+import moka from '../assets/moka/moka.json';
+
+type LayerName = keyof typeof moka.layers;
+type PieceName = (typeof moka.pieces)[number]['name'];
+
+// URLs rather than inlined data: the layers stay out of the page's HTML and load only as the section comes near.
+const urls = import.meta.glob<string>('../assets/moka/*.svg', {
+	query: '?url&no-inline',
+	import: 'default',
+	eager: true,
+});
+
+/**
+ * Back to front. `opacity` is the layer's at the final state, carried by a box around the image, which stays
+ * opaque: the silhouettes glint only while their piece comes down, the knob's off position goes out with the
+ * fire. `clip` hides the basket of the funnel below the front of the boiler's neck as it sinks in. `piece` is
+ * the piece a layer comes down with; the neck's front comes down with the boiler it belongs to.
+ */
+const paintOrder: {
+	name: LayerName;
+	opacity?: number;
+	clip?: string;
+	piece?: PieceName;
+	wisp?: { duration: number; delay: number };
+}[] = [
+	{ name: 'stove' },
+	{ name: 'knob-off', opacity: 0 },
+	{ name: 'knob-on' },
+	{ name: 'glow', opacity: 0.3 },
+	{ name: 'grate' },
+	{ name: 'boiler', piece: 'boiler' },
+	{ name: 'edge-boiler', opacity: 0, piece: 'boiler' },
+	{ name: 'funnel-low', clip: `polygon(${moka.basketPolygon})`, piece: 'funnel' },
+	{ name: 'neck-front', piece: 'boiler' },
+	{ name: 'funnel-top', piece: 'funnel' },
+	{ name: 'edge-funnel', opacity: 0, piece: 'funnel' },
+	{ name: 'filter', piece: 'filter' },
+	{ name: 'edge-filter', opacity: 0, piece: 'filter' },
+	{ name: 'gasket', piece: 'gasket' },
+	{ name: 'edge-gasket', opacity: 0, piece: 'gasket' },
+	{ name: 'collector', piece: 'collector' },
+	{ name: 'lid', piece: 'lid' },
+	{ name: 'edge-lid', opacity: 0, piece: 'lid' },
+	// Still at the final state: the steam only drifts once the scene has lit the fire, each wisp on its own loop.
+	{ name: 'steam-0', opacity: 0.8, wisp: { duration: 3.6, delay: 0 } },
+	{ name: 'steam-1', opacity: 0.8, wisp: { duration: 3.1, delay: -1.2 } },
+	{ name: 'steam-2', opacity: 0.8, wisp: { duration: 4.2, delay: -2.5 } },
+];
+
+const [frameWidth, frameHeight] = moka.size;
+const lifts = new Map(moka.pieces.map(({ name, lift }) => [name, lift]));
+/** A height in % of the frame, as a `yPercent` of a layer, which only knows its own box. */
+const ownPercent = (frameShare: number, box: { h: number }) => +((-frameShare / box.h) * 100).toFixed(3);
+
+/**
+ * A wisp drifts as on the board, where its moves are in percent of the frame round the spout: brought back to
+ * the layer's own box, which percentages in a transform refer to.
+ */
+const [spoutX, spoutY] = moka.steamOrigin;
+const drift = (box: { x: number; y: number; w: number; h: number }, { duration, delay }: { duration: number; delay: number }) =>
+	[
+		`--wisp-x: ${+(100 / box.w).toFixed(4)}`,
+		`--wisp-y: ${+(100 / box.h).toFixed(4)}`,
+		`--wisp-origin: ${+(((spoutX - box.x) / box.w) * 100).toFixed(3)}% ${+(((spoutY - box.y) / box.h) * 100).toFixed(3)}%`,
+		`--wisp-duration: ${duration}s`,
+		`--wisp-delay: ${delay}s`,
+	].join('; ');
+
+const layers = paintOrder.map(({ name, opacity, clip, piece, wisp }) => {
+	const box = moka.layers[name];
+	const src = urls[`../assets/moka/${name}.svg`];
+	if (!src) throw new Error(`Montage: no layer ${name} in src/assets/moka`);
+	const lift = piece && lifts.get(piece);
+	if (piece && lift === undefined) throw new Error(`Montage: no lift for the ${piece}`);
+	return {
+		name,
+		src,
+		piece,
+		// Where the scene lifts the layer from, and for the collector, the thread it lands on before sinking in.
+		lift: lift === undefined ? undefined : ownPercent(lift, box),
+		seat: piece === 'collector' ? ownPercent(moka.screwSeat, box) : undefined,
+		glint: name.startsWith('edge-') || undefined,
+		width: Math.round((box.w * frameWidth) / 100),
+		height: Math.round((box.h * frameHeight) / 100),
+		place: [`--x: ${box.x}%; --y: ${box.y}%; --w: ${box.w}%; --h: ${box.h}%`, wisp && drift(box, wisp)]
+			.filter(Boolean)
+			.join('; '),
+		wisp: !!wisp || undefined,
+		wrapper: opacity === undefined && !clip ? null : [opacity !== undefined && `opacity: ${opacity}`, clip && `clip-path: ${clip}`].filter(Boolean).join('; '),
+	};
+});
+
+/*
+ * The stack is laid out at its zoomed size, the camera's final framing: the scene scales it down at the start and
+ * back up to none, so the close-up is drawn at full resolution instead of magnified.
+ */
+const { scale, tx, ty } = moka.fitAtOne;
+const stack = `--zoom: ${scale}; --left: ${tx}%; --top: ${ty}%`;
+/**
+ * The board's camera keys (scale and offset of the frame, in % of the figure), as moves of the zoomed stack,
+ * which scales from its top left corner: `at` is the share of the camera's range, the last key is none.
+ */
+const camera = JSON.stringify(
+	moka.camera.map((key) => ({
+		at: key.at / 100,
+		scale: +(key.scale / scale).toFixed(5),
+		xPercent: +((key.tx - tx) / scale).toFixed(4),
+		yPercent: +((key.ty - ty) / scale).toFixed(4),
+	})),
+);
+---
+
+<div
+	class="montage"
+	role="img"
+	aria-label="Un Moka Express en pièces au-dessus d’un réchaud, que le défilement remonte pièce par pièce avant d’allumer le feu."
+	data-montage
+>
+	<div class="montage-stack" style={stack} data-montage-stack data-camera={camera}>
+		{
+			layers.map(({ name, src, width, height, place, wrapper, piece, lift, seat, glint, wisp }) => {
+				const image = (
+					<img
+						src={src}
+						alt=""
+						width={width}
+						height={height}
+						loading="lazy"
+						decoding="async"
+						style={place}
+						data-layer={name}
+						data-piece={piece}
+						data-lift={lift}
+						data-seat={seat}
+						data-wisp={wisp}
+					/>
+				);
+				return wrapper ? (
+					<div class="montage-box" style={wrapper} data-layer-box={name} data-glint={glint}>
+						{image}
+					</div>
+				) : (
+					image
+				);
+			})
+		}
+	</div>
+</div>
+
+<script>
+	import { cubicBezier, gsap, registerScene, ScrollSmoother } from '../animation/base';
+
+	/** Pinning length, in window heights (290svh): the board's 3000px track over its 770px frame. */
+	const PIN_HEIGHTS = 2.9;
+
+	/**
+	 * Where each of the counter's steps begins, as a fraction of the pinning: in pieces, then each piece
+	 * named from the end of the previous one's descent to the end of its own, then on the fire.
+	 */
+	const STEP_STARTS = [0, 0.04, 0.168, 0.344, 0.44, 0.504, 0.66, 0.76];
+
+	/** Each piece's descent along the pot's axis, as fractions of the pinning: they overlap, as on the board. */
+	const DESCENTS: Record<string, [number, number]> = {
+		boiler: [0.04, 0.168],
+		funnel: [0.168, 0.344],
+		filter: [0.28, 0.44],
+		gasket: [0.36, 0.504],
+		collector: [0.44, 0.66],
+		lid: [0.6, 0.76],
+	};
+	/** The board's landing curve. */
+	const DROP = cubicBezier(0.65, 0, 0.35, 1);
+	/**
+	 * Shares of the collector's range: it lands on the thread, then sinks the last few millimetres in as it
+	 * is screwed on, then holds.
+	 */
+	const COLLECTOR_ON_THREAD = 0.2955;
+	const COLLECTOR_DOWN = 0.9545;
+	/** A piece's glint comes in over the first share of its descent and goes out over the last one. */
+	const GLINT = 0.12;
+	/** The board's curve for what rises into place: the title's lines, the paragraph, the actions. */
+	const RISE = cubicBezier(0.2, 0.7, 0.2, 1);
+	/** Over the entrance: how long a title line takes to rise, and how far behind the one above it it starts. */
+	const LINE_RISE = 0.64;
+	const LINE_LAG = 0.14;
+	/** The camera's range, which its keys divide, and the progress rule's. */
+	const CAMERA: [number, number] = [0.04, 0.84];
+	/** The fire: the knob turns, the glow rises, the steam comes out of the spout. */
+	const KNOB: [number, number] = [0.76, 0.79];
+	const GLOW: [number, number] = [0.76, 0.84];
+	const STEAM: [number, number] = [0.78, 0.84];
+	/** Then the paragraph and the actions rise in, 14px under their place. */
+	const TEXT: [number, number] = [0.76, 0.82];
+	const ACTIONS: [number, number] = [0.8, 0.86];
+	const RISE_FROM = 14;
+	/**
+	 * The Café's two-column layout (Cafe.astro, same query), where the paragraph and the actions share the
+	 * pinned screen with the moka. Stacked, they wait after it.
+	 */
+	const TWO_COLUMNS = '(min-width: 861px) and (min-height: 520px)';
+
+	type CameraKey = { at: number; scale: number; xPercent: number; yPercent: number };
+
+	const length = ([start, end]: [number, number]) => end - start;
+
+	registerScene(() => {
+		const montage = document.querySelector<HTMLElement>('[data-montage]');
+		const section = montage?.closest<HTMLElement>('[data-cafe]');
+		const counter = section?.querySelector<HTMLElement>('[data-cafe-counter]');
+		const progress = section?.querySelector('[data-cafe-progress]');
+		const stack = montage?.querySelector<HTMLElement>('[data-montage-stack]');
+		if (!montage || !section || !counter || !progress || !stack) return;
+
+		// The entrance, before the pinning: from the section's top at mid-screen to the top of the screen.
+		// Created first, as it comes first in the page.
+		const entrance = gsap.timeline({
+			defaults: { ease: 'none' },
+			scrollTrigger: { trigger: section, start: 'top center', end: 'top top', scrub: true },
+		});
+		entrance.fromTo(section.querySelector('[data-cafe-rule]'), { scaleX: 0 }, { scaleX: 1, duration: 1 }, 0);
+		section.querySelectorAll('[data-cafe-line]').forEach((line, rank) => {
+			entrance.fromTo(line, { yPercent: 140 }, { yPercent: 0, ease: RISE, duration: LINE_RISE }, rank * LINE_LAG);
+		});
+
+		const labels: string[] = JSON.parse(counter.dataset.steps ?? '[]');
+		const finalLabel = counter.textContent;
+
+		// Written only when the step changes: a text change costs a layout, never on every frame.
+		let step = -1;
+		const showStep = (at: number) => {
+			const index = STEP_STARTS.findLastIndex((start) => start <= at);
+			if (index === step) return;
+			step = index;
+			counter.textContent = labels[index] ?? finalLabel;
+			// The steam only drifts on a lit fire.
+			montage.toggleAttribute('data-lit', index === STEP_STARTS.length - 1);
+		};
+
+		// Positions on the timeline are fractions of the pinning, the board's `contain` ranges as they are.
+		const scene = gsap.timeline({
+			defaults: { ease: 'none' },
+			scrollTrigger: {
+				trigger: section,
+				pin: true,
+				start: 'top top',
+				end: `+=${PIN_HEIGHTS * 100}%`,
+				scrub: true,
+				invalidateOnRefresh: true,
+				// A refresh moves the timeline without its update callback (a page loaded past the scene, on its anchor).
+				onRefresh: (trigger) => showStep(trigger.progress),
+			},
+			onUpdate: () => showStep(scene.progress()),
+		});
+
+		// Lifts are in percent of each layer's own height, written at build: nothing to measure.
+		const lifted = (_: number, layer: HTMLElement) => Number(layer.dataset.lift);
+		const onThread = (_: number, layer: HTMLElement) => Number(layer.dataset.seat);
+		for (const [piece, [start, end]] of Object.entries(DESCENTS)) {
+			const layers = montage.querySelectorAll<HTMLElement>(`img[data-piece="${piece}"]`);
+			const duration = end - start;
+			if (piece !== 'collector') {
+				scene.fromTo(layers, { yPercent: lifted }, { yPercent: 0, ease: DROP, duration }, start);
+				continue;
+			}
+			const landed = start + duration * COLLECTOR_ON_THREAD;
+			scene
+				.fromTo(layers, { yPercent: lifted }, { yPercent: onThread, ease: DROP, duration: landed - start }, start)
+				.fromTo(
+					layers,
+					{ yPercent: onThread },
+					{ yPercent: 0, duration: start + duration * COLLECTOR_DOWN - landed, immediateRender: false },
+					landed,
+				);
+		}
+		for (const box of montage.querySelectorAll<HTMLElement>('[data-glint]')) {
+			const piece = box.querySelector<HTMLElement>('[data-piece]')?.dataset.piece;
+			const descent = piece && DESCENTS[piece];
+			if (!descent) continue;
+			const [start, end] = descent;
+			const duration = (end - start) * GLINT;
+			scene
+				.fromTo(box, { opacity: 0 }, { opacity: 1, duration }, start)
+				.fromTo(box, { opacity: 1 }, { opacity: 0, duration, immediateRender: false }, end - duration);
+		}
+
+		// From ×1 on the whole moka to the final close-up on its top, linear between the board's keys.
+		const keys: CameraKey[] = JSON.parse(stack.dataset.camera ?? '[]');
+		const cameraAt = (share: number) => CAMERA[0] + length(CAMERA) * share;
+		const pose = ({ scale, xPercent, yPercent }: CameraKey) => ({ scale, xPercent, yPercent });
+		let moveStart = Number.POSITIVE_INFINITY;
+		let moveEnd = Number.NEGATIVE_INFINITY;
+		for (let index = 1; index < keys.length; index++) {
+			const [previous, key] = [keys[index - 1], keys[index]];
+			const [start, end] = [cameraAt(previous.at), cameraAt(key.at)];
+			scene.fromTo(stack, pose(previous), { ...pose(key), duration: end - start, immediateRender: index === 1 }, start);
+			if (key.scale !== previous.scale || key.xPercent !== previous.xPercent || key.yPercent !== previous.yPercent) {
+				moveStart = Math.min(moveStart, start);
+				moveEnd = end;
+			}
+		}
+		// A layer of its own only while it moves: at rest, at the close-up, it is drawn again at full resolution.
+		if (moveStart < moveEnd) {
+			scene.set(stack, { willChange: 'transform' }, moveStart).set(stack, { willChange: 'auto' }, moveEnd);
+		}
+		scene.fromTo(progress, { scaleX: 0 }, { scaleX: 1, duration: length(CAMERA) }, CAMERA[0]);
+
+		const box = (name: string) => montage.querySelector(`[data-layer-box="${name}"]`);
+		scene
+			.fromTo(box('knob-off'), { opacity: 1 }, { opacity: 0, duration: length(KNOB) }, KNOB[0])
+			.from(montage.querySelector('[data-layer="knob-on"]'), { opacity: 0, duration: length(KNOB) }, KNOB[0])
+			// Up to its own opacity at the final state.
+			.from(box('glow'), { opacity: 0, duration: length(GLOW) }, GLOW[0])
+			// Fully opaque: the wisps fade in and out on their own as they drift.
+			.fromTo(
+				montage.querySelectorAll('[data-layer-box^="steam"]'),
+				{ opacity: 0 },
+				{ opacity: 1, duration: length(STEAM) },
+				STEAM[0],
+			);
+
+		// The end is held until the pinning lets go.
+		scene.set({}, {}, 1);
+		showStep(scene.progress());
+
+		// Its own layer while pinned: under the smoother, the pinning moves it at every frame (ADR 0004).
+		gsap.set(section, { willChange: 'transform' });
+
+		// Tab can reach the actions before they have risen in: the page then moves on to where they are shown.
+		// Listened to on the window after the smoother, so this scroll has the last word over its own.
+		const actions = section.querySelector('[data-cafe-actions]');
+		const showFocusedAction = (event: FocusEvent) => {
+			const smoother = ScrollSmoother.get();
+			const trigger = scene.scrollTrigger;
+			if (!trigger || !(event.target instanceof Node) || !actions?.contains(event.target)) return;
+			const shown = trigger.start + (trigger.end - trigger.start) * ACTIONS[1];
+			// Without a smoother (no fine pointer: a tablet with a keyboard), the window scrolls.
+			if (smoother) {
+				if (smoother.scrollTop() < shown) smoother.scrollTo(shown, false);
+			} else if (scrollY < shown) scrollTo(0, shown);
+		};
+
+		// In a context of their own, reverted and rebuilt as the layout flips while the rest of the scene stands.
+		const rise = (target: Element | null, range: [number, number]) =>
+			scene.fromTo(target, { opacity: 0, y: RISE_FROM }, { opacity: 1, y: 0, ease: RISE, duration: length(range) }, range[0]);
+		gsap.matchMedia().add(TWO_COLUMNS, () => {
+			rise(section.querySelector('[data-cafe-text]'), TEXT);
+			rise(actions, ACTIONS);
+			addEventListener('focusin', showFocusedAction);
+			return () => removeEventListener('focusin', showFocusedAction);
+		});
+
+		return () => {
+			counter.textContent = finalLabel;
+			delete montage.dataset.lit;
+		};
+	});
+</script>
+
+<style>
+	.montage {
+		position: relative;
+		width: 100%;
+		height: 100%;
+		/* The stack runs past the figure on every side but the drawing: only the drawing shows. */
+		overflow: clip;
+	}
+
+	.montage-stack {
+		position: absolute;
+		left: var(--left);
+		top: var(--top);
+		width: calc(var(--zoom) * 100%);
+		height: calc(var(--zoom) * 100%);
+		transform-origin: 0 0;
+	}
+
+	/* A layer's box spans the whole stack, so its image is placed in percent of the frame like the others. */
+	.montage-box {
+		position: absolute;
+		inset: 0;
+	}
+
+	img {
+		position: absolute;
+		left: var(--x);
+		top: var(--y);
+		width: var(--w);
+		height: var(--h);
+		display: block;
+	}
+
+	/* Only once the scene has lit the fire: the final state's steam stands still. */
+	.montage[data-lit] [data-wisp] {
+		transform-origin: var(--wisp-origin);
+		animation: wisp var(--wisp-duration) cubic-bezier(0.33, 0.1, 0.45, 1) var(--wisp-delay) infinite;
+	}
+
+	@keyframes wisp {
+		0% {
+			opacity: 0;
+			transform: translate(0, calc(0.5% * var(--wisp-y))) scale(0.8, 0.7);
+		}
+		25% {
+			opacity: 1;
+		}
+		70% {
+			opacity: 0.85;
+		}
+		100% {
+			opacity: 0;
+			transform: translate(calc(-0.6% * var(--wisp-x)), calc(-2.2% * var(--wisp-y))) scale(1.2, 1.1);
+		}
+	}
+</style>

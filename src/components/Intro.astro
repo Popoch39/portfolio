@@ -102,6 +102,8 @@ import { person } from '../data/profile';
 	/* The HUD sits on the page's content box, like the header. */
 	.hud {
 		--edge: calc(max(0px, (100% - var(--page-max-width)) / 2) + var(--page-gutter));
+		/* The bottom readouts stay clear of the home indicator. */
+		--edge-bottom: env(safe-area-inset-bottom, 0px);
 		position: absolute;
 		inset: 0;
 		opacity: 0;
@@ -137,7 +139,7 @@ import { person } from '../data/profile';
 
 	.hud-centre {
 		left: var(--edge);
-		bottom: 54px;
+		bottom: calc(54px + var(--edge-bottom));
 		display: flex;
 		flex-direction: column;
 		font-weight: 800;
@@ -159,7 +161,7 @@ import { person } from '../data/profile';
 
 	.hud-scale {
 		right: var(--edge);
-		bottom: 54px;
+		bottom: calc(54px + var(--edge-bottom));
 		display: flex;
 		flex-direction: column;
 		align-items: flex-end;
@@ -218,7 +220,7 @@ import { person } from '../data/profile';
 		}
 
 		.hud-centre {
-			bottom: 64px;
+			bottom: calc(64px + var(--edge-bottom));
 			font-size: 40px;
 		}
 
@@ -228,7 +230,7 @@ import { person } from '../data/profile';
 		}
 
 		.hud-scale {
-			bottom: 24px;
+			bottom: calc(24px + var(--edge-bottom));
 		}
 	}
 </style>

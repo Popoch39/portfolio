@@ -62,3 +62,21 @@ _À éviter_ : chip, icône, électron.
 
 **Tour**
 L'empilement final des bagues, chacune à sa hauteur, avec son étiquette (catégorie et outils) à côté : l'état final de l'Atome.
+
+## Café
+
+**Café**
+La section entre la Stack et le Contact : elle propose de parler d'un projet autour d'un café, sans engagement, ou en visio. Elle invite à écrire un mail, en face du Montage.
+_À éviter_ : CTA, section moka.
+
+**Montage**
+La scène de la section Café : une Moka Express fidèle à la Bialetti se remonte pièce par pièce au-dessus d'un réchaud, puis le feu s'allume et la caméra s'approche du couvercle qui fume. Son état final est la moka montée sur le feu, vue de près.
+_À éviter_ : assemblage, animation de la moka.
+
+**Pièce**
+L'une des six parties de la moka, dans l'ordre du Montage : la chaudière, l'entonnoir et son café, le filtre, le joint, le collecteur, le couvercle. Le réchaud n'en est pas une : il est là dès le départ.
+_À éviter_ : calque (réservé au dessin), élément.
+
+**Vissage**
+Le tour complet, dans le sens horaire, que fait le collecteur une fois posé sur le pas de vis de la chaudière, comme sur une vraie moka.
+_À éviter_ : rotation.

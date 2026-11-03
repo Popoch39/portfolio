@@ -1,5 +1,6 @@
 ---
 import Atome from '../components/Atome.astro';
+import Cafe from '../components/Cafe.astro';
 import Cursor from '../components/Cursor.astro';
 import Frise from '../components/Frise.astro';
 import Intro from '../components/Intro.astro';
@@ -168,10 +169,15 @@ const jsonLd = JSON.stringify({
 						>
 					</p>
 				</section>
+			</div>
 
+			{/* Out of the column: the moka's zoomed stack runs past it, clipped by the figure. */}
+			<Cafe number={4} titleId="cafe-title" />
+
+			<div class="wrap">
 				<section id="contact" class="contact-section" aria-labelledby="contact-title">
 					<div class="contact grid-12">
-						<SectionNumber number={4} />
+						<SectionNumber number={5} />
 						<div class="contact-body">
 							<h2 id="contact-title" class="visually-hidden">Contact</h2>
 							<p class="contact-wq" aria-hidden="true">:wq</p>
@@ -381,15 +387,6 @@ const jsonLd = JSON.stringify({
 		gap: 12px;
 	}
 
-	.button .mono {
-		font-size: 13px;
-		color: var(--color-on-ink-muted);
-	}
-
-	.button:hover .mono {
-		color: inherit;
-	}
-
 	.hero-github {
 		display: inline-flex;
 		align-items: center;
@@ -483,8 +480,11 @@ const jsonLd = JSON.stringify({
 			color 0.2s ease;
 	}
 
-	/* Hover only where a pointer hovers: a tap must not leave the row inverted. */
-	@media (hover: hover) {
+	/*
+	 * Hover only where a pointer hovers: a tap must not leave the row inverted. Under a finger the row
+	 * inverts while pressed, at once like a list cell, and fades back on release.
+	 */
+	@media (hover: hover) and (pointer: fine) {
 		.project:hover {
 			background: var(--color-ink);
 			color: var(--color-paper);
@@ -497,6 +497,20 @@ const jsonLd = JSON.stringify({
 		.project:hover .project-year > [aria-hidden] {
 			color: var(--color-accent);
 		}
+	}
+
+	.project:active {
+		background: var(--color-ink);
+		color: var(--color-paper);
+		transition-duration: 0s;
+	}
+
+	.project:active .dim {
+		color: var(--color-on-ink-muted);
+	}
+
+	.project:active .project-year > [aria-hidden] {
+		color: var(--color-accent);
 	}
 
 	.project-number {
@@ -614,7 +628,15 @@ const jsonLd = JSON.stringify({
 		transition: background-size 0.35s ease;
 	}
 
-	.contact-mail:hover {
+	@media (hover: hover) and (pointer: fine) {
+		.contact-mail:hover {
+			background-size: 100% 0.06em;
+			color: var(--color-ink);
+		}
+	}
+
+	/* Pressed: the underline is drawn, the address keeps its ink (the muted press of links would grey it). */
+	.contact-mail:active {
 		background-size: 100% 0.06em;
 		color: var(--color-ink);
 	}

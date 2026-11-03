@@ -27,7 +27,8 @@ const ogImageAlt = `${person.name}, ${person.jobTitle.toLowerCase()} — portfol
 <html lang="fr">
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		{/* `cover`: the paper and the statusline run under the notch and the home indicator; `env(safe-area-inset-*)` pads the content back out. */}
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<title>{title}</title>
 		<meta name="description" content={description} />
 		{noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={canonical} />}

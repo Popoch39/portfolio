@@ -375,6 +375,14 @@ const geometry = [
 	}
 
 	/*
+	 * Pinned, the aplat stays `100svh` tall, while a phone's window grows once its bars slide away:
+	 * the pin's spacer, behind it for the whole pinning, carries the aplat down to the window's edge.
+	 */
+	:global(.pin-spacer):has(> .frise) {
+		background: var(--color-dark);
+	}
+
+	/*
 	 * Short phone upright: the heading leaves about 340px of band, to share between the active card
 	 * on its pole and the legend below HEAD.
 	 */

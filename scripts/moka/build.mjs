@@ -778,6 +778,9 @@ const edgesOf = (...contents) => {
   const d = contents.flatMap((content) => [...content.matchAll(/<path class="iso-line iso-edge"[^>]*? d="([^"]*)"/g)].map((m) => m[1])).join("");
   return `<path d="${d}" fill="none" stroke="#ff5b14" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
 };
+// A piece stacked from several solids glints as a lit copy of itself: stroked alone, each solid's silhouette would
+// cross the ones in front of it (the boiler's body behind its shoulder, the knob's collar behind the knob).
+const litOf = (content) => resolve(content, { lit: true });
 
 // ── Cropped layers: each image only as large as what it draws, so that the page decodes and composites less.
 // The box comes from the geometry, not from a rasterizer, so that a run gives the same files on any machine: every
@@ -1072,11 +1075,11 @@ const layers = Object.fromEntries(
     collector: resolve(LAYERS.collector),
     lid: resolve(LAYERS.lid),
     ...Object.fromEntries(WISPS.map((shape, index) => [`steam-${index}`, resolve(wisp(shape, index))])),
-    "edge-boiler": edgesOf(LAYERS.boiler),
+    "edge-boiler": litOf(LAYERS.boiler),
     "edge-funnel": edgesOf(LAYERS.funnelLow, LAYERS.funnelTop),
     "edge-filter": edgesOf(LAYERS.filter),
     "edge-gasket": edgesOf(LAYERS.gasket),
-    "edge-lid": edgesOf(LAYERS.lid),
+    "edge-lid": litOf(LAYERS.lid),
   }).map(([name, inner]) => [name, croppedLayer(inner)]),
 );
 mkdirSync(ASSETS, { recursive: true });

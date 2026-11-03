@@ -202,7 +202,7 @@ const camera = JSON.stringify(
 <script>
 	import { cubicBezier, gsap, registerScene, ScrollSmoother } from '../animation/base';
 
-	/** Pinning length, in window heights (290svh): the board's 3000px track over its 770px frame. */
+	/** Pinning length, in stable window heights (290svh): the board's 3000px track over its 770px frame. */
 	const PIN_HEIGHTS = 2.9;
 
 	/**
@@ -264,6 +264,16 @@ const camera = JSON.stringify(
 
 	type CameraKey = { at: number; scale: number; xPercent: number; yPercent: number };
 
+	/** The window's height with the browser's bars shown (`100svh`), which only CSS gives. */
+	const stableWindowHeight = () => {
+		const probe = document.createElement('div');
+		probe.style.cssText = 'position: absolute; top: 0; height: 100svh; visibility: hidden; pointer-events: none';
+		document.body.append(probe);
+		const height = probe.offsetHeight;
+		probe.remove();
+		return height;
+	};
+
 	const length = ([start, end]: [number, number]) => end - start;
 	/** An ease that is the end value strictly inside the tween and the start value at both ends: a state held over a range. */
 	const ONLY_INSIDE = (progress: number) => (progress > 0 && progress < 1 ? 1 : 0);
@@ -308,7 +318,9 @@ const camera = JSON.stringify(
 				trigger: section,
 				pin: true,
 				start: 'top top',
-				end: `+=${PIN_HEIGHTS * 100}%`,
+				// In `svh` rather than `%` of the window: a phone's bars sliding in or out between two refreshes must
+				// not change how long the scene lasts.
+				end: () => `+=${PIN_HEIGHTS * stableWindowHeight()}`,
 				scrub: true,
 				invalidateOnRefresh: true,
 				// A refresh moves the timeline without its update callback (a page loaded past the scene, on its anchor).

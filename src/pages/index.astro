@@ -17,13 +17,14 @@ import {
 	profile,
 	projects,
 	publicRepoCount,
+	services,
 	stack,
 	twoDigits,
 } from '../data/profile';
 
-const title = 'Louis Pocheron — Développeur fullstack & SIG à Besançon';
+const title = 'Louis Pocheron — Développeur web & SIG à Besançon';
 const description =
-	'Concepteur et développeur d’applications fullstack, spécialisé SIG et cartographie : serveurs de tuiles, nuages de points et interfaces React. Basé à Besançon.';
+	'Sites vitrines, boutiques en ligne et prise de rendez-vous pour les commerces locaux ; cartographie SIG pour l’énergie et les collectivités. À Besançon.';
 
 const repoCount = await publicRepoCount();
 const projectsAside = [`${projects.length} sélectionnés`, repoCount && `${repoCount} dépôts publics`]
@@ -132,8 +133,31 @@ const jsonLd = JSON.stringify({
 			</div>
 
 			<div class="wrap">
-				<section id="projets" class="projects-section" aria-labelledby="projects-title">
-					<SectionHeading number={1} title="Projets" titleId="projects-title" aside={projectsAside} />
+				<section id="prestations" class="services-section" aria-labelledby="services-title">
+					<SectionHeading number={1} title="Prestations" titleId="services-title" aside={`depuis ${person.city}`} />
+					<ul class="services">
+						{
+							services.map((service, i) => (
+								<li class="service grid-12">
+									<span class="mono service-number" aria-hidden="true">
+										{twoDigits(i + 1)}
+									</span>
+									<div class="service-head">
+										<h3 class="service-title">{service.title}</h3>
+										<p class="mono service-audience dim">pour&nbsp;: {service.audience}</p>
+									</div>
+									<div class="service-body">
+										<p class="service-what">{service.what}</p>
+										<p class="service-how dim">{service.how}</p>
+									</div>
+								</li>
+							))
+						}
+					</ul>
+				</section>
+
+				<section id="projets" class="section" aria-labelledby="projects-title">
+					<SectionHeading number={2} title="Projets" titleId="projects-title" aside={projectsAside} />
 					<ol class="projects">
 						{
 							projects.map((project, i) => (
@@ -156,11 +180,11 @@ const jsonLd = JSON.stringify({
 				</section>
 			</div>
 
-			<Frise number={2} titleId="career-title" />
+			<Frise number={3} titleId="career-title" />
 
 			<div class="wrap">
 				<section id="stack" class="section" aria-labelledby="stack-title">
-					<SectionHeading number={3} title="Stack" titleId="stack-title" aside=":set stack?" />
+					<SectionHeading number={4} title="Stack" titleId="stack-title" aside=":set stack?" />
 					<Atome />
 					{/* The last element the Atome's pinned frame keeps in view: its screen fit measures down to it. */}
 					<p class="mono stack-note" data-atome-frame-end>
@@ -448,12 +472,82 @@ const jsonLd = JSON.stringify({
 
 	/* Sections */
 
-	.projects-section {
+	/* Right under the marquee: a shorter gap than between two sections. */
+	.services-section {
 		padding-top: clamp(56px, 7vw, 108px);
 	}
 
 	.section {
 		padding-top: clamp(64px, 8vw, 120px);
+	}
+
+	/* Services */
+
+	.services {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.service {
+		row-gap: 10px;
+		align-items: baseline;
+		padding: 28px 0;
+		border-bottom: 1px solid var(--color-rule);
+	}
+
+	.service-number {
+		grid-column: span 1;
+		font-size: 13px;
+	}
+
+	.service-head {
+		grid-column: span 4;
+	}
+
+	.service-title {
+		margin: 0;
+		font-size: clamp(24px, 2.5vw, 36px);
+		line-height: 1.05;
+		font-weight: 700;
+		font-stretch: 80%;
+		letter-spacing: -0.015em;
+	}
+
+	.service-audience {
+		margin: 8px 0 0;
+		font-size: 12px;
+		line-height: 1.6;
+	}
+
+	.service-body {
+		grid-column: span 7;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.service-what,
+	.service-how {
+		margin: 0;
+		max-width: 62ch;
+		font-size: 16px;
+		line-height: 1.45;
+		text-wrap: pretty;
+	}
+
+	.service-what {
+		font-size: 18px;
+	}
+
+	@media (min-width: 861px) and (max-width: 1100px) {
+		.service-head {
+			grid-column: 2 / span 11;
+		}
+
+		.service-body {
+			grid-column: 2 / span 11;
+		}
 	}
 
 	/* Projects */

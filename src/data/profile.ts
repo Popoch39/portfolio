@@ -180,6 +180,59 @@ export const lede = {
 
 export type Lede = typeof lede;
 
+export interface Service {
+	title: string;
+	/** Who it is for, after "pour :". */
+	audience: string;
+	/** What gets built, in the words of the Accroche's versions it covers. */
+	what: string;
+	/** How, and from where. */
+	how: string;
+}
+
+/**
+ * The offers behind the Accroche, in visible text: every version of the lede is covered by one of
+ * them, with its own words and its audience, so that a search can find it.
+ */
+export const services: Service[] = [
+	{
+		title: 'Site vitrine',
+		audience: 'restaurants, cafés, boulangeries, gîtes et chambres d’hôtes',
+		what: 'Le site vitrine de votre restaurant, le site de votre gîte : la carte ou les chambres, les horaires, l’accès, les photos et un moyen de vous joindre, lisibles d’abord sur un téléphone.',
+		how: 'Un site rapide et bien référencé sur les recherches locales, à Besançon et alentour, construit comme celui-ci.',
+	},
+	{
+		title: 'Boutique en ligne',
+		audience: 'commerces de proximité',
+		what: 'La boutique en ligne de votre commerce : le catalogue, le paiement, le retrait en magasin ou la livraison.',
+		how: 'Pour les commerces de Besançon qui veulent vendre en dehors de leurs heures d’ouverture, sans dépendre d’une place de marché.',
+	},
+	{
+		title: 'Prise de rendez-vous',
+		audience: 'artisans, coiffeurs et instituts',
+		what: 'La prise de rendez-vous de votre salon ou de votre atelier : vos clients choisissent un créneau en ligne, à toute heure, et vous gardez la main sur votre agenda.',
+		how: 'Moins d’appels pendant que vous travaillez, pour les artisans et les salons de Besançon et des environs.',
+	},
+	{
+		title: 'Cartographie & SIG',
+		audience: 'grands comptes de l’énergie, mairies et collectivités',
+		what: 'Les cartes de votre réseau électrique, la carte de votre commune : des données géographiques lisibles dans le navigateur, du serveur de tuiles à l’interface.',
+		how: 'OpenLayers, MapLibre et PostGIS : le métier que j’exerce au quotidien pour un grand acteur de l’énergie, depuis Besançon.',
+	},
+	{
+		title: 'API & back-office',
+		audience: 'équipes produit',
+		what: 'L’API de votre back-office : des données bien modélisées, une interface d’administration et une documentation que votre équipe peut reprendre.',
+		how: 'NestJS, Laravel ou Rust, PostgreSQL : en renfort d’une équipe en place ou pour lancer un projet, depuis Besançon.',
+	},
+	{
+		title: 'Outil de terrain',
+		audience: 'métiers de terrain',
+		what: 'L’outil de votre équipe terrain : une application mobile qui saisit, localise et photographie, même sans réseau, puis synchronise au retour.',
+		how: 'Pour les équipes qui interviennent dans le Doubs, le Jura et au-delà, construit depuis Besançon.',
+	},
+];
+
 const monthAndYear = new Intl.DateTimeFormat('fr-FR', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 const monthOnly = new Intl.DateTimeFormat('fr-FR', { month: 'short', timeZone: 'UTC' });
 

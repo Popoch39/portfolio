@@ -93,8 +93,11 @@ registerScene(() => {
 	addEventListener('resize', relayout);
 	document.fonts.ready.then(relayout);
 
-	// The HUD's text only changes when its value does.
+	// The HUD's text is the one layout the Intro causes after its start: its figures move on the
+	// grain's beat (BOIL.step, about 14 times a second) like an instrument's readout, not every frame,
+	// and a line is only rewritten when its value has changed.
 	const shown = new Map<HTMLElement, string>();
+	let hudStep = -1;
 	const write = (node: HTMLElement, text: string) => {
 		if (shown.get(node) === text) return;
 		shown.set(node, text);
@@ -115,8 +118,11 @@ registerScene(() => {
 			label.style.opacity = String(labelOpacity);
 		}
 		const { phase, gore, lat, lon, goreWidth, gutter } = frame.hud;
-		const values = [phase, gore, lat, lon, `fuseau ${decimal(goreWidth)} px · gouttière ${decimal(gutter)} px`];
-		texts.forEach((node, i) => write(node, values[i]));
+		if (boilStep(t) !== hudStep) {
+			hudStep = boilStep(t);
+			const values = [phase, gore, lat, lon, `fuseau ${decimal(goreWidth)} px · gouttière ${decimal(gutter)} px`];
+			texts.forEach((node, i) => write(node, values[i]));
+		}
 		if (goreWidth !== scaled) {
 			scaled = goreWidth;
 			tick.style.transform = `translateX(${SCALE_BAR - goreWidth}px)`;

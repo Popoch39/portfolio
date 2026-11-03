@@ -480,7 +480,11 @@ const camera = JSON.stringify(
 		scene.set({}, {}, 1);
 		showStep(scene.progress());
 
-		// Its own layer while pinned: under the smoother, the pinning moves it at every frame (ADR 0004).
+		/*
+		 * Its own layer while the scene runs, beyond the spec's camera and moving piece, for the Atome's reason (ADR 0004,
+		 * "Calques promus pendant la scène"): under the smoother, the pinning moves the section with a transform at every
+		 * frame, and left in the page's layer with the drawing changing inside it, it would be repainted at every frame.
+		 */
 		gsap.set(section, { willChange: 'transform' });
 
 		// Tab can reach the actions before they have risen in: the page then moves on to where they are shown.

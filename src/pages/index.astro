@@ -496,22 +496,8 @@ const jsonLd = JSON.stringify({
 		border-bottom: 1px solid var(--color-rule);
 	}
 
-	.service-number {
-		grid-column: span 1;
-		font-size: 13px;
-	}
-
 	.service-head {
 		grid-column: span 4;
-	}
-
-	.service-title {
-		margin: 0;
-		font-size: clamp(24px, 2.5vw, 36px);
-		line-height: 1.05;
-		font-weight: 700;
-		font-stretch: 80%;
-		letter-spacing: -0.015em;
 	}
 
 	.service-audience {
@@ -541,10 +527,7 @@ const jsonLd = JSON.stringify({
 	}
 
 	@media (min-width: 861px) and (max-width: 1100px) {
-		.service-head {
-			grid-column: 2 / span 11;
-		}
-
+		.service-head,
 		.service-body {
 			grid-column: 2 / span 11;
 		}
@@ -607,12 +590,15 @@ const jsonLd = JSON.stringify({
 		color: var(--color-accent);
 	}
 
-	.project-number {
+	.project-number,
+	.service-number {
 		grid-column: span 1;
 		font-size: 13px;
 	}
 
-	.project-name {
+	/* A service's title sits in its head, not on the grid: the column span does not apply to it. */
+	.project-name,
+	.service-title {
 		grid-column: span 4;
 		margin: 0;
 		font-size: clamp(24px, 2.5vw, 36px);

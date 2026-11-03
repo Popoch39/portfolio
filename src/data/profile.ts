@@ -217,7 +217,7 @@ export const services: Service[] = [
 		title: 'Cartographie & SIG',
 		audience: 'grands comptes de l’énergie, mairies et collectivités',
 		what: 'Les cartes de votre réseau électrique, la carte de votre commune : des données géographiques lisibles dans le navigateur, du serveur de tuiles à l’interface.',
-		how: 'OpenLayers, MapLibre et PostGIS : le métier que j’exerce au quotidien pour un grand acteur de l’énergie, depuis Besançon.',
+		how: 'OpenLayers, MapLibre et PostGIS : le métier que j’exerce au quotidien pour un grand acteur de l’énergie, proposé depuis Besançon aux collectivités.',
 	},
 	{
 		title: 'API & back-office',
@@ -228,8 +228,8 @@ export const services: Service[] = [
 	{
 		title: 'Outil de terrain',
 		audience: 'métiers de terrain',
-		what: 'L’outil de votre équipe terrain : une application mobile qui saisit, localise et photographie, même sans réseau, puis synchronise au retour.',
-		how: 'Pour les équipes qui interviennent dans le Doubs, le Jura et au-delà, construit depuis Besançon.',
+		what: 'L’outil de votre équipe terrain : une application mobile et sa carte, utilisables même sans réseau, synchronisées au retour.',
+		how: 'MapLibre et React Native, pour les équipes qui interviennent loin d’un bureau, depuis Besançon.',
 	},
 ];
 

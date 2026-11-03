@@ -3,7 +3,7 @@
  * work, the shading of the sphere clipped to the gores, the flat tint, the Besançon point.
  */
 import { BOIL } from './timing';
-import { GRAIN_TILE, SPHERE_GRAIN } from './grain';
+import { boilStep, GRAIN_TILE, SPHERE_GRAIN } from './grain';
 import { globe, type Frame, type Layout } from './globe';
 
 const INK = '#111110';
@@ -124,7 +124,7 @@ export function globeCanvas(canvas: HTMLCanvasElement) {
 			if (frame.sphere) {
 				const { x, y, radius, opacity } = frame.sphere;
 				const base = (layout.gridWidth + layout.gutter) / layout.columns;
-				paintSphere((6 * base) / Math.PI, Math.floor(t / BOIL.step) % BOIL.offsets.length);
+				paintSphere((6 * base) / Math.PI, boilStep(t));
 				ctx.save();
 				if (!frame.whole) ctx.clip(pens.gores);
 				ctx.globalAlpha = opacity;

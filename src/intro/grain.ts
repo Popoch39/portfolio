@@ -2,6 +2,10 @@
  * The Intro's grain: SVG `feTurbulence` noise as data URIs, tiled (`stitchTiles` makes the tile
  * seamless). Rasterised once by the browser, no request.
  */
+import { BOIL } from './timing';
+
+/** Which of the grain's offsets (`BOIL.offsets`) shows at `t` (s): it jumps every `BOIL.step`. */
+export const boilStep = (t: number) => Math.floor(t / BOIL.step) % BOIL.offsets.length;
 
 /** Side of a noise tile, px. */
 export const GRAIN_TILE = 256;

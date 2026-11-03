@@ -467,10 +467,10 @@ function ripple(t: number, keys: [number, number, number][]) {
 	return { opacity: o0 + (o1 - o0) * u, scale: s0 + (s1 - s0) * u };
 }
 
-/** French decimal comma, four decimals, hemisphere letter. */
+/** Four decimals, hemisphere letter. */
 function coordinate(value: number, positive: string, negative: string) {
-	return `${Math.abs(value).toFixed(4).replace('.', ',')}° ${value < 0 ? negative : positive}`;
+	return `${decimal(Math.abs(value), 4)}° ${value < 0 ? negative : positive}`;
 }
 
-/** French decimal comma, one decimal. */
-export const decimal = (value: number) => value.toFixed(1).replace('.', ',');
+/** French decimal comma, one decimal unless told otherwise. */
+export const decimal = (value: number, digits = 1) => value.toFixed(digits).replace('.', ',');

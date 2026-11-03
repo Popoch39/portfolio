@@ -8,6 +8,7 @@ import { gsap, registerScene, ScrollSmoother } from '../animation/base';
 import { globeCanvas } from './canvas';
 import { cubicBezier } from './ease';
 import { decimal, fitColumns, type Layout } from './globe';
+import { boilStep } from './grain';
 import {
 	BOIL,
 	END,
@@ -99,7 +100,7 @@ registerScene(() => {
 		shown.set(node, text);
 		node.textContent = text;
 	};
-	let boilStep = -1;
+	let paperStep = -1;
 	let scaled = Number.NaN;
 	let labelOpacity = Number.NaN;
 	const clock = { t: 0 };
@@ -121,9 +122,9 @@ registerScene(() => {
 			tick.style.transform = `translateX(${SCALE_BAR - goreWidth}px)`;
 			bar.style.transform = `scaleX(${goreWidth / SCALE_BAR})`;
 		}
-		const step = Math.floor((t + BOIL.paperLead) / BOIL.step) % BOIL.offsets.length;
-		if (step !== boilStep) {
-			boilStep = step;
+		const step = boilStep(t + BOIL.paperLead);
+		if (step !== paperStep) {
+			paperStep = step;
 			const [x, y] = BOIL.offsets[step];
 			grain.style.transform = `translate(${x}px, ${y}px)`;
 		}

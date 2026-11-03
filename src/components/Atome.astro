@@ -265,6 +265,11 @@ const frame = [
 	const FOCUS_FADE = 0.025;
 	const FOCUS_HOLD = 0.05;
 	const DIMMED = 0.2;
+	/**
+	 * Where the labels sit under the tower rather than beside it (the CSS's portrait layout): during the
+	 * scene they share one row, only the lit bague's showing, so the list leaves the frame's height to the tower.
+	 */
+	const LABELS_BELOW = matchMedia('(orientation: portrait), (max-width: 639px)');
 	/** How far the page scrolls, in screens, for the length of the building phase (0 to 1 on the timeline). */
 	const BUILD_SCREENS = 4;
 
@@ -280,8 +285,12 @@ const frame = [
 	function fitToScreen(section: HTMLElement, atome: HTMLElement) {
 		atome.style.removeProperty('--tower-scale');
 		const style = getComputedStyle(atome);
-		const widthScale = Number.parseFloat(style.getPropertyValue('--tower-scale'));
 		const towerHeight = Number.parseFloat(style.getPropertyValue('--tower-height'));
+		// Under the tower, the labels leave it the whole column: the CSS scale, set for the list beside it
+		// or below it in full, gives way to the column's width, up to the drawing's own size.
+		const cssScale = Number.parseFloat(style.getPropertyValue('--tower-scale'));
+		const columnScale = atome.clientWidth / Number.parseFloat(style.getPropertyValue('--tower-width'));
+		const widthScale = LABELS_BELOW.matches ? Math.max(cssScale, Math.min(1, columnScale)) : cssScale;
 		const frame =
 			innerHeight - (Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingBottom) || 0);
 		const padding = Number.parseFloat(getComputedStyle(section).paddingTop) || 0;
@@ -293,7 +302,7 @@ const frame = [
 		const note = Math.max(0, frameEnd.getBoundingClientRect().bottom - bottom);
 		// What does not scale: the title above the Atome, the list below the tower in portrait, the note.
 		const title = top - sectionTop - padding;
-		const list = bottom - top - towerHeight * widthScale;
+		const list = bottom - top - towerHeight * cssScale;
 
 		// The title stays in the frame for the whole scene, ROOM below the top of the window.
 		const scale = Math.min(widthScale, (frame - 2 * ROOM - title - list - note) / towerHeight);
@@ -358,6 +367,8 @@ const frame = [
 		if (!atome || !section) return;
 
 		const tower = atome.querySelector<HTMLElement>('.atome-tower')!;
+		// Before the screen fit measures, so a list stacked under the tower counts for a single row.
+		atome.dataset.atomeScene = '';
 		// Before every refresh measures the pin, so the section has its fitted height by then.
 		let pinOffset = fitToScreen(section, atome);
 		let intro = introFrame(section, atome, tower, pinOffset);
@@ -395,6 +406,9 @@ const frame = [
 		});
 
 		const labels = atome.querySelectorAll('.atome-label');
+		// Function-based, so a refresh after the phone turns takes the other layout's levels (invalidateOnRefresh).
+		const labelLevel = () => (LABELS_BELOW.matches ? 0 : 1);
+		const labelDimmed = () => (LABELS_BELOW.matches ? 0 : DIMMED);
 		for (const [rank, bague] of bagues.entries()) {
 			const { start, end, travel, poses, pastilles }: Choreography = JSON.parse(bague.dataset.choreography!);
 			const plane = bague.querySelector('.bague-plane');
@@ -446,8 +460,13 @@ const frame = [
 			const settle = { ease: 'sine.inOut', duration: end - TRAVEL_START };
 			scene.fromTo(bague.querySelector('.bague-track'), { rotation: -travel }, { rotation: 0, ...settle }, TRAVEL_START);
 
-			// Its label comes in as the bague takes its place in the tower.
-			scene.fromTo(labels[rank], { opacity: 0, x: -14 }, { opacity: 1, x: 0, ease: LABEL_EASE, duration: 0.06 }, end - 0.03);
+			// Its label comes in as the bague takes its place in the tower; stacked under it, it waits for its bague to be lit.
+			scene.fromTo(
+				labels[rank],
+				{ opacity: 0, x: -14 },
+				{ opacity: () => labelLevel(), x: 0, ease: LABEL_EASE, duration: 0.06 },
+				end - 0.03,
+			);
 		}
 
 		// Enlarged in the middle while the bagues swing; as the tower rises and the labels come in, the
@@ -472,25 +491,30 @@ const frame = [
 		// layers and logos, never on the bague: an opacity below 1 on an element that preserves 3D flattens
 		// it, and its pastilles would cut the band. The accent is a layer laid over the bague: only its
 		// opacity moves, never a colour.
-		const parts = [...bagues].map((bague, rank) => [
-			...bague.querySelectorAll('.bague-side, .bague-top, .pastille-logo'),
-			labels[rank],
-		]);
+		const parts = [...bagues].map((bague) => [...bague.querySelectorAll('.bague-side, .bague-top, .pastille-logo')]);
 		const accents = [...bagues].map((bague) => [...bague.querySelectorAll('.bague-side-accent, .bague-top-accent')]);
-		const others = (rank: number) => parts.filter((_, other) => other !== rank).flat();
-		const fade = (targets: Element[], from: number, to: number, at: number) =>
+		const others = <T,>(list: T[], rank: number) => list.filter((_, other) => other !== rank);
+		type Level = number | (() => number);
+		const fade = (targets: Element | Element[], from: Level, to: Level, at: number) =>
 			scene.fromTo(targets, { opacity: from }, { opacity: to, duration: FOCUS_FADE, immediateRender: false }, at);
 		const last = parts.length - 1;
-		fade(others(0), 1, DIMMED, FOCUS_START);
+		const labelList = [...labels];
+		fade(others(parts, 0).flat(), 1, DIMMED, FOCUS_START);
+		fade(others(labelList, 0), labelLevel, labelDimmed, FOCUS_START);
+		fade(labelList[0], labelLevel, 1, FOCUS_START);
 		fade(accents[0], 0, 1, FOCUS_START);
 		for (let rank = 1; rank <= last; rank++) {
 			const at = FOCUS_START + rank * FOCUS_STEP;
 			fade(parts[rank - 1], 1, DIMMED, at);
+			fade(labelList[rank - 1], 1, labelDimmed, at);
 			fade(accents[rank - 1], 1, 0, at);
 			fade(parts[rank], DIMMED, 1, at);
+			fade(labelList[rank], labelDimmed, 1, at);
 			fade(accents[rank], 0, 1, at);
 		}
-		fade(others(last), DIMMED, 1, focusEnd - FOCUS_FADE);
+		// The whole tower comes back. Under it, the last label stays: the row never ends empty.
+		fade(others(parts, last).flat(), DIMMED, 1, focusEnd - FOCUS_FADE);
+		fade(others(labelList, last), labelDimmed, labelLevel, focusEnd - FOCUS_FADE);
 		fade(accents[last], 1, 0, focusEnd - FOCUS_FADE);
 
 		// A hold on the finished tower before the page moves on: nothing moves past this point.
@@ -499,6 +523,7 @@ const frame = [
 		return () => {
 			ScrollTrigger.removeEventListener('refreshInit', refit);
 			atome.style.removeProperty('--tower-scale');
+			delete atome.dataset.atomeScene;
 		};
 	});
 </script>
@@ -780,6 +805,15 @@ const frame = [
 		.atome-label::before,
 		.atome-label::after {
 			content: none;
+		}
+
+		/* While the scene runs, the labels share one row, as tall as the longest: only the lit bague's shows. */
+		.atome[data-atome-scene] .atome-labels {
+			display: grid;
+		}
+
+		.atome[data-atome-scene] .atome-label {
+			grid-area: 1 / 1;
 		}
 
 		.atome-category,

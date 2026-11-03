@@ -60,12 +60,20 @@ const lifts = new Map(moka.pieces.map(({ name, lift }) => [name, lift]));
 /** A height in % of the frame, as a `yPercent` of a layer, which only knows its own box. */
 const ownPercent = (frameShare: number, box: { h: number }) => +((-frameShare / box.h) * 100).toFixed(3);
 
+type Box = { x: number; y: number; w: number; h: number };
+/** A box in % of the frame: its place, for the CSS, and its size in the frame's pixels, for the image's attributes. */
+const inFrame = (box: Box) => ({
+	place: `--x: ${box.x}%; --y: ${box.y}%; --w: ${box.w}%; --h: ${box.h}%`,
+	width: Math.round((box.w * frameWidth) / 100),
+	height: Math.round((box.h * frameHeight) / 100),
+});
+
 /**
  * A wisp drifts as on the board, where its moves are in percent of the frame round the spout: brought back to
  * the layer's own box, which percentages in a transform refer to.
  */
 const [spoutX, spoutY] = moka.steamOrigin;
-const drift = (box: { x: number; y: number; w: number; h: number }, { duration, delay }: { duration: number; delay: number }) =>
+const drift = (box: Box, { duration, delay }: { duration: number; delay: number }) =>
 	[
 		`--wisp-x: ${+(100 / box.w).toFixed(4)}`,
 		`--wisp-y: ${+(100 / box.h).toFixed(4)}`,
@@ -80,6 +88,7 @@ const layers = paintOrder.map(({ name, opacity, clip, piece, wisp }) => {
 	if (!src) throw new Error(`Montage: no layer ${name} in src/assets/moka`);
 	const lift = piece && lifts.get(piece);
 	if (piece && lift === undefined) throw new Error(`Montage: no lift for the ${piece}`);
+	const { place, width, height } = inFrame(box);
 	return {
 		name,
 		src,
@@ -88,11 +97,9 @@ const layers = paintOrder.map(({ name, opacity, clip, piece, wisp }) => {
 		lift: lift === undefined ? undefined : ownPercent(lift, box),
 		seat: piece === 'collector' ? ownPercent(moka.screwSeat, box) : undefined,
 		glint: name.startsWith('edge-') || undefined,
-		width: Math.round((box.w * frameWidth) / 100),
-		height: Math.round((box.h * frameHeight) / 100),
-		place: [`--x: ${box.x}%; --y: ${box.y}%; --w: ${box.w}%; --h: ${box.h}%`, wisp && drift(box, wisp)]
-			.filter(Boolean)
-			.join('; '),
+		width,
+		height,
+		place: [place, wisp && drift(box, wisp)].filter(Boolean).join('; '),
 		wisp: !!wisp || undefined,
 		wrapper: opacity === undefined && !clip ? null : [opacity !== undefined && `opacity: ${opacity}`, clip && `clip-path: ${clip}`].filter(Boolean).join('; '),
 	};
@@ -106,14 +113,15 @@ const layers = paintOrder.map(({ name, opacity, clip, piece, wisp }) => {
  */
 const screwLift = lifts.get('collector');
 if (screwLift === undefined) throw new Error('Montage: no lift for the collector');
+const screwWindow = inFrame(moka.screw);
 const screw = {
-	place: `--x: ${moka.screw.x}%; --y: ${moka.screw.y}%; --w: ${moka.screw.w}%; --h: ${moka.screw.h}%`,
+	place: screwWindow.place,
 	lift: ownPercent(screwLift, moka.screw),
 	seat: ownPercent(moka.screwSeat, moka.screw),
 	views: moka.screw.views,
 	strip: `--x: 0%; --y: 0%; --w: 100%; --h: ${moka.screw.views * 100}%`,
-	width: Math.round((moka.screw.w * frameWidth) / 100),
-	height: Math.round((moka.screw.h * frameHeight) / 100) * moka.screw.views,
+	width: screwWindow.width,
+	height: screwWindow.height * moka.screw.views,
 };
 
 /*

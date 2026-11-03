@@ -20,8 +20,6 @@ const STRETCH = 2;
 const TOP_PARALLEL = 60;
 /** Where the globe faces before it turns to Besançon. */
 const START = { lon: -40, lat: 8 };
-const INK = [17, 17, 16];
-const ACCENT = [36, 51, 255];
 /** The point's size before it grows into the cursor, px. */
 const POINT_SIZE = 14;
 /** Where the label sits from the point's centre, px: right of it, or under it. */
@@ -29,6 +27,14 @@ const LABEL_OFFSET = { x: 20, y: -10, below: 16 };
 
 const limbEase = cubicBezier(0.65, 0, 0.35, 1);
 const popEase = cubicBezier(0.34, 1.56, 0.64, 1);
+
+export type Rgb = [red: number, green: number, blue: number];
+
+/** The page's colours, read once from its CSS: the line work turns from ink to accent. */
+export interface Palette {
+	ink: Rgb;
+	accent: Rgb;
+}
 
 export interface Box {
 	x: number;
@@ -156,7 +162,7 @@ export interface Frame {
 
 type Point = [x: number, y: number, facing: number, lon: number, lat: number];
 
-export function globe(t: number, layout: Layout, pens: Pens): Frame {
+export function globe(t: number, layout: Layout, pens: Pens, { ink, accent }: Palette): Frame {
 	const { width, height, columns, gutter } = layout;
 	const pitch = (layout.gridWidth + gutter) / columns;
 	const R = (6 * pitch) / Math.PI;
@@ -361,7 +367,7 @@ export function globe(t: number, layout: Layout, pens: Pens): Frame {
 
 	// Ink to accent as the strips straighten: the gores become the layout grid.
 	const blue = smoothstep(0.4, 1, st);
-	const mix = (i: number) => Math.round(INK[i] + (ACCENT[i] - INK[i]) * blue);
+	const mix = (i: number) => Math.round(ink[i] + (accent[i] - ink[i]) * blue);
 
 	// The grid fades out over the page: parallels first, then the strips.
 	const parallelsFade = 1 - phase(t, { start: GRID_FADE.start, duration: GRID_FADE.parallels });

@@ -4,10 +4,8 @@
  */
 import { BOIL } from './timing';
 import { boilStep, GRAIN_TILE, SPHERE_GRAIN } from './grain';
-import { globe, type Frame, type Layout } from './globe';
+import { globe, type Frame, type Layout, type Palette, type Rgb } from './globe';
 
-const INK = '#111110';
-const ACCENT = '#2433ff';
 /** The sphere's light comes from the top left (the mockup's `circle at 36% 30%`). */
 const LIGHT = { x: 0.36, y: 0.3 };
 /** Radius of a `farthest-corner` gradient from that point, in diameters. */
@@ -25,8 +23,28 @@ const GRAIN_MASK: [number, number][] = [
 	[0.82, 1],
 ];
 
-export function globeCanvas(canvas: HTMLCanvasElement) {
+/** The page's ink and accent (`--color-ink`, `--color-accent` on `element`), whatever their CSS notation. */
+export function readPalette(element: Element): Palette {
+	const style = getComputedStyle(element);
+	const probe = document.createElement('canvas');
+	probe.width = probe.height = 1;
+	const context = probe.getContext('2d', { willReadFrequently: true });
+	const rgb = (property: string): Rgb => {
+		if (!context) return [0, 0, 0];
+		context.fillStyle = style.getPropertyValue(property);
+		context.fillRect(0, 0, 1, 1);
+		const [red, green, blue] = context.getImageData(0, 0, 1, 1).data;
+		return [red, green, blue];
+	};
+	return { ink: rgb('--color-ink'), accent: rgb('--color-accent') };
+}
+
+const css = ([red, green, blue]: Rgb) => `rgb(${red},${green},${blue})`;
+
+export function globeCanvas(canvas: HTMLCanvasElement, palette: Palette) {
 	const ctx = canvas.getContext('2d');
+	const ink = css(palette.ink);
+	const accent = css(palette.accent);
 	// The sphere (shading and grain) is drawn once per grain step into its own bitmap, then scaled.
 	const sphere = document.createElement('canvas');
 	const grain = document.createElement('canvas');
@@ -112,7 +130,7 @@ export function globeCanvas(canvas: HTMLCanvasElement) {
 				gores: new Path2D(),
 				rim: new Path2D(),
 			};
-			const frame = globe(t, layout, pens);
+			const frame = globe(t, layout, pens, palette);
 			if (!ctx) return frame;
 			ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
 			ctx.clearRect(0, 0, layout.width, layout.height);
@@ -145,9 +163,9 @@ export function globeCanvas(canvas: HTMLCanvasElement) {
 				if (frame.limb && frame.limb.drawn > 0) {
 					const limb = new Path2D();
 					limb.arc(frame.limb.x, frame.limb.y, frame.limb.radius, 0, 2 * Math.PI * frame.limb.drawn);
-					stroke(limb, INK, 1.1, lines);
+					stroke(limb, ink, 1.1, lines);
 				}
-				stroke(pens.rim, INK, 1.1, lines * frame.rim);
+				stroke(pens.rim, ink, 1.1, lines * frame.rim);
 				if (frame.tint > 0.001) {
 					ctx.globalAlpha = lines * frame.tint * 0.07;
 					ctx.fillStyle = frame.color;
@@ -156,7 +174,7 @@ export function globeCanvas(canvas: HTMLCanvasElement) {
 				stroke(pens.parallels, frame.color, 0.7, lines * frame.parallels * 0.5);
 				stroke(pens.fine, frame.color, 0.7, lines * frame.fine * 0.3);
 				stroke(pens.meridians, frame.color, 0.7, lines * frame.meridians * 0.5);
-				stroke(pens.edges, INK, 1.1, lines * frame.edges * 0.8);
+				stroke(pens.edges, ink, 1.1, lines * frame.edges * 0.8);
 			}
 
 			// Besançon, then the block cursor it grows into.
@@ -167,7 +185,7 @@ export function globeCanvas(canvas: HTMLCanvasElement) {
 				if (point.scale > 0) {
 					ctx.save();
 					ctx.globalAlpha = point.opacity;
-					ctx.fillStyle = ACCENT;
+					ctx.fillStyle = accent;
 					ctx.translate(cx, cy);
 					ctx.scale(point.scale, point.scale);
 					ctx.beginPath();
@@ -180,7 +198,7 @@ export function globeCanvas(canvas: HTMLCanvasElement) {
 					// A 14 px ring with a 1 px border inside its box, scaled as a whole.
 					const ring = new Path2D();
 					ring.arc(cx, cy, 6.5 * ripple.scale, 0, 2 * Math.PI);
-					stroke(ring, ACCENT, ripple.scale, point.opacity * ripple.opacity);
+					stroke(ring, accent, ripple.scale, point.opacity * ripple.opacity);
 				}
 			}
 			ctx.globalAlpha = 1;

@@ -5,7 +5,7 @@
  * on `<html>`); without that class, nothing happens here.
  */
 import { gsap, registerScene, ScrollSmoother } from '../animation/base';
-import { globeCanvas } from './canvas';
+import { globeCanvas, readPalette } from './canvas';
 import { cubicBezier } from './ease';
 import { decimal, fitColumns, type Layout } from './globe';
 import { boilStep } from './grain';
@@ -56,7 +56,7 @@ registerScene(() => {
 	for (const type of HELD_INPUTS) addEventListener(type, holdScroll, { passive: false });
 
 	// The globe lands on the real page: measured now, again once the fonts are in, and on every resize.
-	const painter = globeCanvas(canvas);
+	const painter = globeCanvas(canvas, readPalette(root));
 	let layout = measure();
 	function measure(): Layout {
 		const grid = header.getBoundingClientRect();

@@ -238,6 +238,43 @@ for (const [screen, viewport] of SCREENS) {
 			await expect(page).toHaveURL('/');
 			await expect(veil(page)).toBeHidden();
 		});
+
+		// On the real clock, like the history test: a reload is read from the navigation entry.
+		test('a reload replays it from the top of the page, not from where the visitor had scrolled', async ({
+			page,
+		}) => {
+			await page.goto('/');
+			await page.keyboard.press('a');
+			await expect(veil(page)).toBeHidden();
+			await scrollWithWheel(page, 1_500);
+			await expect.poll(() => scrollPosition(page)).toBeGreaterThan(500);
+
+			await page.reload();
+
+			await expect(veil(page)).toBeVisible();
+			await page.waitForLoadState('load');
+			// Restoring the scroll happens around `load`: the page must stay at the top past it.
+			await page.waitForTimeout(500);
+			expect(await scrollPosition(page)).toBe(0);
+		});
+
+		test('a reload after arriving from another page of the site also replays it from the top', async ({
+			page,
+		}) => {
+			await page.goto('/this-page-does-not-exist/');
+			await page.getByRole('link', { name: 'Retour à l’accueil' }).click();
+			await expect(page).toHaveURL('/');
+			await expect(veil(page)).toBeHidden();
+			await scrollWithWheel(page, 1_500);
+			await expect.poll(() => scrollPosition(page)).toBeGreaterThan(500);
+
+			await page.reload();
+
+			await expect(veil(page)).toBeVisible();
+			await page.waitForLoadState('load');
+			await page.waitForTimeout(500);
+			expect(await scrollPosition(page)).toBe(0);
+		});
 	});
 }
 
@@ -276,7 +313,10 @@ test.describe('Intro, motion allowed, on a phone only', () => {
 
 	test('held on its side, the unrolling gores are never cut by the window', async ({ page }) => {
 		await page.setViewportSize(PHONE_LANDSCAPE);
-		await visitHome(page);
+		// A paused clock: real time running during the load would push the last sample past 5.55 s.
+		await page.clock.install({ time: 0 });
+		await page.clock.pauseAt(1_000);
+		await page.goto('/');
 		await page.clock.runFor(3_900);
 
 		// From the cut (4.1 s) to just before the lenses straighten (5.55 s): from then on, the strips

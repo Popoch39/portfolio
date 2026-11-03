@@ -1,0 +1,36 @@
+---
+/**
+ * The paper grain over the whole window, on every page: the texture of a print. Pure CSS, still,
+ * and painted from a noise tile rasterised once; only the Intro makes it boil while it plays.
+ * Above everything (Intro included) but never in the way of the pointer.
+ */
+import { PAPER_GRAIN } from '../intro/grain';
+---
+
+<div id="grain" class="grain-layer" aria-hidden="true">
+	<div class="grain" style={`background-image: url("${PAPER_GRAIN}")`}></div>
+</div>
+
+<style>
+	.grain-layer {
+		position: fixed;
+		inset: 0;
+		/* Above the Intro's layers (up to 3) and the statusline. */
+		z-index: 4;
+		overflow: hidden;
+		opacity: 0.16;
+		pointer-events: none;
+	}
+
+	/* Larger than the window: room for the Intro's jumps. */
+	.grain {
+		position: absolute;
+		inset: -120px;
+	}
+
+	@media print {
+		.grain-layer {
+			display: none;
+		}
+	}
+</style>

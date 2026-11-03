@@ -31,5 +31,6 @@ L'accueil s'ouvre sur une **Intro** (maquette 04a · Fuseaux) : un globe découp
 
 - La décision lit `performance.getEntriesByType('navigation')`, que l'horloge simulée de Playwright vide : le test du retour par l'historique tourne sur l'horloge réelle.
 - Les specs qui ne testent pas l'Intro arrivent « depuis le site » (`tests/e2e/fixtures.ts`, referrer de même origine) ; seule la spec `intro` visite l'accueil en direct.
+- Le grain papier n'appartient plus à l'Intro (révision du 2026-11-03) : c'est une couche fixe sur toutes les pages, immobile, en CSS seul (`Grain.astro`), au-dessus de tout mais sans capter le pointeur. L'Intro le fait seulement bouillir pendant qu'elle se joue.
 - Le trait du header est un pseudo-élément : l'Intro le trace par la propriété `--rule-scale` du header.
 - Tout ce que crée l'Intro est défait par le `revert()` du socle, et par elle-même à sa fin : rien ne lui survit, ni styles en ligne, ni écouteurs.

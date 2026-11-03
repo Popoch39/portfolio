@@ -256,7 +256,7 @@ function introParts() {
 		labelText: part('label')?.firstElementChild,
 		paper: part('paper'),
 		hud: part('hud'),
-		grain: over?.querySelector<HTMLElement>('.grain'),
+		grain: document.querySelector<HTMLElement>('#grain > *'),
 		tick: part('tick'),
 		bar: part('bar'),
 		phase: part('phase'),

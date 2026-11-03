@@ -5,9 +5,9 @@
  * - The veil: an opaque paper layer over the window, while the page underneath is already painted
  *   at its final state.
  * - Above it, the globe's canvas (it outlives the veil as the blue grid over the page), the
- *   Besançon label, then the paper's HUD and grain, which go with the veil.
+ *   Besançon label, then the paper's HUD, which goes with the veil. The paper grain is the
+ *   page's own (`Grain.astro`), which the Intro makes boil while it plays.
  */
-import { PAPER_GRAIN } from '../intro/grain';
 import { person } from '../data/profile';
 ---
 
@@ -29,9 +29,6 @@ import { person } from '../data/profile';
 					>fuseau 100,1 px · gouttière 0,0 px</span
 				>
 			</p>
-		</div>
-		<div class="grain-layer">
-			<div class="grain" style={`background-image: url("${PAPER_GRAIN}")`}></div>
 		</div>
 	</div>
 </div>
@@ -233,18 +230,5 @@ import { person } from '../data/profile';
 		.hud-scale {
 			bottom: 24px;
 		}
-	}
-
-	.grain-layer {
-		position: absolute;
-		inset: 0;
-		overflow: hidden;
-		opacity: 0.16;
-	}
-
-	/* Boils by jumps, moved by the Intro. */
-	.grain {
-		position: absolute;
-		inset: -120px;
 	}
 </style>

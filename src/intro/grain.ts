@@ -1,6 +1,6 @@
 /**
- * The Intro's grain: SVG `feTurbulence` noise as data URIs, tiled (`stitchTiles` makes the tile
- * seamless). Rasterised once by the browser, no request.
+ * The grain: SVG `feTurbulence` noise as data URIs, tiled (`stitchTiles` makes the tile seamless).
+ * Rasterised once by the browser, no request. The paper's lies over every page (`Grain.astro`).
  */
 import { BOIL } from './timing';
 

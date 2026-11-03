@@ -6,6 +6,7 @@
  * and placed by `moka.json`, in the board's paint order.
  */
 import moka from '../assets/moka/moka.json';
+import screwStrip from '../assets/moka/screw.webp?url&no-inline';
 
 type LayerName = keyof typeof moka.layers;
 type PieceName = (typeof moka.pieces)[number]['name'];
@@ -97,6 +98,23 @@ const layers = paintOrder.map(({ name, opacity, clip, piece, wisp }) => {
 	};
 });
 
+/**
+ * The screwing (ADR 0007): the collector's turn as one strip of views stacked top to bottom (`scripts/moka/strip.mjs`),
+ * seen one at a time through a window at the box they share. The window is placed like a layer and comes down with
+ * the collector, from its own lift and seat. Hidden until the scene shows it: under reduced motion, never downloaded.
+ */
+const screwLift = lifts.get('collector');
+if (screwLift === undefined) throw new Error('Montage: no lift for the collector');
+const screw = {
+	place: `--x: ${moka.screw.x}%; --y: ${moka.screw.y}%; --w: ${moka.screw.w}%; --h: ${moka.screw.h}%`,
+	lift: ownPercent(screwLift, moka.screw),
+	seat: ownPercent(moka.screwSeat, moka.screw),
+	views: moka.screw.views,
+	strip: `--x: 0%; --y: 0%; --w: 100%; --h: ${moka.screw.views * 100}%`,
+	width: Math.round((moka.screw.w * frameWidth) / 100),
+	height: Math.round((moka.screw.h * frameHeight) / 100) * moka.screw.views,
+};
+
 /*
  * The stack is laid out at its zoomed size, the camera's final framing: the scene scales it down at the start and
  * back up to none, so the close-up is drawn at full resolution instead of magnified.
@@ -142,6 +160,33 @@ const camera = JSON.stringify(
 						data-wisp={wisp}
 					/>
 				);
+				if (name === 'collector') {
+					return (
+						<Fragment>
+							{image}
+							<div
+								class="montage-screw"
+								style={screw.place}
+								data-screw
+								data-piece="collector"
+								data-lift={screw.lift}
+								data-seat={screw.seat}
+								hidden
+							>
+								<img
+									src={screwStrip}
+									alt=""
+									width={screw.width}
+									height={screw.height}
+									loading="lazy"
+									decoding="async"
+									style={screw.strip}
+									data-views={screw.views}
+								/>
+							</div>
+						</Fragment>
+					);
+				}
 				return wrapper ? (
 					<div class="montage-box" style={wrapper} data-layer-box={name} data-glint={glint}>
 						{image}
@@ -183,6 +228,17 @@ const camera = JSON.stringify(
 	 */
 	const COLLECTOR_ON_THREAD = 0.2955;
 	const COLLECTOR_DOWN = 0.9545;
+	/**
+	 * The turn, as on the board: once on the thread, the strip's views 1 to 35 share it, the first view before it and
+	 * the seated one after it.
+	 */
+	const TURN: [number, number] = [0.50701, 0.64799];
+	/**
+	 * The relay glow: the first view, lit, rises over the collector's layer as it comes down; the seated view fades
+	 * out over it after the turn.
+	 */
+	const RELAY_IN: [number, number] = [0.44, 0.4568];
+	const RELAY_OUT: [number, number] = [0.65634, 0.66];
 	/** A piece's glint comes in over the first share of its descent and goes out over the last one. */
 	const GLINT = 0.12;
 	/** The board's curve for what rises into place: the title's lines, the paragraph, the actions. */
@@ -256,7 +312,7 @@ const camera = JSON.stringify(
 		const lifted = (_: number, layer: HTMLElement) => Number(layer.dataset.lift);
 		const onThread = (_: number, layer: HTMLElement) => Number(layer.dataset.seat);
 		for (const [piece, [start, end]] of Object.entries(DESCENTS)) {
-			const layers = montage.querySelectorAll<HTMLElement>(`img[data-piece="${piece}"]`);
+			const layers = montage.querySelectorAll<HTMLElement>(`[data-piece="${piece}"]`);
 			const duration = end - start;
 			if (piece !== 'collector') {
 				scene.fromTo(layers, { yPercent: lifted }, { yPercent: 0, ease: DROP, duration }, start);
@@ -281,6 +337,60 @@ const camera = JSON.stringify(
 			scene
 				.fromTo(box, { opacity: 0 }, { opacity: 1, duration }, start)
 				.fromTo(box, { opacity: 1 }, { opacity: 0, duration, immediateRender: false }, end - duration);
+		}
+
+		const screw = montage.querySelector<HTMLElement>('[data-screw]');
+		const strip = screw?.querySelector('img');
+		const collector = montage.querySelector<HTMLElement>('[data-layer="collector"]');
+		let approach: IntersectionObserver | undefined;
+		if (screw && strip && collector) {
+			screw.hidden = false;
+			const views = Number(strip.dataset.views);
+			const notch = length(TURN) / (views - 2);
+			scene.fromTo(screw, { opacity: 0 }, { opacity: 1, duration: length(RELAY_IN) }, RELAY_IN[0]);
+			/*
+			 * The layer is off for the whole turn and only then: one tween whose ease is 1 strictly inside it. Two sets
+			 * would not do: a context reverts zero-length tweens in the order they were made, and the second one would
+			 * put back the first one's opacity.
+			 */
+			const hide = gsap.fromTo(
+				collector,
+				{ opacity: 1 },
+				{ opacity: 0, duration: length(TURN), ease: (progress: number) => (progress > 0 && progress < 1 ? 1 : 0) },
+			);
+			scene.add(hide, TURN[0]);
+			// `steps(n)` holds n + 1 levels of equal length: from a notch before the turn, view k starts k notches in.
+			scene.fromTo(
+				strip,
+				{ yPercent: 0 },
+				// Repainted at each notch rather than promoted: a layer as tall as the strip for 36 moves.
+				{ yPercent: (-100 * (views - 1)) / views, ease: `steps(${views - 1})`, duration: notch * views, force3D: false },
+				TURN[0] - notch,
+			);
+			scene.fromTo(screw, { opacity: 1 }, { opacity: 0, duration: length(RELAY_OUT), immediateRender: false }, RELAY_OUT[0]);
+
+			/*
+			 * Decoded once, from a screen ahead of the section: a fast scroll to the turn finds every view ready. An
+			 * observer rather than a ScrollTrigger: one more trigger on the pinned section left the context's revert
+			 * with the pieces lifted.
+			 */
+			approach = new IntersectionObserver(
+				([entry]) => {
+					if (!entry?.isIntersecting) return;
+					approach?.disconnect();
+					strip.loading = 'eager';
+					// A strip that cannot be decoded leaves the turn to the collector's layer, which stays on. A decoding
+					// cut short by the scene's own revert, which hides the window, is already undone.
+					strip.decode().catch(() => {
+						if (screw.hidden) return;
+						hide.kill();
+						collector.style.removeProperty('opacity');
+						screw.hidden = true;
+					});
+				},
+				{ rootMargin: '100% 0px' },
+			);
+			approach.observe(section);
 		}
 
 		// From ×1 on the whole moka to the final close-up on its top, linear between the board's keys.
@@ -346,6 +456,8 @@ const camera = JSON.stringify(
 			removeEventListener('focusin', showFocusedAction);
 			counter.textContent = finalLabel;
 			delete montage.dataset.lit;
+			approach?.disconnect();
+			if (screw) screw.hidden = true;
 		};
 	});
 </script>
@@ -366,6 +478,16 @@ const camera = JSON.stringify(
 		width: calc(var(--zoom) * 100%);
 		height: calc(var(--zoom) * 100%);
 		transform-origin: 0 0;
+	}
+
+	/* The screwing's window: one view of its strip at a time. */
+	.montage-screw {
+		position: absolute;
+		left: var(--x);
+		top: var(--y);
+		width: var(--w);
+		height: var(--h);
+		overflow: clip;
 	}
 
 	/* A layer's box spans the whole stack, so its image is placed in percent of the frame like the others. */

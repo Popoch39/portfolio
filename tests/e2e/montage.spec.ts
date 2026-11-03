@@ -108,14 +108,15 @@ for (const { name, use } of FINAL_STATE_CONTEXTS) {
 			await page.goto('/');
 			await montage(page).scrollIntoViewIfNeeded();
 
-			const layers = montage(page).locator('img');
+			// The layers: the screwing's strip only shows during the scene.
+			const layers = montage(page).locator('img[data-layer]');
 			for (const layer of await layers.all()) {
 				await expect.poll(() => layer.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
 				// Every piece at its seat: nothing lifted.
 				await expect(layer).toHaveCSS('transform', 'none');
 			}
 			const { figure, drawing } = await montage(page).evaluate((el) => {
-				const boxes = [...el.querySelectorAll('img')].map((img) => img.getBoundingClientRect());
+				const boxes = [...el.querySelectorAll('img[data-layer]')].map((img) => img.getBoundingClientRect());
 				const box = el.getBoundingClientRect();
 				return {
 					figure: { left: box.left, top: box.top, right: box.right, bottom: box.bottom },
@@ -138,6 +139,14 @@ for (const { name, use } of FINAL_STATE_CONTEXTS) {
 			expect(drawing.right - drawing.left).toBeGreaterThan(0.9 * width);
 		});
 
+		test('the final state shows the collector’s layer, not the screwing’s strip', async ({ page }) => {
+			await page.goto('/');
+			await montage(page).scrollIntoViewIfNeeded();
+
+			await expect(montage(page).locator('[data-layer="collector"]')).toBeVisible();
+			await expect(montage(page).locator('[data-screw]')).toBeHidden();
+		});
+
 		test('nothing moves in the figure: the steam stands still', async ({ page }) => {
 			await page.goto('/');
 			await montage(page).scrollIntoViewIfNeeded();
@@ -152,6 +161,24 @@ for (const { name, use } of FINAL_STATE_CONTEXTS) {
 		});
 	});
 }
+
+// Without JavaScript, browsers load lazy images as eager ones: only reduced motion can spare the strip.
+test.describe('Café, final state, reduced motion, the screwing', () => {
+	test.use({ reducedMotion: 'reduce' });
+
+	test('the screwing’s strip is never downloaded', async ({ page }) => {
+		const strips: string[] = [];
+		page.on('request', (request) => {
+			if (/screw.*\.webp/.test(request.url())) strips.push(request.url());
+		});
+		await page.goto('/');
+		await page.locator('#contact').scrollIntoViewIfNeeded();
+		await montage(page).scrollIntoViewIfNeeded();
+		await expect(montage(page).locator('[data-layer="collector"]')).toBeVisible();
+
+		expect(strips).toEqual([]);
+	});
+});
 
 /** A point inside each step of the board, as a share of the pinning, and what the counter says there. */
 const STEPS: [number, string][] = [
@@ -329,6 +356,80 @@ test.describe('Montage, scene', () => {
 		await expect.poll(() => opacityOnScreen(glint)).toBe(1);
 		await scrollToScene(page, start, 0.2);
 		await expect.poll(() => opacityOnScreen(glint)).toBe(0);
+	});
+
+	test('the collector is screwed on in one clockwise turn, view by view, and comes undone scrolling back', async ({
+		page,
+	}) => {
+		await page.goto('/');
+		const start = await sceneStart(page);
+		const layer = montage(page).locator('[data-layer="collector"]');
+		const screw = montage(page).locator('[data-screw]');
+		// The strip's view in the window, counted from its top: a whole number when a step lands on a whole image.
+		const view = () =>
+			screw.evaluate((window) => {
+				const strip = window.querySelector('img')?.getBoundingClientRect();
+				const box = window.getBoundingClientRect();
+				return strip ? (box.top - strip.top) / box.height : Number.NaN;
+			});
+		const expectWholeView = async (expected: number) => {
+			const shown = await view();
+			expect(Math.abs(shown - Math.round(shown)), `view ${shown}`).toBeLessThan(0.01);
+			expect(Math.round(shown)).toBe(expected);
+		};
+		/*
+		 * Points of the turn, as shares of the pinning, and the view the board shows there: views 1 to 35 share the
+		 * turn from 50.701% to 64.799%, the seated view 36 comes after it.
+		 */
+		const TURN: [number, number][] = [
+			[0.53, 6],
+			[0.57, 16],
+			[0.61, 26],
+			[0.6455, 35],
+		];
+
+		// Before: the collector's layer comes down alone.
+		await scrollToScene(page, start, 0.42);
+		expect(await opacityOnScreen(layer)).toBe(1);
+		expect(await opacityOnScreen(screw)).toBe(0);
+		// The relay: the first view, lit, glows over the layer as it lands on the thread.
+		await scrollToScene(page, start, 0.48);
+		expect(await opacityOnScreen(layer)).toBe(1);
+		expect(await opacityOnScreen(screw)).toBe(1);
+		await expectWholeView(0);
+
+		for (const [progress, expected] of TURN) {
+			await scrollToScene(page, start, progress);
+			expect(await opacityOnScreen(layer), `layer at ${progress}`).toBe(0);
+			expect(await opacityOnScreen(screw), `strip at ${progress}`).toBe(1);
+			await expectWholeView(expected);
+		}
+
+		// After: the seated view has faded out over the layer, back on screen.
+		await scrollToScene(page, start, 0.7);
+		expect(await opacityOnScreen(layer)).toBe(1);
+		expect(await opacityOnScreen(screw)).toBe(0);
+		await expectWholeView(36);
+
+		for (const [progress, expected] of [...TURN].reverse()) {
+			await scrollToScene(page, start, progress);
+			expect(await opacityOnScreen(layer), `layer at ${progress}`).toBe(0);
+			await expectWholeView(expected);
+		}
+		await scrollToScene(page, start, 0.42);
+		expect(await opacityOnScreen(layer)).toBe(1);
+		expect(await opacityOnScreen(screw)).toBe(0);
+		await expectWholeView(0);
+	});
+
+	test('the screwing’s strip is ready before the turn: loaded by the time the scene starts', async ({ page }) => {
+		await page.goto('/');
+		const strip = montage(page).locator('[data-screw] img');
+		expect(await strip.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(false);
+
+		await scrollToScene(page, await sceneStart(page), 0);
+
+		await expect.poll(() => strip.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
 	});
 
 	test('the scrolling keys move the scene forward and back', async ({ page }) => {

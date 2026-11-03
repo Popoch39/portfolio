@@ -110,6 +110,7 @@ for (const { width, height } of PHONES) {
 			for (const shift of recorded.filter(({ sources }) => sources.some(({ inFrise }) => inFrise))) {
 				expect(shift.value, JSON.stringify(shift)).toBeLessThanOrEqual(0.01);
 			}
+			expect(recorded.filter(({ sources }) => sources.some(({ inLegend }) => inLegend))).toEqual([]);
 		});
 	});
 }
@@ -144,6 +145,16 @@ test.describe('Frise under a finger, scrolling', () => {
 
 		await expect(friseSection(page)).toHaveCSS('position', 'sticky');
 		await expect(friseSection(page)).toHaveCSS('transform', 'none');
+	});
+
+	// Without a `pin`, nothing plays the timeline through at a refresh: the cues ahead must still start low.
+	test('at the start of the scene, the commits ahead stand discreet, not at their final state', async ({ page }) => {
+		await page.goto('/');
+		await scrollToScene(page, await sceneStart(page), 0);
+
+		// The next commit, whose cues begin before the start and are clipped to it.
+		const next = friseBand(page).getByRole('listitem').nth(1);
+		await expect.poll(() => next.evaluate((el) => Number(getComputedStyle(el).opacity))).toBeLessThan(0.5);
 	});
 
 	test('no jump when the pinning starts nor when it ends', async ({ page }) => {

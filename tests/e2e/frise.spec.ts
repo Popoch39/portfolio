@@ -269,7 +269,7 @@ test.describe('Frise, scene', () => {
 		await expect(legend(page)).toContainText('HEAD');
 
 		const recorded = await shifts();
-		expect(recorded.filter(({ sources }) => sources.some(({ element }) => element.includes('frise-legend')))).toEqual([]);
+		expect(recorded.filter(({ sources }) => sources.some(({ inLegend }) => inLegend))).toEqual([]);
 	});
 
 	test('the legend text only changes when HEAD reaches another commit, never on every frame', async ({ page }) => {

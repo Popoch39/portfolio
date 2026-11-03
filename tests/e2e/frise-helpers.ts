@@ -34,8 +34,8 @@ export interface LayoutShift {
 	 * replayed swipe can count as a tap: such shifts are kept, so that they can still be checked.
 	 */
 	hadRecentInput: boolean;
-	/** The shifted elements, by tag and classes, and whether each lies inside the Frise. */
-	sources: { element: string; inFrise: boolean }[];
+	/** The shifted elements, by tag and classes, and whether each lies inside the Frise and its legend. */
+	sources: { element: string; inFrise: boolean; inLegend: boolean }[];
 }
 
 /** Starts recording the layout shifts; the returned function reads what has been recorded so far. */
@@ -44,6 +44,7 @@ export async function recordLayoutShifts(page: Page) {
 		const shifts: LayoutShift[] = [];
 		window.testLayoutShifts = shifts;
 		const frise = document.querySelector('#parcours');
+		const legend = document.querySelector('[data-frise-legend]');
 		new PerformanceObserver((list) => {
 			for (const entry of list.getEntries() as LayoutShiftEntry[]) {
 				shifts.push({
@@ -53,6 +54,7 @@ export async function recordLayoutShifts(page: Page) {
 					sources: entry.sources.map(({ node }) => ({
 						element: node instanceof Element ? `${node.localName}.${[...node.classList].join('.')}` : String(node),
 						inFrise: !!node && !!frise?.contains(node),
+						inLegend: !!node && !!legend?.contains(node),
 					})),
 				});
 			}

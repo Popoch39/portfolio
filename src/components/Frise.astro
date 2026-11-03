@@ -150,7 +150,7 @@ const geometry = [
 <script>
 	import { gsap, registerScene, ScrollSmoother, type ScrollTrigger } from '../animation/base';
 
-	/** Pinning length, in window heights (400svh, also in the track's CSS). */
+	/** Pinning length, in window heights (400svh). */
 	const PIN_HEIGHTS = 4;
 
 	// Cues, in plane px of HEAD travel (the mock-up's 440 px a year).
@@ -243,7 +243,10 @@ const geometry = [
 		// graph (about 0.5 in, 1 out, ADR 0001): `sticky` holds it instead, natively, in a track as long
 		// as the pinning, and the trigger ends where the track lets go of it.
 		const sticky = !ScrollSmoother.get();
-		if (sticky) pinTrack.dataset.sticky = '';
+		if (sticky) {
+			pinTrack.dataset.sticky = '';
+			pinTrack.style.setProperty('--frise-pin-heights', String(PIN_HEIGHTS));
+		}
 		const pinning: ScrollTrigger.Vars = sticky
 			? { trigger: pinTrack, end: () => `bottom top+=${section.offsetHeight}` }
 			: { trigger: section, pin: true, end: `+=${PIN_HEIGHTS * 100}%` };
@@ -260,7 +263,7 @@ const geometry = [
 				// The cues past the start only take their values once played through (`immediateRender: false`):
 				// a `pin` plays the timeline to its end at each refresh to measure it, `sticky` does not, which
 				// would leave the labels ahead raised and lit, at their final state.
-				onRefresh: (self) => timeline.progress(1, true).progress(self.progress, true),
+				onRefresh: sticky ? (self) => timeline.progress(1, true).progress(self.progress, true) : undefined,
 			},
 			onUpdate: () => showActiveCommit(from + travel * timeline.progress()),
 		});
@@ -351,6 +354,7 @@ const geometry = [
 			for (const [name, value] of bandAttributes) if (value !== null) band.setAttribute(name, value);
 			delete section.dataset.scene;
 			delete pinTrack.dataset.sticky;
+			pinTrack.style.removeProperty('--frise-pin-heights');
 		};
 	});
 </script>
@@ -403,9 +407,9 @@ const geometry = [
 		margin-top: clamp(64px, 8vw, 120px);
 	}
 
-	/* Under a finger: the 100svh frame, then the 400svh it stays pinned for (the scene's `PIN_HEIGHTS`). */
+	/* Under a finger: the 100svh frame, then the window heights it stays pinned for (set by the scene). */
 	.frise-track[data-sticky] {
-		height: 500svh;
+		height: calc((1 + var(--frise-pin-heights)) * 100svh);
 	}
 
 	.frise-track[data-sticky] > .frise {
@@ -732,6 +736,10 @@ const geometry = [
 	 */
 	.frise-legend {
 		--frise-legend-gap: 8px;
+		--frise-legend-meta: 12px;
+		--frise-legend-place: 15px;
+		/* The meta and place lines; the title's line is its size. */
+		--frise-legend-leading: 1.5;
 		position: absolute;
 		bottom: calc(var(--statusline-height) + 28px);
 		left: var(--page-gutter);
@@ -741,7 +749,8 @@ const geometry = [
 		gap: var(--frise-legend-gap);
 		box-sizing: border-box;
 		height: calc(
-			12px * 1.5 + var(--frise-legend-title) * var(--frise-legend-title-lines) + 15px * 1.5 *
+			var(--frise-legend-meta) * var(--frise-legend-leading) + var(--frise-legend-title) *
+				var(--frise-legend-title-lines) + var(--frise-legend-place) * var(--frise-legend-leading) *
 				var(--frise-legend-place-lines) + 2 * var(--frise-legend-gap)
 		);
 		max-width: var(--frise-legend-width);
@@ -753,8 +762,8 @@ const geometry = [
 	}
 
 	.frise-legend-meta {
-		font-size: 12px;
-		line-height: 1.5;
+		font-size: var(--frise-legend-meta);
+		line-height: var(--frise-legend-leading);
 		color: var(--color-on-dark-muted);
 	}
 
@@ -762,13 +771,14 @@ const geometry = [
 		font-size: var(--frise-legend-title);
 		font-weight: 900;
 		font-stretch: 75%;
+		/* One line per size: the legend's height counts on it. */
 		line-height: 1;
 		letter-spacing: -0.015em;
 	}
 
 	.frise-legend-place {
-		font-size: 15px;
-		line-height: 1.5;
+		font-size: var(--frise-legend-place);
+		line-height: var(--frise-legend-leading);
 		color: var(--color-on-dark-muted);
 	}
 </style>

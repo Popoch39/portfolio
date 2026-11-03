@@ -28,7 +28,11 @@ async function serveHomePage(page: Page, { id = 'contact' } = {}) {
 	const roomHash = `'sha256-${createHash('sha256').update(room).digest('base64')}'`;
 	await page.route('/', async (route) => {
 		const response = await route.fetch();
-		const html = (await response.text())
+		const served = await response.text();
+		// Should the policy's wording change, the room would be blocked and the anchor tests would
+		// fail far from the cause: this says it here instead.
+		if (!served.includes("style-src 'self'")) throw new Error("serveHomePage: no `style-src 'self'` to extend");
+		const html = served
 			.replace('</head>', `<style>${room}</style></head>`)
 			.replace("style-src 'self'", `style-src 'self' ${roomHash}`)
 			.replace('id="contact"', `id="${id}" data-testid="contact"`)

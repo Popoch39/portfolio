@@ -13,14 +13,12 @@ gsap.registerPlugin(ScrollTrigger, ScrollSmoother);
 const MOTION_ALLOWED = '(prefers-reduced-motion: no-preference)';
 const motion = gsap.matchMedia();
 
+const pageLoaded = new Promise((resolve) => {
+	if (document.readyState === 'complete') resolve(undefined);
+	else addEventListener('load', resolve, { once: true });
+});
 // Fonts and images have taken their place: scene thresholds and anchor positions will not move any more.
-const pageSettled = Promise.all([
-	document.fonts.ready,
-	new Promise((resolve) => {
-		if (document.readyState === 'complete') resolve(undefined);
-		else addEventListener('load', resolve, { once: true });
-	}),
-]);
+const pageSettled = Promise.all([document.fonts.ready, pageLoaded]);
 
 motion.add(MOTION_ALLOWED, () => {
 	const smoother = ScrollSmoother.create({
@@ -35,8 +33,12 @@ motion.add(MOTION_ALLOWED, () => {
 	// a phone: a pin held by a transform written each frame trails behind it, the section scrolling
 	// past its place then jumping back. Fixed, it is held by the browser.
 	ScrollTrigger.defaults({ pinType: smoother.smooth() ? 'transform' : 'fixed' });
-	// ScrollTrigger refreshes on its own at `load`, but not when a web font arrives later.
-	pageSettled.then(() => ScrollTrigger.refresh());
+	// ScrollTrigger refreshes on its own at `load`, but not when a web font arrives later. Fonts already
+	// in by then were measured by that refresh: another one would follow it in the same task, doubling
+	// the longest task of the load.
+	pageLoaded.then(() => {
+		if (document.fonts.status === 'loading') document.fonts.ready.then(() => ScrollTrigger.refresh());
+	});
 	// Page restored from the back/forward cache: the window may have changed while it was frozen.
 	const onCacheRestore = (event: PageTransitionEvent) => {
 		if (event.persisted) ScrollTrigger.refresh();
@@ -51,7 +53,8 @@ motion.add(MOTION_ALLOWED, () => {
 
 // Outside the context: the landing anchor only matters at load, a preference flip later on must
 // not bring the page back to it. Without a smoother (reduced motion), the browser handles it.
-// Attached after the context's refresh on the same promise, it runs after it.
+// It runs after ScrollTrigger's own refresh at `load`, and after a late font's refresh: that one
+// waits on `fonts.ready` directly, this one on a promise `fonts.ready` resolves.
 pageSettled.then(() => {
 	const target = anchorTarget(location.hash);
 	if (target) ScrollSmoother.get()?.scrollTo(target, false, atTopOfVisibleArea());

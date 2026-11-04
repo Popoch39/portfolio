@@ -63,7 +63,7 @@ const jsonLd = JSON.stringify({
 }).replace(/</g, '\\u003c');
 ---
 
-<Layout title={title} description={description}>
+<Layout title={title} description={description} pause>
 	<script slot="head" type="application/ld+json" set:html={jsonLd} />
 	<IntroTrigger slot="head" />
 	<Intro slot="overlay" />
@@ -571,9 +571,10 @@ const jsonLd = JSON.stringify({
 		animation: marquee 42s linear infinite;
 	}
 
-	/* Nothing slides that nobody sees: out of view, and under the Voile. */
+	/* Nothing slides that nobody sees: out of view, and under the Voile. Nor once the visitor has paused it. */
 	.marquee[data-offscreen] .marquee-track,
-	:global(html.intro) .marquee-track {
+	:global(html.intro) .marquee-track,
+	:global(:root:has(#pause:checked)) .marquee-track {
 		animation-play-state: paused;
 	}
 

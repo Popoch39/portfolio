@@ -23,7 +23,10 @@ export type GlobeMessage =
  * timeline catches up with real time on its next tick (below GSAP's lag threshold, 500 ms), so the
  * globe stays in step with the page's tweens. Twice the longest task the fluidity budget allows
  * (50 ms): past that, the main thread is not busy but stalled, and the globe waits for it rather
- * than run on alone.
+ * than run on alone. Not as far as the lag threshold: the Besançon point would leave its label (drawn
+ * by the page) that far behind during the stall, and past the threshold the timeline only moves on
+ * 33 ms, so the globe, which never steps back, would stand still for up to 467 ms after it while the
+ * label, the HUD and the page's tweens move on.
  */
 const MAX_LEAD = 0.1;
 

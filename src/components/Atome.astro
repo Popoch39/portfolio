@@ -226,7 +226,7 @@ const frame = [
 </div>
 
 <script>
-	import { cubicBezier, gsap, registerScene, SCENE_SCRUB, ScrollTrigger } from '../animation/base';
+	import { cubicBezier, gsap, readTransforms, registerScene, SCENE_SCRUB, ScrollTrigger } from '../animation/base';
 
 	type Pose = { y: number; heading: number; tilt: number; spin: number; scale: number };
 	type Choreography = {
@@ -377,20 +377,19 @@ const frame = [
 		atome.dataset.atomeScene = '';
 		// The scene reads all it needs before it writes anything, and pins its section last: every read
 		// that follows a write makes the browser compute the styles again, those of the whole section once
-		// the pin has moved it into its spacer. First, GSAP reads the transform of every element it moves,
-		// once, in a single style pass; left to the tweens, each element would be read between two writes.
-		for (const element of atome.querySelectorAll(MOVED)) gsap.getProperty(element, 'x');
+		// the pin has moved it into its spacer. First, the transform of every element it moves.
+		readTransforms(atome.querySelectorAll(MOVED));
 		// Then the opacity of every element it fades, written back as is: a tween reads it from the
 		// element's own style from then on, never from the computed one.
 		gsap.set(atome.querySelectorAll(FADED), {
-			opacity: (_: number, element: Element) => gsap.getProperty(element, 'opacity'),
+			opacity: (_: number, element: Element) => Number(gsap.getProperty(element, 'opacity')),
 		});
 		// Before every refresh measures the pin, so the section has its fitted height by then.
 		let pinOffset = fitToScreen(section, atome);
 		let intro = introFrame(section, atome, tower, pinOffset);
 		/**
-		 * A refresh no longer invalidates the whole scene: undoing its 200 tweens and starting them again,
-		 * element by element, froze a phone for a quarter of a second. Only what the screen decides is
+		 * A refresh never invalidates the whole scene: undoing its 200 tweens and starting them again,
+		 * element by element, freezes a phone for a quarter of a second. Only what the screen decides is
 		 * taken again: the opening frame, and the labels' levels once the list has moved under the tower
 		 * or back beside it. The other tweens keep the values they were built with.
 		 */
@@ -429,7 +428,7 @@ const frame = [
 		// in turn. Its ScrollTrigger comes once it is complete.
 		const scene = gsap.timeline({ defaults: { ease: 'none' }, paused: true });
 		/** The tween the scene has just been given. */
-		const added = () => {
+		const lastTween = () => {
 			const tween = scene.recent();
 			if (!(tween instanceof gsap.core.Tween)) throw new Error('Atome: the scene was given no tween');
 			return tween;
@@ -448,7 +447,7 @@ const frame = [
 				{ opacity: () => labelLevel(), x: 0, ease: LABEL_EASE, duration: 0.06 },
 				end - 0.03,
 			);
-			byLayout.push(added());
+			byLayout.push(lastTween());
 		}
 		const nucleus = atome.querySelector('.atome-nucleus');
 		scene.fromTo(nucleus, { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, ease: NUCLEUS_EASE, duration: 0.065 }, 0.44);
@@ -519,7 +518,7 @@ const frame = [
 			{ x: 0, y: 0, scale: 1, ease: 'power2.inOut', duration: INTRO_END - INTRO_LEAVE },
 			INTRO_LEAVE,
 		);
-		const opening = added();
+		const opening = lastTween();
 		// Once the refresh has brought the scene back to where it stood, the opening frame is taken again
 		// and laid down at the scene's time: before the tween starts, the refresh plays nothing on it.
 		const applyFrame = () => {
@@ -540,7 +539,7 @@ const frame = [
 		type Level = number | (() => number);
 		const fade = (targets: Element | Element[], from: Level, to: Level, at: number) => {
 			scene.fromTo(targets, { opacity: from }, { opacity: to, duration: FOCUS_FADE, immediateRender: false }, at);
-			if (typeof from === 'function' || typeof to === 'function') byLayout.push(added());
+			if (typeof from === 'function' || typeof to === 'function') byLayout.push(lastTween());
 		};
 		const last = parts.length - 1;
 		const labelList = [...labels];

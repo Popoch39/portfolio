@@ -157,6 +157,15 @@ export const SCENE_SCRUB = 1;
 export { gsap, ScrollSmoother, ScrollTrigger };
 
 /**
+ * Has GSAP read the transform of every target a scene moves, all at once, in a single style pass. GSAP
+ * reads a target's transform the first time it tweens it: left to the tweens, each target would be read
+ * between two writes, at a layout each. A scene calls it before it writes anything.
+ */
+export function readTransforms(targets: Iterable<Element | null>) {
+	for (const target of targets) if (target) gsap.getProperty(target, 'x');
+}
+
+/**
  * The mockups' CSS easing curves, kept as they are: GSAP only knows them through CustomEase, a plugin
  * the animation base does not load for a few curves.
  */

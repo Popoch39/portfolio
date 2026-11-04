@@ -470,8 +470,8 @@ const camera = JSON.stringify(
 		 * scale), and the camera only scales that down then back up. At rest, it is drawn in the section's layer: a layer
 		 * of its own stands between device pixels and comes out softer on a phone's fractional pixel ratio, and given
 		 * back any later than the camera's last frame, it leaves the collector a device pixel off.
-		 * The fire's, from the same moment until it is lit: fading in the drawing, the knob, the glow and the steam had
-		 * it rasterized again at every frame, right as the camera ends. Promoted along with the stack, which is drawn anew
+		 * The fire's, from the same moment until it is lit: fading in the drawing, the knob, the glow and the steam
+		 * would have it rasterized again at every frame, right as the camera ends. Promoted along with the stack, which is drawn anew
 		 * then anyway; given back once lit, only their boxes are drawn again.
 		 */
 		const layered = (targets: gsap.TweenTarget, willChange: string, [start, end]: [number, number]) =>

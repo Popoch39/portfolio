@@ -275,6 +275,9 @@ const frame = [
 	/** Every element whose transform the scene moves. */
 	const MOVED =
 		'.atome-tower, [data-choreography], .bague-plane, .bague-layer, .bague-track, .pastille-slot, .atome-label, .atome-nucleus';
+	/** Every element whose opacity the scene moves. */
+	const FADED =
+		'.atome-label, .atome-nucleus, .bague-side, .bague-top, .bague-side-accent, .bague-top-accent, .pastille-logo';
 
 	/** Breathing room kept above the pinned frame. */
 	const ROOM = 24;
@@ -377,6 +380,11 @@ const frame = [
 		// the pin has moved it into its spacer. First, GSAP reads the transform of every element it moves,
 		// once, in a single style pass; left to the tweens, each element would be read between two writes.
 		for (const element of atome.querySelectorAll(MOVED)) gsap.getProperty(element, 'x');
+		// Then the opacity of every element it fades, written back as is: a tween reads it from the
+		// element's own style from then on, never from the computed one.
+		gsap.set(atome.querySelectorAll(FADED), {
+			opacity: (_: number, element: Element) => gsap.getProperty(element, 'opacity'),
+		});
 		// Before every refresh measures the pin, so the section has its fitted height by then.
 		let pinOffset = fitToScreen(section, atome);
 		let intro = introFrame(section, atome, tower, pinOffset);
@@ -432,7 +440,6 @@ const frame = [
 		// Function-based, so a refresh after the phone turns takes the other layout's levels (`refit`).
 		const labelLevel = () => (LABELS_BELOW.matches ? 0 : 1);
 		const labelDimmed = () => (LABELS_BELOW.matches ? 0 : DIMMED);
-		// The labels and the nucleus first: their opacity has to be read, and it is, before the bagues are written.
 		for (const [rank, { end }] of choreographies.entries()) {
 			// Its label comes in as the bague takes its place in the tower; stacked under it, it waits for its bague to be lit.
 			scene.fromTo(
@@ -557,23 +564,30 @@ const frame = [
 
 		// A hold on the finished tower before the page moves on: nothing moves past this point.
 		scene.set({}, {}, sceneLength);
-		// At every refresh, ScrollTrigger plays a pinned scene to its end and back, to see whether it moves
-		// the pin; a scene that has never played is then started over, all 200 tweens, and the next refresh
-		// does it again. Played once at its start, where nothing moves yet, the scene keeps what its first
-		// refresh set up.
-		scene.render(0, true, true);
 
-		ScrollTrigger.create({
-			animation: scene,
+		const span = {
 			trigger: section,
-			pin: true,
 			start: () => `top+=${pinOffset} top`,
 			// The building phase is as long as the Frise's pin, so it doesn't rush past before its phases can
 			// be read; the bagues lit in turn come on top, at the same pace.
 			end: `+=${Math.round(BUILD_SCREENS * 100 * sceneLength)}%`,
-			scrub: SCENE_SCRUB,
+		};
+		// The pin and the scene over the same span, but apart: at every refresh, ScrollTrigger plays the
+		// animation of a pin to its end and back, to see whether it moves the pin, which started all 200
+		// tweens of the scene at once. Apart, a tween starts when the scroll first reaches it.
+		ScrollTrigger.create({
+			...span,
+			pin: true,
 			// Under a finger the page scrolls natively, off the main thread: the pin is set a frame early.
 			anticipatePin: 1,
+			// Empty: with a timeline, ScrollTrigger waits for the page's refresh to measure the pin, instead
+			// of measuring it, and every other pin with it, as it is created.
+			animation: gsap.timeline(),
+		});
+		ScrollTrigger.create({
+			...span,
+			animation: scene,
+			scrub: SCENE_SCRUB,
 			// Not `onToggle`: ScrollTrigger runs it inside the scene's context, and when the preference flips
 			// mid-scene, Firefox then leaves the bagues where they stood instead of reverting them.
 			onUpdate: ({ isActive }) => isActive && promote(true),

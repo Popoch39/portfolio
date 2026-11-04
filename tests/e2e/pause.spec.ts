@@ -113,6 +113,22 @@ const ledeChangesOver = (page: Page, ms: number) =>
 		ms,
 	);
 
+test.describe('the Pause, motion reduced', () => {
+	test.use({ reducedMotion: 'reduce', viewport: { width: 1280, height: 900 } });
+
+	test('changes nothing: the marquee and the lede stay still either way', async ({ page }) => {
+		await page.goto('/');
+		await expect(marqueeTrack(page)).toHaveCSS('animation-name', 'none');
+
+		for (const checked of [true, false]) {
+			await pause(page).setChecked(checked);
+			await expect(marqueeTrack(page)).toHaveCSS('animation-name', 'none');
+			expect(await ledeChangesOver(page, 2500)).toBe(0);
+			await expect(buffer(page)).toHaveText('Je construis les cartes de votre réseau électrique.');
+		}
+	});
+});
+
 test.describe('the Pause, without JavaScript', () => {
 	test.use({ javaScriptEnabled: false, reducedMotion: 'no-preference' });
 

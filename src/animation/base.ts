@@ -28,16 +28,40 @@ const pageLoaded = new Promise((resolve) => {
 });
 // Fonts and images have taken their place: scene thresholds and anchor positions will not move any more.
 const pageSettled = Promise.all([document.fonts.ready, pageLoaded]);
+let settled = false;
+pageSettled.then(() => {
+	settled = true;
+});
 
-// The opening (the Intro) keeps the main thread to itself until it ends: nobody can scroll to the
-// other scenes meanwhile, and building them would cost it frames.
+// The opening (the Intro) keeps the main thread to itself while it moves: nobody can scroll to the
+// other scenes meanwhile, and building them would cost it frames. They are built in its dead time,
+// a moment when nothing it plays on the main thread moves, so that its end hands over a page ready
+// to scroll; or at its end, when it never reached that moment.
 let endOpening = () => {};
-const openingEnded = new Promise<void>((resolve) => {
+/** Resolved once the opening has ended (finished, skipped or reverted), or at once without one. */
+export const openingEnded = new Promise<void>((resolve) => {
 	endOpening = resolve;
 });
 // Only the home page's inline trigger sets this class, before the first paint: elsewhere, or when it
 // decided against the Intro, no opening will register to end.
-if (!document.documentElement.classList.contains('intro')) endOpening();
+const root = document.documentElement;
+if (!root.classList.contains('intro')) endOpening();
+else {
+	// The Voile's safety net (`IntroTrigger.astro`) also takes the class away from an Intro that never
+	// started (its chunk failed, it threw as it started) and so will never call `end`: the opening is over all the same.
+	const lifted = new MutationObserver(() => {
+		if (root.classList.contains('intro')) return;
+		lifted.disconnect();
+		endOpening();
+	});
+	lifted.observe(root, { attributeFilter: ['class'] });
+}
+
+// Before fonts and images are in, the scenes would be measured in a layout still on the move: the
+// dead time is let go, and the opening's end builds them.
+const onOpeningIdle = () => {
+	if (settled) setTimeout(buildScenes);
+};
 
 /** The scenes waiting to be built, in page order (the order their modules register them). */
 const pendingScenes: gsap.ContextFunc[] = [];
@@ -71,16 +95,18 @@ function createSmoother() {
 	});
 }
 
-// In a task of its own: the opening ends from its last frame.
+// In a task of its own: the opening ends, or reaches its dead time, from one of its frames.
 Promise.all([pageSettled, openingEnded]).then(() => setTimeout(buildScenes));
 
 /**
- * Builds the waiting scenes once fonts and images have taken their place and the opening has ended,
- * then measures them all with one refresh, top to bottom, in their final layout.
+ * Builds the waiting scenes once fonts and images have taken their place, in the opening's dead time
+ * or at its end, whichever comes first; then measures them all with one refresh, top to bottom, in
+ * their final layout. Only once: the end of an opening that has already reached its dead time builds nothing.
  * All in one task: a pinned scene queues a full refresh for the next frame, which the one here
  * cancels; split over several tasks, each pin would cost its own full refresh.
  */
 function buildScenes() {
+	if (scenesBuilt) return;
 	for (const scene of pendingScenes) addScene(scene);
 	scenesBuilt = true;
 	ScrollTrigger.refresh();
@@ -108,12 +134,13 @@ export function registerScene(scene: gsap.ContextFunc) {
 
 /**
  * Registers the opening (the Intro): built at once, unlike the other scenes, which wait for it. While
- * it plays, it calls `end` once it has ended (finished, skipped or reverted); when it does not play
- * (no cleanup returned, or motion reduced), it ends straight away.
+ * it plays, it calls `idle` at its dead time, when nothing it plays on the main thread moves for a
+ * while (the scenes are built there), and `end` once it has ended (finished, skipped or reverted);
+ * when it does not play (no cleanup returned, or motion reduced), it ends straight away.
  */
-export function registerOpening(scene: (end: () => void) => (() => void) | undefined) {
+export function registerOpening(scene: (end: () => void, idle: () => void) => (() => void) | undefined) {
 	motion.add(CONDITIONS, ({ conditions }) => {
-		const cleanup = conditions?.motionAllowed ? scene(endOpening) : undefined;
+		const cleanup = conditions?.motionAllowed ? scene(endOpening, onOpeningIdle) : undefined;
 		if (!cleanup) endOpening();
 		return cleanup;
 	});

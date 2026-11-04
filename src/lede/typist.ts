@@ -4,7 +4,7 @@
  * Timers, not a GSAP timeline: the rhythm is random and the steps patch the DOM's text, but it registers with the animation base so that reduced motion never starts it and a preference
  * flip puts the first version back.
  */
-import { registerScene } from '../animation/base';
+import { openingEnded, registerScene } from '../animation/base';
 import { watchOffScreen } from '../animation/offscreen';
 import type { Lede } from '../data/profile';
 import { restingOn, runs, slotStarts, type BufferState, type Mode, type Run, type Slot } from './buffer';
@@ -13,9 +13,9 @@ import { restingOn, runs, slotStarts, type BufferState, type Mode, type Run, typ
 const MAX_KEYS = 10;
 
 /** What can hold the typist where it stands; it types on once none is left. */
-type Hold = 'off-screen' | 'paused';
+type Hold = 'opening' | 'off-screen' | 'paused';
 
-/** The rest before the next version is typed: once the typist is built, and once the Pause is released. */
+/** The rest before the next version is typed: once the Intro has ended, and once the Pause is released. */
 const RESTART_MS = 1800;
 
 registerScene(() => {
@@ -147,7 +147,6 @@ registerScene(() => {
 
 	function cycle() {
 		if (stopped) return;
-		// The Intro lands its point on the lede's cursor: the base only builds this scene once it has ended.
 		const next = (version + 1) % count;
 		const { what, whose } = lede.versions[next];
 		const slip = next === count - 1;
@@ -201,6 +200,12 @@ registerScene(() => {
 	}
 
 	later(RESTART_MS, cycle);
+	// The Intro lands its point on the lede's cursor, and the base builds this scene before the Intro is
+	// over (the Ouverture): its rest only starts once the Intro has ended.
+	hold('opening');
+	openingEnded.then(() => {
+		if (!stopped) release('opening');
+	});
 	// Paused before the typist was built (a remembered choice, or during the Intro): the lede is still at rest on
 	// its first version, as rendered.
 	if (pause.checked) hold('paused');

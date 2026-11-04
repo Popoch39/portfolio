@@ -17,7 +17,7 @@ La séquence jouée une fois au chargement de l'accueil, sous le Voile : le glob
 _À éviter_ : loader, splash screen.
 
 **Ouverture**
-Le rôle de l'Intro auprès du socle : seule construite au chargement, elle garde le thread principal ; les scènes et l'Accroche ne sont construites qu'à sa fin (jouée, passée ou défaite). Sans Intro, elles le sont une fois polices et images en place (ADR 0001).
+Le rôle de l'Intro auprès du socle : seule construite au chargement, elle garde le thread principal tant qu'elle bouge. L'Ouverture construit les scènes et l'Accroche dans un **temps mort** de l'Intro, sous le Voile, quand ni le globe ni aucun tween de la page ne bouge (entre la remise du point de Besançon et la montée de la statusline) : l'Intro finie, la page défile sans attendre. Passée avant ce temps mort, défaite, ou si polices et images n'étaient pas encore en place, elle les construit à sa fin. Sans Intro, elles le sont une fois polices et images en place (ADR 0001).
 
 **Accroche**
 La phrase du hero (« Je construis les cartes de votre réseau électrique. »), réécrite en Vim d'une version à l'autre : chaque version parle à un public. Minuteries en JS, pas une scène : elle attend la fin de l'Intro, se fige hors de l'écran et sous la Pause, et ne démarre pas en mouvement réduit. Son état final est la première version ; les lecteurs d'écran lisent une phrase stable.

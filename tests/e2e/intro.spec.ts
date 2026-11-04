@@ -59,8 +59,28 @@ async function recordFarthestScroll(page: Page) {
 	return () => page.evaluate(() => window.testFarthestScroll);
 }
 
+/** The spacers of the pinned scenes: there once the scenes are built. */
+const pins = (page: Page) => page.locator('.pin-spacer');
+
+/** From the page's start, how many scenes are pinned at the very moment the Intro hands the page over. */
+async function recordPinsAtIntroEnd(page: Page) {
+	await page.addInitScript(() => {
+		let playing = false;
+		// On the document: its root element may not exist yet when this runs.
+		new MutationObserver((_, observer) => {
+			const intro = document.documentElement?.classList.contains('intro') ?? false;
+			if (intro) playing = true;
+			if (intro || !playing) return;
+			window.testPinsAtIntroEnd = document.querySelectorAll('.pin-spacer').length;
+			observer.disconnect();
+		}).observe(document, { subtree: true, attributeFilter: ['class'] });
+	});
+	return () => page.evaluate(() => window.testPinsAtIntroEnd);
+}
+
 declare global {
 	interface Window {
+		testPinsAtIntroEnd?: number;
 		testFarthestScroll?: number;
 		testGridDraws?: number;
 	}
@@ -214,18 +234,62 @@ for (const [screen, viewport] of SCREENS) {
 			expect(await farthest()).toBe(0);
 		});
 
-		// The Intro has the main thread to itself: the other scenes would cost it frames while nobody can
-		// scroll to them anyway.
-		test('the scenes further down are only built once it has ended', async ({ page }) => {
-			const pinned = page.locator('.pin-spacer');
+		// The scenes further down are built in a moment of the Intro when nothing moves: the first scroll
+		// after it never waits for them, and the globe never waits for them while it turns.
+		test('the scenes further down are not built while the globe turns, but are in place once it has ended', async ({
+			page,
+		}) => {
+			const pinnedAtEnd = await recordPinsAtIntroEnd(page);
 			await visitHome(page);
 			await page.clock.runFor(6_000);
 			await expect(veil(page)).toBeVisible();
-			expect(await pinned.count()).toBe(0);
+			expect(await pins(page).count()).toBe(0);
 
 			await page.clock.runFor(4_000);
-			await expect(veil(page)).toBeHidden();
-			await expect.poll(() => pinned.count()).toBeGreaterThan(0);
+			await expect(grid(page)).toBeHidden();
+			expect(await pinnedAtEnd()).toBeGreaterThan(0);
+		});
+
+		test('skipped before the scenes are built, it builds them at once', async ({ page }) => {
+			await visitHome(page);
+			await page.clock.runFor(2_000);
+
+			await page.mouse.click(200, 300);
+			await page.clock.runFor(400);
+
+			await expect(grid(page)).toBeHidden();
+			await expect.poll(() => pins(page).count()).toBeGreaterThan(0);
+		});
+
+		test('skipped once the scenes are built, it does not build them again', async ({ page }) => {
+			await visitHome(page);
+			await page.clock.runFor(8_500);
+			await expect(grid(page)).toBeVisible();
+			const built = await pins(page).count();
+			expect(built).toBeGreaterThan(0);
+			await pins(page).evaluateAll((spacers) => {
+				for (const spacer of spacers) spacer.setAttribute('data-test-built', '');
+			});
+
+			await page.mouse.click(200, 300);
+			await page.clock.runFor(400);
+
+			await expect(grid(page)).toBeHidden();
+			await expect(pins(page)).toHaveCount(built);
+			await expect(page.locator('.pin-spacer[data-test-built]')).toHaveCount(built);
+		});
+
+		// The Intro lands its point on the lede's cursor: the typist only starts its rest once it has ended.
+		test('the lede is not rewritten before the Intro has ended', async ({ page }) => {
+			const keys = page.locator('.hero-lede [data-keys] > *');
+			await visitHome(page);
+
+			await page.clock.runFor(11_000);
+			await expect(grid(page)).toBeHidden();
+			await expect(keys).toHaveCount(0);
+
+			await page.clock.runFor(2_000);
+			await expect.poll(() => keys.count()).toBeGreaterThan(0);
 		});
 
 		test('the title is painted at its final state from the first paint, under the veil', async ({ page }) => {
@@ -609,10 +673,22 @@ test.describe('Intro, when it cannot play', () => {
 		await expect(veil(page)).toBeHidden();
 		await expect(grid(page)).toBeHidden();
 		await expectFinalState(page);
+		await expect.poll(() => pins(page).count()).toBeGreaterThan(0);
 
 		await scrollWithWheel(page, 600);
 		await page.clock.runFor(1_000);
 		await expect.poll(() => scrollPosition(page)).toBeGreaterThan(0);
+	});
+
+	test('the Intro’s own chunk does not load: the veil lifts, and the scenes are built all the same', async ({
+		page,
+	}) => {
+		await page.route(/\/_astro\/Intro\.astro_[\w.-]+\.js$/, (route) => route.abort());
+		await visitHome(page);
+
+		await expect(veil(page)).toBeHidden();
+		await expectFinalState(page);
+		await expect.poll(() => pins(page).count()).toBeGreaterThan(0);
 	});
 
 	test('the Intro starts but never moves on: the veil lifts after 20 s whatever happens, on a page that scrolls', async ({

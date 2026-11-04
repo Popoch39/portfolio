@@ -56,7 +56,42 @@ test.describe('off screen', () => {
 		await scrollToScene(page, await sceneStart(page), 1);
 		await expect.poll(() => playStates(montageFigure(page))).toEqual(wisps);
 	});
+
+	test('the lede stops typing once out of view, even mid-word, and types on when it comes back', async ({ page }) => {
+		await page.goto('/');
+		await expect(page.locator('#statusline [data-vim-mode]')).toHaveText('INSERT', { timeout: 10_000 });
+
+		await scrollToBottom(page);
+		await expect(lede(page)).not.toBeInViewport();
+		expect(await ledeChangesOver(page, 3000)).toBe(0);
+
+		await scrollToY(page, 0);
+		await expect(lede(page)).toBeInViewport();
+		expect(await ledeChangesOver(page, 3000)).toBeGreaterThan(0);
+	});
 });
+
+const lede = (page: Page) => page.locator('.hero-lede');
+
+/** How many times, over the next `ms`, the lede or its mode in the statusline changed in the DOM. */
+const ledeChangesOver = (page: Page, ms: number) =>
+	page.evaluate(
+		(duration) =>
+			new Promise<number>((resolve) => {
+				let changes = 0;
+				const observer = new MutationObserver((records) => {
+					changes += records.length;
+				});
+				for (const watched of document.querySelectorAll('[data-lede], #statusline')) {
+					observer.observe(watched, { subtree: true, childList: true, characterData: true, attributes: true });
+				}
+				setTimeout(() => {
+					observer.disconnect();
+					resolve(changes);
+				}, duration);
+			}),
+		ms,
+	);
 
 directVisit.describe('under the Voile', () => {
 	directVisit.use({ reducedMotion: 'no-preference', viewport: { width: 1280, height: 900 } });

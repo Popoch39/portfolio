@@ -133,7 +133,7 @@ for (const { name, use } of FINAL_STATE_CONTEXTS) {
 
 		test('Tab stops on the strip, then goes on to the Stack', async ({ page }) => {
 			await page.goto('/');
-			await lastProjectLink(page).focus();
+			await linkBeforeFrise(page).focus();
 
 			await page.keyboard.press('Tab');
 			await expect(band(page)).toBeFocused();
@@ -143,7 +143,8 @@ for (const { name, use } of FINAL_STATE_CONTEXTS) {
 	});
 }
 
-const lastProjectLink = (page: Page) => page.locator('#projets').getByRole('link').last();
+/** The last link ahead of the Frise: the hero's, the marquee between them being hidden. */
+const linkBeforeFrise = (page: Page) => page.locator('.hero').getByRole('link').last();
 const stackLink = (page: Page) => page.locator('#stack').getByRole('link');
 
 /** Where the HEAD commit stands on screen once the smoothing has settled: a reading taken mid-glide would leave HEAD still moving forward. */
@@ -330,7 +331,7 @@ test.describe('Frise, scene', () => {
 
 	test('the strip is no tab stop while the scene runs: Tab goes on to the Stack', async ({ page }) => {
 		await page.goto('/');
-		await lastProjectLink(page).focus();
+		await linkBeforeFrise(page).focus();
 
 		await page.keyboard.press('Tab');
 		await expect(stackLink(page)).toBeFocused();

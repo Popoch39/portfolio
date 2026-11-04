@@ -72,7 +72,7 @@ test.describe('navigation on a phone', () => {
 		await page.goto('/');
 
 		const links = page.getByRole('navigation', { name: 'Sections' }).getByRole('link');
-		await expect(links).toHaveCount(4);
+		await expect(links).toHaveCount(3);
 		for (const link of await links.all()) {
 			await expect(link).toBeInViewport();
 			const box = await link.boundingBox();

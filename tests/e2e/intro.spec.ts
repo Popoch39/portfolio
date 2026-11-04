@@ -223,7 +223,7 @@ for (const [screen, viewport] of SCREENS) {
 		});
 
 		test('does not play with an anchor in the URL', async ({ page }) => {
-			await visitHome(page, '/#projets');
+			await visitHome(page, '/#parcours');
 
 			await expect(veil(page)).toBeHidden();
 		});

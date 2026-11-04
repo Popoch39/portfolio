@@ -9,27 +9,11 @@ import Lede from '../components/Lede.astro';
 import SectionHeading from '../components/SectionHeading.astro';
 import SectionNumber from '../components/SectionNumber.astro';
 import Layout from '../layouts/Layout.astro';
-import {
-	currentPosition,
-	education,
-	marqueeWords,
-	person,
-	profile,
-	projects,
-	publicRepoCount,
-	services,
-	stack,
-	twoDigits,
-} from '../data/profile';
+import { currentPosition, education, marqueeWords, person, profile, stack } from '../data/profile';
 
 const title = 'Louis Pocheron — Développeur web & SIG à Besançon';
 const description =
 	'Sites vitrines, boutiques en ligne et prise de rendez-vous pour les commerces locaux ; cartographie SIG pour l’énergie et les collectivités. À Besançon.';
-
-const repoCount = await publicRepoCount();
-const projectsAside = [`${projects.length} sélectionnés`, repoCount && `${repoCount} dépôts publics`]
-	.filter(Boolean)
-	.join(' · ');
 
 const mailto = `mailto:${person.email}`;
 const [mailUser, mailDomain] = person.email.split('@');
@@ -132,59 +116,11 @@ const jsonLd = JSON.stringify({
 				</div>
 			</div>
 
-			<div class="wrap">
-				<section id="prestations" class="services-section" aria-labelledby="services-title">
-					<SectionHeading number={1} title="Prestations" titleId="services-title" aside={`depuis ${person.city}`} />
-					<ul class="services">
-						{
-							services.map((service, i) => (
-								<li class="service grid-12">
-									<span class="mono service-number" aria-hidden="true">
-										{twoDigits(i + 1)}
-									</span>
-									<div class="service-head">
-										<h3 class="service-title">{service.title}</h3>
-										<p class="mono service-audience dim">pour&nbsp;: {service.audience}</p>
-									</div>
-									<div class="service-body">
-										<p class="service-what">{service.what}</p>
-										<p class="service-how dim">{service.how}</p>
-									</div>
-								</li>
-							))
-						}
-					</ul>
-				</section>
-
-				<section id="projets" class="section" aria-labelledby="projects-title">
-					<SectionHeading number={2} title="Projets" titleId="projects-title" aside={projectsAside} />
-					<ol class="projects">
-						{
-							projects.map((project, i) => (
-								<li>
-									<a class="project grid-12" href={`${person.github.url}/${project.repo}`}>
-										<span class="mono project-number" aria-hidden="true">
-											{twoDigits(i + 1)}
-										</span>
-										<h3 class="project-name">{project.repo}</h3>
-										<p class="project-description dim">{project.description}</p>
-										<p class="mono project-stack dim">{project.stack}</p>
-										<span class="mono project-year">
-											<time datetime={String(project.year)}>{project.year}</time> <span aria-hidden="true">↗</span>
-										</span>
-									</a>
-								</li>
-							))
-						}
-					</ol>
-				</section>
-			</div>
-
-			<Frise number={3} titleId="career-title" />
+			<Frise number={1} titleId="career-title" />
 
 			<div class="wrap">
 				<section id="stack" class="section" aria-labelledby="stack-title">
-					<SectionHeading number={4} title="Stack" titleId="stack-title" aside=":set stack?" />
+					<SectionHeading number={2} title="Stack" titleId="stack-title" aside=":set stack?" />
 					<Atome />
 					{/* The last element the Atome's pinned frame keeps in view: its screen fit measures down to it. */}
 					<p class="mono stack-note" data-atome-frame-end>
@@ -196,12 +132,12 @@ const jsonLd = JSON.stringify({
 			</div>
 
 			{/* Out of the column: the moka's zoomed stack runs past it, clipped by the figure. */}
-			<Cafe number={5} titleId="cafe-title" />
+			<Cafe number={3} titleId="cafe-title" />
 
 			<div class="wrap">
 				<section id="contact" class="contact-section" aria-labelledby="contact-title">
 					<div class="contact grid-12">
-						<SectionNumber number={6} />
+						<SectionNumber number={4} />
 						<div class="contact-body">
 							<h2 id="contact-title" class="visually-hidden">Contact</h2>
 							<p class="contact-wq" aria-hidden="true">:wq</p>
@@ -472,181 +408,8 @@ const jsonLd = JSON.stringify({
 
 	/* Sections */
 
-	/* Right under the marquee: a shorter gap than between two sections. */
-	.services-section {
-		padding-top: clamp(56px, 7vw, 108px);
-	}
-
 	.section {
 		padding-top: clamp(64px, 8vw, 120px);
-	}
-
-	/* Services */
-
-	.services {
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-
-	.service {
-		row-gap: 10px;
-		align-items: baseline;
-		padding: 28px 0;
-		border-bottom: 1px solid var(--color-rule);
-	}
-
-	.service-head {
-		grid-column: span 4;
-	}
-
-	.service-audience {
-		margin: 8px 0 0;
-		font-size: 12px;
-		line-height: 1.6;
-	}
-
-	.service-body {
-		grid-column: span 7;
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-
-	.service-what,
-	.service-how {
-		margin: 0;
-		max-width: 62ch;
-		font-size: 16px;
-		line-height: 1.45;
-		text-wrap: pretty;
-	}
-
-	.service-what {
-		font-size: 18px;
-	}
-
-	@media (min-width: 861px) and (max-width: 1100px) {
-		.service-head,
-		.service-body {
-			grid-column: 2 / span 11;
-		}
-	}
-
-	/* Projects */
-
-	.projects {
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-
-	.projects li {
-		border-bottom: 1px solid var(--color-rule);
-	}
-
-	.project {
-		row-gap: 8px;
-		align-items: baseline;
-		margin: 0 -14px;
-		padding: 26px 14px;
-		color: inherit;
-		text-decoration: none;
-		transition:
-			background-color 0.2s ease,
-			color 0.2s ease;
-	}
-
-	/*
-	 * Hover only where a pointer hovers: a tap must not leave the row inverted. Under a finger the row
-	 * inverts while pressed, at once like a list cell, and fades back on release.
-	 */
-	@media (hover: hover) and (pointer: fine) {
-		.project:hover {
-			background: var(--color-ink);
-			color: var(--color-paper);
-		}
-
-		.project:hover .dim {
-			color: var(--color-on-ink-muted);
-		}
-
-		.project:hover .project-year > [aria-hidden] {
-			color: var(--color-accent);
-		}
-	}
-
-	.project:active {
-		background: var(--color-ink);
-		color: var(--color-paper);
-		transition-duration: 0s;
-	}
-
-	.project:active .dim {
-		color: var(--color-on-ink-muted);
-	}
-
-	.project:active .project-year > [aria-hidden] {
-		color: var(--color-accent);
-	}
-
-	.project-number,
-	.service-number {
-		grid-column: span 1;
-		font-size: 13px;
-	}
-
-	/* A service's title sits in its head, not on the grid: the column span does not apply to it. */
-	.project-name,
-	.service-title {
-		grid-column: span 4;
-		margin: 0;
-		font-size: clamp(24px, 2.5vw, 36px);
-		line-height: 1.05;
-		font-weight: 700;
-		font-stretch: 80%;
-		letter-spacing: -0.015em;
-		overflow-wrap: anywhere;
-	}
-
-	.project-description {
-		grid-column: span 4;
-		margin: 0;
-		font-size: 16px;
-		line-height: 1.45;
-		text-wrap: pretty;
-	}
-
-	.project-stack {
-		grid-column: span 2;
-		margin: 0;
-		font-size: 12px;
-		line-height: 1.6;
-	}
-
-	.project-year {
-		grid-column: span 1;
-		text-align: right;
-		font-size: 13px;
-		white-space: nowrap;
-	}
-
-	@media (min-width: 861px) and (max-width: 1100px) {
-		.project-name {
-			grid-column: 2 / span 5;
-		}
-
-		.project-description {
-			grid-column: 7 / span 6;
-		}
-
-		.project-stack {
-			grid-column: 2 / span 9;
-		}
-
-		.project-year {
-			grid-column: 11 / span 2;
-		}
 	}
 
 	/* Stack */

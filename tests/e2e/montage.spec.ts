@@ -19,7 +19,7 @@ for (const { name, use } of FINAL_STATE_CONTEXTS) {
 	test.describe(`Café, final state, ${name}`, () => {
 		test.use(use);
 
-		test('the Café is section 05, between the Stack and the Contact, now 06', async ({ page }) => {
+		test('the Café is section 03, between the Stack and the Contact, now 04', async ({ page }) => {
 			await page.goto('/');
 
 			const order = await page.evaluate(() => {
@@ -32,8 +32,8 @@ for (const { name, use } of FINAL_STATE_CONTEXTS) {
 				};
 			});
 			expect(order).toEqual({ afterStack: true, beforeContact: true });
-			await expect(section(page).locator('.section-number')).toHaveText('05');
-			await expect(page.locator('#contact .section-number')).toHaveText('06');
+			await expect(section(page).locator('.section-number')).toHaveText('03');
+			await expect(page.locator('#contact .section-number')).toHaveText('04');
 		});
 
 		test('the section has a single heading, its title on three lines, and its aside', async ({ page }) => {

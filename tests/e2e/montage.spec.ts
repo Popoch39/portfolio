@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from './fixtures';
-import { content, header, scrollPosition, scrollWithWheel, topOnceStill, verticalTranslation } from './helpers';
+import { content, header, sceneOnceStill, scrollPosition, scrollWithWheel, topOnceStill, verticalTranslation } from './helpers';
 import {
 	PIN_HEIGHTS,
 	cafeCounter as counter,
@@ -506,7 +506,9 @@ test.describe('Montage, scene', () => {
 		}
 	});
 
-	test('the camera gives its layer back once the preference flips, wherever the scene stood', async ({ page }) => {
+	test('the camera and the section give their layers back once the preference flips, wherever the scene stood', async ({
+		page,
+	}) => {
 		const stack = montage(page).locator('[data-montage-stack]');
 		// Before the camera moves, while it moves, and once it has closed in.
 		for (const progress of [0.5, 0.8, 1]) {
@@ -517,7 +519,49 @@ test.describe('Montage, scene', () => {
 			await page.emulateMedia({ reducedMotion: 'reduce' });
 			await expect(counter(page)).toHaveText('6/6 · sur le feu');
 			await expect(stack, `flipped at ${progress}`).toHaveCSS('will-change', 'auto');
+			await expect(section(page), `flipped at ${progress}`).toHaveCSS('will-change', 'auto');
 		}
+	});
+
+	test('the section holds a layer of its own over the pinning, the moka while the camera moves, its fire until it is lit', async ({
+		page,
+	}) => {
+		const stack = montage(page).locator('[data-montage-stack]');
+		// What lights up as the camera ends: the knob turning, the glow, the steam.
+		const fire = montage(page).locator(
+			'[data-layer-box="knob-off"], [data-layer="knob-on"], [data-layer-box="glow"], [data-layer-box^="steam"]',
+		);
+		const layers = async (expected: { section: string; stack: string; fire: string }, when: string) => {
+			await expect(section(page), when).toHaveCSS('will-change', expected.section);
+			await expect(stack, when).toHaveCSS('will-change', expected.stack);
+			for (const element of await fire.all()) await expect(element, when).toHaveCSS('will-change', expected.fire);
+		};
+		await page.goto('/');
+		await expect(fire).toHaveCount(6);
+		const start = await sceneStart(page);
+
+		// As the section comes in, before the pinning.
+		await scrollToScene(page, start, -0.2);
+		await layers({ section: 'auto', stack: 'auto', fire: 'auto' }, 'before the pinning');
+
+		// The pieces come down, the camera still.
+		await scrollToScene(page, start, 0.1);
+		await layers({ section: 'transform', stack: 'auto', fire: 'auto' }, 'at 0.1');
+
+		// The camera closing in, then the fire lighting over the close-up at rest (from 76%).
+		await scrollToScene(page, start, 0.7);
+		await layers({ section: 'transform', stack: 'transform', fire: 'opacity' }, 'at 0.7');
+		await scrollToScene(page, start, 0.8);
+		await layers({ section: 'transform', stack: 'auto', fire: 'opacity' }, 'at 0.8');
+
+		// The fire lit, the close-up at rest: drawn in the section's layer, at full sharpness.
+		await scrollToScene(page, start, 0.95);
+		await layers({ section: 'transform', stack: 'auto', fire: 'auto' }, 'at 0.95');
+
+		await page.evaluate(([top, heights]) => scrollTo(0, top + heights * innerHeight + 300), [start, PIN_HEIGHTS]);
+		await topOnceStill(content(page));
+		await sceneOnceStill(section(page));
+		await layers({ section: 'auto', stack: 'auto', fire: 'auto' }, 'past the pinning');
 	});
 
 	test('the paragraph and the actions rise in at the end of the scene', async ({ page }) => {

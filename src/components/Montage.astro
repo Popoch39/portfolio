@@ -446,50 +446,45 @@ const camera = JSON.stringify(
 				moveEnd = end;
 			}
 		}
-		/*
-		 * A layer of its own only while it moves: at rest, at the close-up, it is drawn again at full resolution. One
-		 * tween stepped like the collector's `hide`, for the same reason: two sets would leave the layer on at revert.
-		 */
-		if (moveStart < moveEnd) {
-			scene.add(
-				gsap.fromTo(
-					stack,
-					{ willChange: 'auto' },
-					{
-						willChange: 'transform',
-						duration: moveEnd - moveStart,
-						ease: ONLY_INSIDE,
-					},
-				),
-				moveStart,
-			);
-		}
 		scene.fromTo(progress, { scaleX: 0 }, { scaleX: 1, duration: length(CAMERA) }, CAMERA[0]);
 
 		const box = (name: string) => montage.querySelector(`[data-layer-box="${name}"]`);
+		const knobOn = montage.querySelector('[data-layer="knob-on"]');
+		const steam = montage.querySelectorAll('[data-layer-box^="steam"]');
 		scene
 			.fromTo(box('knob-off'), { opacity: 1 }, { opacity: 0, duration: length(KNOB) }, KNOB[0])
-			.from(montage.querySelector('[data-layer="knob-on"]'), { opacity: 0, duration: length(KNOB) }, KNOB[0])
+			.from(knobOn, { opacity: 0, duration: length(KNOB) }, KNOB[0])
 			// Up to its own opacity at the final state.
 			.from(box('glow'), { opacity: 0, duration: length(GLOW) }, GLOW[0])
 			// Fully opaque: the wisps fade in and out on their own as they drift.
-			.fromTo(
-				montage.querySelectorAll('[data-layer-box^="steam"]'),
-				{ opacity: 0 },
-				{ opacity: 1, duration: length(STEAM) },
-				STEAM[0],
-			);
+			.fromTo(steam, { opacity: 0 }, { opacity: 1, duration: length(STEAM) }, STEAM[0]);
+
+		/*
+		 * Layers of their own, each only over its range. Tweens stepped like the collector's `hide`, for the same
+		 * reason: sets would leave the layers on at revert.
+		 * The section's, while it is pinned, for the Atome's reason (ADR 0004, "Calques promus pendant la scène"): under
+		 * the smoother, the pinning moves it with a transform at every frame, and left in the page's layer with the
+		 * drawing changing inside it, it would be repainted at every frame.
+		 * The stack's, only while the camera moves: laid out at the close-up's size, it is rasterized once at that
+		 * resolution as it is promoted (Chromium never rasterizes a `will-change: transform` layer below the screen's own
+		 * scale), and the camera only scales that down then back up. At rest, it is drawn in the section's layer: a layer
+		 * of its own stands between device pixels and comes out softer on a phone's fractional pixel ratio, and given
+		 * back any later than the camera's last frame, it leaves the collector a device pixel off.
+		 * The fire's, from the same moment until it is lit: fading in the drawing, the knob, the glow and the steam had
+		 * it rasterized again at every frame, right as the camera ends. Promoted along with the stack, which is drawn anew
+		 * then anyway; given back once lit, only their boxes are drawn again.
+		 */
+		const layered = (targets: gsap.TweenTarget, willChange: string, [start, end]: [number, number]) =>
+			scene.add(gsap.fromTo(targets, { willChange: 'auto' }, { willChange, duration: end - start, ease: ONLY_INSIDE }), start);
+		layered(section, 'transform', [0, 1]);
+		if (moveStart < moveEnd) {
+			layered(stack, 'transform', [moveStart, moveEnd]);
+			layered([box('knob-off'), knobOn, box('glow'), ...steam], 'opacity', [moveStart, Math.max(KNOB[1], GLOW[1], STEAM[1])]);
+		}
 
 		// The end is held until the pinning lets go.
 		scene.set({}, {}, 1);
 		showStep(scene.progress());
-
-		/*
-		 * Its own layer while the scene runs, beyond the spec's camera and moving piece, for the Atome's reason (ADR 0004,
-		 * "Calques promus pendant la scène"): under the smoother, the pinning moves the section with a transform at every
-		 * frame, and left in the page's layer with the drawing changing inside it, it would be repainted at every frame.
-		 */
-		gsap.set(section, { willChange: 'transform' });
 
 		// Tab can reach the actions before they have risen in: the page then moves on to where they are shown.
 		// Listened to on the window after the smoother, so this scroll has the last word over its own.

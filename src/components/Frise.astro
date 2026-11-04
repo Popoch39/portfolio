@@ -148,7 +148,7 @@ const geometry = [
 </div>
 
 <script>
-	import { gsap, registerScene, SCENE_SCRUB, ScrollSmoother, type ScrollTrigger } from '../animation/base';
+	import { gsap, readTransforms, registerScene, SCENE_SCRUB, ScrollSmoother, type ScrollTrigger } from '../animation/base';
 
 	/** Pinning length, in window heights (400svh). */
 	const PIN_HEIGHTS = 4;
@@ -219,10 +219,9 @@ const geometry = [
 			poleHeights = heights;
 			for (const tween of timeline.getTweensOf(cards)) tween.invalidate();
 		};
-		// GSAP reads a target's transform the first time it tweens it: read between the timeline's first
-		// writes, at the first refresh, each would cost a layout. All are read here at once, before any write.
+		// Before any write: the timeline's first writes come at the first refresh.
 		const moved = section.querySelectorAll('[data-frise-camera], [data-frise-trail], [data-frise-trail-graph], [data-frise-grid]');
-		for (const target of [...moved, ...poles, ...cards]) if (target) gsap.getProperty(target, 'x');
+		readTransforms([...moved, ...poles, ...cards]);
 
 		// The diagonal and the hidden overflow come from CSS: the attribute goes away with the context.
 		section.dataset.scene = '';

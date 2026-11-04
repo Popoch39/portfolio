@@ -4,7 +4,7 @@
  * the lede. A native checkbox: the marquee stops in CSS alone (`:has()`), the lede follows its `change`
  * (`src/lede/typist.ts`). The choice is remembered per visitor.
  */
-import { createHash } from 'node:crypto';
+import { inlineScriptHash } from './inline-script';
 
 // Inline, right after the box: the remembered choice is back before the first paint and before the lede starts.
 // Storage throws when the browser blocks site data: the Pause then lasts for this visit only.
@@ -22,8 +22,7 @@ const remember = `(() => {
 		stored((storage) => (box.checked ? storage.setItem('pause', 'on') : storage.removeItem('pause'))),
 	);
 })();`;
-// Astro hashes only the scripts it bundles: this one is let through by its own hash.
-Astro.csp?.insertScriptHash(`sha256-${createHash('sha256').update(remember).digest('base64')}`);
+Astro.csp?.insertScriptHash(inlineScriptHash(remember));
 ---
 
 <label class="pause">

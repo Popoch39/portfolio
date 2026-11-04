@@ -5,12 +5,12 @@
  * so that the veil is there from the very first frame, never after a flash of the page.
  * It is also the veil's safety net: it owes nothing to the scene's modules, which may never run.
  */
-import { createHash } from 'node:crypto';
 import { END } from '../intro/timing';
+import { inlineScriptHash } from './inline-script';
 
 /**
  * Milliseconds the scene has to signal its start before the veil lifts without it. On Lighthouse's
- * slow mobile profile (150 ms, 1.6 Mbit/s, CPU ×4), the globe starts at about 1.8 s.
+ * mobile profile as DevTools applies it (562.5 ms, 1.47 Mbit/s, CPU ×4), the scene starts at 2 to 2.5 s.
  */
 const START_WAIT = 5_000;
 /**
@@ -77,9 +77,7 @@ const decide = `(() => {
 	document.addEventListener('visibilitychange', countVisibleTime);
 	countVisibleTime();
 })();`;
-// Astro hashes only the scripts it bundles: this one is let through by its own hash, wherever it
-// stands in the head, before the policy's `<meta>` or after it.
-Astro.csp?.insertScriptHash(`sha256-${createHash('sha256').update(decide).digest('base64')}`);
+Astro.csp?.insertScriptHash(inlineScriptHash(decide));
 ---
 
 <script is:inline set:html={decide} />

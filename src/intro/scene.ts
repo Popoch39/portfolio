@@ -13,6 +13,7 @@ import type { GlobeMessage } from './globe.worker';
 import { decodeGrain, newSurface, readPalette } from './inputs';
 import {
 	BOIL,
+	DEAD_TIME,
 	END,
 	HUD,
 	LATE,
@@ -45,7 +46,7 @@ const pixelRatio = () => Math.min(devicePixelRatio, MAX_PIXEL_RATIO);
 
 const marked = (name: string) => gsap.utils.toArray<HTMLElement>(`[data-intro="${name}"]`);
 
-registerOpening((end) => {
+registerOpening((end, idle) => {
 	const root = document.documentElement;
 	const parts = introParts();
 	if (!root.classList.contains(PLAYING) || !parts) return;
@@ -260,6 +261,8 @@ registerOpening((end) => {
 		.to(lines, { yPercent: 0, duration: TITLE_RISE.duration, stagger: TITLE_RISE.stagger, ease: reveal }, TITLE_RISE.start)
 		.to(late, { opacity: 1, duration: LATE.duration, ease: 'none' }, LATE.start)
 		.to(statusline, { yPercent: 0, duration: STATUSLINE.duration, ease: reveal }, STATUSLINE.start);
+	// Never reached when skipped (`progress(1, true)` fires no callback): the end builds the scenes then.
+	timeline.call(idle, undefined, DEAD_TIME);
 	render();
 
 	let fade: gsap.core.Timeline | undefined;

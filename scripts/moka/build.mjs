@@ -689,13 +689,17 @@ const front = (z, r) => {
 const lowEdge = front(NECK.z0, NECK.rOut);
 const BASKET_CLIP = k.pathOf([[lowEdge[0][0], -10], ...lowEdge, [lowEdge[lowEdge.length - 1][0], -10]], true);
 const NECK_FRONT_CLIP = k.pathOf([[0, yNeck - 0.2], [WIDTH, yNeck - 0.2], [WIDTH, HEIGHT], [0, HEIGHT]], true);
+// The hole is cut out of the whole frame, in a clip of its own: cut out of the band alone, evenodd would paint
+// the hole's far half, which sticks out above the band, over the opening.
+const NECK_OUT_CLIP = `${k.pathOf([[0, 0], [WIDTH, 0], [WIDTH, HEIGHT], [0, HEIGHT]], true)}${NECK_HOLE}`;
 const defs = `<defs>
 <clipPath id="mk-neck-hole"><path d="${NECK_HOLE}"/></clipPath>
 <clipPath id="mk-neck-low"><path d="${NECK_LOW}"/></clipPath>
 <clipPath id="mk-funnel-hole"><path d="${G.circleOf(AX, FUNNEL.flange[1], FUNNEL.rIn, P)}"/></clipPath>
 <clipPath id="mk-opening"><path d="${poly(OPENING)}"/></clipPath>
 <clipPath id="mk-basket"><path d="${BASKET_CLIP}"/></clipPath>
-<clipPath id="mk-neck-front"><path clip-rule="evenodd" d="${NECK_FRONT_CLIP}${NECK_HOLE}"/></clipPath>
+<clipPath id="mk-neck-front"><path d="${NECK_FRONT_CLIP}"/></clipPath>
+<clipPath id="mk-neck-out"><path clip-rule="evenodd" d="${NECK_OUT_CLIP}"/></clipPath>
 <filter id="mk-blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>
 </defs>`;
 
@@ -891,7 +895,7 @@ const body = [
   LAYERS.grate,
   `<g data-part="boiler" transform="${lift("boiler")}">${LAYERS.boiler}</g>`,
   `<g clip-path="url(#mk-basket)"><g data-part="funnel" transform="${lift("funnel")}">${LAYERS.funnelLow}</g></g>`,
-  `<g data-part="boiler" transform="${lift("boiler")}"><g clip-path="url(#mk-neck-front)">${LAYERS.neckFront}</g></g>`,
+  `<g data-part="boiler" transform="${lift("boiler")}"><g clip-path="url(#mk-neck-front)"><g clip-path="url(#mk-neck-out)">${LAYERS.neckFront}</g></g></g>`,
   `<g data-part="funnel" transform="${lift("funnel")}">${LAYERS.funnelTop}</g>`,
   `<g data-part="filter" transform="${lift("filter")}">${LAYERS.filter}</g>`,
   `<g data-part="gasket" transform="${lift("gasket")}">${LAYERS.gasket}</g>`,
@@ -1068,7 +1072,7 @@ const layers = Object.fromEntries(
     grate: resolve(LAYERS.grate),
     boiler: resolve(LAYERS.boiler),
     "funnel-low": resolve(LAYERS.funnelLow),
-    "neck-front": resolve(`<g clip-path="url(#mk-neck-front)">${LAYERS.neckFront}</g>`),
+    "neck-front": resolve(`<g clip-path="url(#mk-neck-front)"><g clip-path="url(#mk-neck-out)">${LAYERS.neckFront}</g></g>`),
     "funnel-top": resolve(LAYERS.funnelTop),
     filter: resolve(LAYERS.filter),
     gasket: resolve(LAYERS.gasket),

@@ -15,7 +15,7 @@ const MAX_KEYS = 10;
 /** What can hold the typist where it stands; it types on once none is left. */
 type Hold = 'off-screen' | 'paused';
 
-/** From the Pause released to the next version starting, as from the first paint to the first version. */
+/** The rest before the next version is typed: once the typist is built, and once the Pause is released. */
 const RESTART_MS = 1800;
 
 registerScene(() => {
@@ -70,6 +70,7 @@ registerScene(() => {
 		settle(version);
 	};
 	pause.addEventListener('change', followPause);
+
 	function draw(patch: Partial<BufferState>) {
 		const mode = state.mode;
 		state = { ...state, ...patch };

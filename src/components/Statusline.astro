@@ -3,6 +3,8 @@
  * Vim-like statusline, fixed to the bottom of the window. Decorative, hidden from assistive
  * technologies, but for the Pause. Outside the smoothed content, otherwise its transform would carry it along.
  */
+import Pause from './Pause.astro';
+
 interface Props {
 	/** The page has loops to stop (the marquee, the lede): the statusline carries the Pause (WCAG 2.2.2). */
 	pause?: boolean;
@@ -15,16 +17,7 @@ const { pause = false } = Astro.props;
 	<div class="side">
 		{/* The home page's lede types in Vim: its mode is echoed here (`src/lede/typist.ts`). */}
 		<span class="mode" aria-hidden="true" data-vim-mode>NORMAL</span>
-		{
-			pause && (
-				<label class="pause">
-					{/* Native: it stops the marquee without JS (`:has()`), the lede follows it (`src/lede/typist.ts`). */}
-					<input id="pause" type="checkbox" autocomplete="off" />
-					<span class="pause-box" aria-hidden="true" />
-					pause<span class="visually-hidden"> des animations</span>
-				</label>
-			)
-		}
+		{pause && <Pause />}
 		<span class="segment branch" aria-hidden="true">
 			<svg
 				width="12"
@@ -97,54 +90,6 @@ const { pause = false } = Astro.props;
 	}
 
 	.segment {
-		background: var(--color-bar);
-	}
-
-	/* A Markdown task box, ticked while paused: the state reads without colour too. */
-	.pause {
-		position: relative;
-		display: flex;
-		align-items: center;
-		gap: 1ch;
-		cursor: pointer;
-	}
-
-	/* The native box spans the whole segment, invisible: it keeps the keyboard, the click and the state. */
-	.pause input {
-		position: absolute;
-		inset: 0;
-		margin: 0;
-		appearance: none;
-		cursor: inherit;
-	}
-
-	.pause-box::before {
-		content: '[ ]';
-	}
-
-	.pause input:checked ~ .pause-box::before {
-		content: '[x]';
-	}
-
-	/* Paused: the segment turns to paper, like a mode that holds. */
-	.pause:has(input:checked) {
-		background: var(--color-paper);
-		color: var(--color-ink);
-	}
-
-	/* Drawn in the text's colour: it keeps the label's contrast whatever the state. */
-	.pause:has(input:focus-visible) {
-		outline: 2px solid currentColor;
-		outline-offset: -5px;
-	}
-
-	@media (hover: hover) and (pointer: fine) {
-		.pause:hover:not(:has(input:checked)) {
-			background: var(--color-bar);
-		}
-	}
-
-	.pause:active:not(:has(input:checked)) {
 		background: var(--color-bar);
 	}
 

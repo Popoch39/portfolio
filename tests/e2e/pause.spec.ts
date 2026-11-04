@@ -48,6 +48,44 @@ test.describe('the Pause', () => {
 		await expect(buffer(page)).toHaveText('Je construis le site de votre gîte.', { timeout: 20_000 });
 		await expect(version(page)).toHaveText(/version\s*2\/8/);
 	});
+
+	test('is remembered from one visit to the next', async ({ page }) => {
+		await page.goto('/');
+		await pause(page).click();
+
+		await page.goto('/');
+
+		await expect(pause(page)).toBeChecked();
+		await expect.poll(() => playStates(marqueeTrack(page))).toEqual(['paused']);
+		// Past the moment the typist would have started.
+		expect(await ledeChangesOver(page, 4000)).toBe(0);
+		await expect(buffer(page)).toHaveText('Je construis les cartes de votre réseau électrique.');
+
+		await pause(page).click();
+		await page.goto('/');
+
+		await expect(pause(page)).not.toBeChecked();
+		await expect.poll(() => playStates(marqueeTrack(page))).toEqual(['running']);
+	});
+
+	test('still works for the visit when the browser blocks storage', async ({ page }) => {
+		const errors: Error[] = [];
+		page.on('pageerror', (error) => errors.push(error));
+		await page.addInitScript(() => {
+			Object.defineProperty(window, 'localStorage', {
+				get() {
+					throw new DOMException('The operation is insecure.', 'SecurityError');
+				},
+			});
+		});
+		await page.goto('/');
+
+		await pause(page).click();
+
+		await expect(pause(page)).toBeChecked();
+		await expect.poll(() => playStates(marqueeTrack(page))).toEqual(['paused']);
+		expect(errors).toEqual([]);
+	});
 });
 
 const buffer = (page: Page) => page.locator('.hero-lede [data-buffer]');

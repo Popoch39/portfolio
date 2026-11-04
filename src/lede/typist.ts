@@ -200,8 +200,9 @@ registerScene(() => {
 	}
 
 	later(RESTART_MS, cycle);
-	// Paused before the typist was built: from the visitor's remembered choice, or during the Intro.
-	followPause();
+	// Paused before the typist was built (a remembered choice, or during the Intro): the lede is still at rest on
+	// its first version, as rendered.
+	if (pause.checked) hold('paused');
 
 	// Reverted by a change of motion preference: the lede goes back to its first version, at rest.
 	return () => {

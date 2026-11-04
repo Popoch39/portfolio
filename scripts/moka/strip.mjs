@@ -1,7 +1,8 @@
-// Redraws src/assets/moka/screw.webp, the screwing's strip (ADR 0007): the generator first, then its 37 views of the
-// collector, one every 10° of the turn, rasterized in Chromium and stacked top to bottom into one WebP.
+// Redraws src/assets/moka/screw.avif, the screwing's strip (ADR 0007): the generator first, then its 37 views of the
+// collector, one every 10° of the turn, rasterized in Chromium and stacked top to bottom into one AVIF.
 // Run it again when the moka changes: `node scripts/moka/strip.mjs` (or `bun`).
-// Requires the Playwright browsers (`bunx playwright install chromium`) and ImageMagick.
+// Requires the Playwright browsers (`bunx playwright install chromium`), ImageMagick and libavif's avifenc built with
+// libaom.
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -11,7 +12,7 @@ import { chromium } from '@playwright/test';
 
 const HERE = import.meta.dirname;
 const ROOT = resolve(HERE, '..', '..');
-const OUTPUT = join(ROOT, 'src/assets/moka/screw.webp');
+const OUTPUT = join(ROOT, 'src/assets/moka/screw.avif');
 
 execFileSync(process.execPath, [join(HERE, 'build.mjs')], { stdio: 'inherit' });
 const moka = JSON.parse(readFileSync(join(ROOT, 'src/assets/moka/moka.json'), 'utf8'));
@@ -57,8 +58,15 @@ try {
 		shots.push(shot);
 	}
 	await browser.close();
-	// Lossy colours over a lossless alpha: the edges of the piece stay clean over the layers beneath.
-	execFileSync('magick', [...shots, '-append', '-strip', '-quality', '75', '-define', 'webp:method=6', '-define', 'webp:use-sharp-yuv=true', '-define', 'webp:alpha-quality=100', OUTPUT]);
+	const stacked = join(tmp, 'strip.png');
+	execFileSync('magick', [...shots, '-append', '-strip', stacked]);
+	/*
+	 * Full chroma (4:4:4): subsampled, the signal's thin outlines bleed, and Firefox upsamples the chroma otherwise
+	 * than Chromium. At these qualities the strip is closer to the views than the former WebP (q75, sharp YUV,
+	 * lossless alpha: 366 KB, 35.3 dB) everywhere, for 195 KB (39.6 dB; alpha off by 9/255 at most, on the edges).
+	 * libaom at speed 0 gives the same file again on every run, its 8 threads included.
+	 */
+	execFileSync('avifenc', ['--codec', 'aom', '--speed', '0', '--jobs', '8', '--yuv', '444', '--qcolor', '40', '--qalpha', '80', stacked, OUTPUT], { stdio: 'ignore' });
 	const [width, height] = execFileSync('magick', ['identify', '-format', '%w %h', OUTPUT], { encoding: 'utf8' }).split(' ').map(Number);
 	if (height !== views * viewHeight || height > 16383) throw new Error(`strip: ${width}×${height}px`);
 	console.log(`wrote ${OUTPUT}: ${views} views of ${viewWidth}×${viewHeight}px, ${width}×${height}px, ${(statSync(OUTPUT).size / 1024).toFixed(0)} KB`);

@@ -419,13 +419,13 @@ test.describe('Frise, scene', () => {
 test.describe('Frise data elsewhere on the page', () => {
 	test.use({ javaScriptEnabled: false });
 
-	test('the hero and the JSON-LD still name the current job and every school', async ({ page }) => {
+	test('the JSON-LD still names the current job and every school', async ({ page }) => {
 		await page.goto('/');
 
-		await expect(page.getByRole('definition').filter({ hasText: 'Da Viking Code, Dijon — depuis 2023' })).toBeVisible();
 		const person = await page
 			.locator('script[type="application/ld+json"]')
 			.evaluate((script) => JSON.parse(script.textContent ?? '').mainEntity);
+		expect(person.worksFor).toMatchObject({ name: 'Da Viking Code', address: { addressLocality: 'Dijon' } });
 		expect(person.alumniOf.map((school: { name: string }) => school.name)).toEqual([
 			'Access Code School',
 			'UFR SLHS',

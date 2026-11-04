@@ -1,7 +1,7 @@
 /**
  * The lede rewritten in Vim, version after version: real motions (`0`, `w`, `f`, `ciw`), a human
- * typist's uneven rhythm, the keys shown screencast style and the mode echoed in the statusline. Timers, not a GSAP timeline: the rhythm is random and the steps patch the DOM's text,
- * but it registers with the animation base so that reduced motion never starts it and a preference
+ * typist's uneven rhythm, the keys shown screencast style and the mode echoed in the statusline.
+ * Timers, not a GSAP timeline: the rhythm is random and the steps patch the DOM's text, but it registers with the animation base so that reduced motion never starts it and a preference
  * flip puts the first version back.
  */
 import { registerScene } from '../animation/base';

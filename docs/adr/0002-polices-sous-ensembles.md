@@ -15,7 +15,7 @@ Le fournisseur Google de l'API Fonts d'Astro sait restreindre les glyphes (`expe
   - `archivo-variable.woff2` : axes réduits à `wdth 62–100` et `wght 400–900`, 51 Ko ;
   - `archivo-italic-400.woff2` : une seule instance (chasse 100, graisse 400), 12 Ko ;
   - `fragment-mono-400.woff2` : 22 Ko.
-- Jeu de glyphes : latin de base, Latin-1, œ/Œ/Ÿ, ponctuation typographique française, €, ←, → et ↗.
+- Jeu de glyphes : latin de base, Latin-1, œ/Œ/Ÿ, ponctuation typographique française, primes ′ et ″ (coordonnées de la carte du hero, ajoutées le 2026-11-04), €, ←, → et ↗.
 - Astro les sert par son API Fonts avec le fournisseur `local` : `@font-face` en `swap`, replis aux métriques ajustées, et préchargement de la seule Archivo droite, qui dessine le titre (élément LCP).
 
 ## Options écartées

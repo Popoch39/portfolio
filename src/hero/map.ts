@@ -15,12 +15,15 @@ const NAUTICAL_MILE = 1852;
 /** Which compositions show a tick: the desktop one (`desk`, more ticks as the map widens) or the narrow one. */
 type Shown = 'desk' | 'desk-wide' | 'desk-wider' | 'narrow';
 
+/** A whole minute of arc, and the compositions that show its tick. */
+type Tick = [degrees: number, minutes: number, shown: Shown[]];
+
 /**
  * Picked so that every tick a composition shows fits inside the map at its narrowest, clear of the
  * latitudes down the right edge: the marker stands at 64 % of the map's width on desktop (more ticks
  * from 960 px and 1290 px wide), at 76 % on narrow screens.
  */
-const LON_TICKS: [degrees: number, minutes: number, shown: Shown[]][] = [
+const LON_TICKS: Tick[] = [
 	[5, 52, ['desk-wider']],
 	[5, 54, ['desk-wide']],
 	[5, 56, ['desk']],
@@ -33,7 +36,7 @@ const LON_TICKS: [degrees: number, minutes: number, shown: Shown[]][] = [
 	[6, 6, ['desk-wider']],
 ];
 /** 47°17′ would run into the longitudes along the top; the narrow map keeps clear of the Besançon label. */
-const LAT_TICKS: [degrees: number, minutes: number, shown: Shown[]][] = [
+const LAT_TICKS: Tick[] = [
 	[47, 16, ['desk', 'narrow']],
 	[47, 15, ['desk']],
 	[47, 14, ['desk']],

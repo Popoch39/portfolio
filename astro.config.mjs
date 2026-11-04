@@ -7,6 +7,29 @@ export default defineConfig({
 	site: 'https://louis-pocheron.com',
 	// A single page of about 10 KB of CSS: inlined, it no longer blocks the first paint on a request.
 	build: { inlineStylesheets: 'always' },
+	// A `<meta>` with the hashes of every script and style Astro emits. `frame-ancestors` is
+	// ignored in a `<meta>`: it is sent as a header, with the other ones, by `public/_headers`.
+	security: {
+		csp: {
+			directives: [
+				"default-src 'self'",
+				// The paper grain is an SVG data URI (`src/intro/grain.ts`).
+				"img-src 'self' data:",
+				"font-src 'self'",
+				"object-src 'none'",
+				"base-uri 'self'",
+				"form-action 'self'",
+			],
+			styleDirective: {
+				resources: [
+					"'self'",
+					// Scenes compute their layout at build time into `style` attributes (Atome, Frise,
+					// Grain, Montage). Without a hash or a nonce for attributes, only this lets them through.
+					{ resource: "'unsafe-inline'", kind: 'attribute' },
+				],
+			},
+		},
+	},
 	// Subsets built by `scripts/fonts.sh` (ADR 0002).
 	fonts: [
 		{

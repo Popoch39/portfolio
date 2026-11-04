@@ -3,6 +3,18 @@
 # robots.txt, the sitemap and the favicon keep Cloudflare's default (revalidated by ETag) so a
 # deploy shows up on the next visit.
 
+# Security headers on every response, the 404 page and the assets included. The rest of the
+# Content Security Policy is a `<meta>` written by Astro (`security.csp`): `frame-ancestors` is
+# ignored there, so it travels here. No HSTS `preload` until the domain has proved itself.
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Cross-Origin-Opener-Policy: same-origin
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
+
 # Bundled scripts, fonts and images: Astro puts the hash in the file name.
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable

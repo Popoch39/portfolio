@@ -48,6 +48,29 @@ declare global {
 	}
 }
 
+/** The CSS gap between a card and the top of its pole. */
+const CARD_GAP = 10;
+
+/**
+ * How far each commit's card on screen stands above the top of its pole, in the label's own px: card
+ * and pole stand in the same upright label, so the card's on-screen scale undoes the perspective.
+ * The commits HEAD has long passed run off the frame towards the eye, where their boxes no longer mean much.
+ */
+function cardsAbovePoles(page: Page) {
+	return friseBand(page)
+		.locator('.commit')
+		.evaluateAll((commits) =>
+			commits.flatMap((commit) => {
+				const card = commit.querySelector<HTMLElement>('.commit-card');
+				const pole = commit.querySelector('.commit-pole');
+				if (!card || !pole) return [Number.NaN];
+				const box = card.getBoundingClientRect();
+				if (box.right < 0 || box.left > innerWidth || box.bottom < 0 || box.top > innerHeight) return [];
+				return [(pole.getBoundingClientRect().top - box.bottom) / (box.height / card.offsetHeight)];
+			}),
+		);
+}
+
 for (const { width, height } of PHONES) {
 	test.describe(`Frise under a finger, ${width}×${height} portrait`, () => {
 		test.use({ ...finger, viewport: { width, height } });
@@ -155,6 +178,26 @@ test.describe('Frise under a finger, scrolling', () => {
 		// The next commit, whose cues begin before the start and are clipped to it.
 		const next = friseBand(page).getByRole('listitem').nth(1);
 		await expect.poll(() => next.evaluate((el) => Number(getComputedStyle(el).opacity))).toBeLessThan(0.5);
+	});
+
+	// Turning the phone changes the poles' height (media queries): a refresh must lay the cards on the new ones.
+	test('after the phone turns, each card still rides on top of its pole, raised or lowered', async ({ page }) => {
+		const { width, height } = PHONES[1];
+		await page.goto('/');
+		await scrollToScene(page, await sceneStart(page), 0.5);
+
+		for (const viewport of [
+			{ width: height, height: width },
+			{ width, height },
+		]) {
+			await page.setViewportSize(viewport);
+			// The section held at the top shifts its own offset: the start is read above the scene.
+			await page.evaluate(() => scrollTo(0, 0));
+			await scrollToScene(page, await sceneStart(page), 0.5);
+			const gaps = await cardsAbovePoles(page);
+			expect(gaps.length, 'commits in the frame').toBeGreaterThan(1);
+			for (const gap of gaps) expect(gap, `${viewport.width}×${viewport.height}: ${gaps}`).toBeCloseTo(CARD_GAP, 0);
+		}
 	});
 
 	test('no jump when the pinning starts nor when it ends', async ({ page }) => {

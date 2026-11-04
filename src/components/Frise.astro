@@ -205,6 +205,16 @@ const geometry = [
 		const from = Number(plane.dataset.headFrom);
 		const to = Number(plane.dataset.headTo);
 
+		// The cards ride on the poles, whose height follows the framing (media queries). All are measured
+		// at once, here and at each refresh before it writes anything: read by each card's tween as it
+		// starts, they would cost a layout between every two tweens the refresh replays.
+		const poles = labels.map((label) => label.querySelector<HTMLElement>('.commit-pole'));
+		let poleHeights: number[] = [];
+		const measurePoles = () => {
+			poleHeights = poles.map((pole) => pole?.offsetHeight ?? 0);
+		};
+		measurePoles();
+
 		// The diagonal and the hidden overflow come from CSS: the attribute goes away with the context.
 		section.dataset.scene = '';
 		// The camera places the graph under HEAD: a scrolled strip would shift it off its cues. Find-in-page,
@@ -260,6 +270,7 @@ const geometry = [
 				start: 'top top',
 				scrub: SCENE_SCRUB,
 				invalidateOnRefresh: true,
+				onRefreshInit: measurePoles,
 				// The cues past the start only take their values once played through (`immediateRender: false`):
 				// a `pin` plays the timeline to its end at each refresh to measure it, `sticky` does not, which
 				// would leave the labels ahead raised and lit, at their final state.
@@ -323,7 +334,7 @@ const geometry = [
 				{ at: next, value: 1 },
 				{ at: next + FADE_OUT, value: PAST_OPACITY },
 			]);
-			const pole = label.querySelector<HTMLElement>('.commit-pole');
+			const pole = poles[i];
 			const card = label.querySelector<HTMLElement>('.commit-card');
 			if (!pole || !card) return;
 			// The pole rises as HEAD comes, the card riding on top of it; its height follows the framing.
@@ -338,7 +349,7 @@ const geometry = [
 					{ at: at - RISE, value: 1 - LOWERED },
 					{ at, value: 0, ease: 'power3.out' },
 				],
-				() => pole.offsetHeight,
+				() => poleHeights[i],
 			);
 		});
 		for (const fill of section.querySelectorAll<HTMLElement>('[data-frise-fill]')) {

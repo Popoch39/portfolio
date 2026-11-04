@@ -44,7 +44,18 @@ export const openingEnded = new Promise<void>((resolve) => {
 });
 // Only the home page's inline trigger sets this class, before the first paint: elsewhere, or when it
 // decided against the Intro, no opening will register to end.
-if (!document.documentElement.classList.contains('intro')) endOpening();
+const root = document.documentElement;
+if (!root.classList.contains('intro')) endOpening();
+else {
+	// The Voile's safety net (`IntroTrigger.astro`) also takes the class away from an Intro that never
+	// started (its chunk failed, it threw as it started) and so will never call `end`: the opening is over all the same.
+	const lifted = new MutationObserver(() => {
+		if (root.classList.contains('intro')) return;
+		lifted.disconnect();
+		endOpening();
+	});
+	lifted.observe(root, { attributeFilter: ['class'] });
+}
 
 // Before fonts and images are in, the scenes would be measured in a layout still on the move: the
 // dead time is let go, and the opening's end builds them.

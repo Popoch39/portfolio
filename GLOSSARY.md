@@ -28,7 +28,7 @@ La bascule de la statusline, à côté de `NORMAL`, qui fige le bandeau et l'Acc
 _À éviter_ : bouton play/pause, stop.
 
 **Voile**
-La couche papier opaque qui couvre la fenêtre pendant l'Intro, au-dessus de la page déjà peinte à son état final. Elle s'efface en une frame quand la page se révèle. Sans la classe `intro` posée avant la première peinture (sans JS, notamment), elle n'existe pas.
+La couche papier opaque qui couvre la fenêtre pendant l'Intro, au-dessus de la page déjà peinte à son état final. Elle s'efface en une frame quand la page se révèle. Sans la classe `intro` posée avant la première peinture (sans JS, notamment), elle n'existe pas. Si l'Intro ne démarre pas, un filet la lève quand même (ADR 0005).
 _À éviter_ : overlay, masque.
 
 **Défilement lissé**

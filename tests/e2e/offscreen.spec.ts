@@ -48,7 +48,11 @@ test.describe('off screen', () => {
 		await expect.poll(() => playStates(montageFigure(page))).toEqual(wisps);
 
 		// Past the Café, fire lit: the Contact alone is too short to scroll the moka out of a desktop window.
+		const height = () => page.evaluate(() => document.documentElement.scrollHeight);
+		const before = await height();
 		await lengthenPage(page);
+		// The home page was already long enough for `lengthenPage`: wait for the smoother to take in the extra room.
+		await expect.poll(height).toBeGreaterThan(before + 1000);
 		await scrollToBottom(page);
 		await expect(montageFigure(page)).not.toBeInViewport();
 		await expect.poll(() => playStates(montageFigure(page))).toEqual(['paused', 'paused', 'paused']);

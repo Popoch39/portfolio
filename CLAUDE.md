@@ -61,6 +61,8 @@ Contraste AA, `alt` pertinent (vide pour le décoratif), focus visible, navigati
 
 Cible : **60 fps minimum partout** : défilement, animations, transitions et interactions, sur toutes les pages, en mobile comme en desktop. Une frame qui dépasse 16,7 ms se corrige ou se signale avec sa cause, comme une baisse de score Lighthouse.
 
+**Rien ne tourne hors de l'écran.** Toute animation infinie et toute minuterie qui anime (boucle CSS, frappe, `requestAnimationFrame`) s'arrête quand ce qu'elle anime sort de la vue, ou reste sous le Voile, et reprend là où elle en était en y revenant. Hors de la vue, plus aucune minuterie en attente ni sondage : un IntersectionObserver la réveille. Le mécanisme est commun (`src/animation/offscreen.ts`) : `markOffScreen` pose `data-offscreen`, que le CSS lit pour mettre la boucle en `animation-play-state: paused` ; `watchOffScreen` sert au JS (l'Accroche se met en attente et ne garde aucune minuterie). L'observer est créé dans une scène enregistrée (`registerScene`) et déconnecté par son nettoyage. Une page au repos ne fait travailler ni le processeur ni le GPU.
+
 ## Lighthouse
 
 Cible : **100 dans les quatre catégories, en mobile**, sur le build (`astro build` puis `astro preview`), jamais sur le serveur de dev. Tout changement qui touche au rendu (page, composant, asset, police, script) se termine par un audit Lighthouse mobile ; une baisse de score se corrige avant de conclure ou se signale avec sa cause.

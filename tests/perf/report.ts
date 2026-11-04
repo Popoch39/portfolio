@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { loadavg } from 'node:os';
 import { join } from 'node:path';
 import { PHASES, type TraceMetrics } from './trace';
 
@@ -9,8 +10,8 @@ const REPORT = join(RESULTS, 'report.json');
 
 /**
  * Writes one section of `perf-results/report.json`, keeping the others: running a single profile
- * (`--project finger`) updates its own section only. Each section says when and on which commit it
- * was measured.
+ * (`--project finger`) updates its own section only. Each section says when, on which commit and
+ * under which machine load it was measured.
  */
 export function saveSection(name: string, data: unknown) {
 	mkdirSync(RESULTS, { recursive: true });
@@ -21,7 +22,13 @@ export function saveSection(name: string, data: unknown) {
 		// First run, or a report from an older bench: started afresh.
 		report = {};
 	}
-	report[name] = { measuredAt: new Date().toISOString(), commit: currentCommit(), ...(data as object) };
+	report[name] = {
+		measuredAt: new Date().toISOString(),
+		commit: currentCommit(),
+		// Other processes slow the throttled CPU down further: a high load explains an odd run.
+		loadAverage: loadavg().map((load) => Number(load.toFixed(2))),
+		...(data as object),
+	};
 	writeFileSync(REPORT, `${JSON.stringify(report, null, '\t')}\n`);
 }
 

@@ -380,8 +380,14 @@ const frame = [
 
 		// Their own layers, for as long as the scene runs: under the smoother the pin moves the section
 		// with a 2D transform, and the 3D drawing changes inside it at every frame. Left in the page's
-		// layer, both repaint and re-raster the section at every frame.
-		gsap.set([section, tower], { willChange: 'transform' });
+		// layer, both repaint and re-raster the section at every frame. Out of the scene, once it has
+		// caught up with the scroll, they give their layers back.
+		let promoted = false;
+		const promote = (promote: boolean) => {
+			if (promote === promoted) return;
+			promoted = promote;
+			for (const element of [section, tower]) element.style.willChange = promote ? 'transform' : '';
+		};
 
 		const bagues = atome.querySelectorAll<HTMLElement>('[data-choreography]');
 		const focusEnd = FOCUS_START + bagues.length * FOCUS_STEP + FOCUS_FADE;
@@ -402,6 +408,10 @@ const frame = [
 				invalidateOnRefresh: true,
 				// Under a finger the page scrolls natively, off the main thread: the pin is set a frame early.
 				anticipatePin: 1,
+				// Not `onToggle`: ScrollTrigger runs it inside the scene's context, and when the preference flips
+				// mid-scene, Firefox then leaves the bagues where they stood instead of reverting them.
+				onUpdate: ({ isActive }) => isActive && promote(true),
+				onScrubComplete: ({ isActive }) => isActive || promote(false),
 			},
 		});
 
@@ -522,6 +532,7 @@ const frame = [
 
 		return () => {
 			ScrollTrigger.removeEventListener('refreshInit', refit);
+			promote(false);
 			atome.style.removeProperty('--tower-scale');
 			delete atome.dataset.atomeScene;
 		};

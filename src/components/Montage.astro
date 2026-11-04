@@ -213,6 +213,7 @@ const camera = JSON.stringify(
 
 <script>
 	import { cubicBezier, gsap, registerScene, SCENE_SCRUB, ScrollSmoother } from '../animation/base';
+	import { markOffScreen } from '../animation/offscreen';
 
 	/** Pinning length, in stable window heights (290svh): the board's 3000px track over its 770px frame. */
 	const PIN_HEIGHTS = 2.9;
@@ -311,6 +312,9 @@ const camera = JSON.stringify(
 
 		const labels: string[] = JSON.parse(counter.dataset.steps ?? '[]');
 		const finalLabel = counter.textContent;
+
+		// The fire stays lit past the Café: its steam must not drift on behind the visitor's back.
+		const unmarkOffScreen = markOffScreen(montage);
 
 		// Written only when the step changes: a text change costs a layout, never on every frame.
 		let step = -1;
@@ -514,6 +518,7 @@ const camera = JSON.stringify(
 		return () => {
 			counter.textContent = finalLabel;
 			delete montage.dataset.lit;
+			unmarkOffScreen();
 			approach?.disconnect();
 			if (screw) screw.hidden = true;
 			// The next run puts in its own copy.
@@ -569,6 +574,11 @@ const camera = JSON.stringify(
 	.montage[data-lit] [data-wisp] {
 		transform-origin: var(--wisp-origin);
 		animation: wisp var(--wisp-duration) cubic-bezier(0.33, 0.1, 0.45, 1) var(--wisp-delay) infinite;
+	}
+
+	/* Out of view, each wisp holds where it was, and drifts on from there on coming back. */
+	.montage[data-lit][data-offscreen] [data-wisp] {
+		animation-play-state: paused;
 	}
 
 	@keyframes wisp {

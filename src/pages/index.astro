@@ -128,7 +128,7 @@ const jsonLd = JSON.stringify({
 
 		{/* Everything after the first screen, in one block: the page's grid gives the hero its own row. */}
 		<div>
-			<div class="marquee" aria-hidden="true">
+			<div class="marquee" aria-hidden="true" data-marquee>
 				{/* Two copies: the track slides by half its width, then loops seamlessly. */}
 				<div class="marquee-track">
 					{
@@ -183,6 +183,17 @@ const jsonLd = JSON.stringify({
 		</div>
 	</main>
 </Layout>
+
+<script>
+	import { registerScene } from '../animation/base';
+	import { markOffScreen } from '../animation/offscreen';
+
+	// The marquee slides in CSS; registered for the context alone, so that its observer goes with a change of preference.
+	registerScene(() => {
+		const marquee = document.querySelector<HTMLElement>('[data-marquee]');
+		return marquee ? markOffScreen(marquee) : undefined;
+	});
+</script>
 
 <style>
 	.dim {
@@ -558,6 +569,12 @@ const jsonLd = JSON.stringify({
 		display: flex;
 		width: max-content;
 		animation: marquee 42s linear infinite;
+	}
+
+	/* Nothing slides that nobody sees: out of view, and under the Voile. */
+	.marquee[data-offscreen] .marquee-track,
+	:global(html.intro) .marquee-track {
+		animation-play-state: paused;
 	}
 
 	.marquee-item {

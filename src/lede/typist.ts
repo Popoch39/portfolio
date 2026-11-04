@@ -5,11 +5,15 @@
  * flip puts the first version back.
  */
 import { registerScene } from '../animation/base';
+import { watchOffScreen } from '../animation/offscreen';
 import type { Lede } from '../data/profile';
 import { restingOn, runs, slotStarts, type BufferState, type Mode, type Run, type Slot } from './buffer';
 
 /** Keys kept on screen at most; narrow screens show fewer (CSS). */
 const MAX_KEYS = 10;
+
+/** What can hold the typist where it stands; it types on once none is left. */
+type Hold = 'off-screen';
 
 registerScene(() => {
 	const parts = typistParts();
@@ -20,21 +24,36 @@ registerScene(() => {
 
 	let state = restingOn(lede, 0);
 	let version = 0;
-	let pending: ReturnType<typeof setTimeout> | undefined;
 	let stopped = false;
 
-	// Off screen, the typist holds its breath: nothing is typed that nobody sees.
-	let visible = true;
-	const observer = new IntersectionObserver(([entry]) => {
-		visible = entry.isIntersecting;
-	});
-	observer.observe(root);
-
 	// One step is pending at a time: its handle alone cancels the whole script.
-	const later = (ms: number, fn: () => void) => {
-		clearTimeout(pending);
-		pending = setTimeout(fn, ms);
+	let pending: ReturnType<typeof setTimeout> | undefined;
+	let queued: [ms: number, run: () => void] | undefined;
+	// While any reason holds the typist, no timer waits at all: the queued step waits with it, and is taken on release.
+	const holds = new Set<Hold>();
+	const schedule = () => {
+		if (!queued || holds.size > 0) return;
+		const [ms, run] = queued;
+		pending = setTimeout(() => {
+			queued = undefined;
+			run();
+		}, ms);
 	};
+	const later = (ms: number, run: () => void) => {
+		clearTimeout(pending);
+		queued = [ms, run];
+		schedule();
+	};
+	const hold = (reason: Hold) => {
+		holds.add(reason);
+		clearTimeout(pending);
+	};
+	const release = (reason: Hold) => {
+		if (holds.delete(reason)) schedule();
+	};
+
+	// Off screen, the typist holds its breath: nothing is typed that nobody sees, and nothing wakes it but its return.
+	const stopWatching = watchOffScreen(root, (offScreen) => (offScreen ? hold('off-screen') : release('off-screen')));
 
 	function draw(patch: Partial<BufferState>) {
 		const mode = state.mode;
@@ -105,10 +124,6 @@ registerScene(() => {
 	function cycle() {
 		if (stopped) return;
 		// The Intro lands its point on the lede's cursor: the base only builds this scene once it has ended.
-		if (!visible) {
-			later(600, cycle);
-			return;
-		}
 		const next = (version + 1) % count;
 		const { what, whose } = lede.versions[next];
 		const slip = next === count - 1;
@@ -148,10 +163,6 @@ registerScene(() => {
 		let i = 0;
 		const go = () => {
 			if (stopped) return;
-			if (!visible) {
-				later(400, go);
-				return;
-			}
 			if (i >= steps.length) {
 				later(2600, cycle);
 				return;
@@ -171,7 +182,7 @@ registerScene(() => {
 	return () => {
 		stopped = true;
 		clearTimeout(pending);
-		observer.disconnect();
+		stopWatching();
 		keys.replaceChildren();
 		keys.dataset.on = 'false';
 		state = { ...restingOn(lede, 0), mode: state.mode };

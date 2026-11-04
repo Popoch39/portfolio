@@ -5,10 +5,11 @@
  * on `<html>`); without that class, nothing happens here.
  */
 import { gsap, registerOpening, ScrollSmoother } from '../animation/base';
-import { globeCanvas, readPalette } from './canvas';
+import { globePainter } from './canvas';
 import { cubicBezier } from './ease';
-import { decimal, fitColumns, type Layout } from './globe';
+import { coordinate, decimal, fitColumns, frameAt, type Layout } from './globe';
 import { boilStep } from './grain';
+import { decodeGrain, readPalette } from './inputs';
 import {
 	BOIL,
 	END,
@@ -34,13 +35,20 @@ const LOWERED = 'lowered';
 const HELD_INPUTS = ['wheel', 'touchmove', 'keydown'] as const;
 const SCROLL_KEYS = new Set([' ', 'PageDown', 'PageUp', 'Home', 'End', 'ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight']);
 
+/**
+ * The globe is drawn at the device's pixel ratio up to this: on a 3× screen, a full-window canvas
+ * would cost more than twice the pixels for a sharpness nobody tells apart at reading distance.
+ */
+const MAX_PIXEL_RATIO = 2;
+const pixelRatio = () => Math.min(devicePixelRatio, MAX_PIXEL_RATIO);
+
 const marked = (name: string) => gsap.utils.toArray<HTMLElement>(`[data-intro="${name}"]`);
 
 registerOpening((end) => {
 	const root = document.documentElement;
 	const parts = introParts();
 	if (!root.classList.contains(PLAYING) || !parts) return;
-	const { veil, over, canvas, header, marker, place, label, labelText, paper, hud, grain, tick, bar } = parts;
+	const { veil, over, canvas, header, rule, marker, place, label, labelText, paper, hud, grain, tick, bar } = parts;
 	const texts = [parts.phase, parts.gore, parts.lat, parts.lon, parts.scale];
 	let finished = false;
 
@@ -56,7 +64,18 @@ registerOpening((end) => {
 	for (const type of HELD_INPUTS) addEventListener(type, holdScroll, { passive: false });
 
 	// The globe lands on the real page: measured now, again once the fonts are in, and on every resize.
-	const painter = globeCanvas(canvas, readPalette(root));
+	const context = canvas.getContext('2d');
+	const painter = context && globePainter(context, readPalette(root));
+	let noise: ImageBitmap | null = null;
+	decodeGrain(pixelRatio()).then((decoded) => {
+		if (!decoded) return;
+		if (finished) {
+			decoded.close();
+			return;
+		}
+		noise = decoded;
+		painter?.grain(decoded);
+	});
 	let layout = measure();
 	function measure(): Layout {
 		const grid = header.getBoundingClientRect();
@@ -82,10 +101,10 @@ registerOpening((end) => {
 	const relayout = () => {
 		if (finished) return;
 		layout = measure();
-		painter.resize(layout.width, layout.height, devicePixelRatio);
+		painter?.resize(layout.width, layout.height, pixelRatio());
 		render();
 	};
-	painter.resize(layout.width, layout.height, devicePixelRatio);
+	painter?.resize(layout.width, layout.height, pixelRatio());
 	addEventListener('resize', relayout);
 	document.fonts.ready.then(relayout);
 
@@ -104,6 +123,8 @@ registerOpening((end) => {
 	// The scale bar's width at rest, in its CSS.
 	const scaleBar = bar.offsetWidth;
 	let labelOpacity = Number.NaN;
+	let labelX = Number.NaN;
+	let labelY = Number.NaN;
 	const clock = { t: 0 };
 	let skipping = false;
 	function render() {
@@ -111,8 +132,13 @@ registerOpening((end) => {
 		const { t } = clock;
 		// The grid stays over the page once the veil has lifted, under the statusline that rises later.
 		over.classList.toggle(LOWERED, t >= VEIL_LIFT);
-		const frame = painter.draw(t, layout);
-		label.style.transform = `translate(${frame.label.x}px, ${frame.label.y}px)`;
+		const frame = frameAt(t, layout);
+		painter?.draw(frame, layout);
+		if (frame.label.x !== labelX || frame.label.y !== labelY) {
+			labelX = frame.label.x;
+			labelY = frame.label.y;
+			label.style.transform = `translate(${labelX}px, ${labelY}px)`;
+		}
 		if (frame.label.opacity !== labelOpacity) {
 			labelOpacity = frame.label.opacity;
 			label.style.opacity = String(labelOpacity);
@@ -120,7 +146,13 @@ registerOpening((end) => {
 		const { phase, gore, lat, lon, goreWidth, gutter } = frame.hud;
 		if (boilStep(t) !== hudStep) {
 			hudStep = boilStep(t);
-			const values = [phase, gore, lat, lon, `fuseau ${decimal(goreWidth)} px · gouttière ${decimal(gutter)} px`];
+			const values = [
+				phase,
+				`${String(gore + 1).padStart(2, '0')} / 12`,
+				coordinate(lat, 'N', 'S'),
+				coordinate(lon, 'E', 'O'),
+				`fuseau ${decimal(goreWidth)} px · gouttière ${decimal(gutter)} px`,
+			];
 			texts.forEach((node, i) => write(node, values[i]));
 		}
 		if (goreWidth !== scaled) {
@@ -156,11 +188,10 @@ registerOpening((end) => {
 		.set(lines, { yPercent: TITLE_RISE.from }, VEIL_LIFT)
 		.set(late, { opacity: 0 }, VEIL_LIFT)
 		.set(statusline, { yPercent: 100 }, VEIL_LIFT);
-	// The rule is a pseudo-element: it scales through a custom property of the header.
 	timeline.fromTo(
-		header,
-		{ '--rule-scale': 0 },
-		{ '--rule-scale': 1, duration: RULE.duration, ease: reveal, immediateRender: false },
+		rule,
+		{ scaleX: 0 },
+		{ scaleX: 1, duration: RULE.duration, ease: reveal, immediateRender: false },
 		RULE.start,
 	);
 	for (const [name, offset] of Object.entries(REVEAL.offsets)) {
@@ -228,8 +259,8 @@ registerOpening((end) => {
 		timeline.revert();
 		for (const node of [label, grain, tick, bar]) node.style.removeProperty('transform');
 		label.style.removeProperty('opacity');
-		// Releases the bitmap.
-		canvas.width = canvas.height = 0;
+		painter?.dispose();
+		noise?.close();
 		end();
 	}
 	return finish;
@@ -239,13 +270,14 @@ registerOpening((end) => {
 function introParts() {
 	const over = document.getElementById('intro-over');
 	const canvas = document.getElementById('intro-grid');
-	const header = marked('rule')[0];
+	const header = marked('header')[0];
 	const part = (name: string) => over?.querySelector<HTMLElement>(`[data-hud="${name}"]`);
 	const parts = {
 		veil: document.getElementById('veil'),
 		over,
 		canvas: canvas instanceof HTMLCanvasElement ? canvas : null,
 		header,
+		rule: marked('rule')[0],
 		// The Besançon marker of the hero's map, and its label.
 		marker: document.querySelector<HTMLElement>('.hero-point'),
 		place: document.querySelector<HTMLElement>('.hero-place'),

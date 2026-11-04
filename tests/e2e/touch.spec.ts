@@ -25,10 +25,11 @@ test.describe('under a finger', () => {
 	});
 
 	// Pinned by a transform, the section is moved by script a frame behind the compositor's scroll:
-	// on iOS it jumps into place and the fling dies at the start of every pinned scene.
-	for (const [scene, section] of [
-		['Frise', friseSection],
-		['Atome', (page: Page) => page.locator('section:has([data-atome])')],
+	// on iOS it jumps into place and the fling dies at the start of every pinned scene. The Frise is
+	// sticky rather than fixed: switching to `fixed` would shift its 3D layers (ADR 0001).
+	for (const [scene, section, position] of [
+		['Frise', friseSection, 'sticky'],
+		['Atome', (page: Page) => page.locator('section:has([data-atome])'), 'fixed'],
 	] as const) {
 		test(`${scene}: the browser holds the pinned section in place, not a script`, async ({ page }) => {
 			await page.goto('/');
@@ -40,7 +41,7 @@ test.describe('under a finger', () => {
 				await page.evaluate(([top, at]) => scrollTo(0, top + at * innerHeight), [start, screens]);
 				await topOnceStill(pinned);
 
-				await expect(pinned).toHaveCSS('position', 'fixed');
+				await expect(pinned).toHaveCSS('position', position);
 				expect(await verticalTranslation(pinned)).toBe(0);
 			}
 		});

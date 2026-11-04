@@ -14,6 +14,7 @@ import {
 	friseSection as section,
 	headOnScreen,
 	PIN_HEIGHTS,
+	recordLayoutShifts,
 	scrollToScene,
 } from './frise-helpers';
 
@@ -252,6 +253,23 @@ test.describe('Frise, scene', () => {
 		await scrollToScene(page, start, 1);
 		await expect(legend(page)).toContainText('aujourd’hui · main');
 		await expect(legend(page)).toContainText('HEAD');
+	});
+
+	test('the legend shifts no layout when the active commit changes, however its lines wrap', async ({
+		page,
+		browserName,
+	}) => {
+		test.skip(browserName === 'firefox', 'Firefox does not implement the Layout Instability API');
+		await page.goto('/');
+		const start = await topInPage(section(page));
+		await scrollToScene(page, start, 0);
+		const shifts = await recordLayoutShifts(page);
+
+		for (const progress of [0.25, 0.5, 0.75, 1]) await scrollToScene(page, start, progress);
+		await expect(legend(page)).toContainText('HEAD');
+
+		const recorded = await shifts();
+		expect(recorded.filter(({ sources }) => sources.some(({ inLegend }) => inLegend))).toEqual([]);
 	});
 
 	test('the legend text only changes when HEAD reaches another commit, never on every frame', async ({ page }) => {

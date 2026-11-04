@@ -30,5 +30,8 @@ pnpm-debug.log*
 test-results/
 playwright-report/
 
+# fluidity bench (`bun run perf`): report and traces of the last run
+perf-results/
+
 # jetbrains setting folder
 .idea/

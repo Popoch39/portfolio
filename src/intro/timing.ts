@@ -36,8 +36,8 @@ export const HUD = { in: { start: 0.3, duration: 0.3 }, out: { start: 6.4, durat
 
 /**
  * The Besançon point: it pops (`appear`), sends two pairs of ripples (`[time, opacity, scale]`
- * keyframes, linear in between), runs to the title cursor (`move`), grows to its size (`grow`),
- * then hands over to the real cursor (`handOver`). Its label fades in with `label`.
+ * keyframes, linear in between), runs to the Besançon marker of the hero's map (`move`), takes its
+ * size (`grow`), then hands over to the real marker (`handOver`). Its label fades in with `label`.
  */
 export const POINT = {
 	appear: { start: 3, duration: 0.3 },
@@ -97,18 +97,17 @@ export const REVEAL = {
 	offsets: {
 		name: 0,
 		role: 0.072,
-		status: 0.072,
+		specialty: 0.072,
 		nav: 0.144,
 		lede: 0.36,
-		facts: 0.48,
-		actions: 0.6,
+		actions: 0.48,
 	},
 } as const;
 
 /** The two title lines rise out of their clipping wrapper, the second one `stagger` later. */
 export const TITLE_RISE = { start: 6.8, duration: 0.7, stagger: 0.144, from: 104 };
 
-/** The coordinates in the header and the title cursor appear, once the point has become the cursor. */
+/** The map's marker and its label appear, once the point and its label have landed on them. */
 export const LATE: Phase = { start: 7.8, duration: 0.1 };
 
 /** The statusline rises from below the window. */

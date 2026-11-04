@@ -11,7 +11,8 @@ export const person = {
 	email: 'pocheron.louis@gmail.com',
 	city: 'Besançon',
 	country: 'FR',
-	coordinates: '47.2378° N 6.0241° E',
+	latitude: 47.2378,
+	longitude: 6.0241,
 	github: { user: 'Popoch39', url: 'https://github.com/Popoch39' },
 	nvimConfig: 'https://github.com/Popoch39/nvim',
 } as const;
@@ -151,9 +152,9 @@ export const salariedPositions = positions.filter((position) => !position.intern
 export const currentPosition = positions.find((position) => !position.end);
 
 export const profile = {
-	role: `${person.jobTitle}, fullstack`,
 	specialty: 'SIG & cartographie à échelle industrielle',
-	today: currentPosition && `${currentPosition.company}, ${currentPosition.city} — depuis ${year(currentPosition.start)}`,
+	/** Where the header has one line for it (phones). */
+	specialtyShort: 'SIG & cartographie',
 };
 
 /**

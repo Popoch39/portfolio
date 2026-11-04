@@ -1,8 +1,7 @@
-import { expect, test } from './fixtures';
+import { expect, test, type Page } from './fixtures';
 import { statuslineTop } from './helpers';
 
-// Laptops and desktops, the first desktop width and a tablet. A phone held upright gives the name
-// the column's width instead and lets the rest of the hero run past the first screen (below).
+// Laptops and desktops, the first desktop width, a tablet held upright.
 const SCREENS = [
 	{ width: 1280, height: 720 },
 	{ width: 1440, height: 900 },
@@ -18,57 +17,89 @@ const PHONES = [
 	{ width: 390, height: 844 },
 ];
 
-for (const viewport of SCREENS) {
+/** Where the name stands, where the meridian runs and where Besançon sits on it. */
+function readMap(page: Page) {
+	return page.evaluate(() => {
+		// A zero-size inline box on the baseline of each line: its top is the baseline.
+		const baselines = [...document.querySelectorAll('h1 [data-intro="line"]')].map((line) => {
+			const probe = document.createElement('span');
+			probe.style.cssText = 'display: inline-block; width: 0; height: 0; vertical-align: baseline';
+			line.append(probe);
+			const { top } = probe.getBoundingClientRect();
+			probe.remove();
+			return top;
+		});
+		const box = (selector: string) => {
+			const found = document.querySelector(selector)?.getBoundingClientRect();
+			if (!found) throw new Error(`${selector} missing`);
+			return found;
+		};
+		const rule = box('.hero-rule');
+		const point = box('.hero-point');
+		return {
+			baselines,
+			rule: { left: rule.left, right: rule.right, top: rule.top },
+			point: { x: point.left + point.width / 2, y: point.top + point.height / 2 },
+		};
+	});
+}
+
+for (const viewport of [...SCREENS, ...PHONES]) {
 	test.describe(`${viewport.width} × ${viewport.height}`, () => {
 		test.use({ viewport });
 
-		test('the header and the whole hero fit on the first screen, above the statusline', async ({ page }) => {
+		test('the name stands on the meridian, which runs to the Besançon marker', async ({ page }) => {
 			await page.goto('/');
 			await page.evaluate(() => document.fonts.ready);
 
-			const heroBottom = await page.locator('.hero-grid').evaluate((el) => el.getBoundingClientRect().bottom);
-			expect(heroBottom).toBeLessThanOrEqual((await statuslineTop(page)) + 1);
-			await expect(page.locator('h1 .cursor')).toBeInViewport({ ratio: 1 });
+			const { baselines, rule, point } = await readMap(page);
+			expect(baselines.length).toBe(2);
+			// The last line of the name sits on the rule.
+			expect(Math.abs(baselines[1] - rule.top)).toBeLessThanOrEqual(1.5);
+			expect(Math.abs(point.x - rule.right)).toBeLessThanOrEqual(1);
+			expect(Math.abs(point.y - (rule.top + 0.5))).toBeLessThanOrEqual(1);
+			await expect(page.locator('h1')).toBeInViewport({ ratio: 1 });
+			await expect(page.locator('.hero-point')).toBeInViewport({ ratio: 1 });
 		});
 	});
 }
 
-for (const viewport of PHONES) {
-	test.describe(`${viewport.width} × ${viewport.height} phone`, () => {
+for (const viewport of SCREENS.filter(({ width }) => width > 860)) {
+	test.describe(`${viewport.width} × ${viewport.height} desktop`, () => {
 		test.use({ viewport });
 
-		test('each line of the name spans the column, on the first screen', async ({ page }) => {
+		test('the header and the whole map fit on the first screen, the name on one line', async ({ page }) => {
 			await page.goto('/');
 			await page.evaluate(() => document.fonts.ready);
 
-			const { column, lines } = await page.evaluate(() => {
-				const range = document.createRange();
-				const hero = document.querySelector('.hero')?.getBoundingClientRect();
-				return {
-					column: { left: hero?.left ?? 0, right: hero?.right ?? 0 },
-					lines: [...document.querySelectorAll('h1 [data-intro="line"]')].map((line) => {
-						range.selectNodeContents(line);
-						const box = range.getBoundingClientRect();
-						return { left: box.left, right: box.right };
-					}),
-				};
-			});
-			expect(lines).toHaveLength(2);
-			for (const line of lines) {
-				expect(line.left).toBeGreaterThanOrEqual(column.left - 8);
-				expect(line.right).toBeLessThanOrEqual(column.right + 1);
-				// Within a twentieth of the column's width from its right edge.
-				expect(line.right).toBeGreaterThan(column.right - (column.right - column.left) / 20);
-			}
-			await expect(page.locator('h1')).toBeInViewport({ ratio: 1 });
+			const mapBottom = await page.locator('.hero-map').evaluate((el) => el.getBoundingClientRect().bottom);
+			expect(mapBottom).toBeLessThanOrEqual((await statuslineTop(page)) + 1);
+			const { baselines } = await readMap(page);
+			expect(Math.abs(baselines[0] - baselines[1])).toBeLessThanOrEqual(1);
 		});
 	});
 }
 
-test("the title's signal caret stays, still", async ({ page }) => {
+for (const viewport of [...SCREENS.filter(({ width }) => width <= 860), ...PHONES]) {
+	test.describe(`${viewport.width} × ${viewport.height} narrow`, () => {
+		test.use({ viewport });
+
+		test('the name breaks onto two lines and the lede is on the first screen', async ({ page }) => {
+			await page.goto('/');
+			await page.evaluate(() => document.fonts.ready);
+
+			const { baselines } = await readMap(page);
+			expect(baselines[1] - baselines[0]).toBeGreaterThan(20);
+			await expect(page.locator('.hero-lede .sentence')).toBeInViewport({ ratio: 1 });
+		});
+	});
+}
+
+test('the Besançon marker is in the signal colour, still', async ({ page }) => {
 	await page.goto('/');
 
-	const caret = page.locator('h1 .cursor');
-	await expect(caret).toHaveCSS('background-color', 'rgb(255, 91, 20)');
-	await expect(caret).toHaveCSS('animation-name', 'none');
+	const point = page.locator('.hero-point');
+	await expect(point).toHaveCSS('background-color', 'rgb(255, 91, 20)');
+	await expect(point).toHaveCSS('animation-name', 'none');
+	await expect(page.locator('.hero-place')).toContainText('47°14′16″ N · 6°01′27″ E');
 });

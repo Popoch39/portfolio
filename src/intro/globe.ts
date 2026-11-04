@@ -20,7 +20,7 @@ const STRETCH = 2;
 const TOP_PARALLEL = 60;
 /** Where the globe faces before it turns to Besançon. */
 const START = { lon: -40, lat: 8 };
-/** The point's size before it grows into the cursor, px. */
+/** The point's size before it takes the marker's, px. */
 const POINT_SIZE = 14;
 /** Where the label sits from the point's centre, px: right of it, or under it. */
 const LABEL_OFFSET = { x: 20, y: -10, below: 16 };
@@ -55,10 +55,10 @@ export interface Layout {
 	gutter: number;
 	/** Bottom edge of the header: its 1 px rule is the last row above it. */
 	headerBottom: number;
-	/** The title's block cursor, which the point becomes. */
-	cursor: Box;
-	/** The header coordinates, where the label lands; `null` when they are hidden (phones). */
-	meta: { x: number; y: number } | null;
+	/** The Besançon marker of the hero's map, which the point becomes. */
+	marker: Box;
+	/** The marker's label on the map, where the label lands. */
+	place: { x: number; y: number };
 	/** Width of the Besançon label. */
 	labelWidth: number;
 }
@@ -393,19 +393,19 @@ export function globe(t: number, layout: Layout, pens: Pens, { ink, accent }: Pa
 			duration: GRID_FADE.duration - GRID_FADE.meridiansDelay,
 		});
 
-	// Besançon rides on its gore, then becomes the block cursor.
+	// Besançon rides on its gore, then lands on the hero's map as its marker.
 	// The centre of Besançon's gore (0°–30° E), seen from the centre of the projection.
 	let cityGore = 15 - lam0;
 	if (cityGore > 180) cityGore -= 360;
 	const here = proj(cityGore + ((LON - 15) * half(LAT)) / 15, LAT);
 	const city = here.facing > 0 ? here : { x: Cx, y: Cy };
-	const { cursor, meta } = layout;
+	const { marker, place } = layout;
 	const moved = cubicInOut(phase(t, POINT.move));
 	const grown = expoOut(phase(t, POINT.grow));
-	const pointX = city.x + (cursor.x + cursor.w / 2 - city.x) * moved;
-	const pointY = city.y + (cursor.y + cursor.h / 2 - city.y) * moved;
-	const pointW = POINT_SIZE + (cursor.w - POINT_SIZE) * grown;
-	const pointH = POINT_SIZE + (cursor.h - POINT_SIZE) * grown;
+	const pointX = city.x + (marker.x + marker.w / 2 - city.x) * moved;
+	const pointY = city.y + (marker.y + marker.h / 2 - city.y) * moved;
+	const pointW = POINT_SIZE + (marker.w - POINT_SIZE) * grown;
+	const pointH = POINT_SIZE + (marker.h - POINT_SIZE) * grown;
 	const handOver = 1 - phase(t, POINT.handOver);
 	// The label reads right of the point; where the grid ends too soon for it, under the point.
 	const room = layout.gridLeft + layout.gridWidth - layout.labelWidth;
@@ -454,18 +454,11 @@ export function globe(t: number, layout: Layout, pens: Pens, { ink, accent }: Pa
 			opacity: handOver,
 			ripples: POINT.ripples.map((keys) => ripple(t, keys)),
 		},
-		label: meta
-			? {
-					x: aside.x + (meta.x - aside.x) * moved,
-					y: aside.y + (meta.y - aside.y) * moved,
-					opacity: handOver,
-				}
-			: // Nowhere to land: it fades where it stands as the point leaves.
-				{
-					x: aside.x,
-					y: aside.y,
-					opacity: 1 - phase(t, { start: POINT.move.start, duration: POINT.handOver.duration }),
-				},
+		label: {
+			x: aside.x + (place.x - aside.x) * moved,
+			y: aside.y + (place.y - aside.y) * moved,
+			opacity: handOver,
+		},
 		hud: {
 			phase: phaseName,
 			gore: `${String(goreIndex + 1).padStart(2, '0')} / 12`,

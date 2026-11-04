@@ -26,8 +26,9 @@ const revealed = (page: Page) => [
 	page.locator('h1 > *'),
 	page.locator('h1 > * > *'),
 	page.locator('.hero-lede'),
-	page.locator('.hero-facts'),
 	page.locator('.hero-actions'),
+	// The Besançon marker and its label on the map, once the point has handed over to them.
+	page.locator('[data-intro="late"]'),
 	statusline(page),
 ];
 
@@ -204,7 +205,7 @@ for (const [screen, viewport] of SCREENS) {
 
 		test('nothing moves in the layout when the veil gives way', async ({ page }) => {
 			const boxes = () =>
-				Promise.all([page.locator('h1'), page.locator('.hero-grid'), statusline(page)].map((l) => l.boundingBox()));
+				Promise.all([page.locator('h1'), page.locator('.hero-map'), statusline(page)].map((l) => l.boundingBox()));
 			await visitHome(page);
 			await page.evaluate(() => document.fonts.ready);
 			const underVeil = await boxes();
@@ -213,6 +214,21 @@ for (const [screen, viewport] of SCREENS) {
 
 			await expect(veil(page)).toBeHidden();
 			expect(await boxes()).toEqual(underVeil);
+		});
+
+		test('the label lands on the Besançon label of the map, then hands over to it', async ({ page }) => {
+			await visitHome(page);
+			await page.clock.runFor(6_800);
+			await expect(label(page)).toBeInViewport();
+
+			// The point has run to the marker and its label has faded: it rests where it landed.
+			await page.clock.runFor(1_500);
+			await expect(label(page)).toHaveCSS('opacity', '0');
+			const landed = await box(label(page));
+			const place = await box(page.locator('.hero-place'));
+			expect(landed.x).toBeCloseTo(place.x, 0);
+			expect(landed.y).toBeCloseTo(place.y, 0);
+			await expect(page.locator('.hero-place')).toHaveCSS('opacity', '1');
 		});
 
 		test('flipping to reduced motion during the Intro brings the page back to its final state', async ({ page }) => {
@@ -344,22 +360,6 @@ test.describe('Intro, motion allowed, on a phone only', () => {
 			expect(top).toBeGreaterThan(0);
 			expect(bottom).toBeLessThan(PHONE_LANDSCAPE.height);
 		}
-	});
-
-	// The header coordinates are hidden on a phone: the label has nowhere to land.
-	test('the label fades where it stands instead of flying to the header', async ({ page }) => {
-		await visitHome(page);
-		await page.clock.runFor(6_800);
-		await expect(label(page)).toBeInViewport();
-		const standing = await box(label(page));
-
-		await page.clock.runFor(400);
-		const later = await box(label(page));
-		expect(later.x).toBeCloseTo(standing.x, 0);
-		expect(later.y).toBeCloseTo(standing.y, 0);
-
-		await page.clock.runFor(500);
-		await expect(label(page)).toHaveCSS('opacity', '0');
 	});
 
 	test('turning the phone during the Intro breaks nothing', async ({ page }) => {

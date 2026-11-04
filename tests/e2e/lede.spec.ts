@@ -30,25 +30,22 @@ test.describe('the lede, typed', () => {
 		await page.clock.install();
 		await page.goto('/');
 
-		const seen = { insert: false, keys: false, status: false };
+		const seen = { insert: false, keys: false };
 		for (let i = 0; i < 300; i++) {
 			await page.clock.runFor(100);
 			const state = await page.evaluate(() => ({
 				text: document.querySelector('.hero-lede [data-buffer]')?.textContent,
 				mode: document.querySelector('#statusline [data-vim-mode]')?.textContent,
-				status: document.querySelector('.hero-mode')?.textContent,
 				keys: document.querySelectorAll('.hero-lede [data-keys] > *').length,
 			}));
 			seen.insert ||= state.mode === 'INSERT';
-			seen.status ||= state.status === '-- INSERT --';
 			seen.keys ||= state.keys > 0;
 			if (state.text === 'Je construis le site de votre gîte.' && state.mode === 'NORMAL') break;
 		}
 
 		await expect(buffer(page)).toHaveText('Je construis le site de votre gîte.');
-		expect(seen).toEqual({ insert: true, keys: true, status: true });
+		expect(seen).toEqual({ insert: true, keys: true });
 		await expect(statusline(page).locator('[data-vim-mode]')).toHaveText('NORMAL');
-		await expect(page.locator('.hero-mode')).toHaveText('-- NORMAL --');
 		await expect(version(page)).toHaveText(/version\s*2\/8\s*pour\s*: les gîtes et chambres d’hôtes/);
 	});
 });

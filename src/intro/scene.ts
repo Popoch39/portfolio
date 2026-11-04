@@ -40,7 +40,7 @@ registerOpening((end) => {
 	const root = document.documentElement;
 	const parts = introParts();
 	if (!root.classList.contains(PLAYING) || !parts) return;
-	const { veil, over, canvas, header, cursor, meta, label, labelText, paper, hud, grain, tick, bar } = parts;
+	const { veil, over, canvas, header, marker, place, label, labelText, paper, hud, grain, tick, bar } = parts;
 	const texts = [parts.phase, parts.gore, parts.lat, parts.lon, parts.scale];
 	let finished = false;
 
@@ -60,11 +60,8 @@ registerOpening((end) => {
 	let layout = measure();
 	function measure(): Layout {
 		const grid = header.getBoundingClientRect();
-		const point = cursor.getBoundingClientRect();
-		// The title line may be rising: the cursor is aimed at its resting place.
-		const line = cursor.closest<HTMLElement>('[data-intro="line"]');
-		const rising = line ? new DOMMatrixReadOnly(getComputedStyle(line).transform).m42 : 0;
-		const coordinates = meta.getBoundingClientRect();
+		const point = marker.getBoundingClientRect();
+		const landing = place.getBoundingClientRect();
 		const view = { width: over.clientWidth, height: over.clientHeight };
 		const { columns, gutter } = fitColumns(view, {
 			width: grid.width,
@@ -77,9 +74,8 @@ registerOpening((end) => {
 			gridWidth: grid.width,
 			gutter,
 			headerBottom: grid.bottom,
-			cursor: { x: point.left, y: point.top - rising, w: point.width, h: point.height },
-			// Hidden on phones: no box.
-			meta: coordinates.width ? { x: coordinates.left, y: coordinates.top } : null,
+			marker: { x: point.left, y: point.top, w: point.width, h: point.height },
+			place: { x: landing.left, y: landing.top },
 			labelWidth: label.offsetWidth,
 		};
 	}
@@ -250,8 +246,9 @@ function introParts() {
 		over,
 		canvas: canvas instanceof HTMLCanvasElement ? canvas : null,
 		header,
-		cursor: document.querySelector<HTMLElement>('h1 .cursor'),
-		meta: header?.querySelector<HTMLElement>('[data-intro="late"]'),
+		// The Besançon marker of the hero's map, and its label.
+		marker: document.querySelector<HTMLElement>('.hero-point'),
+		place: document.querySelector<HTMLElement>('.hero-place'),
 		label: part('label'),
 		labelText: part('label')?.firstElementChild,
 		paper: part('paper'),

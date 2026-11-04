@@ -1,5 +1,5 @@
 ---
-import { person } from '../data/profile';
+import { person, profile } from '../data/profile';
 
 // Absolute anchors: from the 404 page, they lead back to the home page sections.
 const sections = [
@@ -13,7 +13,9 @@ const sections = [
 	<header class="site-header grid-12" data-intro="rule">
 		<a class="name" href="/#top" data-intro="name">{person.name}</a>
 		<p class="mono meta" data-intro="role">{person.jobTitle}</p>
-		<p class="mono meta" data-intro="late">{person.city} — {person.coordinates}</p>
+		<p class="mono meta specialty" data-intro="specialty">
+			<span class="long">{profile.specialty}</span><span class="short">{profile.specialtyShort}</span>
+		</p>
 		<nav aria-label="Sections" data-intro="nav">
 			{sections.map((section) => <a href={section.href}>{section.label}</a>)}
 		</nav>
@@ -84,9 +86,47 @@ const sections = [
 		}
 	}
 
+	.short {
+		display: none;
+	}
+
+	/*
+	 * The name and the specialty share a row, the sections take the next one with a finger's room.
+	 * Flex rather than the grid: every grid cell takes the full row there. The grid's gap stays, the
+	 * Intro reads it for its strips.
+	 */
 	@media (max-width: 860px) {
+		.site-header {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: space-between;
+			row-gap: 4px;
+			padding: 18px 0 6px;
+		}
+
 		.meta {
 			display: none;
+		}
+
+		.specialty {
+			display: block;
+			font-size: 12px;
+		}
+
+		.long {
+			display: none;
+		}
+
+		.short {
+			display: inline;
+		}
+
+		nav {
+			flex-basis: 100%;
+		}
+
+		nav a {
+			min-height: 44px;
 		}
 	}
 </style>

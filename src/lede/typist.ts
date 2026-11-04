@@ -1,7 +1,6 @@
 /**
  * The lede rewritten in Vim, version after version: real motions (`0`, `w`, `f`, `ciw`), a human
- * typist's uneven rhythm, the keys shown screencast style and the mode echoed in the hero and the
- * statusline. Timers, not a GSAP timeline: the rhythm is random and the steps patch the DOM's text,
+ * typist's uneven rhythm, the keys shown screencast style and the mode echoed in the statusline. Timers, not a GSAP timeline: the rhythm is random and the steps patch the DOM's text,
  * but it registers with the animation base so that reduced motion never starts it and a preference
  * flip puts the first version back.
  */
@@ -15,7 +14,7 @@ const MAX_KEYS = 10;
 registerScene(() => {
 	const parts = typistParts();
 	if (!parts) return;
-	const { root, buffer, versionNumber, audience, keys, heroMode, statusMode, modified } = parts;
+	const { root, buffer, versionNumber, audience, keys, statusMode, modified } = parts;
 	const lede = JSON.parse(root.dataset.lede ?? '') as Lede;
 	const count = lede.versions.length;
 
@@ -45,7 +44,6 @@ registerScene(() => {
 	}
 
 	function showMode(mode: Mode) {
-		heroMode.textContent = `-- ${mode} --`;
 		statusMode.textContent = mode;
 		statusMode.dataset.mode = mode;
 		modified.hidden = mode !== 'INSERT';
@@ -199,7 +197,6 @@ function typistParts() {
 		versionNumber: root?.querySelector<HTMLElement>('[data-version-number]'),
 		audience: root?.querySelector<HTMLElement>('[data-audience]'),
 		keys: root?.querySelector<HTMLElement>('[data-keys]'),
-		heroMode: document.querySelector<HTMLElement>('.hero-mode'),
 		statusMode: document.querySelector<HTMLElement>('#statusline [data-vim-mode]'),
 		modified: document.querySelector<HTMLElement>('#statusline [data-vim-modified]'),
 	};

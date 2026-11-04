@@ -177,7 +177,7 @@ export function globeCanvas(canvas: HTMLCanvasElement, palette: Palette) {
 				stroke(pens.edges, ink, 1.1, lines * frame.edges * 0.8);
 			}
 
-			// Besançon, then the block cursor it grows into.
+			// Besançon, then the map's marker it turns into.
 			const { point } = frame;
 			if (point.opacity > 0) {
 				const cx = point.x + point.w / 2;

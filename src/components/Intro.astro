@@ -9,12 +9,19 @@
  *   page's own (`Grain.astro`), which the Intro makes boil while it plays.
  */
 import { person } from '../data/profile';
+import { coordinates } from '../hero/map';
 ---
 
 <div id="veil" class="veil" aria-hidden="true" data-nosnippet></div>
 <div id="intro-over" class="over" aria-hidden="true" data-nosnippet>
 	<canvas id="intro-grid" class="grid"></canvas>
-	<p class="mono label" data-hud="label"><span>{person.city} — {person.coordinates}</span></p>
+	<p class="mono label" data-hud="label">
+		<span
+			><span class="city">{person.city}</span><span class="coordinates"
+				><span>{coordinates.latitude}</span><span class="separator"> · </span><span>{coordinates.longitude}</span></span
+			></span
+		>
+	</p>
 	<div class="paper" data-hud="paper">
 		<div class="mono hud" data-hud="hud">
 			<p class="hud-phase" data-hud="phase">projection orthographique · EPSG:4326</p>
@@ -74,24 +81,32 @@ import { person } from '../data/profile';
 		height: 100%;
 	}
 
-	/* Placed by the Intro on the point, then on the header coordinates. */
+	/*
+	 * Placed by the Intro on the point, then on the Besançon label of the hero's map, whose text and
+	 * setting it shares (`.hero-place`): it hands over without a jump.
+	 */
 	.label {
 		position: absolute;
 		left: 0;
 		top: 0;
 		margin: 0;
-		font-size: 13px;
+		font-size: 12px;
 		line-height: 1.5;
 		white-space: nowrap;
 		color: var(--color-ink-muted);
 		will-change: transform;
 	}
 
-	.label span {
-		display: block;
+	.label > span {
+		display: flex;
+		flex-direction: column;
 		background: var(--color-paper);
 		box-shadow: 0 0 0 4px var(--color-paper);
 		opacity: 0;
+	}
+
+	.city {
+		color: var(--color-ink);
 	}
 
 	.paper {
@@ -201,11 +216,28 @@ import { person } from '../data/profile';
 	}
 
 	/* Phones, upright or on their side: smaller HUD, the scale under the centre of the projection. */
-	@media (max-width: 860px), (max-height: 500px) {
+	/* Like the map's label on narrow screens: three lines, flush right. */
+	@media (max-width: 860px) {
 		.label {
 			font-size: 11px;
 		}
 
+		.label > span,
+		.coordinates {
+			align-items: flex-end;
+		}
+
+		.coordinates {
+			display: flex;
+			flex-direction: column;
+		}
+
+		.separator {
+			display: none;
+		}
+	}
+
+	@media (max-width: 860px), (max-height: 500px) {
 		.hud {
 			font-size: 10px;
 		}

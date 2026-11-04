@@ -100,11 +100,14 @@ test.describe('Atome', () => {
 		await expect.poll(promoted, { message: 'back above the scene' }).toEqual(['auto', 'auto']);
 	});
 
+	// On the finished tower, the opening and the labels have played: going back, they show what they took.
 	for (const [turn, from, to] of [
 		['portrait to landscape', PORTRAIT, LANDSCAPE],
 		['landscape to portrait', LANDSCAPE, PORTRAIT],
 	] as const) {
-		test(`turned from ${turn} mid-scene, it shows each pose as a page opened that way`, async ({ page }) => {
+		test(`turned from ${turn} on the finished tower, it shows each pose as a page opened that way`, async ({
+			page,
+		}) => {
 			// Ten scrolls, each waiting for the smoothing and the scene's lag to settle.
 			test.slow();
 			await page.setViewportSize(to);
@@ -119,7 +122,7 @@ test.describe('Atome', () => {
 			await page.setViewportSize(from);
 			await page.reload();
 			await page.evaluate(() => document.fonts.ready);
-			await scrollToShare(page, POSES.atom);
+			await scrollToShare(page, POSES.tower);
 			await page.setViewportSize(to);
 
 			for (const [pose, share] of Object.entries(POSES)) {

@@ -25,6 +25,10 @@ astro dev --background
 
 Manage the background server with `astro dev stop`, `astro dev status`, and `astro dev logs`.
 
+## Tests
+
+La suite Playwright complète est trop longue pour chaque tâche : ne lance que les fichiers de test ajoutés ou modifiés, en les passant explicitement (`bun run test:e2e tests/e2e/<fichier>.spec.ts`). La suite entière ne tourne que sur demande.
+
 ## Calculé au build
 
 Tout ce qui peut être calculé au build l'est : récupération de données, transformation de contenu (Markdown, coloration syntaxique), dates formatées, listes triées et filtrées, SVG générés, métadonnées. Le navigateur reçoit le résultat en HTML, jamais le calcul. Le site reste en sortie statique ; un rendu à la demande se discute avant d'être ajouté.

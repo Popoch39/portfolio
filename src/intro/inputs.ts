@@ -2,6 +2,7 @@
  * What the globe's painter (`canvas.ts`) needs from the page, read on the main thread: the palette
  * lives in the CSS, and an SVG noise only decodes where there is a DOM.
  */
+import type { Surface } from './canvas';
 import type { Palette, Rgb } from './globe';
 import { GRAIN_TILE, SPHERE_GRAIN } from './grain';
 
@@ -19,6 +20,11 @@ export function readPalette(element: Element): Palette {
 		return [red, green, blue];
 	};
 	return { ink: rgb('--color-ink'), accent: rgb('--color-accent') };
+}
+
+/** The painter's scratch canvas on the main thread: a page canvas where `OffscreenCanvas` is missing. */
+export function newSurface(): Surface {
+	return typeof OffscreenCanvas === 'function' ? new OffscreenCanvas(1, 1) : document.createElement('canvas');
 }
 
 /**

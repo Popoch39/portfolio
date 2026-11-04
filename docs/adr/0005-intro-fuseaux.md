@@ -18,7 +18,7 @@ L'accueil s'ouvre sur une **Intro** (maquette 04a · Fuseaux) : un globe découp
   - depuis une autre page du site (referrer de même origine), sauf sur un rechargement ;
   - avec une ancre dans l'URL ;
   - sous `prefers-reduced-motion: reduce`.
-- **Un geste la passe** : la première touche, le premier clic ou la molette (le doigt passe par le clic) amènent la page à l'état final et le Voile s'efface en un fondu de 300 ms. Tab met en plus le focus sur le premier lien. Le défilement est suspendu pendant l'Intro (smoother en pause) et rendu à sa fin.
+- **Un geste la passe** : la première touche ou le premier clic (le doigt passe par le tap) amènent la page à l'état final et le Voile s'efface en un fondu de 300 ms. Tab met en plus le focus sur le premier lien. Le défilement est suspendu pendant l'Intro (smoother en pause) et rendu à sa fin. Tenter de défiler (molette, swipe, touches de défilement) ne la passe pas : l'Intro continue, la page ne bouge pas. Le clic est écouté plutôt que `pointerdown`, qu'un swipe déclenche aussi.
 
 ## Options écartées
 

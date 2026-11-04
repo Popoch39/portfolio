@@ -120,7 +120,6 @@ for (const [screen, viewport] of SCREENS) {
 		const gestures: [string, (page: Page) => Promise<void>][] = [
 			['a key', (page) => page.keyboard.press('a')],
 			['a click', (page) => page.mouse.click(200, 300)],
-			['the wheel', (page) => scrollWithWheel(page, 300)],
 		];
 		for (const [name, gesture] of gestures) {
 			test(`${name} skips it to the final state in a short fade`, async ({ page }) => {
@@ -147,30 +146,34 @@ for (const [screen, viewport] of SCREENS) {
 			await expect(page.getByRole('link').first()).toBeFocused();
 		});
 
-		test('scrolling is blocked during the Intro, then given back', async ({ page }) => {
+		test('the wheel neither skips the Intro nor scrolls the page, which scrolls again once it has ended', async ({
+			page,
+		}) => {
 			await visitHome(page);
 			await page.clock.runFor(2_000);
 
-			// The gesture that skips the Intro does not scroll the page.
 			await scrollWithWheel(page, 600);
 			await page.clock.runFor(400);
+			await expect(veil(page)).toBeVisible();
 			expect(await scrollPosition(page)).toBe(0);
 
+			await page.clock.runFor(8_000);
+			await expect(veil(page)).toBeHidden();
+			await expectFinalState(page);
 			await scrollWithWheel(page, 600);
 			await page.clock.runFor(1_000);
 			await expect.poll(() => scrollPosition(page)).toBeGreaterThan(0);
 		});
 
-		test('the keyboard does not scroll the page under the Intro either', async ({ page }) => {
+		test('the scrolling keys neither skip the Intro nor scroll the page under it', async ({ page }) => {
 			await visitHome(page);
 			await page.clock.runFor(2_000);
 			const farthest = await recordFarthestScroll(page);
 
-			await page.keyboard.press('PageDown');
-			await page.keyboard.press('End');
+			for (const key of ['PageDown', 'End', 'Space', 'ArrowDown']) await page.keyboard.press(key);
 			await page.clock.runFor(400);
 
-			await expect(veil(page)).toBeHidden();
+			await expect(veil(page)).toBeVisible();
 			expect(await farthest()).toBe(0);
 		});
 
@@ -390,9 +393,9 @@ test.describe('Intro, under a finger', () => {
 		isMobile: true,
 	});
 
-	test('a swipe skips it without scrolling the page under it', async ({ page, browserName }) => {
+	test('a swipe neither skips it nor scrolls the page under it', async ({ page, browserName }) => {
 		test.skip(browserName === 'firefox', 'Playwright does not emulate touch under Firefox');
-		// A paused clock: the skip's fade must not end on its own halfway through the swipe.
+		// A paused clock: the Intro must not end on its own halfway through the swipe.
 		await page.clock.install({ time: 0 });
 		await page.clock.pauseAt(1_000);
 		await page.goto('/');
@@ -402,9 +405,23 @@ test.describe('Intro, under a finger', () => {
 		await swipeUp(page, 400);
 		await page.clock.runFor(400);
 
-		await expect(veil(page)).toBeHidden();
+		await expect(veil(page)).toBeVisible();
 		expect(await farthest()).toBe(0);
 		expect(await scrollPosition(page)).toBe(0);
+	});
+
+	test('a tap skips it', async ({ page, browserName }) => {
+		test.skip(browserName === 'firefox', 'Playwright does not emulate touch under Firefox');
+		await page.clock.install({ time: 0 });
+		await page.clock.pauseAt(1_000);
+		await page.goto('/');
+		await page.clock.runFor(2_000);
+
+		await page.touchscreen.tap(195, 400);
+		await page.clock.runFor(400);
+
+		await expect(veil(page)).toBeHidden();
+		await expectFinalState(page);
 	});
 });
 

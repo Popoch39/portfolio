@@ -179,8 +179,8 @@ registerOpening((end) => {
 	let fade: gsap.core.Timeline | undefined;
 	const firstLink = document.querySelector<HTMLElement>('#smooth-content a[href]');
 
-	// Any gesture skips the Intro: the page jumps to its final state and the Intro's last frame
-	// fades out over it.
+	// A click, a tap or a key skips the Intro: the page jumps to its final state and the Intro's last
+	// frame fades out over it. Trying to scroll does not: it is held above, and the Intro plays on.
 	const skip = () => {
 		if (fade) return;
 		stopListening();
@@ -202,20 +202,19 @@ registerOpening((end) => {
 			event.preventDefault();
 			firstLink?.focus();
 		}
-		skip();
+		if (!SCROLL_KEYS.has(event.key)) skip();
 	};
 	// Restored from the back/forward cache halfway through: the visitor wants the page back as left.
 	const onCacheRestore = (event: PageTransitionEvent) => {
 		if (event.persisted) finish();
 	};
 	addEventListener('keydown', onKey, true);
-	addEventListener('pointerdown', skip, true);
-	addEventListener('wheel', skip, { capture: true, passive: true });
+	// Not `pointerdown`: a swipe starts with one too, whereas it never ends in a click.
+	addEventListener('click', skip, true);
 	addEventListener('pageshow', onCacheRestore);
 	function stopListening() {
 		removeEventListener('keydown', onKey, true);
-		removeEventListener('pointerdown', skip, true);
-		removeEventListener('wheel', skip, { capture: true });
+		removeEventListener('click', skip, true);
 	}
 
 	// Ended, skipped or reverted by a change of motion preference: nothing of the Intro survives.

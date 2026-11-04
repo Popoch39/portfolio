@@ -13,7 +13,7 @@ Scène la plus simple : un élément entre dans la vue et anime une fois vers so
 Animation qui ne dépend ni du défilement ni d'un état JS : survol, défilement du bandeau, transition entre pages. Elle reste en CSS (les transitions entre pages sont des view transitions cross-document). Le chargement de l'accueil n'en fait plus partie : c'est l'Intro.
 
 **Intro**
-La séquence jouée une fois au chargement de l'accueil, sous le Voile : le globe tourne vers Besançon, se découpe en fuseaux qui deviennent les colonnes de la page, puis le header, le hero et la statusline se révèlent. Timeline GSAP enregistrée auprès du socle (ADR 0005). Elle ne se joue ni au retour par l'historique, ni depuis une autre page du site, ni avec une ancre, ni en mouvement réduit, et n'importe quel geste la passe.
+La séquence jouée une fois au chargement de l'accueil, sous le Voile : le globe tourne vers Besançon, se découpe en fuseaux qui deviennent les colonnes de la page, puis le header, le hero et la statusline se révèlent. Timeline GSAP enregistrée auprès du socle (ADR 0005). Elle ne se joue ni au retour par l'historique, ni depuis une autre page du site, ni avec une ancre, ni en mouvement réduit ; un clic, un tap ou une touche la passe, un défilement non.
 _À éviter_ : loader, splash screen.
 
 **Ouverture**

@@ -66,24 +66,59 @@ declare global {
 	}
 }
 
-/** First and last rows of the window where the globe's canvas has drawn something, in CSS px. */
-function drawnRows(page: Page) {
-	return grid(page).evaluate((canvas: HTMLCanvasElement) => {
-		const context = canvas.getContext('2d');
-		if (!context) throw new Error('canvas without a 2D context');
-		const { data, width, height } = context.getImageData(0, 0, canvas.width, canvas.height);
-		const inked = (y: number) => {
-			for (let x = 0; x < width; x++) if (data[(y * width + x) * 4 + 3] > 8) return true;
-			return false;
-		};
-		let top = 0;
-		while (top < height && !inked(top)) top++;
-		let bottom = height - 1;
-		while (bottom > top && !inked(bottom)) bottom--;
-		const ratio = canvas.width / canvas.clientWidth;
-		return { top: top / ratio, bottom: (bottom + 1) / ratio };
-	});
+/**
+ * First and last rows of the window where the globe has drawn something, in CSS px. Read from a
+ * screenshot of the globe alone on white: drawn by a Worker, its canvas cannot be read from the page.
+ */
+async function drawnRows(page: Page) {
+	// Through the elements' styles: the page's policy blocks the stylesheet `screenshot({ style })` adds.
+	const alone = (on: boolean) =>
+		page.evaluate((on) => {
+			const set = (element: HTMLElement, property: string, value: string) => {
+				if (on) element.style.setProperty(property, value, 'important');
+				else element.style.removeProperty(property);
+			};
+			set(document.documentElement, 'background', '#fff');
+			set(document.body, 'visibility', 'hidden');
+			const canvas = document.getElementById('intro-grid');
+			if (canvas) set(canvas, 'visibility', 'visible');
+		}, on);
+	await alone(true);
+	const shot = await grid(page).screenshot({ scale: 'css' });
+	await alone(false);
+	const reader = await page.context().newPage();
+	try {
+		return await reader.evaluate(async (png) => {
+			const image = new Image();
+			image.src = `data:image/png;base64,${png}`;
+			await image.decode();
+			const { width, height } = image;
+			const canvas = new OffscreenCanvas(width, height);
+			const context = canvas.getContext('2d');
+			if (!context) throw new Error('canvas without a 2D context');
+			context.drawImage(image, 0, 0);
+			const { data } = context.getImageData(0, 0, width, height);
+			// Darker than the white page by more than a faint anti-aliased edge.
+			const inked = (y: number) => {
+				for (let x = 0; x < width; x++) {
+					const i = (y * width + x) * 4;
+					if (Math.min(data[i], data[i + 1], data[i + 2]) < 250) return true;
+				}
+				return false;
+			};
+			let top = 0;
+			while (top < height && !inked(top)) top++;
+			let bottom = height - 1;
+			while (bottom > top && !inked(bottom)) bottom--;
+			return { top, bottom: bottom + 1 };
+		}, shot.toString('base64'));
+	} finally {
+		await reader.close();
+	}
 }
+
+/** The Worker that draws the globe does not load: the page has to draw it itself. */
+const blockWorker = (page: Page) => page.route(/\.worker-[\w-]+\.js$/, (route) => route.abort());
 
 async function box(element: Locator) {
 	const found = await element.boundingBox();
@@ -387,8 +422,9 @@ test.describe('Intro, on a 3× screen', () => {
 	test.use({ reducedMotion: 'no-preference', viewport: PHONE, deviceScaleFactor: 3 });
 
 	// Drawn at 3×, the full-window globe would cost more than twice the pixels for a sharpness nobody
-	// tells apart at reading distance.
+	// tells apart at reading distance. Read where the page draws it: a Worker's bitmap is out of reach.
 	test('the globe is drawn at 2× its size at most', async ({ page }) => {
+		await blockWorker(page);
 		await visitHome(page);
 		await page.clock.runFor(1_000);
 
@@ -404,7 +440,9 @@ test.describe('Intro, while the globe stands still', () => {
 	test.use({ reducedMotion: 'no-preference', viewport: SCREENS[0][1] });
 
 	test('the canvas is not drawn again until the globe moves', async ({ page }) => {
-		// Every frame painted into the globe's canvas starts by clearing it.
+		// Counted where the page draws it: a Worker's drawing is out of reach. Every frame painted into
+		// the globe's canvas starts by clearing it.
+		await blockWorker(page);
 		await page.addInitScript(() => {
 			window.testGridDraws = 0;
 			const clear = CanvasRenderingContext2D.prototype.clearRect;
@@ -428,6 +466,75 @@ test.describe('Intro, while the globe stands still', () => {
 		await page.clock.runFor(300);
 		expect(await draws()).toBeGreaterThan(still);
 	});
+});
+
+test.describe('Intro, off the main thread', () => {
+	test.use({ reducedMotion: 'no-preference', viewport: SCREENS[0][1] });
+
+	test('the globe is drawn by a Worker, which does not outlive the Intro', async ({ page }) => {
+		await visitHome(page);
+		await page.clock.runFor(1_000);
+		await expect.poll(() => page.workers().length).toBe(1);
+
+		await page.clock.runFor(9_000);
+		await expect(veil(page)).toBeHidden();
+		await expect.poll(() => page.workers().length).toBe(0);
+	});
+
+	test('skipped, the Intro leaves no Worker behind either', async ({ page }) => {
+		await visitHome(page);
+		await page.clock.runFor(1_000);
+		await expect.poll(() => page.workers().length).toBe(1);
+
+		await page.mouse.click(200, 300);
+		await page.clock.runFor(400);
+
+		await expect(veil(page)).toBeHidden();
+		await expect.poll(() => page.workers().length).toBe(0);
+	});
+
+	const withoutWorker: [string, (page: Page) => Promise<unknown>][] = [
+		['when its Worker does not load', blockWorker],
+		[
+			'in a browser that cannot draw off the main thread',
+			(page) =>
+				page.addInitScript(() => {
+					Reflect.deleteProperty(window, 'OffscreenCanvas');
+					Reflect.deleteProperty(HTMLCanvasElement.prototype, 'transferControlToOffscreen');
+				}),
+		],
+	];
+	for (const [name, setUp] of withoutWorker) {
+		test(`${name}, the page draws the globe: the Intro plays to the end`, async ({ page }) => {
+			const errors: string[] = [];
+			page.on('pageerror', (error) => errors.push(error.message));
+			await setUp(page);
+			await visitHome(page);
+
+			await page.clock.runFor(2_000);
+			const { top, bottom } = await drawnRows(page);
+			expect(bottom).toBeGreaterThan(top);
+
+			await page.clock.runFor(8_000);
+			await expect(veil(page)).toBeHidden();
+			await expect(grid(page)).toBeHidden();
+			await expectFinalState(page);
+			expect(errors).toEqual([]);
+		});
+
+		test(`${name}, a click still skips the Intro`, async ({ page }) => {
+			await setUp(page);
+			await visitHome(page);
+			await page.clock.runFor(2_000);
+
+			await page.mouse.click(200, 300);
+			await page.clock.runFor(400);
+
+			await expect(veil(page)).toBeHidden();
+			await expect(grid(page)).toBeHidden();
+			await expectFinalState(page);
+		});
+	}
 });
 
 test.describe('Intro, under a finger', () => {

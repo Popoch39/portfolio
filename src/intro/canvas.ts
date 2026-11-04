@@ -3,8 +3,8 @@
  * clipped to the gores, the flat tint, the Besançon point.
  *
  * Without the DOM: it takes a context (of a page canvas or an `OffscreenCanvas`), the palette, the
- * pixel ratio and the decoded grain, so that it runs as is in a Worker. A frame that looks like the
- * last one painted is not painted again.
+ * pixel ratio, the decoded grain and a way to make its scratch canvases, so that it runs as is in a
+ * Worker. A frame that looks like the last one painted is not painted again.
  */
 import { trace, type Frame, type Layout, type Palette, type Pen, type Rgb } from './globe';
 import { BOIL } from './timing';
@@ -19,6 +19,16 @@ export type Context2D = CanvasCompositing &
 	CanvasRect &
 	CanvasState &
 	CanvasTransform & { canvas: { width: number; height: number } };
+
+/**
+ * A scratch canvas the painter draws the sphere into: an `OffscreenCanvas`, or a page canvas in a
+ * browser that has none (the main-thread path must not depend on it).
+ */
+export type Surface = CanvasImageSource & {
+	width: number;
+	height: number;
+	getContext(contextId: '2d'): Context2D | null;
+};
 
 /** The sphere's light comes from the top left (the mockup's `circle at 36% 30%`). */
 const LIGHT = { x: 0.36, y: 0.3 };
@@ -122,12 +132,12 @@ function fingerprint(frame: Frame, grain: boolean, into: Float64Array) {
 	return i;
 }
 
-export function globePainter(ctx: Context2D, palette: Palette) {
+export function globePainter(ctx: Context2D, palette: Palette, newSurface: () => Surface) {
 	const ink = css(palette.ink);
 	const accent = css(palette.accent);
 	// The sphere (shading and grain) is drawn once per grain step into its own bitmap, then scaled.
-	const sphere = new OffscreenCanvas(1, 1);
-	const grain = new OffscreenCanvas(1, 1);
+	const sphere = newSurface();
+	const grain = newSurface();
 	let grainPattern: CanvasPattern | null = null;
 	const sphereKey = { radius: Number.NaN, ratio: Number.NaN, boil: Number.NaN };
 	let ratio = 1;
@@ -160,7 +170,7 @@ export function globePainter(ctx: Context2D, palette: Palette) {
 		const s = sphere.getContext('2d');
 		const g = grain.getContext('2d');
 		if (!s || !g) return;
-		const light = (stops: [number, string][], target: OffscreenCanvasRenderingContext2D) => {
+		const light = (stops: [number, string][], target: Context2D) => {
 			const gradient = target.createRadialGradient(
 				LIGHT.x * size,
 				LIGHT.y * size,

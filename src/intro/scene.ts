@@ -1,7 +1,7 @@
 /**
  * The Intro (ADR 0005): a timeline played once under the veil on loading the home page: the globe
- * drawn in a canvas on the timeline's progress, then the header, the hero and the statusline
- * revealed in the mockup's order. The inline script in the `<head>` decides whether it plays (class
+ * drawn in a canvas on the timeline's progress (by a Worker where the browser can, `globe.worker.ts`),
+ * then the header, the hero and the statusline revealed in the mockup's order. The inline script in the `<head>` decides whether it plays (class
  * on `<html>`); without that class, nothing happens here.
  */
 import { gsap, registerOpening, ScrollSmoother } from '../animation/base';
@@ -9,7 +9,8 @@ import { globePainter } from './canvas';
 import { cubicBezier } from './ease';
 import { coordinate, decimal, fitColumns, frameAt, type Layout } from './globe';
 import { boilStep } from './grain';
-import { decodeGrain, readPalette } from './inputs';
+import type { GlobeMessage } from './globe.worker';
+import { decodeGrain, newSurface, readPalette } from './inputs';
 import {
 	BOIL,
 	END,
@@ -64,9 +65,15 @@ registerOpening((end) => {
 	for (const type of HELD_INPUTS) addEventListener(type, holdScroll, { passive: false });
 
 	// The globe lands on the real page: measured now, again once the fonts are in, and on every resize.
-	const context = canvas.getContext('2d');
-	const painter = context && globePainter(context, readPalette(root));
+	let layout = measure();
+	const palette = readPalette(root);
+	// Drawn by a Worker on the transferred canvas where the browser can; here otherwise, or as soon as
+	// the Worker fails: a failing Worker is not a failing Intro.
+	let drawnOn = canvas;
+	let painter: ReturnType<typeof globePainter> | null = null;
 	let noise: ImageBitmap | null = null;
+	let worker = drawElsewhere();
+	if (!worker) drawHere();
 	decodeGrain(pixelRatio()).then((decoded) => {
 		if (!decoded) return;
 		if (finished) {
@@ -74,9 +81,60 @@ registerOpening((end) => {
 			return;
 		}
 		noise = decoded;
-		painter?.grain(decoded);
+		// Copied, not transferred: the page keeps it in case it has to draw the globe itself.
+		post({ type: 'grain', noise });
+		painter?.grain(noise);
 	});
-	let layout = measure();
+
+	function drawElsewhere() {
+		if (!('transferControlToOffscreen' in drawnOn) || typeof Worker !== 'function') return null;
+		let drawer: Worker;
+		try {
+			drawer = new Worker(new URL('./globe.worker.ts', import.meta.url), { type: 'module' });
+		} catch (error) {
+			// Refused at once (a policy, an unsupported module Worker): the page draws the globe.
+			console.warn('Intro: the globe is drawn on the main thread', error);
+			return null;
+		}
+		const offscreen = drawnOn.transferControlToOffscreen();
+		drawer.addEventListener('error', fallBack);
+		drawer.addEventListener('messageerror', fallBack);
+		drawer.postMessage(
+			{ type: 'init', canvas: offscreen, palette, layout, ratio: pixelRatio() } satisfies GlobeMessage,
+			[offscreen],
+		);
+		return drawer;
+	}
+	function drawHere() {
+		const context = drawnOn.getContext('2d');
+		painter = context && globePainter(context, palette, newSurface);
+		painter?.resize(layout.width, layout.height, pixelRatio());
+		if (noise) painter?.grain(noise);
+	}
+	function fallBack() {
+		if (finished || !worker) return;
+		stopWorker();
+		drawHere();
+		render();
+	}
+	/** Stops the Worker and lets go of the canvas it drew on: a fresh one takes its place. */
+	function stopWorker() {
+		worker?.terminate();
+		worker = null;
+		const fresh = drawnOn.cloneNode(false);
+		if (!(fresh instanceof HTMLCanvasElement)) return;
+		drawnOn.replaceWith(fresh);
+		drawnOn = fresh;
+	}
+	function post(message: GlobeMessage) {
+		worker?.postMessage(message);
+	}
+	// A hidden tab stops the timeline's ticks: the globe must not run ahead of it meanwhile.
+	const onVisibility = () => {
+		if (document.hidden) post({ type: 'time', t: clock.t, running: false });
+	};
+	document.addEventListener('visibilitychange', onVisibility);
+
 	function measure(): Layout {
 		const grid = header.getBoundingClientRect();
 		const point = marker.getBoundingClientRect();
@@ -101,10 +159,10 @@ registerOpening((end) => {
 	const relayout = () => {
 		if (finished) return;
 		layout = measure();
+		post({ type: 'layout', layout, ratio: pixelRatio() });
 		painter?.resize(layout.width, layout.height, pixelRatio());
 		render();
 	};
-	painter?.resize(layout.width, layout.height, pixelRatio());
 	addEventListener('resize', relayout);
 	document.fonts.ready.then(relayout);
 
@@ -133,6 +191,7 @@ registerOpening((end) => {
 		// The grid stays over the page once the veil has lifted, under the statusline that rises later.
 		over.classList.toggle(LOWERED, t >= VEIL_LIFT);
 		const frame = frameAt(t, layout);
+		post({ type: 'time', t, running: true });
 		painter?.draw(frame, layout);
 		if (frame.label.x !== labelX || frame.label.y !== labelY) {
 			labelX = frame.label.x;
@@ -213,6 +272,8 @@ registerOpening((end) => {
 		stopListening();
 		const veilShown = timeline.time() < VEIL_LIFT;
 		skipping = true;
+		// The globe stops where it stands, and fades out with the grid.
+		post({ type: 'time', t: clock.t, running: false });
 		timeline.progress(1, true);
 		fade = gsap.timeline({ onComplete: finish });
 		// Under the veil, the grid is not lowered yet (`render` no longer runs): it stays above the veil
@@ -251,6 +312,7 @@ registerOpening((end) => {
 		stopListening();
 		removeEventListener('pageshow', onCacheRestore);
 		removeEventListener('resize', relayout);
+		document.removeEventListener('visibilitychange', onVisibility);
 		root.classList.remove(PLAYING);
 		over.classList.remove(LOWERED);
 		for (const type of HELD_INPUTS) removeEventListener(type, holdScroll);
@@ -259,6 +321,7 @@ registerOpening((end) => {
 		timeline.revert();
 		for (const node of [label, grain, tick, bar]) node.style.removeProperty('transform');
 		label.style.removeProperty('opacity');
+		if (worker) stopWorker();
 		painter?.dispose();
 		noise?.close();
 		end();

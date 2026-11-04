@@ -13,12 +13,15 @@ import { restingOn, runs, slotStarts, type BufferState, type Mode, type Run, typ
 const MAX_KEYS = 10;
 
 /** What can hold the typist where it stands; it types on once none is left. */
-type Hold = 'off-screen';
+type Hold = 'off-screen' | 'paused';
+
+/** From the Pause released to the next version starting, as from the first paint to the first version. */
+const RESTART_MS = 1800;
 
 registerScene(() => {
 	const parts = typistParts();
 	if (!parts) return;
-	const { root, buffer, versionNumber, audience, keys, statusMode, modified } = parts;
+	const { root, buffer, versionNumber, audience, keys, statusMode, modified, pause } = parts;
 	const lede = JSON.parse(root.dataset.lede ?? '') as Lede;
 	const count = lede.versions.length;
 
@@ -55,6 +58,18 @@ registerScene(() => {
 	// Off screen, the typist holds its breath: nothing is typed that nobody sees, and nothing wakes it but its return.
 	const stopWatching = watchOffScreen(root, (offScreen) => (offScreen ? hold('off-screen') : release('off-screen')));
 
+	// The Pause (WCAG 2.2.2) does not hold the typist mid-word: the version it was on comes back whole, at
+	// rest, and the next one is typed from there on release.
+	const followPause = () => {
+		if (!pause.checked) {
+			release('paused');
+			return;
+		}
+		hold('paused');
+		queued = [RESTART_MS, cycle];
+		settle(version);
+	};
+	pause.addEventListener('change', followPause);
 	function draw(patch: Partial<BufferState>) {
 		const mode = state.mode;
 		state = { ...state, ...patch };
@@ -66,6 +81,14 @@ registerScene(() => {
 		statusMode.textContent = mode;
 		statusMode.dataset.mode = mode;
 		modified.hidden = mode !== 'INSERT';
+	}
+
+	/** The buffer whole and at rest on a version, the keys put away. */
+	function settle(index: number) {
+		keys.replaceChildren();
+		keys.dataset.on = 'false';
+		state = { ...restingOn(lede, index), mode: state.mode };
+		draw({ mode: 'NORMAL' });
 	}
 
 	function showVersion(index: number) {
@@ -176,17 +199,17 @@ registerScene(() => {
 		go();
 	}
 
-	later(1800, cycle);
+	later(RESTART_MS, cycle);
+	// Paused before the typist was built: from the visitor's remembered choice, or during the Intro.
+	followPause();
 
 	// Reverted by a change of motion preference: the lede goes back to its first version, at rest.
 	return () => {
 		stopped = true;
 		clearTimeout(pending);
 		stopWatching();
-		keys.replaceChildren();
-		keys.dataset.on = 'false';
-		state = { ...restingOn(lede, 0), mode: state.mode };
-		draw({ mode: 'NORMAL' });
+		pause.removeEventListener('change', followPause);
+		settle(0);
 		showVersion(0);
 	};
 });
@@ -210,6 +233,7 @@ function typistParts() {
 		keys: root?.querySelector<HTMLElement>('[data-keys]'),
 		statusMode: document.querySelector<HTMLElement>('#statusline [data-vim-mode]'),
 		modified: document.querySelector<HTMLElement>('#statusline [data-vim-modified]'),
+		pause: document.querySelector<HTMLInputElement>('#pause'),
 	};
 	return allPresent(parts) ? parts : null;
 }

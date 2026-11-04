@@ -41,7 +41,7 @@ Tout ce qui peut être calculé au build l'est : récupération de données, tra
 - **Exception assumée : GSAP.** GSAP + ScrollTrigger + ScrollSmoother sont chargés sur chaque page par le socle d'animation (`src/animation/base.ts`) : défilement lissé et toutes les scènes. Ce n'est pas une violation à corriger ; voir [ADR 0001](docs/adr/0001-gsap-pour-les-scenes.md). Une scène s'enregistre auprès du socle (`registerScene`), n'importe jamais `gsap` pour créer son propre smoother, n'anime que `transform` et `opacity`, et épingle avec `pin` (jamais `position: sticky` dans le contenu lissé ; seule exception, la Frise au doigt, tenue en `sticky` sans smoother parce que la bascule `fixed` de `pin` y produit du CLS, voir l'ADR). Les animations d'interface restent en CSS.
 - **Toucher à GSAP = charger les skills GSAP d'abord.** Avant d'écrire ou de modifier du code GSAP (socle, scène, timeline, ScrollTrigger, ScrollSmoother), charge les skills concernés : `gsap-core`, `gsap-timeline`, `gsap-scrolltrigger`, `gsap-plugins`, `gsap-utils` selon le besoin, et `gsap-performance` à chaque fois.
 - **Fuites mémoire.** Tout ce qu'une scène crée (tweens, timelines, ScrollTriggers, écouteurs, observers, `requestAnimationFrame`) est créé dans le contexte `matchMedia` du socle pour être annulé par son `revert()` ; ce qui vit hors du contexte renvoie sa fonction de nettoyage. Rien ne survit à un changement de préférence ou à une navigation : vérifie au besoin avec un instantané de tas (skill `memory-leak-debugging`).
-- **FPS.** Une scène GSAP tient les 60 fps de la section Fluidité : pas de lecture de layout dans un `onUpdate`, pas de `will-change` permanent sur des dizaines d'éléments, `scrub` et `pin` mesurés par une trace de performance en mobile avant de conclure.
+- **FPS.** Une scène GSAP tient les budgets de la section Fluidité : pas de lecture de layout dans un `onUpdate`, pas de `will-change` permanent sur des dizaines d'éléments, `scrub` et `pin` mesurés par le banc (`bun run perf`, profil doigt) avant de conclure.
 
 ## Assets
 
@@ -59,13 +59,17 @@ Contraste AA, `alt` pertinent (vide pour le décoratif), focus visible, navigati
 
 ## Fluidité
 
-Cible : **60 fps minimum partout** : défilement, animations, transitions et interactions, sur toutes les pages, en mobile comme en desktop. Une frame qui dépasse 16,7 ms se corrige ou se signale avec sa cause, comme une baisse de score Lighthouse.
+Cible : **120 Hz là où le navigateur le permet**, partout : défilement (Défilement lissé compris), scènes, animations, transitions et interactions, sur toutes les pages, en mobile comme en desktop. Chaque image tient en 8,3 ms de thread principal. Safari plafonne le rendu des pages à 60 Hz par défaut, iPhone et Mac compris : c'est une limite du navigateur, pas un objectif, et le site y tient ses 60 images par seconde.
+
+- **Budgets**, pour chaque phase de chaque profil : p95 du temps de thread principal par image ≤ 8,3 ms, pire image ≤ 16,7 ms, aucune tâche de plus de 50 ms, CLS 0. Un dépassement se corrige ou se signale avec sa cause, comme une baisse de score Lighthouse.
+- **Banc : `bun run perf`.** Il builde et sert le site, puis, sur deux profils (souris + Défilement lissé en CPU ×1, 1440×900 ; doigt en CPU ×4, 412×915), joue l'Intro jusqu'au bout et fait défiler l'accueil de haut en bas sous trace. Il lance ensuite Lighthouse mobile sur l'accueil et la 404. Il rend un tableau par phase (Intro, Frise, Atome, Montage, Reste), `perf-results/report.json` et les traces (`perf-results/<profil>.trace.json.gz`, à ouvrir dans le panneau Performance de DevTools), et échoue au-delà des budgets. Un profil seul : `bun run perf --project finger` (ou `mouse`, `lighthouse`). Il ne tourne jamais avec l'e2e ; il tourne avant chaque PR qui touche au rendu.
+- **Ce que le banc ne voit pas.** Le headless rastérise en logiciel : il mesure le thread principal, pas le GPU, que la recette sur vrais appareils mesure. Une machine chargée gonfle les chiffres en CPU ×4 : un chiffre qui détonne se remesure.
 
 **Rien ne tourne hors de l'écran.** Toute animation infinie et toute minuterie qui anime (boucle CSS, frappe, `requestAnimationFrame`) s'arrête quand ce qu'elle anime sort de la vue, ou reste sous le Voile, et reprend là où elle en était en y revenant. Hors de la vue, plus aucune minuterie en attente ni sondage : un IntersectionObserver la réveille. Le mécanisme est commun (`src/animation/offscreen.ts`) : `markOffScreen` pose `data-offscreen`, que le CSS lit pour mettre la boucle en `animation-play-state: paused` ; `watchOffScreen` sert au JS (l'Accroche se met en attente et ne garde aucune minuterie). L'observer est créé dans une scène enregistrée (`registerScene`) et déconnecté par son nettoyage. Une page au repos ne fait travailler ni le processeur ni le GPU.
 
 ## Lighthouse
 
-Cible : **100 dans les quatre catégories, en mobile**, sur le build (`astro build` puis `astro preview`), jamais sur le serveur de dev. Tout changement qui touche au rendu (page, composant, asset, police, script) se termine par un audit Lighthouse mobile ; une baisse de score se corrige avant de conclure ou se signale avec sa cause.
+Cible : **100 dans les quatre catégories, en mobile**, sur le build, jamais sur le serveur de dev. Le banc (`bun run perf`, section Fluidité) le mesure par la Node API de Lighthouse, note Performance comprise, ce que n'a pas l'audit du MCP chrome. Tout changement qui touche au rendu (page, composant, asset, police, script) se termine par le banc ; une baisse de score se corrige avant de conclure ou se signale avec sa cause.
 
 ## Agent skills
 

@@ -205,15 +205,20 @@ const geometry = [
 		const from = Number(plane.dataset.headFrom);
 		const to = Number(plane.dataset.headTo);
 
-		// The cards ride on the poles, whose height follows the framing (media queries). All are measured
-		// at once, here and at each refresh before it writes anything: read by each card's tween as it
-		// starts, they would cost a layout between every two tweens the refresh replays.
+		// The cards ride on the poles, whose height follows the framing (media queries): the only values of
+		// the scene that depend on the layout. The poles are all measured at once, here and when a refresh
+		// begins, before it writes anything; only the cards' tweens start over, and only if a height changed.
+		// Starting the whole timeline over (`invalidateOnRefresh`) would revert its styles, then read each
+		// target's transform back between two writes: a layout per target at every refresh.
 		const poles = labels.map((label) => label.querySelector<HTMLElement>('.commit-pole'));
-		let poleHeights: number[] = [];
+		const cards = labels.map((label) => label.querySelector<HTMLElement>('.commit-card')).filter((card) => !!card);
+		let poleHeights = poles.map((pole) => pole?.offsetHeight ?? 0);
 		const measurePoles = () => {
-			poleHeights = poles.map((pole) => pole?.offsetHeight ?? 0);
+			const heights = poles.map((pole) => pole?.offsetHeight ?? 0);
+			if (heights.every((height, i) => height === poleHeights[i])) return;
+			poleHeights = heights;
+			for (const tween of timeline.getTweensOf(cards)) tween.invalidate();
 		};
-		measurePoles();
 
 		// The diagonal and the hidden overflow come from CSS: the attribute goes away with the context.
 		section.dataset.scene = '';
@@ -269,11 +274,10 @@ const geometry = [
 				...pinning,
 				start: 'top top',
 				scrub: SCENE_SCRUB,
-				invalidateOnRefresh: true,
 				onRefreshInit: measurePoles,
-				// The cues past the start only take their values once played through (`immediateRender: false`):
-				// a `pin` plays the timeline to its end at each refresh to measure it, `sticky` does not, which
-				// would leave the labels ahead raised and lit, at their final state.
+				// The cues past the start, and the cards started over, only take their values once played through
+				// (`immediateRender: false`): a `pin` plays the timeline to its end at each refresh to measure it,
+				// `sticky` does not, which would leave the labels ahead raised and lit, at their final state.
 				onRefresh: sticky ? (self) => timeline.progress(1, true).progress(self.progress, true) : undefined,
 			},
 			onUpdate: () => showActiveCommit(from + travel * timeline.progress()),
@@ -295,7 +299,7 @@ const geometry = [
 
 		/**
 		 * Lays a property's keyframes along HEAD's travel, eased into each key; keys before the start are
-		 * clipped. Values are in `unit`s, read again when the layout changes (`invalidateOnRefresh`).
+		 * clipped. Values are in `unit`s, read again when the tweens start over (`measurePoles`).
 		 */
 		const track = (target: Element, property: string, keys: Keyframe[], unit = () => 1) => {
 			const valueAt = (at: number) => {

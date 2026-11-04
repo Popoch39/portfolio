@@ -1,5 +1,6 @@
 import { devices, expect, test, type Page } from './fixtures';
 import {
+	expectCardsOnPoles,
 	expectFramed,
 	expectReadable,
 	friseBand,
@@ -46,29 +47,6 @@ declare global {
 	interface Window {
 		testFrames?: [number, number][];
 	}
-}
-
-/** The CSS gap between a card and the top of its pole. */
-const CARD_GAP = 10;
-
-/**
- * How far each commit's card on screen stands above the top of its pole, in the label's own px: card
- * and pole stand in the same upright label, so the card's on-screen scale undoes the perspective.
- * The commits HEAD has long passed run off the frame towards the eye, where their boxes no longer mean much.
- */
-function cardsAbovePoles(page: Page) {
-	return friseBand(page)
-		.locator('.commit')
-		.evaluateAll((commits) =>
-			commits.flatMap((commit) => {
-				const card = commit.querySelector<HTMLElement>('.commit-card');
-				const pole = commit.querySelector('.commit-pole');
-				if (!card || !pole) return [Number.NaN];
-				const box = card.getBoundingClientRect();
-				if (box.right < 0 || box.left > innerWidth || box.bottom < 0 || box.top > innerHeight) return [];
-				return [(pole.getBoundingClientRect().top - box.bottom) / (box.height / card.offsetHeight)];
-			}),
-		);
 }
 
 for (const { width, height } of PHONES) {
@@ -194,9 +172,7 @@ test.describe('Frise under a finger, scrolling', () => {
 			// The section held at the top shifts its own offset: the start is read above the scene.
 			await page.evaluate(() => scrollTo(0, 0));
 			await scrollToScene(page, await sceneStart(page), 0.5);
-			const gaps = await cardsAbovePoles(page);
-			expect(gaps.length, 'commits in the frame').toBeGreaterThan(1);
-			for (const gap of gaps) expect(gap, `${viewport.width}×${viewport.height}: ${gaps}`).toBeCloseTo(CARD_GAP, 0);
+			await expectCardsOnPoles(page);
 		}
 	});
 

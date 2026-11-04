@@ -5,36 +5,71 @@
  * flip puts the first version back.
  */
 import { registerScene } from '../animation/base';
+import { watchOffScreen } from '../animation/offscreen';
 import type { Lede } from '../data/profile';
 import { restingOn, runs, slotStarts, type BufferState, type Mode, type Run, type Slot } from './buffer';
 
 /** Keys kept on screen at most; narrow screens show fewer (CSS). */
 const MAX_KEYS = 10;
 
+/** What can hold the typist where it stands; it types on once none is left. */
+type Hold = 'off-screen' | 'paused';
+
+/** The rest before the next version is typed: once the typist is built, and once the Pause is released. */
+const RESTART_MS = 1800;
+
 registerScene(() => {
 	const parts = typistParts();
 	if (!parts) return;
-	const { root, buffer, versionNumber, audience, keys, statusMode, modified } = parts;
+	const { root, buffer, versionNumber, audience, keys, statusMode, modified, pause } = parts;
 	const lede = JSON.parse(root.dataset.lede ?? '') as Lede;
 	const count = lede.versions.length;
 
 	let state = restingOn(lede, 0);
 	let version = 0;
-	let pending: ReturnType<typeof setTimeout> | undefined;
 	let stopped = false;
 
-	// Off screen, the typist holds its breath: nothing is typed that nobody sees.
-	let visible = true;
-	const observer = new IntersectionObserver(([entry]) => {
-		visible = entry.isIntersecting;
-	});
-	observer.observe(root);
-
 	// One step is pending at a time: its handle alone cancels the whole script.
-	const later = (ms: number, fn: () => void) => {
-		clearTimeout(pending);
-		pending = setTimeout(fn, ms);
+	let pending: ReturnType<typeof setTimeout> | undefined;
+	let queued: [ms: number, run: () => void] | undefined;
+	// While any reason holds the typist, no timer waits at all: the queued step waits with it, and is taken on release.
+	const holds = new Set<Hold>();
+	const schedule = () => {
+		if (!queued || holds.size > 0) return;
+		const [ms, run] = queued;
+		pending = setTimeout(() => {
+			queued = undefined;
+			run();
+		}, ms);
 	};
+	const later = (ms: number, run: () => void) => {
+		clearTimeout(pending);
+		queued = [ms, run];
+		schedule();
+	};
+	const hold = (reason: Hold) => {
+		holds.add(reason);
+		clearTimeout(pending);
+	};
+	const release = (reason: Hold) => {
+		if (holds.delete(reason)) schedule();
+	};
+
+	// Off screen, the typist holds its breath: nothing is typed that nobody sees, and nothing wakes it but its return.
+	const stopWatching = watchOffScreen(root, (offScreen) => (offScreen ? hold('off-screen') : release('off-screen')));
+
+	// The Pause (WCAG 2.2.2) does not hold the typist mid-word: the version it was on comes back whole, at
+	// rest, and the next one is typed from there on release.
+	const followPause = () => {
+		if (!pause.checked) {
+			release('paused');
+			return;
+		}
+		hold('paused');
+		queued = [RESTART_MS, cycle];
+		settle(version);
+	};
+	pause.addEventListener('change', followPause);
 
 	function draw(patch: Partial<BufferState>) {
 		const mode = state.mode;
@@ -47,6 +82,14 @@ registerScene(() => {
 		statusMode.textContent = mode;
 		statusMode.dataset.mode = mode;
 		modified.hidden = mode !== 'INSERT';
+	}
+
+	/** The buffer whole and at rest on a version, the keys put away. */
+	function settle(index: number) {
+		keys.replaceChildren();
+		keys.dataset.on = 'false';
+		state = { ...restingOn(lede, index), mode: state.mode };
+		draw({ mode: 'NORMAL' });
 	}
 
 	function showVersion(index: number) {
@@ -105,10 +148,6 @@ registerScene(() => {
 	function cycle() {
 		if (stopped) return;
 		// The Intro lands its point on the lede's cursor: the base only builds this scene once it has ended.
-		if (!visible) {
-			later(600, cycle);
-			return;
-		}
 		const next = (version + 1) % count;
 		const { what, whose } = lede.versions[next];
 		const slip = next === count - 1;
@@ -148,10 +187,6 @@ registerScene(() => {
 		let i = 0;
 		const go = () => {
 			if (stopped) return;
-			if (!visible) {
-				later(400, go);
-				return;
-			}
 			if (i >= steps.length) {
 				later(2600, cycle);
 				return;
@@ -165,17 +200,18 @@ registerScene(() => {
 		go();
 	}
 
-	later(1800, cycle);
+	later(RESTART_MS, cycle);
+	// Paused before the typist was built (a remembered choice, or during the Intro): the lede is still at rest on
+	// its first version, as rendered.
+	if (pause.checked) hold('paused');
 
 	// Reverted by a change of motion preference: the lede goes back to its first version, at rest.
 	return () => {
 		stopped = true;
 		clearTimeout(pending);
-		observer.disconnect();
-		keys.replaceChildren();
-		keys.dataset.on = 'false';
-		state = { ...restingOn(lede, 0), mode: state.mode };
-		draw({ mode: 'NORMAL' });
+		stopWatching();
+		pause.removeEventListener('change', followPause);
+		settle(0);
 		showVersion(0);
 	};
 });
@@ -199,6 +235,7 @@ function typistParts() {
 		keys: root?.querySelector<HTMLElement>('[data-keys]'),
 		statusMode: document.querySelector<HTMLElement>('#statusline [data-vim-mode]'),
 		modified: document.querySelector<HTMLElement>('#statusline [data-vim-modified]'),
+		pause: document.querySelector<HTMLInputElement>('#pause'),
 	};
 	return allPresent(parts) ? parts : null;
 }

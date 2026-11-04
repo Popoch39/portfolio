@@ -28,6 +28,14 @@ import { PAPER_GRAIN } from '../intro/grain';
 		inset: -120px;
 	}
 
+	/*
+	 * Its own layer while the Intro makes it boil, so that its jumps are only moved, never repainted;
+	 * the rest of the time it stays still and a layer larger than the window would be kept for nothing.
+	 */
+	:global(html.intro) .grain {
+		will-change: transform;
+	}
+
 	@media print {
 		.grain-layer {
 			display: none;

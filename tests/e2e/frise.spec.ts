@@ -9,6 +9,7 @@ import {
 	verticalTranslation,
 } from './helpers';
 import {
+	expectCardsOnPoles,
 	friseBand as band,
 	friseLegend as legend,
 	friseSection as section,
@@ -350,6 +351,26 @@ test.describe('Frise, scene', () => {
 
 		await scrollToScene(page, start, 1);
 		await expect(fills.last()).toHaveCSS('opacity', '1');
+	});
+
+	// A short window lowers the poles (media queries): a refresh must lay the cards on the new ones.
+	test('after the window changes framing, each card still rides on top of its pole, raised or lowered', async ({
+		page,
+	}) => {
+		await page.goto('/');
+		await scrollToScene(page, await topInPage(section(page)), 0.5);
+
+		for (const viewport of [
+			{ width: 900, height: 480 },
+			{ width: 1280, height: 720 },
+		]) {
+			await page.setViewportSize(viewport);
+			// The pinned section leaves its place in the page: the start is read above the scene.
+			await page.evaluate(() => scrollTo(0, 0));
+			await topOnceStill(section(page));
+			await scrollToScene(page, await topInPage(section(page)), 0.5);
+			await expectCardsOnPoles(page);
+		}
 	});
 
 	test('the grid is a layer the size of the frame, not of the graph', async ({ page }) => {

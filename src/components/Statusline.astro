@@ -1,15 +1,24 @@
 ---
 /**
- * Vim-like statusline, fixed to the bottom of the window. Purely decorative: hidden from
- * assistive technologies. Outside the smoothed content, otherwise its transform would carry it along.
+ * Vim-like statusline, fixed to the bottom of the window. Decorative, hidden from assistive
+ * technologies, but for the Pause. Outside the smoothed content, otherwise its transform would carry it along.
  */
+import Pause from './Pause.astro';
+
+interface Props {
+	/** The page has loops to stop (the marquee, the lede): the statusline carries the Pause (WCAG 2.2.2). */
+	pause?: boolean;
+}
+
+const { pause = false } = Astro.props;
 ---
 
-<div id="statusline" class="statusline mono" aria-hidden="true" data-intro="statusline">
+<div id="statusline" class="statusline mono" data-intro="statusline">
 	<div class="side">
 		{/* The home page's lede types in Vim: its mode is echoed here (`src/lede/typist.ts`). */}
-		<span class="mode" data-vim-mode>NORMAL</span>
-		<span class="segment branch">
+		<span class="mode" aria-hidden="true" data-vim-mode>NORMAL</span>
+		{pause && <Pause />}
+		<span class="segment branch" aria-hidden="true">
 			<svg
 				width="12"
 				height="12"
@@ -26,9 +35,9 @@
 			>
 			<span>main</span>
 		</span>
-		<span class="file">~/louis/portfolio.md<span data-vim-modified hidden> [+]</span></span>
+		<span class="file" aria-hidden="true">~/louis/portfolio.md<span data-vim-modified hidden> [+]</span></span>
 	</div>
-	<div class="side">
+	<div class="side" aria-hidden="true">
 		<span class="encoding">utf-8 · markdown</span>
 		<span class="segment">Bas</span>
 		<span class="mode">:wq</span>

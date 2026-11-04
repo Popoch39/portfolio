@@ -3,7 +3,7 @@ import { expect, type Locator, type Page } from '@playwright/test';
 export const wrapper = (page: Page) => page.locator('#smooth-wrapper');
 export const content = (page: Page) => page.locator('#smooth-content');
 export const header = (page: Page) => page.getByRole('banner');
-// Decorative, hence hidden from assistive technologies: targeted by its id.
+// Decorative but for the Pause, hence hidden from assistive technologies: targeted by its id.
 export const statusline = (page: Page) => page.locator('#statusline');
 
 export const scrollPosition = (page: Page) => page.evaluate(() => scrollY);

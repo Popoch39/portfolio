@@ -1,4 +1,5 @@
 // Not `./fixtures`: the home page is visited directly too, so that the Intro plays.
+import { createHash } from 'node:crypto';
 import { expect, test, type Page } from '@playwright/test';
 
 declare global {
@@ -44,6 +45,21 @@ test.describe('Content Security Policy', () => {
 			expect(policy).toContain("font-src 'self'");
 			expect(policy).toMatch(/script-src[^;]*'sha256-/);
 			expect(policy).not.toMatch(/script-src[^;]*'unsafe-inline'/);
+		}
+	});
+
+	// A `<meta>` policy only applies to what follows it: a script above it runs unchecked, until the
+	// head's order changes. The home page holds the inline scripts (the Intro's trigger, the Pause).
+	test('lets every inline script through by its hash, wherever it stands in the page', async ({ page }) => {
+		await page.goto('/');
+		const policy = await page.locator('meta[http-equiv="content-security-policy"]').getAttribute('content');
+		const inline = await page
+			.locator('script:not([src]):not([type="application/ld+json"])')
+			.evaluateAll((scripts) => scripts.map((script) => script.textContent ?? ''));
+
+		expect(inline.length).toBeGreaterThan(0);
+		for (const code of inline) {
+			expect(policy).toContain(`'sha256-${createHash('sha256').update(code).digest('base64')}'`);
 		}
 	});
 

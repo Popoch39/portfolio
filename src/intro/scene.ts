@@ -29,6 +29,11 @@ import {
 const reveal = cubicBezier(...REVEAL_EASE);
 
 const PLAYING = 'intro';
+/**
+ * On `<html>` once the scene has started: the inline script's safety net (`IntroTrigger.astro`) no
+ * longer lifts the veil in its place.
+ */
+const STARTED = 'data-intro-started';
 /** On `#intro-over` once the veil has lifted: the grid goes under the statusline (`Intro.astro`). */
 const LOWERED = 'lowered';
 
@@ -52,17 +57,6 @@ registerOpening((end) => {
 	const { veil, over, canvas, header, rule, marker, place, label, labelText, paper, hud, grain, tick, bar } = parts;
 	const texts = [parts.phase, parts.gore, parts.lat, parts.lon, parts.scale];
 	let finished = false;
-
-	// The page does not scroll until the Intro has ended, fade included: the inputs that would scroll
-	// it are cancelled. Not `overflow: hidden`: the scrollbar would go and come back, and with it the
-	// width that `vw` measures (the page gutter). A dragged scrollbar cannot be cancelled: the paused
-	// smoother brings the page straight back.
-	const smoother = ScrollSmoother.get();
-	smoother?.paused(true);
-	const holdScroll = (event: Event) => {
-		if (!(event instanceof KeyboardEvent) || SCROLL_KEYS.has(event.key)) event.preventDefault();
-	};
-	for (const type of HELD_INPUTS) addEventListener(type, holdScroll, { passive: false });
 
 	// The globe lands on the real page: measured now, again once the fonts are in, and on every resize.
 	let layout = measure();
@@ -324,8 +318,29 @@ registerOpening((end) => {
 		if (worker) stopWorker();
 		painter?.dispose();
 		noise?.close();
+		lifted.disconnect();
+		root.removeAttribute(STARTED);
 		end();
 	}
+	// The page does not scroll until the Intro has ended, fade included: the inputs that would scroll
+	// it are cancelled. Not `overflow: hidden`: the scrollbar would go and come back, and with it the
+	// width that `vw` measures (the page gutter). A dragged scrollbar cannot be cancelled: the paused
+	// smoother brings the page straight back.
+	// Last, with the start signal: a start-up that throws before here leaves the veil to the inline
+	// script's safety net, over a page that still scrolls.
+	const smoother = ScrollSmoother.get();
+	smoother?.paused(true);
+	const holdScroll = (event: Event) => {
+		if (!(event instanceof KeyboardEvent) || SCROLL_KEYS.has(event.key)) event.preventDefault();
+	};
+	for (const type of HELD_INPUTS) addEventListener(type, holdScroll, { passive: false });
+	// The safety net's belt may lift the veil in the middle of an Intro that no longer moves on (a
+	// starved phone): the Intro then gives the page back as if it had ended.
+	const lifted = new MutationObserver(() => {
+		if (!root.classList.contains(PLAYING)) finish();
+	});
+	lifted.observe(root, { attributeFilter: ['class'] });
+	root.setAttribute(STARTED, '');
 	return finish;
 });
 

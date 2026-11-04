@@ -515,7 +515,11 @@ test.describe('Intro, off the main thread', () => {
 			const { top, bottom } = await drawnRows(page);
 			expect(bottom).toBeGreaterThan(top);
 
-			await page.clock.runFor(8_000);
+			// A failing Worker is not a failing Intro: the veil's safety net (5 s) leaves it alone.
+			await page.clock.runFor(4_000);
+			await expect(veil(page)).toBeVisible();
+
+			await page.clock.runFor(4_000);
 			await expect(veil(page)).toBeHidden();
 			await expect(grid(page)).toBeHidden();
 			await expectFinalState(page);
@@ -535,6 +539,185 @@ test.describe('Intro, off the main thread', () => {
 			await expectFinalState(page);
 		});
 	}
+});
+
+/** The animation base's chunk: GSAP, and every module of the page through it, the Intro's included. */
+const BASE_CHUNK = /\/_astro\/base\.[\w-]+\.js$/;
+
+test.describe('Intro, when it cannot play', () => {
+	test.use({ reducedMotion: 'no-preference', viewport: PHONE });
+
+	test('the chunk of the animation base does not load: the veil lifts on the page at its final state', async ({
+		page,
+	}) => {
+		await page.route(BASE_CHUNK, (route) => route.abort());
+		await visitHome(page);
+
+		await expect(veil(page)).toBeHidden();
+		await expectFinalState(page);
+	});
+
+	test('the chunk of the animation base hangs: the veil lifts after 5 s, and the late chunk leaves the page alone', async ({
+		page,
+	}) => {
+		let arrive = () => {};
+		const arrived = new Promise<void>((resolve) => {
+			arrive = resolve;
+		});
+		await page.route(BASE_CHUNK, async (route) => {
+			await arrived;
+			await route.continue();
+		});
+		const errors: string[] = [];
+		page.on('pageerror', (error) => errors.push(error.message));
+		await page.clock.install();
+		// Not until `load`: the hanging module holds it back.
+		await page.goto('/', { waitUntil: 'commit' });
+		await expect(veil(page)).toBeVisible();
+
+		await page.clock.runFor(4_500);
+		await expect(veil(page)).toBeVisible();
+		await page.clock.runFor(500);
+		await expect(veil(page)).toBeHidden();
+		await expectFinalState(page);
+
+		// The Intro does not start late over a page already shown: the scenes are built instead.
+		arrive();
+		await expect.poll(() => page.locator('.pin-spacer').count()).toBeGreaterThan(0);
+		await page.clock.runFor(2_000);
+		await expect(veil(page)).toBeHidden();
+		await expect(grid(page)).toBeHidden();
+		await expectFinalState(page);
+		expect(errors).toEqual([]);
+	});
+
+	test('the scene throws as it starts: the veil lifts after 5 s, on a page that scrolls', async ({ page }) => {
+		// The scene reads the page's palette through a canvas as it starts (`readPalette`).
+		await page.addInitScript(() => {
+			CanvasRenderingContext2D.prototype.getImageData = () => {
+				throw new Error('simulated failure at the start of the Intro');
+			};
+		});
+		const errors: string[] = [];
+		page.on('pageerror', (error) => errors.push(error.message));
+		await visitHome(page);
+		await expect.poll(() => errors).toEqual(['simulated failure at the start of the Intro']);
+
+		await page.clock.runFor(4_500);
+		await expect(veil(page)).toBeVisible();
+		await page.clock.runFor(500);
+		await expect(veil(page)).toBeHidden();
+		await expect(grid(page)).toBeHidden();
+		await expectFinalState(page);
+
+		await scrollWithWheel(page, 600);
+		await page.clock.runFor(1_000);
+		await expect.poll(() => scrollPosition(page)).toBeGreaterThan(0);
+	});
+
+	test('the Intro starts but never moves on: the veil lifts after 20 s whatever happens, on a page that scrolls', async ({
+		page,
+	}) => {
+		await page.clock.install();
+		// After the clock's: no frame ever comes, the timeline stays at its start.
+		await page.addInitScript(() => {
+			window.requestAnimationFrame = () => 0;
+		});
+		await page.goto('/');
+
+		await page.clock.runFor(19_500);
+		await expect(veil(page)).toBeVisible();
+		await page.clock.runFor(500);
+		await expect(veil(page)).toBeHidden();
+		await expect(grid(page)).toBeHidden();
+		await expectFinalState(page);
+
+		await scrollWithWheel(page, 600);
+		await page.clock.runFor(1_000);
+		await expect.poll(() => scrollPosition(page)).toBeGreaterThan(0);
+	});
+
+	// A tab opened in the background gets no frames: its Intro waits to be seen, the belt with it.
+	test('the time spent in a hidden tab does not count towards the 20 s', async ({ page }) => {
+		await page.clock.install();
+		await page.addInitScript(() => {
+			window.requestAnimationFrame = () => 0;
+			// Headless pages are never hidden: the page is told so.
+			Object.defineProperty(Document.prototype, 'hidden', { get: () => window.testHidden ?? false });
+		});
+		const hide = (hidden: boolean) =>
+			page.evaluate((hidden) => {
+				window.testHidden = hidden;
+				document.dispatchEvent(new Event('visibilitychange'));
+			}, hidden);
+		await page.goto('/');
+		await page.clock.runFor(2_000);
+
+		await hide(true);
+		await page.clock.runFor(30_000);
+		await expect(veil(page)).toBeVisible();
+
+		await hide(false);
+		await page.clock.runFor(17_500);
+		await expect(veil(page)).toBeVisible();
+		await page.clock.runFor(500);
+		await expect(veil(page)).toBeHidden();
+	});
+});
+
+declare global {
+	interface Window {
+		testIntroStarted?: number;
+		testVeilLifted?: number;
+		testHidden?: boolean;
+	}
+}
+
+test.describe('Intro, on a slow phone and network', () => {
+	const { userAgent, deviceScaleFactor } = devices['Pixel 7'];
+	test.use({ reducedMotion: 'no-preference', viewport: PHONE, userAgent, deviceScaleFactor, hasTouch: true, isMobile: true });
+
+	// Lighthouse's mobile profile as DevTools applies it: 150 ms and 1.6 Mbit/s, scaled by its
+	// latency and throughput factors (3.75 and 0.9), then CPU ×4. On the real clock: the safety net
+	// races the network.
+	test('the safety net never cuts the Intro short', async ({ page, browserName }) => {
+		test.skip(browserName !== 'chromium', 'throttled through the Chrome DevTools Protocol');
+		test.setTimeout(60_000);
+		const cdp = await page.context().newCDPSession(page);
+		await cdp.send('Network.enable');
+		await cdp.send('Network.emulateNetworkConditions', {
+			offline: false,
+			latency: 562.5,
+			downloadThroughput: (1_638.4 * 0.9 * 1024) / 8,
+			uploadThroughput: (750 * 0.9 * 1024) / 8,
+		});
+		await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+		// When the scene signals its start, and when the veil's class goes, from the navigation's start.
+		// Watched from the document: the root element does not exist yet when this runs.
+		await page.addInitScript(() => {
+			new MutationObserver(() => {
+				const root = document.documentElement;
+				if (root.hasAttribute('data-intro-started')) window.testIntroStarted ??= performance.now();
+				if (window.testIntroStarted !== undefined && !root.classList.contains('intro')) {
+					window.testVeilLifted ??= performance.now();
+				}
+			}).observe(document, { attributes: true, subtree: true, attributeFilter: ['class', 'data-intro-started'] });
+		});
+
+		await page.goto('/', { waitUntil: 'commit' });
+		await expect(veil(page)).toBeVisible();
+		await expect(veil(page)).toBeHidden({ timeout: 40_000 });
+		await expect(grid(page)).toBeHidden();
+
+		const { started, lifted } = await page.evaluate(() => ({
+			started: window.testIntroStarted,
+			lifted: window.testVeilLifted,
+		}));
+		// Started before the net's 5 s, then played for its whole 9.84 s.
+		expect(started).toBeLessThan(5_000);
+		expect((lifted ?? 0) - (started ?? 0)).toBeGreaterThan(9_800);
+		await expectFinalState(page);
+	});
 });
 
 test.describe('Intro, under a finger', () => {

@@ -869,10 +869,79 @@ const usedDefs = (inner) => {
   const used = [...resolve(defs).matchAll(/<(clipPath|filter) id="([^"]+)"[\s\S]*?<\/\1>/g)].filter((m) => inner.includes(`url(#${m[2]})`)).map((m) => m[0]);
   return used.length ? `<defs>${used.join("")}</defs>` : "";
 };
+// ── Relative paths: the layers' paths are written in relative coordinates (`l`, `h`, `v`, `q`, repeated commands
+// left implicit), shorter than the absolute ones the kit draws: 58.5 → 35.5 KB of brotli for the 21 layers
+// (369.6 → 235.0 KB raw). Every coordinate is a whole number of tenths (the kit rounds each point to 0.1), so the
+// differences are taken in whole tenths: the paths go through exactly the same points, which the run checks.
+const tenthsOf = (token) => {
+  if (!/^-?(?:\d+|\d*\.\d)$/.test(token)) throw new Error(`relative paths: ${token} is not a whole number of tenths`);
+  return Math.round(Number(token) * 10);
+};
+const shortNumber = (tenths) => String(tenths / 10).replace(/^(-?)0\./, "$1.");
+function relativePath(d) {
+  const tokens = d.match(/[A-Za-z]|-?(?:\d+\.?\d*|\.\d+)/g) ?? [];
+  const segments = [];
+  let i = 0, command = "", x = 0, y = 0, startX = 0, startY = 0;
+  const point = (relative) => {
+    const [px, py] = [tenthsOf(tokens[i++]), tenthsOf(tokens[i++])];
+    return relative ? [x + px, y + py] : [px, py];
+  };
+  const delta = ([px, py]) => [px - x, py - y].map(shortNumber);
+  while (i < tokens.length) {
+    if (/[A-Za-z]/.test(tokens[i])) command = tokens[i++];
+    const kind = command.toUpperCase();
+    const relative = command !== kind;
+    if (kind === "Z") {
+      if (i < tokens.length && !/[A-Za-z]/.test(tokens[i])) throw new Error("relative paths: numbers after Z");
+      segments.push(["z", []]);
+      [x, y] = [startX, startY];
+    } else if (kind === "M") {
+      const to = point(relative);
+      segments.push(segments.length ? ["m", delta(to)] : ["M", to.map(shortNumber)]);
+      [x, y, startX, startY] = [...to, ...to];
+      command = relative ? "l" : "L";
+    } else if (kind === "L" || kind === "H" || kind === "V") {
+      const to =
+        kind === "L" ? point(relative)
+        : kind === "H" ? [tenthsOf(tokens[i++]) + (relative ? x : 0), y]
+        : [x, tenthsOf(tokens[i++]) + (relative ? y : 0)];
+      const [dx, dy] = delta(to);
+      segments.push(dy === "0" ? ["h", [dx]] : dx === "0" ? ["v", [dy]] : ["l", [dx, dy]]);
+      [x, y] = to;
+    } else if (kind === "Q") {
+      const [control, to] = [point(relative), point(relative)];
+      segments.push(["q", [...delta(control), ...delta(to)]]);
+      [x, y] = to;
+    } else if (kind === "A") {
+      // Radii, rotation and flags are not coordinates: kept as written.
+      const shape = tokens.slice(i, (i += 5));
+      const to = point(relative);
+      segments.push(["a", [...shape, ...delta(to)]]);
+      [x, y] = to;
+    } else throw new Error(`relative paths: path command ${command} not handled`);
+  }
+  // A command repeating the one before is left implicit, a line after a move too; a minus sign or a second decimal
+  // point separates two numbers on its own.
+  let out = "", implicit = "", last = "";
+  for (const [letter, numbers] of segments) {
+    if (letter !== implicit) out += letter;
+    else if (!numbers[0].startsWith("-") && !(numbers[0].startsWith(".") && last.includes("."))) out += " ";
+    numbers.forEach((number, at) => {
+      if (at && !number.startsWith("-") && !(number.startsWith(".") && last.includes("."))) out += " ";
+      out += number;
+      last = number;
+    });
+    implicit = letter === "m" ? "l" : letter === "M" ? "L" : letter === "z" ? "" : letter;
+  }
+  const same = (path) => pointsOfPath(path).map((p) => p.map((v) => v.toFixed(1)).join(" ")).join();
+  if (same(out) !== same(d)) throw new Error(`relative paths: ${d} does not go through the same points as ${out}`);
+  return out;
+}
 const croppedLayer = (inner) => {
   const markup = `${usedDefs(inner)}${inner}`;
   const box = boxOf(markup);
-  return { box, svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${box.x} ${box.y} ${box.w} ${box.h}" width="${box.w}" height="${box.h}">${markup}</svg>` };
+  const relative = markup.replace(/ d="([^"]*)"/g, (_, d) => ` d="${relativePath(d)}"`);
+  return { box, svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${box.x} ${box.y} ${box.w} ${box.h}" width="${box.w}" height="${box.h}">${relative}</svg>` };
 };
 
 if (PHOTO) {

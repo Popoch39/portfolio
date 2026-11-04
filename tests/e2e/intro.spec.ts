@@ -62,6 +62,7 @@ async function recordFarthestScroll(page: Page) {
 declare global {
 	interface Window {
 		testFarthestScroll?: number;
+		testGridDraws?: number;
 	}
 }
 
@@ -379,6 +380,53 @@ test.describe('Intro, motion allowed, on a phone only', () => {
 		await expect(grid(page)).toBeHidden();
 		await expectFinalState(page);
 		expect(errors).toEqual([]);
+	});
+});
+
+test.describe('Intro, on a 3× screen', () => {
+	test.use({ reducedMotion: 'no-preference', viewport: PHONE, deviceScaleFactor: 3 });
+
+	// Drawn at 3×, the full-window globe would cost more than twice the pixels for a sharpness nobody
+	// tells apart at reading distance.
+	test('the globe is drawn at 2× its size at most', async ({ page }) => {
+		await visitHome(page);
+		await page.clock.runFor(1_000);
+
+		const { bitmap, box } = await grid(page).evaluate((canvas: HTMLCanvasElement) => ({
+			bitmap: { width: canvas.width, height: canvas.height },
+			box: { width: canvas.clientWidth, height: canvas.clientHeight },
+		}));
+		expect(bitmap).toEqual({ width: 2 * box.width, height: 2 * box.height });
+	});
+});
+
+test.describe('Intro, while the globe stands still', () => {
+	test.use({ reducedMotion: 'no-preference', viewport: SCREENS[0][1] });
+
+	test('the canvas is not drawn again until the globe moves', async ({ page }) => {
+		// Every frame painted into the globe's canvas starts by clearing it.
+		await page.addInitScript(() => {
+			window.testGridDraws = 0;
+			const clear = CanvasRenderingContext2D.prototype.clearRect;
+			CanvasRenderingContext2D.prototype.clearRect = function (...args) {
+				if (this.canvas.id === 'intro-grid') window.testGridDraws = (window.testGridDraws ?? 0) + 1;
+				return clear.apply(this, args);
+			};
+		});
+		const draws = () => page.evaluate(() => window.testGridDraws ?? 0);
+		await page.clock.install({ time: 0 });
+		await page.clock.pauseAt(1_000);
+		await page.goto('/');
+
+		// From the hand-over of the point (7.95 s) to the fade of the grid (8.64 s), nothing moves on the canvas.
+		await page.clock.runFor(8_050);
+		const still = await draws();
+		await page.clock.runFor(500);
+		expect(await draws()).toBe(still);
+
+		// The grid fades: drawn again.
+		await page.clock.runFor(300);
+		expect(await draws()).toBeGreaterThan(still);
 	});
 });
 

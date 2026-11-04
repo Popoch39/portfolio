@@ -10,7 +10,7 @@ const sections = [
 ---
 
 <div class="wrap">
-	<header class="site-header grid-12" data-intro="rule">
+	<header class="site-header grid-12" data-intro="header">
 		<a class="name" href="/#top" data-intro="name">{person.name}</a>
 		<p class="mono meta" data-intro="role">{person.jobTitle}</p>
 		<p class="mono meta specialty" data-intro="specialty">
@@ -19,11 +19,15 @@ const sections = [
 		<nav aria-label="Sections" data-intro="nav">
 			{sections.map((section) => <a href={section.href}>{section.label}</a>)}
 		</nav>
+		<span class="rule" data-intro="rule"></span>
 	</header>
 </div>
 
 <style>
-	/* The rule is a pseudo-element rather than a border so that it can be drawn in with `scaleX`. */
+	/*
+	 * The rule is an element of its own rather than a border so that the Intro draws it in with `scaleX`
+	 * on it alone: the header's style is not recomputed on every frame.
+	 */
 	.site-header {
 		position: relative;
 		row-gap: 8px;
@@ -32,8 +36,7 @@ const sections = [
 		font-size: 13px;
 	}
 
-	.site-header::after {
-		content: '';
+	.rule {
 		position: absolute;
 		left: 0;
 		right: 0;
@@ -41,8 +44,6 @@ const sections = [
 		height: 1px;
 		background: var(--color-ink);
 		transform-origin: 0 50%;
-		/* Set by the Intro while it draws the rule. */
-		transform: scaleX(var(--rule-scale, 1));
 	}
 
 	.name {

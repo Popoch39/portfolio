@@ -150,7 +150,7 @@ for (const { name, use } of FINAL_STATE_CONTEXTS) {
 		test('the screwing’s strip is never downloaded', async ({ page }) => {
 			const strips: string[] = [];
 			page.on('request', (request) => {
-				if (/screw.*\.webp/.test(request.url())) strips.push(request.url());
+				if (/\/screw\.[^/]*$/.test(request.url())) strips.push(request.url());
 			});
 			await page.goto('/');
 			await page.locator('#contact').scrollIntoViewIfNeeded();

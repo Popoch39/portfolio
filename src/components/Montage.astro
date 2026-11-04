@@ -212,7 +212,7 @@ const camera = JSON.stringify(
 </div>
 
 <script>
-	import { cubicBezier, gsap, registerScene, ScrollSmoother } from '../animation/base';
+	import { cubicBezier, gsap, registerScene, SCENE_SCRUB, ScrollSmoother } from '../animation/base';
 
 	/** Pinning length, in stable window heights (290svh): the board's 3000px track over its 770px frame. */
 	const PIN_HEIGHTS = 2.9;
@@ -302,7 +302,7 @@ const camera = JSON.stringify(
 		// Created first, as it comes first in the page.
 		const entrance = gsap.timeline({
 			defaults: { ease: 'none' },
-			scrollTrigger: { trigger: section, start: 'top center', end: 'top top', scrub: true },
+			scrollTrigger: { trigger: section, start: 'top center', end: 'top top', scrub: SCENE_SCRUB },
 		});
 		entrance.fromTo(section.querySelector('[data-cafe-rule]'), { scaleX: 0 }, { scaleX: 1, duration: 1 }, 0);
 		section.querySelectorAll('[data-cafe-line]').forEach((line, rank) => {
@@ -333,7 +333,7 @@ const camera = JSON.stringify(
 				// In `svh` rather than `%` of the window: a phone's bars sliding in or out between two refreshes must
 				// not change how long the scene lasts.
 				end: () => `+=${PIN_HEIGHTS * stableWindowHeight()}`,
-				scrub: true,
+				scrub: SCENE_SCRUB,
 				invalidateOnRefresh: true,
 				// A refresh moves the timeline without its update callback (a page loaded past the scene, on its anchor).
 				onRefresh: (trigger) => showStep(trigger.progress),

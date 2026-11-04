@@ -148,7 +148,7 @@ const geometry = [
 </div>
 
 <script>
-	import { gsap, registerScene, ScrollSmoother, type ScrollTrigger } from '../animation/base';
+	import { gsap, registerScene, SCENE_SCRUB, ScrollSmoother, type ScrollTrigger } from '../animation/base';
 
 	/** Pinning length, in window heights (400svh). */
 	const PIN_HEIGHTS = 4;
@@ -258,7 +258,7 @@ const geometry = [
 			scrollTrigger: {
 				...pinning,
 				start: 'top top',
-				scrub: true,
+				scrub: SCENE_SCRUB,
 				invalidateOnRefresh: true,
 				// The cues past the start only take their values once played through (`immediateRender: false`):
 				// a `pin` plays the timeline to its end at each refresh to measure it, `sticky` does not, which

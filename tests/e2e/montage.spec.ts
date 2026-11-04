@@ -249,6 +249,8 @@ test.describe('Montage, scene', () => {
 	});
 
 	test('the counter names the step in progress, forward then back', async ({ page }) => {
+		// Twelve jumps, each waiting for the smoothing then for the scene to catch up with the scroll.
+		test.slow();
 		await page.goto('/');
 		const start = await sceneStart(page);
 

@@ -226,7 +226,7 @@ const frame = [
 </div>
 
 <script>
-	import { cubicBezier, gsap, registerScene, ScrollTrigger } from '../animation/base';
+	import { cubicBezier, gsap, registerScene, SCENE_SCRUB, ScrollTrigger } from '../animation/base';
 
 	type Pose = { y: number; heading: number; tilt: number; spin: number; scale: number };
 	type Choreography = {
@@ -397,7 +397,7 @@ const frame = [
 				// The building phase is as long as the Frise's pin, so it doesn't rush past before its phases can
 				// be read; the bagues lit in turn come on top, at the same pace.
 				end: `+=${Math.round(BUILD_SCREENS * 100 * sceneLength)}%`,
-				scrub: true,
+				scrub: SCENE_SCRUB,
 				// The enlarged, centred drawing depends on the screen: its tween takes the refreshed values.
 				invalidateOnRefresh: true,
 				// Under a finger the page scrolls natively, off the main thread: the pin is set a frame early.

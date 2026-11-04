@@ -64,7 +64,7 @@ function createSmoother() {
 	return ScrollSmoother.create({
 		wrapper: '#smooth-wrapper',
 		content: '#smooth-content',
-		smooth: 1,
+		smooth: 1.5,
 		// A touchscreen on a computer with a mouse: native scrolling stays under the finger.
 		smoothTouch: false,
 		onFocusIn: bringFocusIntoView,
@@ -118,6 +118,13 @@ export function registerOpening(scene: (end: () => void) => (() => void) | undef
 		return cleanup;
 	});
 }
+
+/**
+ * Seconds a scrubbed scene takes to catch up with the scroll. Locked to it (`scrub: true`), a fast flick
+ * of the wheel or a long fling plays a whole pinned scene in a blink; with a lag, its steps still show.
+ * Under a finger there is no smoother: this lag is the only damping the scenes get.
+ */
+export const SCENE_SCRUB = 1;
 
 // Scenes take GSAP from here, never on their own: a single instance, plugins already registered.
 export { gsap, ScrollSmoother, ScrollTrigger };

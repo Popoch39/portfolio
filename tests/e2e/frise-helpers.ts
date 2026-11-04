@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import { topInPage, topOnceStill } from './helpers';
+import { sceneOnceStill, topInPage, topOnceStill } from './helpers';
 
 export const friseSection = (page: Page) => page.getByRole('region', { name: 'Parcours', exact: true });
 // A region at the final state only: the scene takes its role away with its tab stop.
@@ -17,6 +17,7 @@ export const sceneStart = (page: Page) => topInPage(friseSection(page));
 export async function scrollToScene(page: Page, start: number, progress: number) {
 	await page.evaluate(([top, at, heights]) => scrollTo(0, top + at * heights * innerHeight), [start, progress, PIN_HEIGHTS]);
 	await topOnceStill(friseSection(page));
+	await sceneOnceStill(friseSection(page));
 }
 
 /** Where the HEAD commit stands on screen, horizontally: it comes closer from the right as HEAD moves forward. */

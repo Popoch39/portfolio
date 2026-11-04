@@ -65,6 +65,30 @@ export function topOnceStill(element: Locator): Promise<number> {
 	);
 }
 
+/**
+ * Waits until a scrubbed scene has caught up with the scroll: GSAP has written neither a style nor a text
+ * inside the element for ten frames in a row. A pinned section stands still long before its scene settles.
+ */
+export function sceneOnceStill(element: Locator): Promise<void> {
+	return element.evaluate(
+		(el) =>
+			new Promise<void>((resolve) => {
+				let quietFrames = 0;
+				const observer = new MutationObserver(() => {
+					quietFrames = 0;
+				});
+				observer.observe(el, { subtree: true, attributes: true, attributeFilter: ['style'], characterData: true, childList: true });
+				const count = () => {
+					quietFrames += 1;
+					if (quietFrames < 10) return requestAnimationFrame(count);
+					observer.disconnect();
+					resolve();
+				};
+				requestAnimationFrame(count);
+			}),
+	);
+}
+
 /** Top of the fixed statusline: whatever goes under it is hidden. */
 export async function statuslineTop(page: Page) {
 	const box = await statusline(page).boundingBox();

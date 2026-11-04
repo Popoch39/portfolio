@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { content, topInPage, topOnceStill } from './helpers';
+import { content, sceneOnceStill, topInPage, topOnceStill } from './helpers';
 
 export const cafeSection = (page: Page) =>
 	page.getByRole('region', { name: 'Parlons de votre projet autour d’un café.', exact: true });
@@ -19,8 +19,10 @@ export const sceneStart = (page: Page) => topInPage(cafeSection(page));
 /**
  * Scrolls to a point of the scene, 0 at the start of the pinning and 1 at its end, and waits until the smoothing
  * has settled: the pinned section stands still while the scene still plays, the page's content does not.
+ * Then the scene, which catches up with the scroll after it.
  */
 export async function scrollToScene(page: Page, start: number, progress: number) {
 	await page.evaluate(([top, at, heights]) => scrollTo(0, top + at * heights * innerHeight), [start, progress, PIN_HEIGHTS]);
 	await topOnceStill(content(page));
+	await sceneOnceStill(cafeSection(page));
 }

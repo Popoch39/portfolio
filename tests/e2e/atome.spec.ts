@@ -13,7 +13,7 @@ async function pinRange(page: Page) {
 	// The scenes are built once the page has settled.
 	await expect(spacer).toHaveClass(/pin-spacer/, { timeout: 15_000 });
 	const top = await topInPage(spacer);
-	const length = await spacer.evaluate((el) => el.offsetHeight - (el.firstElementChild as HTMLElement).offsetHeight);
+	const length = await spacer.evaluate((el: HTMLElement) => el.offsetHeight - (el.firstElementChild as HTMLElement).offsetHeight);
 	return { top, length };
 }
 

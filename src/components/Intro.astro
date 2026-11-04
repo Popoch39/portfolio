@@ -114,8 +114,12 @@ import { coordinates } from '../hero/map';
 		inset: 0;
 	}
 
-	/* The HUD sits on the page's content box, like the header. */
+	/*
+	 * The HUD sits on the page's content box, like the header. Contained: its readouts rewrite their text
+	 * while it plays, which lays out these few lines and nothing else of the page.
+	 */
 	.hud {
+		contain: strict;
 		--edge: calc(max(0px, (100% - var(--page-max-width)) / 2) + var(--page-gutter));
 		/* The bottom readouts stay clear of the home indicator. */
 		--edge-bottom: env(safe-area-inset-bottom, 0px);

@@ -139,14 +139,15 @@ const first = lede.versions[0];
 		}
 	}
 
-	/* Screencast keys: a group pops in key by key, then fades as a whole. Room kept: nothing moves. */
+	/*
+	 * Screencast keys: a group pops in key by key, then fades as a whole. Out of the flow, in a corner the
+	 * page picks: nothing moves.
+	 */
 	.keys {
+		position: absolute;
 		display: flex;
-		justify-content: flex-end;
 		align-items: flex-end;
 		gap: 6px;
-		min-height: 34px;
-		margin-top: 16px;
 		transition: opacity 0.5s ease;
 	}
 
@@ -200,9 +201,9 @@ const first = lede.versions[0];
 		}
 	}
 
-	/* A phone shows the last keys only: ten would run out of the column. */
+	/* A phone shows the last keys only: ten would run into the scale bar. */
 	@media (max-width: 600px) {
-		.keys :global(kbd:nth-last-child(n + 7)) {
+		.keys :global(kbd:nth-last-child(n + 6)) {
 			display: none;
 		}
 	}

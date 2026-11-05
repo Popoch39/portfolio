@@ -293,11 +293,13 @@ const jsonLd = JSON.stringify({
 			calc(100% + var(--phase-y));
 	}
 
+	/* The bottom padding keeps the lede's keys (34px high) clear of the actions when the row is tight. */
 	.hero-south {
+		--keys-bottom: 18px;
 		display: flex;
 		flex-direction: column;
 		align-items: flex-start;
-		padding: 36px var(--inset) 24px;
+		padding: 36px var(--inset) calc(var(--keys-bottom) + 34px + 24px);
 		background-position-y:
 			0,
 			var(--phase-y);
@@ -435,13 +437,18 @@ const jsonLd = JSON.stringify({
 		width: min(540px, 52%);
 	}
 
+	/* In the map's bottom-left corner, a screencast's place, facing the scale bar. */
+	.hero-south :global(.keys) {
+		left: var(--inset);
+		bottom: var(--keys-bottom);
+	}
+
 	.hero-actions {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 12px 24px;
-		/* The lede's key strip keeps room above. */
-		margin-top: 10px;
+		margin-top: 28px;
 	}
 
 	.hero-github {
@@ -500,6 +507,7 @@ const jsonLd = JSON.stringify({
 		}
 
 		.hero-south {
+			--keys-bottom: 14px;
 			padding-top: 28px;
 		}
 
@@ -554,6 +562,13 @@ const jsonLd = JSON.stringify({
 			right: 56px;
 			bottom: 14px;
 			font-size: 10px;
+		}
+	}
+
+	/* A phone has no room for both side by side: the keys stand above the scale bar's row. */
+	@media (max-width: 600px) {
+		.hero-south {
+			--keys-bottom: 48px;
 		}
 	}
 

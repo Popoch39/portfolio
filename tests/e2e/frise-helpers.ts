@@ -27,6 +27,31 @@ export async function headOnScreen(page: Page) {
 	return box.x;
 }
 
+/** The CSS gap between a card and the top of its pole. */
+const CARD_GAP = 10;
+
+/**
+ * Each commit card in the frame stands right on top of its pole, raised or lowered. Card and pole stand
+ * in the same upright label, so the card's on-screen scale undoes the perspective. The commits HEAD
+ * has long passed run off the frame towards the eye, where their boxes no longer mean much.
+ */
+export async function expectCardsOnPoles(page: Page) {
+	const gaps = await friseBand(page)
+		.locator('.commit')
+		.evaluateAll((commits) =>
+			commits.flatMap((commit) => {
+				const card = commit.querySelector<HTMLElement>('.commit-card');
+				const pole = commit.querySelector('.commit-pole');
+				if (!card || !pole) return [Number.NaN];
+				const box = card.getBoundingClientRect();
+				if (box.right < 0 || box.left > innerWidth || box.bottom < 0 || box.top > innerHeight) return [];
+				return [(pole.getBoundingClientRect().top - box.bottom) / (box.height / card.offsetHeight)];
+			}),
+		);
+	expect(gaps.length, 'commits in the frame').toBeGreaterThan(1);
+	for (const gap of gaps) expect(gap, `gaps above the poles: ${gaps}`).toBeCloseTo(CARD_GAP, 0);
+}
+
 export interface LayoutShift {
 	value: number;
 	scrolled: number;

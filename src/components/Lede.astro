@@ -13,7 +13,7 @@ const first = lede.versions[0];
 <div class="hero-lede" data-intro="lede" data-lede={JSON.stringify(lede)}>
 	<p class="visually-hidden">{lede.summary}</p>
 	<p class="sentence" aria-hidden="true" data-nosnippet>
-		{tallestLines(lede).map((line) => <span class="ghost">{line}</span>)}
+		<span class="ghosts">{tallestLines(lede).map((line) => <span>{line}</span>)}</span>
 		<span data-buffer
 			>{
 				runs(lede, restingOn(lede, 0)).map(({ text, kind }) =>
@@ -39,21 +39,33 @@ const first = lede.versions[0];
 		flex-direction: column;
 	}
 
-	/* Every version stacked in one cell: the lede keeps the height of its tallest wrap while it is retyped. */
 	.sentence {
-		display: grid;
+		position: relative;
 		margin: 0;
 		font-size: clamp(20px, 1.85vw, 27px);
 		line-height: 1.22;
 		letter-spacing: -0.012em;
 	}
 
-	.sentence > * {
+	/* Every version stacked in one cell: the lede keeps the height of its tallest wrap while it is retyped. */
+	.ghosts {
+		display: grid;
+		visibility: hidden;
+	}
+
+	.ghosts > * {
 		grid-area: 1 / 1;
 	}
 
-	.ghost {
-		visibility: hidden;
+	/*
+	 * Laid over the ghosts, its size taken from them and never from its text: each keystroke lays out the
+	 * buffer alone, not the hero. Chromium only confines a box that is neither a grid nor a flex item, hence the
+	 * absolute position in a plain block. No paint containment: the slots' underline runs below the last line.
+	 */
+	[data-buffer] {
+		position: absolute;
+		inset: 0;
+		contain: size layout;
 	}
 
 	/*

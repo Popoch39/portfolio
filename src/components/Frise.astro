@@ -148,7 +148,7 @@ const geometry = [
 </div>
 
 <script>
-	import { gsap, registerScene, SCENE_SCRUB, ScrollSmoother, type ScrollTrigger } from '../animation/base';
+	import { gsap, readTransforms, registerScene, SCENE_SCRUB, ScrollSmoother, type ScrollTrigger } from '../animation/base';
 
 	/** Pinning length, in window heights (400svh). */
 	const PIN_HEIGHTS = 4;
@@ -205,6 +205,24 @@ const geometry = [
 		const from = Number(plane.dataset.headFrom);
 		const to = Number(plane.dataset.headTo);
 
+		// The cards ride on the poles, whose height follows the framing (media queries): the only values of
+		// the scene that depend on the layout. The poles are all measured at once, here and when a refresh
+		// begins, before it writes anything; only the cards' tweens start over, and only if a height changed.
+		// Starting the whole timeline over (`invalidateOnRefresh`) would revert its styles, then read each
+		// target's transform back between two writes: a layout per target at every refresh.
+		const poles = labels.map((label) => label.querySelector<HTMLElement>('.commit-pole'));
+		const cards = labels.map((label) => label.querySelector<HTMLElement>('.commit-card')).filter((card) => !!card);
+		let poleHeights = poles.map((pole) => pole?.offsetHeight ?? 0);
+		const measurePoles = () => {
+			const heights = poles.map((pole) => pole?.offsetHeight ?? 0);
+			if (heights.every((height, i) => height === poleHeights[i])) return;
+			poleHeights = heights;
+			for (const tween of timeline.getTweensOf(cards)) tween.invalidate();
+		};
+		// Before any write: the timeline's first writes come at the first refresh.
+		const moved = section.querySelectorAll('[data-frise-camera], [data-frise-trail], [data-frise-trail-graph], [data-frise-grid]');
+		readTransforms([...moved, ...poles, ...cards]);
+
 		// The diagonal and the hidden overflow come from CSS: the attribute goes away with the context.
 		section.dataset.scene = '';
 		// The camera places the graph under HEAD: a scrolled strip would shift it off its cues. Find-in-page,
@@ -259,10 +277,10 @@ const geometry = [
 				...pinning,
 				start: 'top top',
 				scrub: SCENE_SCRUB,
-				invalidateOnRefresh: true,
-				// The cues past the start only take their values once played through (`immediateRender: false`):
-				// a `pin` plays the timeline to its end at each refresh to measure it, `sticky` does not, which
-				// would leave the labels ahead raised and lit, at their final state.
+				onRefreshInit: measurePoles,
+				// The cues past the start, and the cards started over, only take their values once played through
+				// (`immediateRender: false`): a `pin` plays the timeline to its end at each refresh to measure it,
+				// `sticky` does not, which would leave the labels ahead raised and lit, at their final state.
 				onRefresh: sticky ? (self) => timeline.progress(1, true).progress(self.progress, true) : undefined,
 			},
 			onUpdate: () => showActiveCommit(from + travel * timeline.progress()),
@@ -284,7 +302,7 @@ const geometry = [
 
 		/**
 		 * Lays a property's keyframes along HEAD's travel, eased into each key; keys before the start are
-		 * clipped. Values are in `unit`s, read again when the layout changes (`invalidateOnRefresh`).
+		 * clipped. Values are in `unit`s, read again when the tweens start over (`measurePoles`).
 		 */
 		const track = (target: Element, property: string, keys: Keyframe[], unit = () => 1) => {
 			const valueAt = (at: number) => {
@@ -323,7 +341,7 @@ const geometry = [
 				{ at: next, value: 1 },
 				{ at: next + FADE_OUT, value: PAST_OPACITY },
 			]);
-			const pole = label.querySelector<HTMLElement>('.commit-pole');
+			const pole = poles[i];
 			const card = label.querySelector<HTMLElement>('.commit-card');
 			if (!pole || !card) return;
 			// The pole rises as HEAD comes, the card riding on top of it; its height follows the framing.
@@ -338,7 +356,7 @@ const geometry = [
 					{ at: at - RISE, value: 1 - LOWERED },
 					{ at, value: 0, ease: 'power3.out' },
 				],
-				() => pole.offsetHeight,
+				() => poleHeights[i],
 			);
 		});
 		for (const fill of section.querySelectorAll<HTMLElement>('[data-frise-fill]')) {

@@ -3,27 +3,81 @@
  * Decides, before the first paint, whether the Intro plays (ADR 0005): the class it sets on
  * `<html>` shows the veil and lets the scene run. Inline in the `<head>` of the home page only,
  * so that the veil is there from the very first frame, never after a flash of the page.
+ * It is also the veil's safety net: it owes nothing to the scene's modules, which may never run.
  */
+import { END } from '../intro/timing';
+import { inlineScriptHash } from './inline-script';
+
+/**
+ * Milliseconds the scene has to signal its start before the veil lifts without it. On Lighthouse's
+ * mobile profile as DevTools applies it (562.5 ms, 1.47 Mbit/s, CPU ×4), the scene starts at 2 to 2.5 s.
+ */
+const START_WAIT = 5_000;
+/**
+ * The belt: past this many milliseconds of visible page, the veil lifts whatever the scene does. The
+ * latest start, the whole Intro, and a margin for the frames a slow phone drops on the way.
+ */
+const BELT = START_WAIT + END * 1_000 + 5_000;
+
+const decide = `(() => {
+	const navigation = performance.getEntriesByType('navigation')[0];
+	const type = navigation && navigation.type;
+	// Empty on a direct visit or a bookmark. The slash keeps out a host that merely starts the same.
+	const fromThisSite = document.referrer.startsWith(\`\${location.origin}/\`);
+	// A reload replays it, even when the page was first reached from another page of the site.
+	const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+	// A reload replays the Intro, which opens on the top of the page: the browser must not bring
+	// back the scroll the visitor had left. It reads this mode as it was when the page was left,
+	// so it is set for the next reload now, whether or not the Intro plays this time.
+	// The price: a return through history that misses the back/forward cache lands at the top.
+	history.scrollRestoration = reducedMotion ? 'auto' : 'manual';
+	const skip =
+		type === 'back_forward' ||
+		location.hash !== '' ||
+		(fromThisSite && type !== 'reload') ||
+		reducedMotion;
+	if (skip) return;
+	const root = document.documentElement;
+	root.classList.add('intro');
+
+	// The safety net: without its scene, the veil would cover the page for good. Once lifted, a scene
+	// arriving late finds no class and does not play, and a scene halfway through gives the page back.
+	// The scene signals its start with an attribute on the root (\`src/intro/scene.ts\`): from then
+	// on, only the belt lifts the veil in its place.
+	const started = () => root.hasAttribute('data-intro-started');
+	const lift = () => {
+		if (root.classList.contains('intro')) root.classList.remove('intro');
+	};
+	setTimeout(() => {
+		if (!started()) lift();
+	}, ${START_WAIT});
+	// A module of the page that does not load (network, blocker, too old a browser) may be the Intro's.
+	document.addEventListener(
+		'error',
+		(event) => {
+			const script = event.target;
+			if (script instanceof HTMLScriptElement && script.type === 'module' && !started()) lift();
+		},
+		true,
+	);
+	// A hidden tab gets no frames: the Intro waits, and so does the belt.
+	let left = ${BELT};
+	let since = 0;
+	let belt = 0;
+	const countVisibleTime = () => {
+		if (!document.hidden && !belt) {
+			since = performance.now();
+			belt = setTimeout(lift, left);
+		} else if (document.hidden && belt) {
+			clearTimeout(belt);
+			belt = 0;
+			left -= performance.now() - since;
+		}
+	};
+	document.addEventListener('visibilitychange', countVisibleTime);
+	countVisibleTime();
+})();`;
+Astro.csp?.insertScriptHash(inlineScriptHash(decide));
 ---
 
-<script is:inline>
-	(() => {
-		const navigation = performance.getEntriesByType('navigation')[0];
-		const type = navigation && navigation.type;
-		// Empty on a direct visit or a bookmark. The slash keeps out a host that merely starts the same.
-		const fromThisSite = document.referrer.startsWith(`${location.origin}/`);
-		// A reload replays it, even when the page was first reached from another page of the site.
-		const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-		// A reload replays the Intro, which opens on the top of the page: the browser must not bring
-		// back the scroll the visitor had left. It reads this mode as it was when the page was left,
-		// so it is set for the next reload now, whether or not the Intro plays this time.
-		// The price: a return through history that misses the back/forward cache lands at the top.
-		history.scrollRestoration = reducedMotion ? 'auto' : 'manual';
-		const skip =
-			type === 'back_forward' ||
-			location.hash !== '' ||
-			(fromThisSite && type !== 'reload') ||
-			reducedMotion;
-		if (!skip) document.documentElement.classList.add('intro');
-	})();
-</script>
+<script is:inline set:html={decide} />

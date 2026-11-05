@@ -14,9 +14,11 @@ interface Props {
 	description: string;
 	/** Pages outside the index (404): no canonical URL, no social card, `noindex`. */
 	noindex?: boolean;
+	/** The page has loops to stop: the statusline carries the Pause. */
+	pause?: boolean;
 }
 
-const { title, description, noindex = false } = Astro.props;
+const { title, description, noindex = false, pause = false } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const ogImageUrl = new URL(ogImage.src, Astro.site).href;
@@ -83,7 +85,7 @@ const ogImageAlt = `${person.name}, ${person.jobTitle.toLowerCase()} — portfol
 				</div>
 			</div>
 		</div>
-		<Statusline />
+		<Statusline pause={pause} />
 		{/* Fixed layers over the whole window (the home page's Intro, then the grain), above the statusline. */}
 		<slot name="overlay" />
 		<Grain />

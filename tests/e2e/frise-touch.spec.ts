@@ -1,5 +1,6 @@
 import { devices, expect, test, type Page } from './fixtures';
 import {
+	expectCardsOnPoles,
 	expectFramed,
 	expectReadable,
 	friseBand,
@@ -155,6 +156,24 @@ test.describe('Frise under a finger, scrolling', () => {
 		// The next commit, whose cues begin before the start and are clipped to it.
 		const next = friseBand(page).getByRole('listitem').nth(1);
 		await expect.poll(() => next.evaluate((el) => Number(getComputedStyle(el).opacity))).toBeLessThan(0.5);
+	});
+
+	// Turning the phone changes the poles' height (media queries): a refresh must lay the cards on the new ones.
+	test('after the phone turns, each card still rides on top of its pole, raised or lowered', async ({ page }) => {
+		const { width, height } = PHONES[1];
+		await page.goto('/');
+		await scrollToScene(page, await sceneStart(page), 0.5);
+
+		for (const viewport of [
+			{ width: height, height: width },
+			{ width, height },
+		]) {
+			await page.setViewportSize(viewport);
+			// The section held at the top shifts its own offset: the start is read above the scene.
+			await page.evaluate(() => scrollTo(0, 0));
+			await scrollToScene(page, await sceneStart(page), 0.5);
+			await expectCardsOnPoles(page);
+		}
 	});
 
 	test('no jump when the pinning starts nor when it ends', async ({ page }) => {

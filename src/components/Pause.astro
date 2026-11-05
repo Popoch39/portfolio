@@ -1,0 +1,85 @@
+---
+/**
+ * The Pause (WCAG 2.2.2): a segment of the statusline that stops what loops on its own, the marquee and
+ * the lede. A native checkbox: the marquee stops in CSS alone (`:has()`), the lede follows its `change`
+ * (`src/lede/typist.ts`). The choice is remembered per visitor.
+ */
+import { inlineScriptHash } from './inline-script';
+
+// Inline, right after the box: the remembered choice is back before the first paint and before the lede starts.
+// Storage throws when the browser blocks site data: the Pause then lasts for this visit only.
+const remember = `(() => {
+	const box = document.getElementById('pause');
+	const stored = (use) => {
+		try {
+			return use(localStorage);
+		} catch {
+			return null;
+		}
+	};
+	box.checked = stored((storage) => storage.getItem('pause')) === 'on';
+	box.addEventListener('change', () =>
+		stored((storage) => (box.checked ? storage.setItem('pause', 'on') : storage.removeItem('pause'))),
+	);
+})();`;
+Astro.csp?.insertScriptHash(inlineScriptHash(remember));
+---
+
+<label class="pause">
+	<input id="pause" type="checkbox" autocomplete="off" />
+	<span class="box" aria-hidden="true"></span>
+	pause<span class="visually-hidden"> des animations</span>
+</label>
+<script is:inline set:html={remember} />
+
+<style>
+	/* A Markdown task box, ticked while paused: the state reads without colour too. */
+	.pause {
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 1ch;
+		padding: 0 14px;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+
+	/* The native box spans the whole segment, invisible: it keeps the keyboard, the click and the state. */
+	input {
+		position: absolute;
+		inset: 0;
+		margin: 0;
+		appearance: none;
+		cursor: inherit;
+	}
+
+	.box::before {
+		content: '[ ]';
+	}
+
+	input:checked ~ .box::before {
+		content: '[x]';
+	}
+
+	/* Paused: the segment turns to paper, like a mode that holds. */
+	.pause:has(input:checked) {
+		background: var(--color-paper);
+		color: var(--color-ink);
+	}
+
+	/* Drawn in the text's colour: it keeps the label's contrast whatever the state. */
+	.pause:has(input:focus-visible) {
+		outline: 2px solid currentColor;
+		outline-offset: -5px;
+	}
+
+	@media (hover: hover) and (pointer: fine) {
+		.pause:hover:not(:has(input:checked)) {
+			background: var(--color-bar);
+		}
+	}
+
+	.pause:active:not(:has(input:checked)) {
+		background: var(--color-bar);
+	}
+</style>

@@ -17,14 +17,18 @@ La séquence jouée une fois au chargement de l'accueil, sous le Voile : le glob
 _À éviter_ : loader, splash screen.
 
 **Ouverture**
-Le rôle de l'Intro auprès du socle : seule construite au chargement, elle garde le thread principal ; les scènes et l'Accroche ne sont construites qu'à sa fin (jouée, passée ou défaite). Sans Intro, elles le sont une fois polices et images en place (ADR 0001).
+Le rôle de l'Intro auprès du socle : seule construite au chargement, elle garde le thread principal tant qu'elle bouge. L'Ouverture construit les scènes et l'Accroche dans un **temps mort** de l'Intro, sous le Voile, quand ni le globe ni aucun tween de la page ne bouge (entre la remise du point de Besançon et la montée de la statusline) : l'Intro finie, la page défile sans attendre. Passée avant ce temps mort, défaite, ou si polices et images n'étaient pas encore en place, elle les construit à sa fin. Sans Intro, elles le sont une fois polices et images en place (ADR 0001).
 
 **Accroche**
-La phrase du hero (« Je construis les cartes de votre réseau électrique. »), réécrite en Vim d'une version à l'autre : chaque version parle à un public. Minuteries en JS, pas une scène : elle attend la fin de l'Intro, se fige hors de l'écran et ne démarre pas en mouvement réduit. Son état final est la première version ; les lecteurs d'écran lisent une phrase stable.
+La phrase du hero (« Je construis les cartes de votre réseau électrique. »), réécrite en Vim d'une version à l'autre : chaque version parle à un public. Minuteries en JS, pas une scène : elle attend la fin de l'Intro, se fige hors de l'écran et sous la Pause, et ne démarre pas en mouvement réduit. Son état final est la première version ; les lecteurs d'écran lisent une phrase stable.
 _À éviter_ : lede (réservé au code), typewriter.
 
+**Pause**
+La bascule de la statusline, à côté de `NORMAL`, qui fige le bandeau et l'Accroche puis les relance (WCAG 2.2.2). Une case à cocher native : le bandeau s'arrête même sans JS ; l'Accroche revient entière, au repos, sur sa version courante, et reprend de là. Le choix est retenu par visiteur. Seule partie de la statusline exposée aux lecteurs d'écran.
+_À éviter_ : bouton play/pause, stop.
+
 **Voile**
-La couche papier opaque qui couvre la fenêtre pendant l'Intro, au-dessus de la page déjà peinte à son état final. Elle s'efface en une frame quand la page se révèle. Sans la classe `intro` posée avant la première peinture (sans JS, notamment), elle n'existe pas.
+La couche papier opaque qui couvre la fenêtre pendant l'Intro, au-dessus de la page déjà peinte à son état final. Elle s'efface en une frame quand la page se révèle. Sans la classe `intro` posée avant la première peinture (sans JS, notamment), elle n'existe pas. Si l'Intro ne démarre pas, un filet la lève quand même (ADR 0005).
 _À éviter_ : overlay, masque.
 
 **Défilement lissé**

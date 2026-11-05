@@ -110,6 +110,12 @@ export const TITLE_RISE = { start: 6.8, duration: 0.7, stagger: 0.144, from: 104
 /** The map's marker and its label appear, once the point and its label have landed on them. */
 export const LATE: Phase = { start: 7.8, duration: 0.1 };
 
+/**
+ * The dead time: from the point's hand-over to the statusline's rise, no tween moves on the page and
+ * the globe stands still. The animation base builds the scenes there (the Ouverture).
+ */
+export const DEAD_TIME = POINT.handOver.start + POINT.handOver.duration;
+
 /** The statusline rises from below the window. */
 export const STATUSLINE: Phase = { start: 8.2, duration: 0.5 };
 

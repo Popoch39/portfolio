@@ -1,16 +1,19 @@
 /**
  * The Intro (ADR 0005): a timeline played once under the veil on loading the home page: the globe
- * drawn in a canvas on the timeline's progress, then the header, the hero and the statusline
- * revealed in the mockup's order. The inline script in the `<head>` decides whether it plays (class
+ * drawn in a canvas on the timeline's progress (by a Worker where the browser can, `globe.worker.ts`),
+ * then the header, the hero and the statusline revealed in the mockup's order. The inline script in the `<head>` decides whether it plays (class
  * on `<html>`); without that class, nothing happens here.
  */
 import { gsap, registerOpening, ScrollSmoother } from '../animation/base';
-import { globeCanvas, readPalette } from './canvas';
+import { globePainter } from './canvas';
 import { cubicBezier } from './ease';
-import { decimal, fitColumns, type Layout } from './globe';
+import { coordinate, decimal, fitColumns, frameAt, type Layout } from './globe';
 import { boilStep } from './grain';
+import type { GlobeMessage } from './globe.worker';
+import { decodeGrain, newSurface, readPalette } from './inputs';
 import {
 	BOIL,
+	DEAD_TIME,
 	END,
 	HUD,
 	LATE,
@@ -27,6 +30,11 @@ import {
 const reveal = cubicBezier(...REVEAL_EASE);
 
 const PLAYING = 'intro';
+/**
+ * On `<html>` once the scene has started: the inline script's safety net (`IntroTrigger.astro`) no
+ * longer lifts the veil in its place.
+ */
+const STARTED = 'data-intro-started';
 /** On `#intro-over` once the veil has lifted: the grid goes under the statusline (`Intro.astro`). */
 const LOWERED = 'lowered';
 
@@ -34,30 +42,94 @@ const LOWERED = 'lowered';
 const HELD_INPUTS = ['wheel', 'touchmove', 'keydown'] as const;
 const SCROLL_KEYS = new Set([' ', 'PageDown', 'PageUp', 'Home', 'End', 'ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight']);
 
+/**
+ * The globe is drawn at the device's pixel ratio up to this: on a 3× screen, a full-window canvas
+ * would cost more than twice the pixels for a sharpness nobody tells apart at reading distance.
+ */
+const MAX_PIXEL_RATIO = 2;
+const pixelRatio = () => Math.min(devicePixelRatio, MAX_PIXEL_RATIO);
+
 const marked = (name: string) => gsap.utils.toArray<HTMLElement>(`[data-intro="${name}"]`);
 
-registerOpening((end) => {
+registerOpening((end, idle) => {
 	const root = document.documentElement;
 	const parts = introParts();
 	if (!root.classList.contains(PLAYING) || !parts) return;
-	const { veil, over, canvas, header, marker, place, label, labelText, paper, hud, grain, tick, bar } = parts;
+	const { veil, over, canvas, header, rule, marker, place, label, labelText, paper, hud, grain, tick, bar } = parts;
 	const texts = [parts.phase, parts.gore, parts.lat, parts.lon, parts.scale];
 	let finished = false;
 
-	// The page does not scroll until the Intro has ended, fade included: the inputs that would scroll
-	// it are cancelled. Not `overflow: hidden`: the scrollbar would go and come back, and with it the
-	// width that `vw` measures (the page gutter). A dragged scrollbar cannot be cancelled: the paused
-	// smoother brings the page straight back.
-	const smoother = ScrollSmoother.get();
-	smoother?.paused(true);
-	const holdScroll = (event: Event) => {
-		if (!(event instanceof KeyboardEvent) || SCROLL_KEYS.has(event.key)) event.preventDefault();
-	};
-	for (const type of HELD_INPUTS) addEventListener(type, holdScroll, { passive: false });
-
 	// The globe lands on the real page: measured now, again once the fonts are in, and on every resize.
-	const painter = globeCanvas(canvas, readPalette(root));
 	let layout = measure();
+	const palette = readPalette(root);
+	// Drawn by a Worker on the transferred canvas where the browser can; here otherwise, or as soon as
+	// the Worker fails: a failing Worker is not a failing Intro.
+	let drawnOn = canvas;
+	let painter: ReturnType<typeof globePainter> | null = null;
+	let noise: ImageBitmap | null = null;
+	let worker = drawElsewhere();
+	if (!worker) drawHere();
+	decodeGrain(pixelRatio()).then((decoded) => {
+		if (!decoded) return;
+		if (finished) {
+			decoded.close();
+			return;
+		}
+		noise = decoded;
+		// Copied, not transferred: the page keeps it in case it has to draw the globe itself.
+		post({ type: 'grain', noise });
+		painter?.grain(noise);
+	});
+
+	function drawElsewhere() {
+		if (!('transferControlToOffscreen' in drawnOn) || typeof Worker !== 'function') return null;
+		let drawer: Worker;
+		try {
+			drawer = new Worker(new URL('./globe.worker.ts', import.meta.url), { type: 'module' });
+		} catch (error) {
+			// Refused at once (a policy, an unsupported module Worker): the page draws the globe.
+			console.warn('Intro: the globe is drawn on the main thread', error);
+			return null;
+		}
+		const offscreen = drawnOn.transferControlToOffscreen();
+		drawer.addEventListener('error', fallBack);
+		drawer.addEventListener('messageerror', fallBack);
+		drawer.postMessage(
+			{ type: 'init', canvas: offscreen, palette, layout, ratio: pixelRatio() } satisfies GlobeMessage,
+			[offscreen],
+		);
+		return drawer;
+	}
+	function drawHere() {
+		const context = drawnOn.getContext('2d');
+		painter = context && globePainter(context, palette, newSurface);
+		painter?.resize(layout.width, layout.height, pixelRatio());
+		if (noise) painter?.grain(noise);
+	}
+	function fallBack() {
+		if (finished || !worker) return;
+		stopWorker();
+		drawHere();
+		render();
+	}
+	/** Stops the Worker and lets go of the canvas it drew on: a fresh one takes its place. */
+	function stopWorker() {
+		worker?.terminate();
+		worker = null;
+		const fresh = drawnOn.cloneNode(false);
+		if (!(fresh instanceof HTMLCanvasElement)) return;
+		drawnOn.replaceWith(fresh);
+		drawnOn = fresh;
+	}
+	function post(message: GlobeMessage) {
+		worker?.postMessage(message);
+	}
+	// A hidden tab stops the timeline's ticks: the globe must not run ahead of it meanwhile.
+	const onVisibility = () => {
+		if (document.hidden) post({ type: 'time', t: clock.t, running: false });
+	};
+	document.addEventListener('visibilitychange', onVisibility);
+
 	function measure(): Layout {
 		const grid = header.getBoundingClientRect();
 		const point = marker.getBoundingClientRect();
@@ -82,10 +154,10 @@ registerOpening((end) => {
 	const relayout = () => {
 		if (finished) return;
 		layout = measure();
-		painter.resize(layout.width, layout.height, devicePixelRatio);
+		post({ type: 'layout', layout, ratio: pixelRatio() });
+		painter?.resize(layout.width, layout.height, pixelRatio());
 		render();
 	};
-	painter.resize(layout.width, layout.height, devicePixelRatio);
 	addEventListener('resize', relayout);
 	document.fonts.ready.then(relayout);
 
@@ -104,6 +176,8 @@ registerOpening((end) => {
 	// The scale bar's width at rest, in its CSS.
 	const scaleBar = bar.offsetWidth;
 	let labelOpacity = Number.NaN;
+	let labelX = Number.NaN;
+	let labelY = Number.NaN;
 	const clock = { t: 0 };
 	let skipping = false;
 	function render() {
@@ -111,8 +185,14 @@ registerOpening((end) => {
 		const { t } = clock;
 		// The grid stays over the page once the veil has lifted, under the statusline that rises later.
 		over.classList.toggle(LOWERED, t >= VEIL_LIFT);
-		const frame = painter.draw(t, layout);
-		label.style.transform = `translate(${frame.label.x}px, ${frame.label.y}px)`;
+		const frame = frameAt(t, layout);
+		post({ type: 'time', t, running: true });
+		painter?.draw(frame, layout);
+		if (frame.label.x !== labelX || frame.label.y !== labelY) {
+			labelX = frame.label.x;
+			labelY = frame.label.y;
+			label.style.transform = `translate(${labelX}px, ${labelY}px)`;
+		}
 		if (frame.label.opacity !== labelOpacity) {
 			labelOpacity = frame.label.opacity;
 			label.style.opacity = String(labelOpacity);
@@ -120,7 +200,13 @@ registerOpening((end) => {
 		const { phase, gore, lat, lon, goreWidth, gutter } = frame.hud;
 		if (boilStep(t) !== hudStep) {
 			hudStep = boilStep(t);
-			const values = [phase, gore, lat, lon, `fuseau ${decimal(goreWidth)} px · gouttière ${decimal(gutter)} px`];
+			const values = [
+				phase,
+				`${String(gore + 1).padStart(2, '0')} / 12`,
+				coordinate(lat, 'N', 'S'),
+				coordinate(lon, 'E', 'O'),
+				`fuseau ${decimal(goreWidth)} px · gouttière ${decimal(gutter)} px`,
+			];
 			texts.forEach((node, i) => write(node, values[i]));
 		}
 		if (goreWidth !== scaled) {
@@ -156,11 +242,10 @@ registerOpening((end) => {
 		.set(lines, { yPercent: TITLE_RISE.from }, VEIL_LIFT)
 		.set(late, { opacity: 0 }, VEIL_LIFT)
 		.set(statusline, { yPercent: 100 }, VEIL_LIFT);
-	// The rule is a pseudo-element: it scales through a custom property of the header.
 	timeline.fromTo(
-		header,
-		{ '--rule-scale': 0 },
-		{ '--rule-scale': 1, duration: RULE.duration, ease: reveal, immediateRender: false },
+		rule,
+		{ scaleX: 0 },
+		{ scaleX: 1, duration: RULE.duration, ease: reveal, immediateRender: false },
 		RULE.start,
 	);
 	for (const [name, offset] of Object.entries(REVEAL.offsets)) {
@@ -170,6 +255,8 @@ registerOpening((end) => {
 		.to(lines, { yPercent: 0, duration: TITLE_RISE.duration, stagger: TITLE_RISE.stagger, ease: reveal }, TITLE_RISE.start)
 		.to(late, { opacity: 1, duration: LATE.duration, ease: 'none' }, LATE.start)
 		.to(statusline, { yPercent: 0, duration: STATUSLINE.duration, ease: reveal }, STATUSLINE.start);
+	// Never reached when skipped (`progress(1, true)` fires no callback): the end builds the scenes then.
+	timeline.call(idle, undefined, DEAD_TIME);
 	render();
 
 	let fade: gsap.core.Timeline | undefined;
@@ -182,6 +269,8 @@ registerOpening((end) => {
 		stopListening();
 		const veilShown = timeline.time() < VEIL_LIFT;
 		skipping = true;
+		// The globe stops where it stands, and fades out with the grid.
+		post({ type: 'time', t: clock.t, running: false });
 		timeline.progress(1, true);
 		fade = gsap.timeline({ onComplete: finish });
 		// Under the veil, the grid is not lowered yet (`render` no longer runs): it stays above the veil
@@ -220,6 +309,7 @@ registerOpening((end) => {
 		stopListening();
 		removeEventListener('pageshow', onCacheRestore);
 		removeEventListener('resize', relayout);
+		document.removeEventListener('visibilitychange', onVisibility);
 		root.classList.remove(PLAYING);
 		over.classList.remove(LOWERED);
 		for (const type of HELD_INPUTS) removeEventListener(type, holdScroll);
@@ -228,10 +318,32 @@ registerOpening((end) => {
 		timeline.revert();
 		for (const node of [label, grain, tick, bar]) node.style.removeProperty('transform');
 		label.style.removeProperty('opacity');
-		// Releases the bitmap.
-		canvas.width = canvas.height = 0;
+		if (worker) stopWorker();
+		painter?.dispose();
+		noise?.close();
+		lifted.disconnect();
+		root.removeAttribute(STARTED);
 		end();
 	}
+	// The page does not scroll until the Intro has ended, fade included: the inputs that would scroll
+	// it are cancelled. Not `overflow: hidden`: the scrollbar would go and come back, and with it the
+	// width that `vw` measures (the page gutter). A dragged scrollbar cannot be cancelled: the paused
+	// smoother brings the page straight back.
+	// Last, with the start signal: a start-up that throws before here leaves the veil to the inline
+	// script's safety net, over a page that still scrolls.
+	const smoother = ScrollSmoother.get();
+	smoother?.paused(true);
+	const holdScroll = (event: Event) => {
+		if (!(event instanceof KeyboardEvent) || SCROLL_KEYS.has(event.key)) event.preventDefault();
+	};
+	for (const type of HELD_INPUTS) addEventListener(type, holdScroll, { passive: false });
+	// The safety net's belt may lift the veil in the middle of an Intro that no longer moves on (a
+	// starved phone): the Intro then gives the page back as if it had ended.
+	const lifted = new MutationObserver(() => {
+		if (!root.classList.contains(PLAYING)) finish();
+	});
+	lifted.observe(root, { attributeFilter: ['class'] });
+	root.setAttribute(STARTED, '');
 	return finish;
 });
 
@@ -239,13 +351,14 @@ registerOpening((end) => {
 function introParts() {
 	const over = document.getElementById('intro-over');
 	const canvas = document.getElementById('intro-grid');
-	const header = marked('rule')[0];
+	const header = marked('header')[0];
 	const part = (name: string) => over?.querySelector<HTMLElement>(`[data-hud="${name}"]`);
 	const parts = {
 		veil: document.getElementById('veil'),
 		over,
 		canvas: canvas instanceof HTMLCanvasElement ? canvas : null,
 		header,
+		rule: marked('rule')[0],
 		// The Besançon marker of the hero's map, and its label.
 		marker: document.querySelector<HTMLElement>('.hero-point'),
 		place: document.querySelector<HTMLElement>('.hero-place'),

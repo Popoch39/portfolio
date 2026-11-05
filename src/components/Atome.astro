@@ -226,7 +226,7 @@ const frame = [
 </div>
 
 <script>
-	import { cubicBezier, gsap, registerScene, SCENE_SCRUB, ScrollTrigger } from '../animation/base';
+	import { cubicBezier, gsap, readTransforms, registerScene, SCENE_SCRUB, ScrollTrigger } from '../animation/base';
 
 	type Pose = { y: number; heading: number; tilt: number; spin: number; scale: number };
 	type Choreography = {
@@ -272,6 +272,12 @@ const frame = [
 	const LABELS_BELOW = matchMedia('(orientation: portrait), (max-width: 639px)');
 	/** How far the page scrolls, in screens, for the length of the building phase (0 to 1 on the timeline). */
 	const BUILD_SCREENS = 4;
+	/** Every element whose transform the scene moves. */
+	const MOVED =
+		'.atome-tower, [data-choreography], .bague-plane, .bague-layer, .bague-track, .pastille-slot, .atome-label, .atome-nucleus';
+	/** Every element whose opacity the scene moves. */
+	const FADED =
+		'.atome-label, .atome-nucleus, .bague-side, .bague-top, .bague-side-accent, .bague-top-accent, .pastille-logo';
 
 	/** Breathing room kept above the pinned frame. */
 	const ROOM = 24;
@@ -369,48 +375,91 @@ const frame = [
 		const tower = atome.querySelector<HTMLElement>('.atome-tower')!;
 		// Before the screen fit measures, so a list stacked under the tower counts for a single row.
 		atome.dataset.atomeScene = '';
+		// The scene reads all it needs before it writes anything, and pins its section last: every read
+		// that follows a write makes the browser compute the styles again, those of the whole section once
+		// the pin has moved it into its spacer. First, the transform of every element it moves.
+		readTransforms(atome.querySelectorAll(MOVED));
+		// Then the opacity of every element it fades, written back as is: a tween reads it from the
+		// element's own style from then on, never from the computed one.
+		gsap.set(atome.querySelectorAll(FADED), {
+			opacity: (_: number, element: Element) => Number(gsap.getProperty(element, 'opacity')),
+		});
 		// Before every refresh measures the pin, so the section has its fitted height by then.
 		let pinOffset = fitToScreen(section, atome);
 		let intro = introFrame(section, atome, tower, pinOffset);
+		/**
+		 * A refresh never invalidates the whole scene: undoing its 200 tweens and starting them again,
+		 * element by element, freezes a phone for a quarter of a second. Only what the screen decides is
+		 * taken again: the opening frame, and the labels' levels once the list has moved under the tower
+		 * or back beside it. The other tweens keep the values they were built with.
+		 */
+		let labelsBelow = LABELS_BELOW.matches;
+		const byLayout: gsap.core.Animation[] = [];
+		let reframe = false;
 		const refit = () => {
 			pinOffset = fitToScreen(section, atome);
+			const { x, y, scale } = intro;
 			intro = introFrame(section, atome, tower, pinOffset);
+			reframe ||= intro.x !== x || intro.y !== y || intro.scale !== scale;
+			// Before the refresh brings the scene back to where it stood: on its way, it starts them again.
+			if (LABELS_BELOW.matches !== labelsBelow) {
+				labelsBelow = LABELS_BELOW.matches;
+				for (const tween of byLayout) tween.invalidate();
+			}
 		};
 		ScrollTrigger.addEventListener('refreshInit', refit);
 
 		// Their own layers, for as long as the scene runs: under the smoother the pin moves the section
 		// with a 2D transform, and the 3D drawing changes inside it at every frame. Left in the page's
-		// layer, both repaint and re-raster the section at every frame.
-		gsap.set([section, tower], { willChange: 'transform' });
+		// layer, both repaint and re-raster the section at every frame. Out of the scene, once it has
+		// caught up with the scroll, they give their layers back.
+		let promoted = false;
+		const promote = (promote: boolean) => {
+			if (promote === promoted) return;
+			promoted = promote;
+			for (const element of [section, tower]) element.style.willChange = promote ? 'transform' : '';
+		};
 
 		const bagues = atome.querySelectorAll<HTMLElement>('[data-choreography]');
 		const focusEnd = FOCUS_START + bagues.length * FOCUS_STEP + FOCUS_FADE;
 		const sceneLength = focusEnd + FOCUS_HOLD;
 
-		// One timeline over the whole pin: the tower is built from 0 to 1 in "seconds", then its bagues are lit in turn.
-		const scene = gsap.timeline({
-			defaults: { ease: 'none' },
-			scrollTrigger: {
-				trigger: section,
-				pin: true,
-				start: () => `top+=${pinOffset} top`,
-				// The building phase is as long as the Frise's pin, so it doesn't rush past before its phases can
-				// be read; the bagues lit in turn come on top, at the same pace.
-				end: `+=${Math.round(BUILD_SCREENS * 100 * sceneLength)}%`,
-				scrub: SCENE_SCRUB,
-				// The enlarged, centred drawing depends on the screen: its tween takes the refreshed values.
-				invalidateOnRefresh: true,
-				// Under a finger the page scrolls natively, off the main thread: the pin is set a frame early.
-				anticipatePin: 1,
-			},
-		});
+		// One timeline over the whole pin: the tower is built from 0 to 1 in "seconds", then its bagues are lit
+		// in turn. Its ScrollTrigger comes once it is complete.
+		const scene = gsap.timeline({ defaults: { ease: 'none' }, paused: true });
+		/** The tween the scene has just been given. */
+		const lastTween = () => {
+			const tween = scene.recent();
+			if (!(tween instanceof gsap.core.Tween)) throw new Error('Atome: the scene was given no tween');
+			return tween;
+		};
 
+		const choreographies = [...bagues].map((bague): Choreography => JSON.parse(bague.dataset.choreography!));
 		const labels = atome.querySelectorAll('.atome-label');
-		// Function-based, so a refresh after the phone turns takes the other layout's levels (invalidateOnRefresh).
+		// Function-based, so a refresh after the phone turns takes the other layout's levels (`refit`).
 		const labelLevel = () => (LABELS_BELOW.matches ? 0 : 1);
 		const labelDimmed = () => (LABELS_BELOW.matches ? 0 : DIMMED);
+		for (const [rank, { end }] of choreographies.entries()) {
+			// Its label comes in as the bague takes its place in the tower; stacked under it, it waits for its bague to be lit.
+			scene.fromTo(
+				labels[rank],
+				{ opacity: 0, x: -14 },
+				{ opacity: () => labelLevel(), x: 0, ease: LABEL_EASE, duration: 0.06 },
+				end - 0.03,
+			);
+			byLayout.push(lastTween());
+		}
+		const nucleus = atome.querySelector('.atome-nucleus');
+		scene.fromTo(nucleus, { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, ease: NUCLEUS_EASE, duration: 0.065 }, 0.44);
+		scene.fromTo(
+			nucleus,
+			{ opacity: 1, scale: 1 },
+			{ opacity: 0, scale: 0, duration: 0.065, immediateRender: false },
+			0.635,
+		);
+
 		for (const [rank, bague] of bagues.entries()) {
-			const { start, end, travel, poses, pastilles }: Choreography = JSON.parse(bague.dataset.choreography!);
+			const { start, end, travel, poses, pastilles } = choreographies[rank];
 			const plane = bague.querySelector('.bague-plane');
 			const layers = bague.querySelectorAll('.bague-layer');
 			const slots = bague.querySelectorAll('.pastille-slot');
@@ -459,14 +508,6 @@ const frame = [
 			// rest with the bague rather than stop dead.
 			const settle = { ease: 'sine.inOut', duration: end - TRAVEL_START };
 			scene.fromTo(bague.querySelector('.bague-track'), { rotation: -travel }, { rotation: 0, ...settle }, TRAVEL_START);
-
-			// Its label comes in as the bague takes its place in the tower; stacked under it, it waits for its bague to be lit.
-			scene.fromTo(
-				labels[rank],
-				{ opacity: 0, x: -14 },
-				{ opacity: () => labelLevel(), x: 0, ease: LABEL_EASE, duration: 0.06 },
-				end - 0.03,
-			);
 		}
 
 		// Enlarged in the middle while the bagues swing; as the tower rises and the labels come in, the
@@ -477,15 +518,16 @@ const frame = [
 			{ x: 0, y: 0, scale: 1, ease: 'power2.inOut', duration: INTRO_END - INTRO_LEAVE },
 			INTRO_LEAVE,
 		);
-
-		const nucleus = atome.querySelector('.atome-nucleus');
-		scene.fromTo(nucleus, { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, ease: NUCLEUS_EASE, duration: 0.065 }, 0.44);
-		scene.fromTo(
-			nucleus,
-			{ opacity: 1, scale: 1 },
-			{ opacity: 0, scale: 0, duration: 0.065, immediateRender: false },
-			0.635,
-		);
+		const opening = lastTween();
+		// Once the refresh has brought the scene back to where it stood, the opening frame is taken again
+		// and laid down at the scene's time: before the tween starts, the refresh plays nothing on it.
+		const applyFrame = () => {
+			if (!reframe) return;
+			reframe = false;
+			const time = gsap.utils.clamp(0, opening.duration(), scene.time() - opening.startTime());
+			opening.invalidate().render(time, true, true);
+		};
+		ScrollTrigger.addEventListener('refresh', applyFrame);
 
 		// The bagues lit one by one: the lit one takes the accent, the others dim. The dimming goes on the
 		// layers and logos, never on the bague: an opacity below 1 on an element that preserves 3D flattens
@@ -495,8 +537,10 @@ const frame = [
 		const accents = [...bagues].map((bague) => [...bague.querySelectorAll('.bague-side-accent, .bague-top-accent')]);
 		const others = <T,>(list: T[], rank: number) => list.filter((_, other) => other !== rank);
 		type Level = number | (() => number);
-		const fade = (targets: Element | Element[], from: Level, to: Level, at: number) =>
+		const fade = (targets: Element | Element[], from: Level, to: Level, at: number) => {
 			scene.fromTo(targets, { opacity: from }, { opacity: to, duration: FOCUS_FADE, immediateRender: false }, at);
+			if (typeof from === 'function' || typeof to === 'function') byLayout.push(lastTween());
+		};
 		const last = parts.length - 1;
 		const labelList = [...labels];
 		fade(others(parts, 0).flat(), 1, DIMMED, FOCUS_START);
@@ -520,8 +564,39 @@ const frame = [
 		// A hold on the finished tower before the page moves on: nothing moves past this point.
 		scene.set({}, {}, sceneLength);
 
+		const span = {
+			trigger: section,
+			start: () => `top+=${pinOffset} top`,
+			// The building phase is as long as the Frise's pin, so it doesn't rush past before its phases can
+			// be read; the bagues lit in turn come on top, at the same pace.
+			end: `+=${Math.round(BUILD_SCREENS * 100 * sceneLength)}%`,
+		};
+		// The pin and the scene over the same span, but apart: at every refresh, ScrollTrigger plays the
+		// animation of a pin to its end and back, to see whether it moves the pin, which started all 200
+		// tweens of the scene at once. Apart, a tween starts when the scroll first reaches it.
+		ScrollTrigger.create({
+			...span,
+			pin: true,
+			// Under a finger the page scrolls natively, off the main thread: the pin is set a frame early.
+			anticipatePin: 1,
+			// Empty: with a timeline, ScrollTrigger waits for the page's refresh to measure the pin, instead
+			// of measuring it, and every other pin with it, as it is created.
+			animation: gsap.timeline(),
+		});
+		ScrollTrigger.create({
+			...span,
+			animation: scene,
+			scrub: SCENE_SCRUB,
+			// Not `onToggle`: ScrollTrigger runs it inside the scene's context, and when the preference flips
+			// mid-scene, Firefox then leaves the bagues where they stood instead of reverting them.
+			onUpdate: ({ isActive }) => isActive && promote(true),
+			onScrubComplete: ({ isActive }) => isActive || promote(false),
+		});
+
 		return () => {
 			ScrollTrigger.removeEventListener('refreshInit', refit);
+			ScrollTrigger.removeEventListener('refresh', applyFrame);
+			promote(false);
 			atome.style.removeProperty('--tower-scale');
 			delete atome.dataset.atomeScene;
 		};

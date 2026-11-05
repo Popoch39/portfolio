@@ -1,10 +1,34 @@
 /**
- * Paints the globe's frames (`globe.ts`) into a 2D canvas at the device pixel ratio: the line
- * work, the shading of the sphere clipped to the gores, the flat tint, the Besançon point.
+ * Paints the globe's frames (`globe.ts`) into a 2D canvas: the line work, the shading of the sphere
+ * clipped to the gores, the flat tint, the Besançon point.
+ *
+ * Without the DOM: it takes a context (of a page canvas or an `OffscreenCanvas`), the palette, the
+ * pixel ratio, the decoded grain and a way to make its scratch canvases, so that it runs as is in a
+ * Worker. A frame that looks like the last one painted is not painted again.
  */
+import { trace, type Frame, type Layout, type Palette, type Pen, type Rgb } from './globe';
 import { BOIL } from './timing';
-import { boilStep, GRAIN_TILE, SPHERE_GRAIN } from './grain';
-import { globe, type Frame, type Layout, type Palette, type Rgb } from './globe';
+
+/** The 2D context the painter draws with: a page canvas's or an `OffscreenCanvas`'s alike. */
+export type Context2D = CanvasCompositing &
+	CanvasDrawImage &
+	CanvasDrawPath &
+	CanvasFillStrokeStyles &
+	CanvasPath &
+	CanvasPathDrawingStyles &
+	CanvasRect &
+	CanvasState &
+	CanvasTransform & { canvas: { width: number; height: number } };
+
+/**
+ * A scratch canvas the painter draws the sphere into: an `OffscreenCanvas`, or a page canvas in a
+ * browser that has none (the main-thread path must not depend on it).
+ */
+export type Surface = CanvasImageSource & {
+	width: number;
+	height: number;
+	getContext(contextId: '2d'): Context2D | null;
+};
 
 /** The sphere's light comes from the top left (the mockup's `circle at 36% 30%`). */
 const LIGHT = { x: 0.36, y: 0.3 };
@@ -17,57 +41,128 @@ const SHADING: [number, string][] = [
 	[1, '#c6c5bd'],
 ];
 /** The grain shows least where the light hits. */
-const GRAIN_MASK: [number, number][] = [
-	[0, 0.1],
-	[0.42, 0.45],
-	[0.82, 1],
+const GRAIN_MASK: [number, string][] = [
+	[0, 'rgba(0,0,0,0.1)'],
+	[0.42, 'rgba(0,0,0,0.45)'],
+	[0.82, 'rgba(0,0,0,1)'],
 ];
-
-/** The page's ink and accent (`--color-ink`, `--color-accent` on `element`), whatever their CSS notation. */
-export function readPalette(element: Element): Palette {
-	const style = getComputedStyle(element);
-	const probe = document.createElement('canvas');
-	probe.width = probe.height = 1;
-	const context = probe.getContext('2d', { willReadFrequently: true });
-	const rgb = (property: string): Rgb => {
-		if (!context) return [0, 0, 0];
-		context.fillStyle = style.getPropertyValue(property);
-		context.fillRect(0, 0, 1, 1);
-		const [red, green, blue] = context.getImageData(0, 0, 1, 1).data;
-		return [red, green, blue];
-	};
-	return { ink: rgb('--color-ink'), accent: rgb('--color-accent') };
-}
 
 const css = ([red, green, blue]: Rgb) => `rgb(${red},${green},${blue})`;
 
-export function globeCanvas(canvas: HTMLCanvasElement, palette: Palette) {
-	const ctx = canvas.getContext('2d');
+const MOVE = 0;
+const LINE = 1;
+const CLOSE = 2;
+
+/** A pen that records a frame's path into an array kept from frame to frame, then replays it. */
+class Recorder implements Pen {
+	private data = new Float64Array(3 * 1024);
+	private length = 0;
+
+	reset() {
+		this.length = 0;
+	}
+
+	moveTo(x: number, y: number) {
+		this.push(MOVE, x, y);
+	}
+
+	lineTo(x: number, y: number) {
+		this.push(LINE, x, y);
+	}
+
+	closePath() {
+		this.push(CLOSE, 0, 0);
+	}
+
+	/** Makes the recorded path the context's current path. */
+	replay(ctx: Context2D) {
+		const { data, length } = this;
+		ctx.beginPath();
+		for (let i = 0; i < length; i += 3) {
+			if (data[i] === MOVE) ctx.moveTo(data[i + 1], data[i + 2]);
+			else if (data[i] === LINE) ctx.lineTo(data[i + 1], data[i + 2]);
+			else ctx.closePath();
+		}
+	}
+
+	private push(op: number, x: number, y: number) {
+		if (this.length + 3 > this.data.length) {
+			const grown = new Float64Array(2 * this.data.length);
+			grown.set(this.data);
+			this.data = grown;
+		}
+		this.data[this.length++] = op;
+		this.data[this.length++] = x;
+		this.data[this.length++] = y;
+	}
+}
+
+/** Everything that tells two frames apart on the canvas, given the same layout and grain. */
+function fingerprint(frame: Frame, grain: boolean, into: Float64Array) {
+	const { pose, sphere, limb, point } = frame;
+	let i = 0;
+	into[i++] = pose.lam0;
+	into[i++] = pose.phi0;
+	into[i++] = pose.goreShare;
+	into[i++] = pose.a;
+	into[i++] = pose.straightened;
+	into[i++] = frame.lines;
+	into[i++] = frame.accent;
+	into[i++] = frame.parallels;
+	into[i++] = frame.fine;
+	into[i++] = frame.meridians;
+	into[i++] = frame.edges;
+	into[i++] = frame.tint;
+	into[i++] = frame.rim;
+	into[i++] = limb ? limb.drawn : -1;
+	into[i++] = sphere ? sphere.opacity : 0;
+	// The grain only boils on a sphere that shows.
+	into[i++] = sphere && sphere.opacity > 0 && grain ? sphere.boil : -1;
+	into[i++] = point.x;
+	into[i++] = point.y;
+	into[i++] = point.w;
+	into[i++] = point.h;
+	into[i++] = point.radius;
+	into[i++] = point.scale;
+	into[i++] = point.opacity;
+	for (const ripple of point.ripples) {
+		into[i++] = ripple.scale;
+		into[i++] = ripple.opacity;
+	}
+	return i;
+}
+
+export function globePainter(ctx: Context2D, palette: Palette, newSurface: () => Surface) {
 	const ink = css(palette.ink);
 	const accent = css(palette.accent);
 	// The sphere (shading and grain) is drawn once per grain step into its own bitmap, then scaled.
-	const sphere = document.createElement('canvas');
-	const grain = document.createElement('canvas');
+	const sphere = newSurface();
+	const grain = newSurface();
 	let grainPattern: CanvasPattern | null = null;
-	let sphereKey = '';
+	const sphereKey = { radius: Number.NaN, ratio: Number.NaN, boil: Number.NaN };
 	let ratio = 1;
-
-	// Until the grain has loaded (or if it never does), the sphere has its shading alone.
-	const noise = new Image();
-	noise.onload = () => {
-		// Rasterised at the device's resolution, then scaled back in the pattern: crisp specks.
-		const tile = document.createElement('canvas');
-		tile.width = tile.height = Math.round(GRAIN_TILE * ratio);
-		tile.getContext('2d')?.drawImage(noise, 0, 0, tile.width, tile.height);
-		grainPattern = ctx?.createPattern(tile, 'repeat') ?? null;
-		sphereKey = '';
+	const pens = {
+		edges: new Recorder(),
+		meridians: new Recorder(),
+		parallels: new Recorder(),
+		fine: new Recorder(),
+		gores: new Recorder(),
+		rim: new Recorder(),
 	};
-	noise.src = SPHERE_GRAIN;
+	const recorders = Object.values(pens);
+	let painted = new Float64Array(64);
+	let next = new Float64Array(64);
+	let paintedLength = 0;
+	let stale = true;
+	let mixed = Number.NaN;
+	let mixedColor = ink;
 
-	function paintSphere(radius: number, step: number) {
-		const key = `${radius}/${ratio}/${grainPattern ? step : -1}`;
-		if (key === sphereKey) return;
-		sphereKey = key;
+	function paintSphere(radius: number, boil: number) {
+		const step = grainPattern ? boil : -1;
+		if (sphereKey.radius === radius && sphereKey.ratio === ratio && sphereKey.boil === step) return;
+		sphereKey.radius = radius;
+		sphereKey.ratio = ratio;
+		sphereKey.boil = step;
 		const size = Math.ceil(2 * radius * ratio);
 		for (const c of [sphere, grain]) {
 			if (c.width !== size) c.width = c.height = size;
@@ -75,7 +170,7 @@ export function globeCanvas(canvas: HTMLCanvasElement, palette: Palette) {
 		const s = sphere.getContext('2d');
 		const g = grain.getContext('2d');
 		if (!s || !g) return;
-		const light = (stops: [number, string][], target: CanvasRenderingContext2D) => {
+		const light = (stops: [number, string][], target: Context2D) => {
 			const gradient = target.createRadialGradient(
 				LIGHT.x * size,
 				LIGHT.y * size,
@@ -93,45 +188,82 @@ export function globeCanvas(canvas: HTMLCanvasElement, palette: Palette) {
 		s.arc(size / 2, size / 2, size / 2, 0, 2 * Math.PI);
 		s.fill();
 		if (!grainPattern) return;
-		// The grain boils by jumps, and fades towards the light.
-		const [dx, dy] = BOIL.offsets[step];
-		grainPattern.setTransform(new DOMMatrix([1, 0, 0, 1, dx * ratio, dy * ratio]));
+		// The grain boils by jumps, and fades towards the light: the pattern follows the context's
+		// offset, so the whole tile is filled from the shifted origin.
+		const dx = BOIL.offsets[step][0] * ratio;
+		const dy = BOIL.offsets[step][1] * ratio;
 		g.globalCompositeOperation = 'source-over';
 		g.clearRect(0, 0, size, size);
 		g.fillStyle = grainPattern;
-		g.fillRect(0, 0, size, size);
+		g.setTransform(1, 0, 0, 1, dx, dy);
+		g.fillRect(-dx, -dy, size, size);
+		g.setTransform(1, 0, 0, 1, 0, 0);
 		g.globalCompositeOperation = 'destination-in';
-		g.fillStyle = light(
-			GRAIN_MASK.map(([at, alpha]) => [at, `rgba(0,0,0,${alpha})`]),
-			g,
-		);
+		g.fillStyle = light(GRAIN_MASK, g);
 		g.fillRect(0, 0, size, size);
 		s.globalCompositeOperation = 'source-atop';
 		s.drawImage(grain, 0, 0);
 		s.globalCompositeOperation = 'source-over';
 	}
 
+	/** Colour of the parallels, meridians and tint, ink to accent. */
+	function lineColor(toAccent: number) {
+		if (toAccent === mixed) return mixedColor;
+		mixed = toAccent;
+		const mix = (i: number) => Math.round(palette.ink[i] + (palette.accent[i] - palette.ink[i]) * toAccent);
+		mixedColor = `rgb(${mix(0)},${mix(1)},${mix(2)})`;
+		return mixedColor;
+	}
+
+	/** The style of the next stroke; false when it would not show. */
+	function pick(color: string, width: number, opacity: number) {
+		if (opacity <= 0.001) return false;
+		ctx.globalAlpha = opacity;
+		ctx.strokeStyle = color;
+		ctx.lineWidth = width;
+		return true;
+	}
+
+	function stroke(path: Recorder, color: string, width: number, opacity: number) {
+		if (!pick(color, width, opacity)) return;
+		path.replay(ctx);
+		ctx.stroke();
+	}
+
+	/** Whether `frame` differs on the canvas from the last frame painted. */
+	function changed(frame: Frame) {
+		const length = fingerprint(frame, grainPattern !== null, next);
+		let same = !stale && length === paintedLength;
+		for (let i = 0; same && i < length; i++) same = next[i] === painted[i];
+		const previous = painted;
+		painted = next;
+		next = previous;
+		paintedLength = length;
+		stale = false;
+		return !same;
+	}
+
 	return {
-		/** Matches the canvas bitmap to its box and the device pixel ratio. */
-		resize(width: number, height: number, devicePixelRatio: number) {
-			ratio = devicePixelRatio;
-			canvas.width = Math.round(width * ratio);
-			canvas.height = Math.round(height * ratio);
-			sphereKey = '';
+		/** Matches the canvas bitmap to its box at `pixelRatio`: this clears it. */
+		resize(width: number, height: number, pixelRatio: number) {
+			ratio = pixelRatio;
+			ctx.canvas.width = Math.round(width * ratio);
+			ctx.canvas.height = Math.round(height * ratio);
+			stale = true;
 		},
 
-		/** Paints the frame at `t` (s) and returns it, for the DOM parts (HUD, label). */
-		draw(t: number, layout: Layout): Frame {
-			const pens = {
-				edges: new Path2D(),
-				meridians: new Path2D(),
-				parallels: new Path2D(),
-				fine: new Path2D(),
-				gores: new Path2D(),
-				rim: new Path2D(),
-			};
-			const frame = globe(t, layout, pens, palette);
-			if (!ctx) return frame;
+		/** The sphere's grain, decoded at the pixel ratio (`GRAIN_TILE` × ratio square): until then, its shading alone. */
+		grain(noise: ImageBitmap) {
+			grainPattern = ctx.createPattern(noise, 'repeat');
+			sphereKey.boil = Number.NaN;
+			stale = true;
+		},
+
+		/** Paints `frame` unless the canvas already shows it; true when it painted. */
+		draw(frame: Frame, layout: Layout) {
+			if (!changed(frame)) return false;
+			for (const pen of recorders) pen.reset();
+			trace(frame.pose, pens);
 			ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
 			ctx.clearRect(0, 0, layout.width, layout.height);
 			ctx.lineJoin = 'round';
@@ -140,40 +272,37 @@ export function globeCanvas(canvas: HTMLCanvasElement, palette: Palette) {
 			// The shading belongs to the globe: it shows only through the gores and fades as they
 			// unroll, handing over to the flat tint of the printed gores.
 			if (frame.sphere) {
-				const { x, y, radius, opacity } = frame.sphere;
-				const base = (layout.gridWidth + layout.gutter) / layout.columns;
-				paintSphere((6 * base) / Math.PI, boilStep(t));
+				const { x, y, radius, opacity, boil } = frame.sphere;
+				paintSphere(frame.pose.R, boil);
 				ctx.save();
-				if (!frame.whole) ctx.clip(pens.gores);
+				if (!frame.whole) {
+					pens.gores.replay(ctx);
+					ctx.clip();
+				}
 				ctx.globalAlpha = opacity;
 				ctx.drawImage(sphere, x - radius, y - radius, 2 * radius, 2 * radius);
 				ctx.restore();
 			}
 
-			const stroke = (path: Path2D, color: string, width: number, opacity: number) => {
-				if (opacity <= 0.001) return;
-				ctx.globalAlpha = opacity;
-				ctx.strokeStyle = color;
-				ctx.lineWidth = width;
-				ctx.stroke(path);
-			};
 			const lines = frame.lines;
 			if (lines > 0) {
+				const color = lineColor(frame.accent);
 				// One limb while the globe is whole; once it is cut, each gore carries its own stretch of it.
-				if (frame.limb && frame.limb.drawn > 0) {
-					const limb = new Path2D();
-					limb.arc(frame.limb.x, frame.limb.y, frame.limb.radius, 0, 2 * Math.PI * frame.limb.drawn);
-					stroke(limb, ink, 1.1, lines);
+				if (frame.limb && frame.limb.drawn > 0 && pick(ink, 1.1, lines)) {
+					ctx.beginPath();
+					ctx.arc(frame.limb.x, frame.limb.y, frame.limb.radius, 0, 2 * Math.PI * frame.limb.drawn);
+					ctx.stroke();
 				}
 				stroke(pens.rim, ink, 1.1, lines * frame.rim);
 				if (frame.tint > 0.001) {
 					ctx.globalAlpha = lines * frame.tint * 0.07;
-					ctx.fillStyle = frame.color;
-					ctx.fill(pens.gores);
+					ctx.fillStyle = color;
+					pens.gores.replay(ctx);
+					ctx.fill();
 				}
-				stroke(pens.parallels, frame.color, 0.7, lines * frame.parallels * 0.5);
-				stroke(pens.fine, frame.color, 0.7, lines * frame.fine * 0.3);
-				stroke(pens.meridians, frame.color, 0.7, lines * frame.meridians * 0.5);
+				stroke(pens.parallels, color, 0.7, lines * frame.parallels * 0.5);
+				stroke(pens.fine, color, 0.7, lines * frame.fine * 0.3);
+				stroke(pens.meridians, color, 0.7, lines * frame.meridians * 0.5);
 				stroke(pens.edges, ink, 1.1, lines * frame.edges * 0.8);
 			}
 
@@ -194,15 +323,22 @@ export function globeCanvas(canvas: HTMLCanvasElement, palette: Palette) {
 					ctx.restore();
 				}
 				for (const ripple of point.ripples) {
-					if (ripple.opacity <= 0) continue;
 					// A 14 px ring with a 1 px border inside its box, scaled as a whole.
-					const ring = new Path2D();
-					ring.arc(cx, cy, 6.5 * ripple.scale, 0, 2 * Math.PI);
-					stroke(ring, accent, ripple.scale, point.opacity * ripple.opacity);
+					if (ripple.opacity <= 0 || !pick(accent, ripple.scale, point.opacity * ripple.opacity)) continue;
+					ctx.beginPath();
+					ctx.arc(cx, cy, 6.5 * ripple.scale, 0, 2 * Math.PI);
+					ctx.stroke();
 				}
 			}
 			ctx.globalAlpha = 1;
-			return frame;
+			return true;
+		},
+
+		/** Releases the bitmaps. */
+		dispose() {
+			ctx.canvas.width = ctx.canvas.height = 0;
+			sphere.width = sphere.height = grain.width = grain.height = 0;
+			grainPattern = null;
 		},
 	};
 }

@@ -59,30 +59,86 @@ async function recordFarthestScroll(page: Page) {
 	return () => page.evaluate(() => window.testFarthestScroll);
 }
 
+/** The spacers of the pinned scenes: there once the scenes are built. */
+const pins = (page: Page) => page.locator('.pin-spacer');
+
+/** From the page's start, how many scenes are pinned at the very moment the Intro hands the page over. */
+async function recordPinsAtIntroEnd(page: Page) {
+	await page.addInitScript(() => {
+		let playing = false;
+		// On the document: its root element may not exist yet when this runs.
+		new MutationObserver((_, observer) => {
+			const intro = document.documentElement?.classList.contains('intro') ?? false;
+			if (intro) playing = true;
+			if (intro || !playing) return;
+			window.testPinsAtIntroEnd = document.querySelectorAll('.pin-spacer').length;
+			observer.disconnect();
+		}).observe(document, { subtree: true, attributeFilter: ['class'] });
+	});
+	return () => page.evaluate(() => window.testPinsAtIntroEnd);
+}
+
 declare global {
 	interface Window {
+		testPinsAtIntroEnd?: number;
 		testFarthestScroll?: number;
+		testGridDraws?: number;
 	}
 }
 
-/** First and last rows of the window where the globe's canvas has drawn something, in CSS px. */
-function drawnRows(page: Page) {
-	return grid(page).evaluate((canvas: HTMLCanvasElement) => {
-		const context = canvas.getContext('2d');
-		if (!context) throw new Error('canvas without a 2D context');
-		const { data, width, height } = context.getImageData(0, 0, canvas.width, canvas.height);
-		const inked = (y: number) => {
-			for (let x = 0; x < width; x++) if (data[(y * width + x) * 4 + 3] > 8) return true;
-			return false;
-		};
-		let top = 0;
-		while (top < height && !inked(top)) top++;
-		let bottom = height - 1;
-		while (bottom > top && !inked(bottom)) bottom--;
-		const ratio = canvas.width / canvas.clientWidth;
-		return { top: top / ratio, bottom: (bottom + 1) / ratio };
-	});
+/**
+ * First and last rows of the window where the globe has drawn something, in CSS px. Read from a
+ * screenshot of the globe alone on white: drawn by a Worker, its canvas cannot be read from the page.
+ */
+async function drawnRows(page: Page) {
+	// Through the elements' styles: the page's policy blocks the stylesheet `screenshot({ style })` adds.
+	const alone = (on: boolean) =>
+		page.evaluate((on) => {
+			const set = (element: HTMLElement, property: string, value: string) => {
+				if (on) element.style.setProperty(property, value, 'important');
+				else element.style.removeProperty(property);
+			};
+			set(document.documentElement, 'background', '#fff');
+			set(document.body, 'visibility', 'hidden');
+			const canvas = document.getElementById('intro-grid');
+			if (canvas) set(canvas, 'visibility', 'visible');
+		}, on);
+	await alone(true);
+	const shot = await grid(page).screenshot({ scale: 'css' });
+	await alone(false);
+	const reader = await page.context().newPage();
+	try {
+		return await reader.evaluate(async (png) => {
+			const image = new Image();
+			image.src = `data:image/png;base64,${png}`;
+			await image.decode();
+			const { width, height } = image;
+			const canvas = new OffscreenCanvas(width, height);
+			const context = canvas.getContext('2d');
+			if (!context) throw new Error('canvas without a 2D context');
+			context.drawImage(image, 0, 0);
+			const { data } = context.getImageData(0, 0, width, height);
+			// Darker than the white page by more than a faint anti-aliased edge.
+			const inked = (y: number) => {
+				for (let x = 0; x < width; x++) {
+					const i = (y * width + x) * 4;
+					if (Math.min(data[i], data[i + 1], data[i + 2]) < 250) return true;
+				}
+				return false;
+			};
+			let top = 0;
+			while (top < height && !inked(top)) top++;
+			let bottom = height - 1;
+			while (bottom > top && !inked(bottom)) bottom--;
+			return { top, bottom: bottom + 1 };
+		}, shot.toString('base64'));
+	} finally {
+		await reader.close();
+	}
 }
+
+/** The Worker that draws the globe does not load: the page has to draw it itself. */
+const blockWorker = (page: Page) => page.route(/\.worker-[\w-]+\.js$/, (route) => route.abort());
 
 async function box(element: Locator) {
 	const found = await element.boundingBox();
@@ -178,18 +234,62 @@ for (const [screen, viewport] of SCREENS) {
 			expect(await farthest()).toBe(0);
 		});
 
-		// The Intro has the main thread to itself: the other scenes would cost it frames while nobody can
-		// scroll to them anyway.
-		test('the scenes further down are only built once it has ended', async ({ page }) => {
-			const pinned = page.locator('.pin-spacer');
+		// The scenes further down are built in a moment of the Intro when nothing moves: the first scroll
+		// after it never waits for them, and the globe never waits for them while it turns.
+		test('the scenes further down are not built while the globe turns, but are in place once it has ended', async ({
+			page,
+		}) => {
+			const pinnedAtEnd = await recordPinsAtIntroEnd(page);
 			await visitHome(page);
 			await page.clock.runFor(6_000);
 			await expect(veil(page)).toBeVisible();
-			expect(await pinned.count()).toBe(0);
+			expect(await pins(page).count()).toBe(0);
 
 			await page.clock.runFor(4_000);
-			await expect(veil(page)).toBeHidden();
-			await expect.poll(() => pinned.count()).toBeGreaterThan(0);
+			await expect(grid(page)).toBeHidden();
+			expect(await pinnedAtEnd()).toBeGreaterThan(0);
+		});
+
+		test('skipped before the scenes are built, it builds them at once', async ({ page }) => {
+			await visitHome(page);
+			await page.clock.runFor(2_000);
+
+			await page.mouse.click(200, 300);
+			await page.clock.runFor(400);
+
+			await expect(grid(page)).toBeHidden();
+			await expect.poll(() => pins(page).count()).toBeGreaterThan(0);
+		});
+
+		test('skipped once the scenes are built, it does not build them again', async ({ page }) => {
+			await visitHome(page);
+			await page.clock.runFor(8_500);
+			await expect(grid(page)).toBeVisible();
+			const built = await pins(page).count();
+			expect(built).toBeGreaterThan(0);
+			await pins(page).evaluateAll((spacers) => {
+				for (const spacer of spacers) spacer.setAttribute('data-test-built', '');
+			});
+
+			await page.mouse.click(200, 300);
+			await page.clock.runFor(400);
+
+			await expect(grid(page)).toBeHidden();
+			await expect(pins(page)).toHaveCount(built);
+			await expect(page.locator('.pin-spacer[data-test-built]')).toHaveCount(built);
+		});
+
+		// The Intro lands its point on the lede's cursor: the typist only starts its rest once it has ended.
+		test('the lede is not rewritten before the Intro has ended', async ({ page }) => {
+			const keys = page.locator('.hero-lede [data-keys] > *');
+			await visitHome(page);
+
+			await page.clock.runFor(11_000);
+			await expect(grid(page)).toBeHidden();
+			await expect(keys).toHaveCount(0);
+
+			await page.clock.runFor(2_000);
+			await expect.poll(() => keys.count()).toBeGreaterThan(0);
 		});
 
 		test('the title is painted at its final state from the first paint, under the veil', async ({ page }) => {
@@ -379,6 +479,320 @@ test.describe('Intro, motion allowed, on a phone only', () => {
 		await expect(grid(page)).toBeHidden();
 		await expectFinalState(page);
 		expect(errors).toEqual([]);
+	});
+});
+
+test.describe('Intro, on a 3× screen', () => {
+	test.use({ reducedMotion: 'no-preference', viewport: PHONE, deviceScaleFactor: 3 });
+
+	// Drawn at 3×, the full-window globe would cost more than twice the pixels for a sharpness nobody
+	// tells apart at reading distance. Read where the page draws it: a Worker's bitmap is out of reach.
+	test('the globe is drawn at 2× its size at most', async ({ page }) => {
+		await blockWorker(page);
+		await visitHome(page);
+		await page.clock.runFor(1_000);
+
+		const { bitmap, box } = await grid(page).evaluate((canvas: HTMLCanvasElement) => ({
+			bitmap: { width: canvas.width, height: canvas.height },
+			box: { width: canvas.clientWidth, height: canvas.clientHeight },
+		}));
+		expect(bitmap).toEqual({ width: 2 * box.width, height: 2 * box.height });
+	});
+});
+
+test.describe('Intro, while the globe stands still', () => {
+	test.use({ reducedMotion: 'no-preference', viewport: SCREENS[0][1] });
+
+	test('the canvas is not drawn again until the globe moves', async ({ page }) => {
+		// Counted where the page draws it: a Worker's drawing is out of reach. Every frame painted into
+		// the globe's canvas starts by clearing it.
+		await blockWorker(page);
+		await page.addInitScript(() => {
+			window.testGridDraws = 0;
+			const clear = CanvasRenderingContext2D.prototype.clearRect;
+			CanvasRenderingContext2D.prototype.clearRect = function (...args) {
+				if (this.canvas.id === 'intro-grid') window.testGridDraws = (window.testGridDraws ?? 0) + 1;
+				return clear.apply(this, args);
+			};
+		});
+		const draws = () => page.evaluate(() => window.testGridDraws ?? 0);
+		await page.clock.install({ time: 0 });
+		await page.clock.pauseAt(1_000);
+		await page.goto('/');
+
+		// From the hand-over of the point (7.95 s) to the fade of the grid (8.64 s), nothing moves on the canvas.
+		await page.clock.runFor(8_050);
+		const still = await draws();
+		await page.clock.runFor(500);
+		expect(await draws()).toBe(still);
+
+		// The grid fades: drawn again.
+		await page.clock.runFor(300);
+		expect(await draws()).toBeGreaterThan(still);
+	});
+});
+
+test.describe('Intro, off the main thread', () => {
+	test.use({ reducedMotion: 'no-preference', viewport: SCREENS[0][1] });
+
+	test('the globe is drawn by a Worker, which does not outlive the Intro', async ({ page }) => {
+		await visitHome(page);
+		await page.clock.runFor(1_000);
+		await expect.poll(() => page.workers().length).toBe(1);
+
+		await page.clock.runFor(9_000);
+		await expect(veil(page)).toBeHidden();
+		await expect.poll(() => page.workers().length).toBe(0);
+	});
+
+	test('skipped, the Intro leaves no Worker behind either', async ({ page }) => {
+		await visitHome(page);
+		await page.clock.runFor(1_000);
+		await expect.poll(() => page.workers().length).toBe(1);
+
+		await page.mouse.click(200, 300);
+		await page.clock.runFor(400);
+
+		await expect(veil(page)).toBeHidden();
+		await expect.poll(() => page.workers().length).toBe(0);
+	});
+
+	const withoutWorker: [string, (page: Page) => Promise<unknown>][] = [
+		['when its Worker does not load', blockWorker],
+		[
+			'in a browser that cannot draw off the main thread',
+			(page) =>
+				page.addInitScript(() => {
+					Reflect.deleteProperty(window, 'OffscreenCanvas');
+					Reflect.deleteProperty(HTMLCanvasElement.prototype, 'transferControlToOffscreen');
+				}),
+		],
+	];
+	for (const [name, setUp] of withoutWorker) {
+		test(`${name}, the page draws the globe: the Intro plays to the end`, async ({ page }) => {
+			const errors: string[] = [];
+			page.on('pageerror', (error) => errors.push(error.message));
+			await setUp(page);
+			await visitHome(page);
+
+			await page.clock.runFor(2_000);
+			const { top, bottom } = await drawnRows(page);
+			expect(bottom).toBeGreaterThan(top);
+
+			// A failing Worker is not a failing Intro: the veil's safety net (5 s) leaves it alone.
+			await page.clock.runFor(4_000);
+			await expect(veil(page)).toBeVisible();
+
+			await page.clock.runFor(4_000);
+			await expect(veil(page)).toBeHidden();
+			await expect(grid(page)).toBeHidden();
+			await expectFinalState(page);
+			expect(errors).toEqual([]);
+		});
+
+		test(`${name}, a click still skips the Intro`, async ({ page }) => {
+			await setUp(page);
+			await visitHome(page);
+			await page.clock.runFor(2_000);
+
+			await page.mouse.click(200, 300);
+			await page.clock.runFor(400);
+
+			await expect(veil(page)).toBeHidden();
+			await expect(grid(page)).toBeHidden();
+			await expectFinalState(page);
+		});
+	}
+});
+
+/** The animation base's chunk: GSAP, and every module of the page through it, the Intro's included. */
+const BASE_CHUNK = /\/_astro\/base\.[\w-]+\.js$/;
+
+test.describe('Intro, when it cannot play', () => {
+	test.use({ reducedMotion: 'no-preference', viewport: PHONE });
+
+	test('the chunk of the animation base does not load: the veil lifts on the page at its final state', async ({
+		page,
+	}) => {
+		await page.route(BASE_CHUNK, (route) => route.abort());
+		await visitHome(page);
+
+		await expect(veil(page)).toBeHidden();
+		await expectFinalState(page);
+	});
+
+	test('the chunk of the animation base hangs: the veil lifts after 5 s, and the late chunk leaves the page alone', async ({
+		page,
+	}) => {
+		let arrive = () => {};
+		const arrived = new Promise<void>((resolve) => {
+			arrive = resolve;
+		});
+		await page.route(BASE_CHUNK, async (route) => {
+			await arrived;
+			await route.continue();
+		});
+		const errors: string[] = [];
+		page.on('pageerror', (error) => errors.push(error.message));
+		await page.clock.install();
+		// Not until `load`: the hanging module holds it back.
+		await page.goto('/', { waitUntil: 'commit' });
+		await expect(veil(page)).toBeVisible();
+
+		await page.clock.runFor(4_500);
+		await expect(veil(page)).toBeVisible();
+		await page.clock.runFor(500);
+		await expect(veil(page)).toBeHidden();
+		await expectFinalState(page);
+
+		// The Intro does not start late over a page already shown: the scenes are built instead.
+		arrive();
+		await expect.poll(() => page.locator('.pin-spacer').count()).toBeGreaterThan(0);
+		await page.clock.runFor(2_000);
+		await expect(veil(page)).toBeHidden();
+		await expect(grid(page)).toBeHidden();
+		await expectFinalState(page);
+		expect(errors).toEqual([]);
+	});
+
+	test('the scene throws as it starts: the veil lifts after 5 s, on a page that scrolls', async ({ page }) => {
+		// The scene reads the page's palette through a canvas as it starts (`readPalette`).
+		await page.addInitScript(() => {
+			CanvasRenderingContext2D.prototype.getImageData = () => {
+				throw new Error('simulated failure at the start of the Intro');
+			};
+		});
+		const errors: string[] = [];
+		page.on('pageerror', (error) => errors.push(error.message));
+		await visitHome(page);
+		await expect.poll(() => errors).toEqual(['simulated failure at the start of the Intro']);
+
+		await page.clock.runFor(4_500);
+		await expect(veil(page)).toBeVisible();
+		await page.clock.runFor(500);
+		await expect(veil(page)).toBeHidden();
+		await expect(grid(page)).toBeHidden();
+		await expectFinalState(page);
+		await expect.poll(() => pins(page).count()).toBeGreaterThan(0);
+
+		await scrollWithWheel(page, 600);
+		await page.clock.runFor(1_000);
+		await expect.poll(() => scrollPosition(page)).toBeGreaterThan(0);
+	});
+
+	test('the Intro’s own chunk does not load: the veil lifts, and the scenes are built all the same', async ({
+		page,
+	}) => {
+		await page.route(/\/_astro\/Intro\.astro_[\w.-]+\.js$/, (route) => route.abort());
+		await visitHome(page);
+
+		await expect(veil(page)).toBeHidden();
+		await expectFinalState(page);
+		await expect.poll(() => pins(page).count()).toBeGreaterThan(0);
+	});
+
+	test('the Intro starts but never moves on: the veil lifts after 20 s whatever happens, on a page that scrolls', async ({
+		page,
+	}) => {
+		await page.clock.install();
+		// After the clock's: no frame ever comes, the timeline stays at its start.
+		await page.addInitScript(() => {
+			window.requestAnimationFrame = () => 0;
+		});
+		await page.goto('/');
+
+		await page.clock.runFor(19_500);
+		await expect(veil(page)).toBeVisible();
+		await page.clock.runFor(500);
+		await expect(veil(page)).toBeHidden();
+		await expect(grid(page)).toBeHidden();
+		await expectFinalState(page);
+
+		await scrollWithWheel(page, 600);
+		await page.clock.runFor(1_000);
+		await expect.poll(() => scrollPosition(page)).toBeGreaterThan(0);
+	});
+
+	// A tab opened in the background gets no frames: its Intro waits to be seen, the belt with it.
+	test('the time spent in a hidden tab does not count towards the 20 s', async ({ page }) => {
+		await page.clock.install();
+		await page.addInitScript(() => {
+			window.requestAnimationFrame = () => 0;
+			// Headless pages are never hidden: the page is told so.
+			Object.defineProperty(Document.prototype, 'hidden', { get: () => window.testHidden ?? false });
+		});
+		const hide = (hidden: boolean) =>
+			page.evaluate((hidden) => {
+				window.testHidden = hidden;
+				document.dispatchEvent(new Event('visibilitychange'));
+			}, hidden);
+		await page.goto('/');
+		await page.clock.runFor(2_000);
+
+		await hide(true);
+		await page.clock.runFor(30_000);
+		await expect(veil(page)).toBeVisible();
+
+		await hide(false);
+		await page.clock.runFor(17_500);
+		await expect(veil(page)).toBeVisible();
+		await page.clock.runFor(500);
+		await expect(veil(page)).toBeHidden();
+	});
+});
+
+declare global {
+	interface Window {
+		testIntroStarted?: number;
+		testVeilLifted?: number;
+		testHidden?: boolean;
+	}
+}
+
+test.describe('Intro, on a slow phone and network', () => {
+	const { userAgent, deviceScaleFactor } = devices['Pixel 7'];
+	test.use({ reducedMotion: 'no-preference', viewport: PHONE, userAgent, deviceScaleFactor, hasTouch: true, isMobile: true });
+
+	// Lighthouse's mobile profile as DevTools applies it: 150 ms and 1.6 Mbit/s, scaled by its
+	// latency and throughput factors (3.75 and 0.9), then CPU ×4. On the real clock: the safety net
+	// races the network.
+	test('the safety net never cuts the Intro short', async ({ page, browserName }) => {
+		test.skip(browserName !== 'chromium', 'throttled through the Chrome DevTools Protocol');
+		test.setTimeout(60_000);
+		const cdp = await page.context().newCDPSession(page);
+		await cdp.send('Network.enable');
+		await cdp.send('Network.emulateNetworkConditions', {
+			offline: false,
+			latency: 562.5,
+			downloadThroughput: (1_638.4 * 0.9 * 1024) / 8,
+			uploadThroughput: (750 * 0.9 * 1024) / 8,
+		});
+		await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+		// When the scene signals its start, and when the veil's class goes, from the navigation's start.
+		// Watched from the document: the root element does not exist yet when this runs.
+		await page.addInitScript(() => {
+			new MutationObserver(() => {
+				const root = document.documentElement;
+				if (root.hasAttribute('data-intro-started')) window.testIntroStarted ??= performance.now();
+				if (window.testIntroStarted !== undefined && !root.classList.contains('intro')) {
+					window.testVeilLifted ??= performance.now();
+				}
+			}).observe(document, { attributes: true, subtree: true, attributeFilter: ['class', 'data-intro-started'] });
+		});
+
+		await page.goto('/', { waitUntil: 'commit' });
+		await expect(veil(page)).toBeVisible();
+		await expect(veil(page)).toBeHidden({ timeout: 40_000 });
+		await expect(grid(page)).toBeHidden();
+
+		const { started, lifted } = await page.evaluate(() => ({
+			started: window.testIntroStarted,
+			lifted: window.testVeilLifted,
+		}));
+		// Started before the net's 5 s, then played for its whole 9.84 s.
+		expect(started).toBeLessThan(5_000);
+		expect((lifted ?? 0) - (started ?? 0)).toBeGreaterThan(9_800);
+		await expectFinalState(page);
 	});
 });
 

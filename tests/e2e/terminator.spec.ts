@@ -139,6 +139,39 @@ test.describe('the Terminateur', () => {
 		await expect(root(page)).toHaveAttribute('data-theme', 'dark');
 	});
 
+	test('at solar noon the night changes sides at once, never sweeping across the day', async ({ page }) => {
+		await visitAt(page, '12:10');
+		await expect(root(page)).toHaveAttribute('data-sky-half', 'morning');
+
+		await page.clock.setFixedTime(at('12:40'));
+		await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+
+		await expect(root(page)).toHaveAttribute('data-sky-half', 'evening');
+		expect(await page.locator('.sky').evaluate((el) => el.getAnimations().length)).toBe(0);
+		await expect(page.locator('.sky-sliver')).toBeHidden();
+	});
+
+	test('the night’s label keeps to the middle of the map in full night, and says so under `dark`', async ({
+		page,
+	}) => {
+		const label = page.locator('.sky-label[data-label="4"]');
+		const centreInMap = () =>
+			page.evaluate(() => {
+				const map = document.querySelector('.hero-map')!.getBoundingClientRect();
+				const box = document.querySelector('.sky-label[data-label="4"]')!.getBoundingClientRect();
+				return (box.left + box.width / 2 - map.left) / map.width;
+			});
+		await visitAt(page, '23:00');
+		await expect(label).toHaveCSS('opacity', '1');
+		expect(await centreInMap()).toBeCloseTo(0.5, 1);
+
+		await page.clock.setFixedTime(at('12:00'));
+		await option(page, 'dark').check();
+		await expect.poll(() => label.evaluate((el) => getComputedStyle(el, '::before').content)).toBe('"nuit · :set bg=dark"');
+		await expect(label).toHaveCSS('opacity', '1');
+		await expect.poll(centreInMap).toBeCloseTo(0.5, 1);
+	});
+
 	test('still works for the visit when the browser blocks storage', async ({ page }) => {
 		const errors: Error[] = [];
 		page.on('pageerror', (error) => errors.push(error));

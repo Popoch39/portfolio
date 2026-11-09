@@ -71,14 +71,13 @@ registerScene(() => {
 	};
 	pause.addEventListener('change', followPause);
 
-	const each = (write: (view: View) => void) => views.forEach(write);
-	const showKeys = (on: boolean) => each(({ keys }) => (keys.dataset.on = String(on)));
+	const showKeys = (on: boolean) => views.forEach(({ keys }) => (keys.dataset.on = String(on)));
 
 	function draw(patch: Partial<BufferState>) {
 		const mode = state.mode;
 		state = { ...state, ...patch };
 		const drawn = runs(lede, state);
-		each(({ buffer }) => buffer.replaceChildren(...drawn.map(runNode)));
+		views.forEach(({ buffer }) => buffer.replaceChildren(...drawn.map(runNode)));
 		if (state.mode !== mode) showMode(state.mode);
 	}
 
@@ -90,7 +89,7 @@ registerScene(() => {
 
 	/** The buffer whole and at rest on a version, the keys put away. */
 	function settle(index: number) {
-		each(({ keys }) => keys.replaceChildren());
+		views.forEach(({ keys }) => keys.replaceChildren());
 		showKeys(false);
 		state = { ...restingOn(lede, index), mode: state.mode };
 		draw({ mode: 'NORMAL' });
@@ -98,7 +97,7 @@ registerScene(() => {
 
 	function showVersion(index: number) {
 		version = index;
-		each(({ versionNumber, audience }) => {
+		views.forEach(({ versionNumber, audience }) => {
 			versionNumber.textContent = `${index + 1}/${count}`;
 			audience.textContent = `pour : ${lede.versions[index].audience}`;
 			// Two identical keyframes, alternated: the fade restarts without a forced reflow.
@@ -107,7 +106,7 @@ registerScene(() => {
 	}
 
 	function press(label: string, patch?: Partial<BufferState>, fresh = false) {
-		each(({ keys }) => {
+		views.forEach(({ keys }) => {
 			if (fresh) keys.replaceChildren();
 			const cap = document.createElement('kbd');
 			cap.textContent = label;
@@ -256,7 +255,7 @@ function viewOf(root: Element | null) {
  */
 function typistParts() {
 	const root = document.querySelector<HTMLElement>('[data-lede]');
-	const views = [root, ...document.querySelectorAll('[data-lede-mirror]')].map(viewOf);
+	const views = [root, ...document.querySelectorAll('[data-lede-night]')].map(viewOf);
 	const parts = {
 		root,
 		statusMode: document.querySelector<HTMLElement>('#statusline [data-vim-mode]'),

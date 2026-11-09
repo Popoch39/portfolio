@@ -250,16 +250,23 @@ const jsonLd = JSON.stringify({
 	 */
 	.sky {
 		--shift: var(--sky-shift);
+		/* Where the line stands across the map, in map widths: what the labels place themselves by. */
+		--line: calc(var(--meridian-share) + var(--shift));
 		position: absolute;
 		inset: 0;
 		z-index: 1;
 		pointer-events: none;
-		translate: calc((var(--meridian-share) + var(--shift)) * 100%) 0;
+		translate: calc(var(--line) * 100%) 0;
 	}
 
 	.sky,
 	.sky-sheet {
 		transition: translate 1.4s cubic-bezier(0.65, 0, 0.25, 1);
+	}
+
+	/* At noon and at midnight the night changes sides: it jumps there, never sweeps across the day. */
+	.hero-map.sky-cut :is(.sky, .sky-sheet, .sky-night, .sky-sliver) {
+		transition: none;
 	}
 
 	:global(:root:not([data-sky])) .sky {
@@ -286,13 +293,17 @@ const jsonLd = JSON.stringify({
 		background: var(--color-accent);
 	}
 
-	/* Off the map all day: not painted, and the lede's copy types into nothing drawn. */
 	.sky-night {
 		clip-path: var(--sky-night);
+	}
+
+	/* Off the map all day: not painted, and the lede's copy types into nothing drawn. */
+	.sky-night,
+	.sky-sliver {
 		transition: visibility 1.4s;
 	}
 
-	:global(:root[data-sky='day']) .sky-night {
+	:global(:root[data-sky='day']) :is(.sky-night, .sky-sliver) {
 		visibility: hidden;
 	}
 
@@ -306,7 +317,7 @@ const jsonLd = JSON.stringify({
 		display: grid;
 		grid-template-rows: var(--map-rows);
 		background: var(--color-paper);
-		translate: calc((var(--meridian-share) + var(--shift)) * -100%) 0;
+		translate: calc(var(--line) * -100%) 0;
 	}
 
 	/* The twilights, hatched in the night's ink more sparsely towards full night. On the night's own box. */
@@ -335,24 +346,36 @@ const jsonLd = JSON.stringify({
 		clip-path: var(--sky-band-3);
 	}
 
-	/* The labels ride the line; their text comes with the day's sky, as custom properties. */
+	/*
+	 * The labels ride the line; their text and their place from it (`--at`, map widths) come with the
+	 * day's sky. Near the map's edges they fade rather than be cut: `--line + --at` is where they stand.
+	 */
 	.sky-chip,
 	.sky-label {
+		--x: calc(var(--line) + var(--at));
 		position: absolute;
+		/* Placed by `translate` (`cqw`: the map's width), never `left`: a label that moves lays nothing out. */
+		left: 0;
 		font-size: 10.5px;
 		line-height: 1.2;
 		white-space: nowrap;
+		opacity: clamp(0, min(var(--x) - var(--from), var(--to) - var(--x)) * 100, 1);
+		transition: opacity 0.3s ease;
 	}
 
 	.sky-chip {
+		--at: var(--sky-chip-at);
+		--from: 0.01;
+		--to: 0.86;
 		top: 16%;
-		left: var(--sky-chip-x);
-		translate: 10px 0;
+		translate: calc(var(--at) * 100cqw + 10px) 0;
 	}
 
 	/* In the morning the night lies west of the line: the label hangs on that side. */
 	:global(:root[data-sky-half='morning']) .sky-chip {
-		translate: calc(-100% - 10px) 0;
+		--from: 0.14;
+		--to: 0.99;
+		translate: calc(var(--at) * 100cqw - 100% - 10px) 0;
 	}
 
 	.sky-chip::before {
@@ -366,8 +389,10 @@ const jsonLd = JSON.stringify({
 	}
 
 	.sky-label {
+		--from: 0.06;
+		--to: 0.92;
 		bottom: 9%;
-		translate: -50% 0;
+		translate: calc(var(--at) * 100cqw - 50%) 0;
 	}
 
 	.sky-label::before {
@@ -379,7 +404,7 @@ const jsonLd = JSON.stringify({
 	}
 
 	.sky-label[data-label='1'] {
-		left: var(--sky-label-1-x);
+		--at: var(--sky-label-1-at);
 	}
 
 	.sky-label[data-label='1']::before {
@@ -387,7 +412,7 @@ const jsonLd = JSON.stringify({
 	}
 
 	.sky-label[data-label='2'] {
-		left: var(--sky-label-2-x);
+		--at: var(--sky-label-2-at);
 	}
 
 	.sky-label[data-label='2']::before {
@@ -395,15 +420,26 @@ const jsonLd = JSON.stringify({
 	}
 
 	.sky-label[data-label='3'] {
-		left: var(--sky-label-3-x);
+		--at: var(--sky-label-3-at);
 	}
 
 	.sky-label[data-label='3']::before {
 		content: var(--sky-label-3);
 	}
 
+	/*
+	 * Full night: its label keeps to the middle of what the map shows of it, the whole map under
+	 * `:set bg=dark`, and leaves when too little of it shows. Full night starts `--sky-night-edge` from the line.
+	 */
 	.sky-label[data-label='4'] {
-		left: var(--sky-label-4-x);
+		--edge: calc(var(--line) + var(--sky-night-edge));
+		--at: calc((max(0, var(--edge)) + 1) / 2 - var(--line));
+		opacity: clamp(0, (0.9 - var(--edge)) * 100, 1);
+	}
+
+	:global(:root[data-sky-half='morning']) .sky-label[data-label='4'] {
+		--at: calc(min(1, var(--edge)) / 2 - var(--line));
+		opacity: clamp(0, (var(--edge) - 0.1) * 100, 1);
 	}
 
 	.sky-label[data-label='4']::before {
@@ -413,7 +449,8 @@ const jsonLd = JSON.stringify({
 	@media (prefers-reduced-motion: reduce) {
 		.sky,
 		.sky-sheet,
-		.sky-night {
+		.sky-night,
+		.sky-sliver {
 			transition: none;
 		}
 	}
@@ -435,7 +472,7 @@ const jsonLd = JSON.stringify({
 		}
 
 		/* A narrow map has no room for the twilights' names: the hatching says it alone. */
-		.sky-label {
+		.sky-label:not([data-label='4']) {
 			display: none;
 		}
 	}

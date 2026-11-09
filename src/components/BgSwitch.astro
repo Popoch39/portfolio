@@ -5,13 +5,15 @@
  * the next, and the group is named. It needs the script that paints the sky: hidden without it, and
  * shown, checked on the remembered choice, by the inline script right after it, before the first paint.
  */
+import { skyModes, type SkyMode } from '../sky/sky';
 import { inlineScriptHash } from './inline-script';
 
-const choices = [
-	{ value: 'auto', hint: 'suit le soleil à Besançon' },
-	{ value: 'light', hint: 'toujours le jour' },
-	{ value: 'dark', hint: 'toujours la nuit' },
-];
+const hints: Record<SkyMode, string> = {
+	auto: 'suit le soleil à Besançon',
+	light: 'toujours le jour',
+	dark: 'toujours la nuit',
+};
+const choices = skyModes.map((value) => ({ value, hint: hints[value] }));
 
 const show = `(() => {
 	const group = document.querySelector('[data-bg-switch]');

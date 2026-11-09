@@ -9,20 +9,20 @@ import { restingOn, runs, tallestLines } from '../lede/buffer';
 
 interface Props {
 	/** The copy on the hero's night (ADR 0008): the typist writes to it too; nothing of it is read out. */
-	mirror?: boolean;
+	night?: boolean;
 }
 
-const { mirror = false } = Astro.props;
+const { night = false } = Astro.props;
 const first = lede.versions[0];
 ---
 
 <div
 	class="hero-lede"
-	data-intro={mirror ? undefined : 'lede'}
-	data-lede={mirror ? undefined : JSON.stringify(lede)}
-	data-lede-mirror={mirror ? '' : undefined}
+	data-intro={night ? undefined : 'lede'}
+	data-lede={night ? undefined : JSON.stringify(lede)}
+	data-lede-night={night ? '' : undefined}
 >
-	{!mirror && <p class="visually-hidden">{lede.summary}</p>}
+	{!night && <p class="visually-hidden">{lede.summary}</p>}
 	<p class="sentence" aria-hidden="true" data-nosnippet>
 		<span class="ghosts">{tallestLines(lede).map((line) => <span>{line}</span>)}</span>
 		<span data-buffer

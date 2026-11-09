@@ -10,7 +10,7 @@
  */
 import { openingEnded, registerScene } from '../animation/base';
 import { watchOffScreen } from '../animation/offscreen';
-import { paintSky, skyPlace } from './sky';
+import { BG_KEY, paintSky, skyPlace } from './sky';
 
 const root = document.documentElement;
 const map = document.querySelector<HTMLElement>('.hero-map');
@@ -20,7 +20,19 @@ const MINUTE = 60_000;
 let turn: ReturnType<typeof setTimeout> | undefined;
 function paint() {
 	clearTimeout(turn);
+	const half = root.dataset.skyHalf;
 	turn = setTimeout(paint, paintSky(root, new Date(), skyPlace, line));
+	if (half !== root.dataset.skyHalf) cut();
+}
+
+/**
+ * At noon and at midnight the night changes sides of the line, and the line jumps across the map:
+ * both happen at once, without the slide, for the frames that take them in (`index.astro`).
+ */
+function cut() {
+	if (!map) return;
+	map.classList.add('sky-cut');
+	requestAnimationFrame(() => requestAnimationFrame(() => map.classList.remove('sky-cut')));
 }
 paint();
 document.addEventListener('visibilitychange', () => {
@@ -35,17 +47,27 @@ choices?.addEventListener('change', (event) => {
 	const choice = event.target;
 	if (!(choice instanceof HTMLInputElement)) return;
 	const auto = choice.value === 'auto';
-	// Storage throws when the browser blocks site data: the choice then lasts for this visit only.
-	try {
-		if (auto) localStorage.removeItem('bg');
-		else localStorage.setItem('bg', choice.value);
-	} catch {}
+	remember(auto ? null : choice.value);
 	turnOver(() => {
 		if (auto) delete root.dataset.bg;
 		else root.dataset.bg = choice.value;
 		paint();
 	});
 });
+
+/**
+ * Keeps the choice for the next visits; tells whether it could. Storage throws when the browser
+ * blocks site data: the choice then lasts for this visit only.
+ */
+function remember(bg: string | null) {
+	try {
+		if (bg) localStorage.setItem(BG_KEY, bg);
+		else localStorage.removeItem(BG_KEY);
+		return true;
+	} catch {
+		return false;
+	}
+}
 
 /**
  * The whole page restyled at once would be a cut: a view transition fades the old page into the new one,

@@ -25,7 +25,12 @@ export interface SkyPlace {
 	shares: readonly [wide: number, narrow: number];
 }
 
-export type SkyMode = 'auto' | 'light' | 'dark';
+/** `:set bg=`'s choices; `paintSky` reads them from `data-bg` on its own (it may name nothing outside itself). */
+export const skyModes = ['auto', 'light', 'dark'] as const;
+export type SkyMode = (typeof skyModes)[number];
+
+/** Where the choice is remembered; `auto` is the absence of one. */
+export const BG_KEY = 'bg';
 
 export const skyPlace: SkyPlace = {
 	latitude: person.latitude,
@@ -167,13 +172,14 @@ export function paintSky(root: HTMLElement, now: Date, place: SkyPlace, line: HT
 		put(`--sky-band-${band}`, between(curve(from, 0), curve(to, 0)));
 		// Too thin a band for its label on a wide map leaves it out.
 		const centre = (from + to) / 2 + bend(LABEL_Y);
-		put(`--sky-label-${band}-x`, `${(centre * 100).toFixed(2)}%`);
+		put(`--sky-label-${band}-at`, centre.toFixed(4));
 		put(`--sky-label-${band}`, Math.abs(to - from) > 0.09 ? `"${names[k]} · ${DEGREES[k]}"` : 'none');
 	}
-	put('--sky-label-4-x', `${((deepest - nightward * 0.08 + bend(LABEL_Y)) * 100).toFixed(2)}%`);
+	// Full night begins past the last twilight: its label keeps to the middle of what the map shows of it.
+	put('--sky-night-edge', (deepest + bend(LABEL_Y)).toFixed(4));
 	put('--sky-label-4', mode === 'dark' ? '"nuit · :set bg=dark"' : '"nuit"');
 	// The sun's own label rides the top of the line.
-	put('--sky-chip-x', `${(bend(0.16) * 100).toFixed(2)}%`);
+	put('--sky-chip-at', bend(0.16).toFixed(4));
 	put('--sky-chip', `"0° · ${evening ? 'coucher' : 'lever'} ${hhmm(edge)}"`);
 
 	// The next change of theme in `auto`: today's sunrise or sunset, or tomorrow's sunrise (a minute off at most).

@@ -4,17 +4,21 @@
  * the hour at Besançon and the remembered `:set bg=`. Inline in the `<head>` of every page, so that
  * the night is never a flash of daylight first. The function is the bundled module's own
  * (`src/sky/sky.ts`), printed here as source: one ephemeris, not two.
- * Storage throws when the browser blocks site data: the page then follows the sun.
  */
-import { paintSky, skyPlace } from '../sky/sky';
+import { BG_KEY, paintSky, skyPlace } from '../sky/sky';
 import { inlineScriptHash } from './inline-script';
 
+// Storage throws when the browser blocks site data: the page then follows the sun.
 const paint = `(() => {
 	const root = document.documentElement;
-	try {
-		const bg = localStorage.getItem('bg');
-		if (bg) root.dataset.bg = bg;
-	} catch {}
+	const bg = (() => {
+		try {
+			return localStorage.getItem(${JSON.stringify(BG_KEY)});
+		} catch {
+			return null;
+		}
+	})();
+	if (bg) root.dataset.bg = bg;
 	(${paintSky.toString()})(root, new Date(), ${JSON.stringify(skyPlace)});
 })();`;
 Astro.csp?.insertScriptHash(inlineScriptHash(paint));

@@ -31,6 +31,14 @@ _À éviter_ : bouton play/pause, stop.
 La couche papier opaque qui couvre la fenêtre pendant l'Intro, au-dessus de la page déjà peinte à son état final. Elle s'efface en une frame quand la page se révèle. Sans la classe `intro` posée avant la première peinture (sans JS, notamment), elle n'existe pas. Si l'Intro ne démarre pas, un filet la lève quand même (ADR 0005).
 _À éviter_ : overlay, masque.
 
+**Terminateur**
+La ligne qui sépare le jour de la nuit sur la carte du hero, là où le soleil se couche (ou se lève) à Besançon à l'heure de la visite, bordée de son liseré signal et des crépuscules hachurés. L'heure ne fait que la glisser ; elle tombe à la fin de l'Intro (ADR 0008).
+_À éviter_ : dark mode, thème sombre (pour la ligne elle-même).
+
+**Fond**
+Le choix `:set bg=` de la statusline : `auto` suit le soleil à Besançon (le site est sombre du coucher au lever), `light` garde le jour, `dark` la nuit, sur tout le site. Retenu par visiteur.
+_À éviter_ : thème, mode sombre.
+
 **Défilement lissé**
 Défilement à la molette et au trackpad interpolé par ScrollSmoother (environ 1 s d'inertie). Jamais au doigt, jamais sous `prefers-reduced-motion: reduce`, jamais sans JS : le défilement reste alors natif. Sur un téléphone ou une tablette, il n'existe pas du tout, et les scènes épinglées défilent comme une page native.
 _À éviter_ : smooth scroll (qui désigne aussi `scroll-behavior: smooth`).

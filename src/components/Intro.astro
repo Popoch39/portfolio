@@ -12,8 +12,9 @@ import { person } from '../data/profile';
 import { coordinates } from '../hero/map';
 ---
 
-<div id="veil" class="veil" aria-hidden="true" data-nosnippet></div>
-<div id="intro-over" class="over" aria-hidden="true" data-nosnippet>
+{/* The Intro plays in daylight, whatever the hour: the night falls on the hero once it has ended (ADR 0008). */}
+<div id="veil" class="veil theme-light" aria-hidden="true" data-nosnippet></div>
+<div id="intro-over" class="over theme-light" aria-hidden="true" data-nosnippet>
 	<canvas id="intro-grid" class="grid"></canvas>
 	<p class="mono label" data-hud="label">
 		<span

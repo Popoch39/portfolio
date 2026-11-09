@@ -17,6 +17,9 @@ const PHONES = [
 	{ width: 390, height: 844 },
 ];
 
+/** The day's marker: the night draws the map again, aria-hidden, over it (ADR 0008). */
+const marker = (page: Page) => page.locator('[data-intro="late"] .hero-point');
+
 /** Where the name stands, where the meridian runs and where Besançon sits on it. */
 function readMap(page: Page) {
 	return page.evaluate(() => {
@@ -59,7 +62,7 @@ for (const viewport of [...SCREENS, ...PHONES]) {
 			expect(Math.abs(point.x - rule.right)).toBeLessThanOrEqual(1);
 			expect(Math.abs(point.y - (rule.top + 0.5))).toBeLessThanOrEqual(1);
 			await expect(page.locator('h1')).toBeInViewport({ ratio: 1 });
-			await expect(page.locator('.hero-point')).toBeInViewport({ ratio: 1 });
+			await expect(marker(page)).toBeInViewport({ ratio: 1 });
 		});
 	});
 }
@@ -90,7 +93,7 @@ for (const viewport of [...SCREENS.filter(({ width }) => width <= 860), ...PHONE
 
 			const { baselines } = await readMap(page);
 			expect(baselines[1] - baselines[0]).toBeGreaterThan(20);
-			await expect(page.locator('.hero-lede .sentence')).toBeInViewport({ ratio: 1 });
+			await expect(page.locator('[data-lede] .sentence')).toBeInViewport({ ratio: 1 });
 		});
 	});
 }
@@ -98,8 +101,8 @@ for (const viewport of [...SCREENS.filter(({ width }) => width <= 860), ...PHONE
 test('the Besançon marker is in the signal colour, still', async ({ page }) => {
 	await page.goto('/');
 
-	const point = page.locator('.hero-point');
+	const point = marker(page);
 	await expect(point).toHaveCSS('background-color', 'rgb(255, 91, 20)');
 	await expect(point).toHaveCSS('animation-name', 'none');
-	await expect(page.locator('.hero-place')).toContainText('47°14′16″ N · 6°01′27″ E');
+	await expect(page.locator('.hero-place[data-intro]')).toContainText('47°14′16″ N · 6°01′27″ E');
 });

@@ -5,6 +5,7 @@ import iconUrl from '../assets/icon.svg?url';
 import ogImage from '../assets/og.png';
 import Grain from '../components/Grain.astro';
 import SiteHeader from '../components/SiteHeader.astro';
+import SkyTrigger from '../components/SkyTrigger.astro';
 import Statusline from '../components/Statusline.astro';
 import { person } from '../data/profile';
 import '../styles/global.css';
@@ -36,8 +37,10 @@ const ogImageAlt = `${person.name}, ${person.jobTitle.toLowerCase()} — portfol
 		{noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={canonical} />}
 		<meta name="author" content={person.name} />
 		<meta name="theme-color" content="#efeee9" />
-		<meta name="color-scheme" content="light" />
+		<meta name="color-scheme" content="light dark" />
 		<meta name="generator" content={Astro.generator} />
+		{/* After the theme colour, which it sets for the night. */}
+		<SkyTrigger />
 
 		<link rel="icon" href="/favicon.ico" sizes="32x32" />
 		<link rel="icon" href={iconUrl} type="image/svg+xml" />

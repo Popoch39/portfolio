@@ -28,6 +28,7 @@ for (const width of WIDTHS) {
 
 			// Inside the centred column, between its gutters. Project rows bleed 14px on purpose (hover
 			// background), and the marquee, outside the column, runs wider than the window, clipped by its band.
+			// The hero's night (ADR 0008) reaches map widths either side of its line, clipped by the map.
 			const spills = await page.evaluate(() => {
 				const column = document.querySelector('main .wrap');
 				if (!column) return ['no .wrap'];
@@ -35,7 +36,7 @@ for (const width of WIDTHS) {
 				const gutter = Number.parseFloat(getComputedStyle(column).paddingLeft);
 				const [left, right] = [box.left + gutter, box.right - gutter];
 				return [...document.querySelectorAll('main .wrap *')]
-					.filter((el) => !el.matches('.project, .visually-hidden'))
+					.filter((el) => !el.matches('.project, .visually-hidden') && !el.closest('.sky'))
 					.filter((el) => {
 						const box = el.getBoundingClientRect();
 						return box.width > 0 && (box.left < left - 1 || box.right > right + 1);

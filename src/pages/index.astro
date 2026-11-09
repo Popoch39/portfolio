@@ -2,14 +2,14 @@
 import Atome from '../components/Atome.astro';
 import Cafe from '../components/Cafe.astro';
 import Frise from '../components/Frise.astro';
+import HeroSheet from '../components/HeroSheet.astro';
 import Intro from '../components/Intro.astro';
 import IntroTrigger from '../components/IntroTrigger.astro';
-import Lede from '../components/Lede.astro';
 import SectionHeading from '../components/SectionHeading.astro';
 import SectionNumber from '../components/SectionNumber.astro';
 import Layout from '../layouts/Layout.astro';
 import { currentPosition, education, marqueeWords, person, profile, stack } from '../data/profile';
-import { coordinates, graticule, kilometre, latTicks, lonTicks } from '../hero/map';
+import { graticule, kilometre, meridianShares } from '../hero/map';
 
 const title = 'Louis Pocheron — Développeur web & SIG à Besançon';
 const description =
@@ -23,6 +23,8 @@ const mapStyle = [
 	`--phase-x: ${graticule.phaseX}px`,
 	`--phase-y: ${graticule.phaseY}px`,
 	`--kilometre: ${kilometre}px`,
+	`--meridian-share-wide: ${meridianShares[0]}`,
+	`--meridian-share-narrow: ${meridianShares[1]}`,
 ].join('; ');
 const [mailUser, mailDomain] = person.email.split('@');
 
@@ -72,55 +74,25 @@ const jsonLd = JSON.stringify({
 		<div class="wrap">
 			<section class="hero" aria-labelledby="hero-title">
 				{/* The name stands on a parallel that runs to Besançon, on a map whose scale holds (`src/hero/map.ts`). */}
-				<div class="hero-map" style={mapStyle}>
-					<div class="hero-north">
-						<div class="mono hero-ticks" aria-hidden="true">
-							{
-								lonTicks.map((tick) => (
-									<span class="tick tick-lon" data-shown={tick.shown} style={`--x: ${tick.x}px`}>
-										{tick.text}
-									</span>
-								))
-							}
+				<div class="hero-map theme-light" style={mapStyle}>
+					<HeroSheet />
+					{
+						/*
+						 * The night (06 · Terminateur, ADR 0008): the map again in the night's ink, cut along the
+						 * line where the sun sets at Besançon. The line, its accent edge, the twilights and their
+						 * labels slide together on one `translate`; the copy slides back as much, and stays put.
+						 */
+					}
+					<div class="sky theme-dark" aria-hidden="true" inert data-nosnippet>
+						<span class="sky-layer sky-sliver"></span>
+						<div class="sky-layer sky-night">
+							<div class="sky-sheet">
+								<HeroSheet night />
+							</div>
+							{[1, 2, 3].map((band) => <span class="sky-band" data-band={band} />)}
 						</div>
-						<h1 id="hero-title" class="hero-title">
-							<span class="hero-line"><span data-intro="line">{person.givenName}</span></span>{' '}
-							<span class="hero-line"><span data-intro="line">{person.familyName}</span></span>
-						</h1>
-					</div>
-					<div class="hero-south">
-						<div class="hero-axis" aria-hidden="true">
-							<span class="hero-rule"></span>
-							<span class="mono hero-ticks">
-								{
-									latTicks.map((tick) => (
-										<span class="tick tick-lat" data-shown={tick.shown} style={`--y: ${tick.y}px`}>
-											{tick.text}
-										</span>
-									))
-								}
-							</span>
-							<span class="hero-marker" data-intro="late"><span class="hero-ring"></span><span class="hero-point"></span></span>
-						</div>
-						<p class="mono hero-place" data-intro="late">
-							<span class="hero-city">{person.city}</span><span class="hero-coordinates"
-								><span>{coordinates.latitude}</span><span class="hero-separator"> · </span><span
-									>{coordinates.longitude}</span
-								></span
-							>
-						</p>
-						<Lede />
-						<div class="hero-actions" data-intro="actions">
-							<a class="button" href={mailto}
-								>Écrire<span class="visually-hidden"> un e-mail</span>
-								<span class="mono" aria-hidden="true">:wq</span></a
-							>
-							<a class="hero-github" href={person.github.url} rel="me">GitHub <span aria-hidden="true">↗</span></a>
-						</div>
-					</div>
-					<div class="mono hero-scale" aria-hidden="true">
-						<span class="hero-scale-labels"><span>0</span><span>1 km</span></span>
-						<span class="hero-scale-bar"></span>
+						<span class="mono sky-chip"></span>
+						{[1, 2, 3, 4].map((label) => <span class="mono sky-label" data-label={label} />)}
 					</div>
 				</div>
 			</section>
@@ -254,236 +226,196 @@ const jsonLd = JSON.stringify({
 	 * window; the floor keeps room for the content.
 	 */
 	.hero-map {
-		--meridian-share: 0.64;
+		--meridian-share: var(--meridian-share-wide);
 		--meridian: calc(var(--meridian-share) * 100%);
 		--inset: clamp(24px, 3.4vw, 48px);
+		--map-rows: minmax(auto, 54fr) minmax(auto, 46fr);
 		position: relative;
 		display: grid;
-		grid-template-rows: minmax(auto, 54fr) minmax(auto, 46fr);
+		grid-template-rows: var(--map-rows);
 		flex: 1;
 		min-height: 480px;
 		container: map / size;
 		border: 1px solid var(--color-ink);
 		overflow: hidden;
+		/* Daylight's paper whatever the page's theme: the night comes over it along the line. */
+		background: var(--color-paper);
 	}
 
 	/*
-	 * Each row draws its stretch of the graticule, set from the parallel between them: one tile per
-	 * minute, its line on the tile's first pixel. A background percentage reads against the box less
-	 * the tile, hence the tile's share added back to land the meridians on the marker's.
+	 * The night (ADR 0008). `.sky` is the map's box set on the line: it slides by the hour's shift
+	 * (`src/sky/sky.ts`), and the copy inside slides back as much, so that only the line moves. Both
+	 * on `translate` with the same curve: the compositor moves them, nothing is repainted; the outlines
+	 * are fixed for the day. Without the sky's script, there is no night at all.
 	 */
-	.hero-north,
-	.hero-south {
-		position: relative;
-		background-image:
-			linear-gradient(to right, var(--color-rule) 1px, transparent 1px),
-			linear-gradient(to bottom, var(--color-rule) 1px, transparent 1px);
-		background-size:
-			var(--pitch-x) 100%,
-			100% var(--pitch-y);
-		background-position-x: calc(var(--meridian) + var(--phase-x) + var(--meridian-share) * var(--pitch-x)), 0;
-	}
-
-	.hero-north {
-		display: flex;
-		align-items: flex-end;
-		padding: 40px var(--inset) 0;
-		background-position-y:
-			0,
-			calc(100% + var(--phase-y));
-	}
-
-	/* The bottom padding keeps the lede's keys (34px high) clear of the actions when the row is tight. */
-	.hero-south {
-		--keys-bottom: 18px;
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		padding: 36px var(--inset) calc(var(--keys-bottom) + 34px + 24px);
-		background-position-y:
-			0,
-			var(--phase-y);
-	}
-
-	.hero-title {
-		display: flex;
-		column-gap: 0.22em;
-		margin: 0;
-		font-size: clamp(52px, 8.4vw, 121px);
-		font-weight: 800;
-		font-stretch: 75%;
-		letter-spacing: -0.03em;
-		white-space: nowrap;
-	}
-
-	/*
-	 * Each line clips its own rise, out of the parallel: its box stops on the baseline, so the name
-	 * stands on the rule. From Archivo's metrics (ascent 0.878em, descent 0.21em, caps 0.686em), a
-	 * 0.904 line height puts the top of the line box 0.1em above the caps, room for the ascenders,
-	 * and the baseline 0.786em below it. `text-box` would say it, but Firefox does not trim yet.
-	 */
-	.hero-line {
-		display: block;
-		height: 0.786em;
-		overflow: hidden;
-		line-height: 0.904;
-	}
-
-	.hero-line > span {
-		display: block;
-	}
-
-	/* A zero-height line along the parallel: the rule, the latitudes and the marker hang from it. */
-	.hero-axis {
+	.sky {
+		--shift: var(--sky-shift);
 		position: absolute;
-		inset: 0 0 auto;
-		height: 0;
+		inset: 0;
+		z-index: 1;
+		pointer-events: none;
+		translate: calc((var(--meridian-share) + var(--shift)) * 100%) 0;
 	}
 
-	.hero-rule {
+	.sky,
+	.sky-sheet {
+		transition: translate 1.4s cubic-bezier(0.65, 0, 0.25, 1);
+	}
+
+	:global(:root:not([data-sky])) .sky {
+		display: none;
+	}
+
+	/* The Intro plays in daylight: the night falls once it has ended. */
+	:global(html.intro) .sky {
+		--shift: var(--sky-held);
+	}
+
+	/* Boxes reaching four map widths either side of the line: past any shift (`REACH`, `src/sky/sky.ts`). */
+	.sky-layer {
 		position: absolute;
-		left: 0;
 		top: 0;
-		width: var(--meridian);
-		height: 1px;
-		background: var(--color-ink);
+		bottom: 0;
+		left: -400%;
+		right: -400%;
 	}
 
-	.hero-ring,
-	.hero-point {
-		position: absolute;
-		left: var(--meridian);
-		top: 0;
-		box-sizing: border-box;
-	}
-
-	.hero-ring {
-		width: 36px;
-		height: 36px;
-		margin: -17.5px 0 0 -17.5px;
-		border: 1.5px solid var(--color-accent);
-		border-radius: 50%;
-	}
-
-	.hero-point {
-		width: 12px;
-		height: 12px;
-		margin: -5.5px 0 0 -5.5px;
+	/* The accent's edge, 2 px of it along the night. */
+	.sky-sliver {
+		clip-path: var(--sky-sliver);
 		background: var(--color-accent);
 	}
 
-	.hero-ticks {
-		font-size: 10.5px;
-		line-height: 1;
-		color: var(--color-ink-muted);
+	/* Off the map all day: not painted, and the lede's copy types into nothing drawn. */
+	.sky-night {
+		clip-path: var(--sky-night);
+		transition: visibility 1.4s;
 	}
 
-	/* Each composition shows the ticks that fit it (`src/hero/map.ts`). */
-	.tick {
-		display: none;
+	:global(:root[data-sky='day']) .sky-night {
+		visibility: hidden;
+	}
+
+	/* The map again, back on the map's own box: `cqw` reads the map's width. */
+	.sky-sheet {
 		position: absolute;
-	}
-
-	.tick-lon {
-		top: 10px;
-		left: calc(var(--meridian) + var(--x) + 6px);
-	}
-
-	.tick-lat {
-		right: 10px;
-		top: calc(var(--y) - 13px);
-	}
-
-	@media (min-width: 861px) {
-		.tick[data-shown~='desk'] {
-			display: block;
-		}
-	}
-
-	@container map (width >= 960px) {
-		.tick[data-shown~='desk-wide'] {
-			display: block;
-		}
-	}
-
-	@container map (width >= 1290px) {
-		.tick[data-shown~='desk-wider'] {
-			display: block;
-		}
-	}
-
-	.hero-place {
-		position: absolute;
-		left: calc(var(--meridian) + 28px);
-		top: 16px;
-		display: flex;
-		flex-direction: column;
-		margin: 0;
-		font-size: 12px;
-		line-height: 1.5;
-		white-space: nowrap;
-		color: var(--color-ink-muted);
-		/* A halo of paper over the graticule; the Intro's label wears the same one. */
+		top: 0;
+		bottom: 0;
+		left: 400cqw;
+		width: 100cqw;
+		display: grid;
+		grid-template-rows: var(--map-rows);
 		background: var(--color-paper);
-		box-shadow: 0 0 0 4px var(--color-paper);
+		translate: calc((var(--meridian-share) + var(--shift)) * -100%) 0;
 	}
 
-	.hero-city {
+	/* The twilights, hatched in the night's ink more sparsely towards full night. On the night's own box. */
+	.sky-band {
+		position: absolute;
+		inset: 0;
+		background-image: repeating-linear-gradient(
+			-45deg,
+			color-mix(in srgb, var(--color-ink) 85%, transparent) 0 1px,
+			transparent 1px var(--gap)
+		);
+	}
+
+	.sky-band[data-band='1'] {
+		--gap: 5px;
+		clip-path: var(--sky-band-1);
+	}
+
+	.sky-band[data-band='2'] {
+		--gap: 8px;
+		clip-path: var(--sky-band-2);
+	}
+
+	.sky-band[data-band='3'] {
+		--gap: 13px;
+		clip-path: var(--sky-band-3);
+	}
+
+	/* The labels ride the line; their text comes with the day's sky, as custom properties. */
+	.sky-chip,
+	.sky-label {
+		position: absolute;
+		font-size: 10.5px;
+		line-height: 1.2;
+		white-space: nowrap;
+	}
+
+	.sky-chip {
+		top: 16%;
+		left: var(--sky-chip-x);
+		translate: 10px 0;
+	}
+
+	/* In the morning the night lies west of the line: the label hangs on that side. */
+	:global(:root[data-sky-half='morning']) .sky-chip {
+		translate: calc(-100% - 10px) 0;
+	}
+
+	.sky-chip::before {
+		content: var(--sky-chip);
+		display: block;
+		padding: 4px 8px;
+		background: var(--color-accent);
+		color: var(--color-on-accent);
+		font-size: 11px;
+		font-weight: 700;
+	}
+
+	.sky-label {
+		bottom: 9%;
+		translate: -50% 0;
+	}
+
+	.sky-label::before {
+		display: block;
+		padding: 3px 7px;
+		border: 1px solid var(--color-ink-faint);
+		background: var(--color-paper);
 		color: var(--color-ink);
 	}
 
-	/* The lede is a component: its root carries the component's scope, not the page's. */
-	.hero-south > :global(.hero-lede) {
-		width: min(540px, 52%);
+	.sky-label[data-label='1'] {
+		left: var(--sky-label-1-x);
 	}
 
-	/* In the map's bottom-left corner, a screencast's place, facing the scale bar. */
-	.hero-south :global(.keys) {
-		left: var(--inset);
-		bottom: var(--keys-bottom);
+	.sky-label[data-label='1']::before {
+		content: var(--sky-label-1);
 	}
 
-	.hero-actions {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 12px 24px;
-		margin-top: 28px;
+	.sky-label[data-label='2'] {
+		left: var(--sky-label-2-x);
 	}
 
-	.hero-github {
-		display: inline-flex;
-		align-items: center;
-		min-height: 44px;
-		font-weight: 600;
-		text-underline-offset: 4px;
+	.sky-label[data-label='2']::before {
+		content: var(--sky-label-2);
 	}
 
-	/* Left of the latitudes' column, which could otherwise run into it. */
-	.hero-scale {
-		position: absolute;
-		right: 64px;
-		bottom: 18px;
-		display: flex;
-		flex-direction: column;
-		gap: 5px;
-		width: var(--kilometre);
-		font-size: 10.5px;
-		line-height: 1;
-		color: var(--color-ink-muted);
+	.sky-label[data-label='3'] {
+		left: var(--sky-label-3-x);
 	}
 
-	.hero-scale-labels {
-		display: flex;
-		justify-content: space-between;
+	.sky-label[data-label='3']::before {
+		content: var(--sky-label-3);
 	}
 
-	/* Half ink, half paper, like a printed scale bar. */
-	.hero-scale-bar {
-		height: 5px;
-		box-sizing: border-box;
-		border: 1px solid var(--color-ink);
-		background: linear-gradient(to right, var(--color-ink) 50%, transparent 50%);
+	.sky-label[data-label='4'] {
+		left: var(--sky-label-4-x);
+	}
+
+	.sky-label[data-label='4']::before {
+		content: var(--sky-label-4);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.sky,
+		.sky-sheet,
+		.sky-night {
+			transition: none;
+		}
 	}
 
 	/*
@@ -496,79 +428,15 @@ const jsonLd = JSON.stringify({
 		}
 
 		.hero-map {
-			--meridian-share: 0.76;
+			--meridian-share: var(--meridian-share-narrow);
 			--inset: 14px;
-			grid-template-rows: minmax(auto, 44fr) minmax(auto, 56fr);
+			--map-rows: minmax(auto, 44fr) minmax(auto, 56fr);
 			min-height: 440px;
 		}
 
-		.hero-north {
-			padding-top: 32px;
-		}
-
-		.hero-south {
-			--keys-bottom: 14px;
-			padding-top: 28px;
-		}
-
-		/* Baseline to baseline, 0.95em. */
-		.hero-title {
-			flex-direction: column;
-			row-gap: 0.164em;
-			font-size: clamp(52px, 15.4vw, 96px);
-		}
-
-		.tick[data-shown~='narrow'] {
-			display: block;
-		}
-
-		.tick-lon {
-			top: 9px;
-		}
-
-		.tick-lat {
-			right: 8px;
-		}
-
-		.hero-ticks {
-			font-size: 10px;
-		}
-
-		.hero-place {
-			left: auto;
-			right: 8px;
-			top: auto;
-			bottom: calc(100% + 24px);
-			align-items: flex-end;
-			font-size: 11px;
-		}
-
-		.hero-coordinates {
-			display: flex;
-			flex-direction: column;
-			align-items: flex-end;
-		}
-
-		.hero-separator {
+		/* A narrow map has no room for the twilights' names: the hatching says it alone. */
+		.sky-label {
 			display: none;
-		}
-
-		/* Clear of the latitudes' column. */
-		.hero-south > :global(.hero-lede) {
-			width: min(540px, 100% - 36px);
-		}
-
-		.hero-scale {
-			right: 56px;
-			bottom: 14px;
-			font-size: 10px;
-		}
-	}
-
-	/* A phone has no room for both side by side: the keys stand above the scale bar's row. */
-	@media (max-width: 600px) {
-		.hero-south {
-			--keys-bottom: 48px;
 		}
 	}
 

@@ -4,7 +4,7 @@ import { statusline, wrapper } from './helpers';
 // The smoother fixes the wrapper and transforms the content: an element positioned against the
 // window would then change containing block and jump when smoothing starts (layout shift).
 const boxes = (page: Page) =>
-	Promise.all([page.locator('h1'), page.locator('.hero-lede'), statusline(page)].map((l) => l.boundingBox()));
+	Promise.all([page.locator('h1'), page.locator('[data-lede]'), statusline(page)].map((l) => l.boundingBox()));
 
 test.describe('first paint', () => {
 	test.use({ reducedMotion: 'reduce' });

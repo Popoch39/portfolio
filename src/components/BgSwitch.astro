@@ -1,0 +1,117 @@
+---
+/**
+ * `:set bg=` (ADR 0008): a segment of the statusline that lets the visitor keep the day or the night
+ * at any hour, or follow the sun at Besançon (`auto`). Native radios: the arrows move from one to
+ * the next, and the group is named. It needs the script that paints the sky: hidden without it, and
+ * shown, checked on the remembered choice, by the inline script right after it, before the first paint.
+ */
+import { inlineScriptHash } from './inline-script';
+
+const choices = [
+	{ value: 'auto', hint: 'suit le soleil à Besançon' },
+	{ value: 'light', hint: 'toujours le jour' },
+	{ value: 'dark', hint: 'toujours la nuit' },
+];
+
+const show = `(() => {
+	const group = document.querySelector('[data-bg-switch]');
+	const bg = document.documentElement.dataset.bg;
+	const choice = group.querySelector('input[value="' + bg + '"]') || group.querySelector('input[value="auto"]');
+	choice.checked = true;
+	group.hidden = false;
+})();`;
+Astro.csp?.insertScriptHash(inlineScriptHash(show));
+---
+
+<fieldset class="bg" data-bg-switch hidden>
+	<legend class="visually-hidden">Fond de la page</legend>
+	<span class="prompt" aria-hidden="true">:set bg=</span>
+	{
+		choices.map(({ value, hint }) => (
+			<label class="choice">
+				<input type="radio" name="bg" value={value} autocomplete="off" />
+				{value}
+				<span class="visually-hidden"> ({hint})</span>
+			</label>
+		))
+	}
+</fieldset>
+<script is:inline set:html={show} />
+
+<script>
+	import '../sky/live';
+</script>
+
+<style>
+	.bg {
+		display: flex;
+		align-items: stretch;
+		min-width: 0;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: var(--color-bar);
+	}
+
+	.bg[hidden] {
+		display: none;
+	}
+
+	.prompt {
+		padding: 0 4px 0 14px;
+		color: var(--color-on-ink-muted);
+		white-space: nowrap;
+	}
+
+	.choice {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 44px;
+		padding: 0 10px;
+		box-sizing: border-box;
+		color: var(--color-on-ink-muted);
+		font-weight: 700;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+
+	/* The native radio spans the whole choice, invisible: it keeps the keyboard, the click and the state. */
+	input {
+		position: absolute;
+		inset: 0;
+		margin: 0;
+		appearance: none;
+		cursor: inherit;
+	}
+
+	/* The choice in force turns to paper, like the Pause that holds. */
+	.choice:has(input:checked) {
+		background: var(--color-paper);
+		color: var(--color-ink);
+	}
+
+	.choice:has(input:focus-visible) {
+		outline: 2px solid currentColor;
+		outline-offset: -5px;
+	}
+
+	@media (hover: hover) and (pointer: fine) {
+		.choice:hover:not(:has(input:checked)) {
+			background: var(--color-ink);
+			color: var(--color-paper);
+		}
+	}
+
+	.choice:active:not(:has(input:checked)) {
+		background: var(--color-ink);
+		color: var(--color-paper);
+	}
+
+	@media (max-width: 860px) {
+		.prompt {
+			display: none;
+		}
+	}
+</style>

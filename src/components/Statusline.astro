@@ -1,8 +1,10 @@
 ---
 /**
  * Vim-like statusline, fixed to the bottom of the window. Decorative, hidden from assistive
- * technologies, but for the Pause. Outside the smoothed content, otherwise its transform would carry it along.
+ * technologies, but for the Pause, the day's sun and `:set bg=`. Outside the smoothed content,
+ * otherwise its transform would carry it along. Always ink, day or night: it stays in daylight's theme.
  */
+import BgSwitch from './BgSwitch.astro';
 import Pause from './Pause.astro';
 
 interface Props {
@@ -13,7 +15,7 @@ interface Props {
 const { pause = false } = Astro.props;
 ---
 
-<div id="statusline" class="statusline mono" data-intro="statusline">
+<div id="statusline" class="statusline mono theme-light" data-intro="statusline">
 	<div class="side">
 		{/* The home page's lede types in Vim: its mode is echoed here (`src/lede/typist.ts`). */}
 		<span class="mode" aria-hidden="true" data-vim-mode>NORMAL</span>
@@ -37,10 +39,41 @@ const { pause = false } = Astro.props;
 		</span>
 		<span class="file" aria-hidden="true">~/louis/portfolio.md<span data-vim-modified hidden> [+]</span></span>
 	</div>
-	<div class="side" aria-hidden="true">
-		<span class="encoding">utf-8 · markdown</span>
-		<span class="segment">Bas</span>
-		<span class="mode">:wq</span>
+	<div class="side">
+		{/* Today's sunrise and sunset at Besançon, written by the sky's inline script (`src/sky/sky.ts`). */}
+		<p class="sun">
+			<svg
+				width="13"
+				height="13"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+				><path d="M3 19h18M7 19a5 5 0 0 1 10 0M12 3v7M9 6l3-3 3 3"></path></svg
+			>
+			<span><span class="sun-word">lever </span><span class="time" data-sun="rise"></span></span>
+			<svg
+				width="13"
+				height="13"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+				><path d="M3 19h18M7 19a5 5 0 0 1 10 0M12 10V3M9 7l3 3 3-3"></path></svg
+			>
+			<span><span class="sun-word">coucher </span><span class="time" data-sun="set"></span></span>
+			<span class="visually-hidden"> à Besançon aujourd’hui</span>
+		</p>
+		<BgSwitch />
+		<span class="encoding" aria-hidden="true">utf-8 · markdown</span>
+		<span class="segment" aria-hidden="true">Bas</span>
+		<span class="mode" aria-hidden="true">:wq</span>
 	</div>
 </div>
 
@@ -109,8 +142,48 @@ const { pause = false } = Astro.props;
 		color: var(--color-on-ink-muted);
 	}
 
+	.sun {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+		margin: 0;
+		color: var(--color-on-ink-muted);
+		white-space: nowrap;
+	}
+
+	.sun svg + span {
+		margin-right: 6px;
+	}
+
+	.time {
+		color: var(--color-paper);
+	}
+
+	.time::after {
+		content: var(--sky-rise);
+	}
+
+	.time[data-sun='set']::after {
+		content: var(--sky-set);
+	}
+
+	/* Without the sky's script, no times to give. */
+	:global(:root:not([data-sky])) .sun {
+		display: none;
+	}
+
 	@media (max-width: 860px) {
-		.encoding {
+		.encoding,
+		.sun-word {
+			display: none;
+		}
+	}
+
+	/* A phone keeps the Pause and the switch: the rest gives way. */
+	@media (max-width: 600px) {
+		.branch,
+		.sun,
+		.segment {
 			display: none;
 		}
 	}

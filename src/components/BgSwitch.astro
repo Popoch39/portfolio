@@ -116,4 +116,11 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 			display: none;
 		}
 	}
+
+	/* The narrowest phones: each choice keeps its 44px, no more. */
+	@media (max-width: 380px) {
+		.choice {
+			padding: 0 4px;
+		}
+	}
 </style>

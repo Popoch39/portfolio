@@ -212,6 +212,54 @@ test.describe('the Terminateur, motion reduced', () => {
 	});
 });
 
+// On a phone the lede's keys stand above the scale bar's row, where the night's label hangs on a wider map.
+for (const width of [320, 375, 430, 600]) {
+	test.describe(`the Terminateur on a ${width}px phone`, () => {
+		// Motion reduced: the lede types nothing, and the keys are laid down by hand, as many as a phone shows.
+		test.use({ reducedMotion: 'reduce', viewport: { width, height: 700 } });
+
+		for (const [name, time, bg] of [
+			['in full night', '23:00', 'auto'],
+			['under `:set bg=dark`', '12:00', 'dark'],
+		] as const) {
+			test(`${name}, the night’s label stands clear of the lede’s keys and of the scale bar`, async ({ page }) => {
+				await visitAt(page, time);
+				await option(page, bg).check();
+				await page.locator('.hero-map > .hero-south [data-keys]').evaluate((keys: HTMLElement) => {
+					keys.append(...Array.from({ length: 5 }, () => Object.assign(document.createElement('kbd'), { textContent: 'w' })));
+					keys.dataset.on = 'true';
+				});
+				const label = page.locator('.sky-label[data-label="4"]');
+				await expect(label).toHaveCSS('opacity', '1');
+
+				const boxes = await page.evaluate(() => {
+					const box = (selector: string) =>
+						[...document.querySelectorAll(selector)].map((element) => {
+							const { left, right, top, bottom } = element.getBoundingClientRect();
+							return { left, right, top, bottom };
+						});
+					return {
+						map: box('.hero-map')[0],
+						label: box('.sky-label[data-label="4"]')[0],
+						others: box('.hero-map > .hero-south [data-keys] kbd, .hero-map > .hero-scale'),
+					};
+				});
+				expect(boxes.others).toHaveLength(6);
+				expect(boxes.label.left).toBeGreaterThanOrEqual(boxes.map.left);
+				expect(boxes.label.right).toBeLessThanOrEqual(boxes.map.right);
+				for (const other of boxes.others) {
+					const apart =
+						boxes.label.right <= other.left ||
+						other.right <= boxes.label.left ||
+						boxes.label.bottom <= other.top ||
+						other.bottom <= boxes.label.top;
+					expect(apart, JSON.stringify({ label: boxes.label, other })).toBe(true);
+				}
+			});
+		}
+	});
+}
+
 test.describe('the Terminateur, without JavaScript', () => {
 	test.use({ javaScriptEnabled: false });
 

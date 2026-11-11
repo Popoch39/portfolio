@@ -468,12 +468,39 @@ const jsonLd = JSON.stringify({
 			--meridian-share: var(--meridian-share-narrow);
 			--inset: 14px;
 			--map-rows: minmax(auto, 44fr) minmax(auto, 56fr);
-			min-height: 440px;
+			/* Both rows at their smallest, measured on the build: 459px. */
+			min-height: 462px;
 		}
 
 		/* A narrow map has no room for the twilights' names: the hatching says it alone. */
 		.sky-label:not([data-label='4']) {
 			display: none;
+		}
+	}
+
+	/*
+	 * A phone: the lede's keys stand where the night's label would hang, above the scale bar's row
+	 * (`HeroSheet.astro`). The label takes that row's free corner, the map's bottom left, whatever
+	 * the line's shift, and shows once full night has reached it.
+	 */
+	@media (max-width: 600px) {
+		/*
+		 * The rows need more on a phone, where the keys stand a row higher: up to 489px on the narrowest,
+		 * the lede on three lines, then 448px at 364px of window and 0.27px more per pixel, as the name grows.
+		 */
+		.hero-map {
+			min-height: max(494px, 27vw + 352px);
+		}
+
+		.sky-label[data-label='4'] {
+			bottom: 14px;
+			translate: calc(var(--line) * -100cqw + var(--inset)) 0;
+			opacity: clamp(0, (0.04 - var(--edge)) * 100, 1);
+		}
+
+		:global(:root[data-sky-half='morning']) .sky-label[data-label='4'] {
+			translate: calc(var(--line) * -100cqw + var(--inset)) 0;
+			opacity: clamp(0, (var(--edge) - 0.3) * 100, 1);
 		}
 	}
 

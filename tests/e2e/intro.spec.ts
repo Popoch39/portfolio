@@ -417,6 +417,9 @@ test.describe('Intro, motion allowed, on a phone only', () => {
 	for (const [orientation, viewport] of [
 		['upright', PHONE],
 		['on its side', PHONE_LANDSCAPE],
+		// The narrowest phone: the phase and the gore no longer fit on one row. At 360px, they just do.
+		['upright, 320px wide', { width: 320, height: 568 }],
+		['upright, 360px wide', { width: 360, height: 640 }],
 	] as const) {
 		test(`held ${orientation}, the HUD fits in the window without its lines running into each other`, async ({
 			page,

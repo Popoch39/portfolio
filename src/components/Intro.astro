@@ -270,4 +270,11 @@ import { coordinates } from '../hero/map';
 			bottom: calc(24px + var(--edge-bottom));
 		}
 	}
+
+	/* The narrowest phones: the phase and the gore no longer fit on one row, the gore drops under it. */
+	@media (max-width: 359px) {
+		.hud-gore {
+			top: 32px;
+		}
+	}
 </style>

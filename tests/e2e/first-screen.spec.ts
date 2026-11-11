@@ -98,6 +98,33 @@ for (const viewport of [...SCREENS.filter(({ width }) => width <= 860), ...PHONE
 	});
 }
 
+// The map never follows its content (size containment): in a low window it stands at its floor, which
+// must hold both rows at their smallest. Every 20px of width, in a window too low for anything more.
+test.describe('the map in a low window', () => {
+	test.use({ viewport: { width: 320, height: 380 } });
+
+	test('holds its rows at every width: nothing of the lede, the actions or the keys’ room is clipped', async ({
+		page,
+	}) => {
+		await page.goto('/');
+		await page.evaluate(() => document.fonts.ready);
+
+		const clipped: Record<number, number> = {};
+		for (let width = 320; width <= 1440; width += 20) {
+			await page.setViewportSize({ width, height: 380 });
+			const overflow = await page.evaluate(() => {
+				const map = document.querySelector('.hero-map');
+				const south = map?.querySelector(':scope > .hero-south');
+				if (!map || !south) throw new Error('map missing');
+				// The map's bottom border is not part of its rows' room.
+				return south.getBoundingClientRect().bottom - (map.getBoundingClientRect().bottom - 1);
+			});
+			if (overflow > 0.5) clipped[width] = Math.round(overflow);
+		}
+		expect(clipped).toEqual({});
+	});
+});
+
 test('the Besançon marker is in the signal colour, still', async ({ page }) => {
 	await page.goto('/');
 

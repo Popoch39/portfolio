@@ -103,6 +103,19 @@ const { pause = false } = Astro.props;
 		min-width: 0;
 	}
 
+	/*
+	 * The left side takes what the right one leaves, on one row: a segment that does not fit whole wraps
+	 * onto a second row, clipped away. The file name goes first, then the branch; the queries below keep
+	 * the right side short enough for the mode and the Pause to stay at every width.
+	 */
+	.side:first-child {
+		flex: 1 1 0;
+		flex-wrap: wrap;
+		align-content: flex-start;
+		height: var(--statusline-row);
+		overflow: hidden;
+	}
+
 	.side:last-child {
 		flex-shrink: 0;
 	}
@@ -133,9 +146,13 @@ const { pause = false } = Astro.props;
 	}
 
 	.file {
-		overflow: hidden;
 		white-space: nowrap;
-		text-overflow: ellipsis;
+	}
+
+	/* The mark keeps its room while hidden: the name would otherwise leave the row at each INSERT. */
+	.file [hidden] {
+		display: inline;
+		visibility: hidden;
 	}
 
 	.encoding {
@@ -172,8 +189,14 @@ const { pause = false } = Astro.props;
 		display: none;
 	}
 
-	@media (max-width: 860px) {
-		.encoding,
+	/* The right side gives way step by step, measured on the build: the left one keeps 164px, the mode and the Pause. */
+	@media (max-width: 1180px) {
+		.encoding {
+			display: none;
+		}
+	}
+
+	@media (max-width: 1040px) {
 		.sun-word {
 			display: none;
 		}
@@ -185,6 +208,16 @@ const { pause = false } = Astro.props;
 		.sun,
 		.segment {
 			display: none;
+		}
+	}
+
+	/*
+	 * The narrowest phones: the segments tighten rather than lose one more. Down to 298px of row in all:
+	 * a 320px desktop window gives its scrollbar some 15px of it.
+	 */
+	@media (max-width: 380px) {
+		.side > * {
+			padding: 0 6px;
 		}
 	}
 </style>

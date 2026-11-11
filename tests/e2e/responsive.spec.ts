@@ -66,6 +66,24 @@ for (const width of WIDTHS) {
 	});
 }
 
+// The header's one-row layout starts at 861px, where its last column is at its narrowest.
+for (const width of [861, 880, 920, 1024]) {
+	test.describe(`navigation in a ${width} px wide window`, () => {
+		test.use({ viewport: { width, height: 800 } });
+
+		test('the section links stay on one row', async ({ page }) => {
+			await page.goto('/');
+			await page.evaluate(() => document.fonts.ready);
+
+			const tops = await page
+				.getByRole('navigation', { name: 'Sections' })
+				.getByRole('link')
+				.evaluateAll((links) => links.map((link) => Math.round(link.getBoundingClientRect().top)));
+			expect(new Set(tops).size).toBe(1);
+		});
+	});
+}
+
 test.describe('navigation on a phone', () => {
 	test.use({ viewport: { width: 375, height: 700 } });
 

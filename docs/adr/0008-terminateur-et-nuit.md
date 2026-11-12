@@ -32,3 +32,7 @@ La charte reste « Encre seule » (ADR 0006) : la nuit est la même encre retour
 - **Animer le `clip-path`** du polygone d'une heure à l'autre : repeint à chaque image.
 - **Une animation CSS de 24 h** pour faire avancer la ligne : le compositeur travaillerait en continu, page au repos comprise.
 - **La copie de nuit clonée en JS** : flash de jour avant le script, et la copie à resynchroniser.
+
+## Mise à jour (2026-11-12)
+
+`:set bg=` est retiré de la statusline : le Nuancier (ADR 0009) choisit le papier, avec un quatrième, le Cyanotype, et une révélation en cercle à la place du fondu.

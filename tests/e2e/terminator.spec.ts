@@ -1,16 +1,16 @@
 import { test as direct } from '@playwright/test';
 import { expect, test, type Page } from './fixtures';
+import { paper as option, pickPaper } from './nuancier-helpers';
 
 /**
  * The Terminateur: the night falls on the hero along the line where the sun sets at Besançon, and the
- * whole site follows the sun. `:set bg=` in the statusline forces the day or the night at any hour.
+ * whole site follows the sun. The Nuancier forces the day or the night at any hour.
  * On 9 November 2026 the sun rises at about 07:30 and sets at about 17:10, Paris time.
  */
 
 const at = (time: string) => new Date(`2026-11-09T${time}:00+01:00`);
 
 const root = (page: Page) => page.locator('html');
-const option = (page: Page, name: 'auto' | 'light' | 'dark') => page.getByRole('radio', { name: new RegExp(`^${name}`) });
 const night = (page: Page) => page.locator('.sky-night');
 
 async function visitAt(page: Page, time: string) {
@@ -68,33 +68,35 @@ test.describe('the Terminateur', () => {
 		await expect(page.locator('.sky')).toHaveAttribute('inert', '');
 	});
 
-	test('`:set bg=dark` brings the night at noon, `light` the day at night, `auto` the sun back', async ({ page }) => {
+	test('the night’s paper brings the night at noon, the day’s the day at night, `auto` the sun back', async ({
+		page,
+	}) => {
 		await visitAt(page, '12:00');
 		await expect(option(page, 'auto')).toBeChecked();
 
-		await option(page, 'dark').check();
+		await pickPaper(page, 'dark');
 		await expect(root(page)).toHaveAttribute('data-theme', 'dark');
 		await expect(root(page)).toHaveAttribute('data-sky', 'night');
 
 		await page.clock.setFixedTime(at('23:00'));
-		await option(page, 'light').check();
+		await pickPaper(page, 'light');
 		await expect(root(page)).toHaveAttribute('data-theme', 'light');
 		await expect(root(page)).toHaveAttribute('data-sky', 'day');
 
-		await option(page, 'auto').check();
+		await pickPaper(page, 'auto');
 		await expect(root(page)).toHaveAttribute('data-theme', 'dark');
 		await expect(root(page)).toHaveAttribute('data-sky', 'night');
 	});
 
 	test('the choice is remembered from one visit to the next, from the first paint', async ({ page }) => {
 		await visitAt(page, '12:00');
-		await option(page, 'dark').check();
+		await pickPaper(page, 'dark');
 
 		await page.goto('/');
 		await expect(option(page, 'dark')).toBeChecked();
 		await expect(root(page)).toHaveAttribute('data-theme', 'dark');
 
-		await option(page, 'auto').check();
+		await pickPaper(page, 'auto');
 		await page.goto('/');
 		await expect(option(page, 'auto')).toBeChecked();
 		await expect(root(page)).toHaveAttribute('data-theme', 'light');
@@ -113,7 +115,7 @@ test.describe('the Terminateur', () => {
 
 	test('the night slides in on a transform alone, and the copy stays put under it', async ({ page }) => {
 		await visitAt(page, '12:00');
-		await option(page, 'dark').check();
+		await pickPaper(page, 'dark');
 
 		const transitioned = await page.locator('.sky, .sky-sheet').evaluateAll((elements) =>
 			elements.map((element) => getComputedStyle(element).transitionProperty),
@@ -166,8 +168,8 @@ test.describe('the Terminateur', () => {
 		expect(await centreInMap()).toBeCloseTo(0.5, 1);
 
 		await page.clock.setFixedTime(at('12:00'));
-		await option(page, 'dark').check();
-		await expect.poll(() => label.evaluate((el) => getComputedStyle(el, '::before').content)).toBe('"nuit · :set bg=dark"');
+		await pickPaper(page, 'dark');
+		await expect.poll(() => label.evaluate((el) => getComputedStyle(el, '::before').content)).toBe('"nuit · papier EN-02"');
 		await expect(label).toHaveCSS('opacity', '1');
 		await expect.poll(centreInMap).toBeCloseTo(0.5, 1);
 	});
@@ -184,7 +186,7 @@ test.describe('the Terminateur', () => {
 		});
 		await visitAt(page, '12:00');
 
-		await option(page, 'dark').check();
+		await pickPaper(page, 'dark');
 
 		await expect(root(page)).toHaveAttribute('data-theme', 'dark');
 		expect(errors).toEqual([]);
@@ -205,7 +207,7 @@ test.describe('the Terminateur, motion reduced', () => {
 	test('switches at once, without sliding', async ({ page }) => {
 		await visitAt(page, '12:00');
 
-		await option(page, 'dark').check();
+		await pickPaper(page, 'dark');
 
 		await expect(root(page)).toHaveAttribute('data-theme', 'dark');
 		await expect(page.locator('.sky')).toHaveCSS('transition-duration', '0s');
@@ -220,11 +222,11 @@ for (const width of [320, 375, 430, 600]) {
 
 		for (const [name, time, bg] of [
 			['in full night', '23:00', 'auto'],
-			['under `:set bg=dark`', '12:00', 'dark'],
+			['on the night’s paper', '12:00', 'dark'],
 		] as const) {
 			test(`${name}, the night’s label stands clear of the lede’s keys and of the scale bar`, async ({ page }) => {
 				await visitAt(page, time);
-				await option(page, bg).check();
+				await pickPaper(page, bg);
 				await page.locator('.hero-map > .hero-south [data-keys]').evaluate((keys: HTMLElement) => {
 					keys.append(...Array.from({ length: 5 }, () => Object.assign(document.createElement('kbd'), { textContent: 'w' })));
 					keys.dataset.on = 'true';

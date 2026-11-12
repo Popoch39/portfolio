@@ -1,0 +1,576 @@
+---
+/**
+ * The Nuancier (03 · Nuancier, ADR 0009): a printer's swatch book riveted in the bottom corner of the
+ * window, one strip per paper, each printed in its own paper so the fan reads the same on every theme.
+ * The strips are native radios (`name="bg"`): the arrows move from one paper to the next, and the group
+ * is named. Hidden without the script that paints the sky; shown, checked on the remembered choice and
+ * with that strip at the front, by the inline script right after it, before the first paint.
+ *
+ * On a phone the fan rests half open, every spine showing; under a mouse it rests nearly shut and opens
+ * on hover. The keyboard opens it too. The choreography of a pick is `src/sky/nuancier.ts`.
+ */
+import { skyModes, type SkyMode } from '../sky/sky';
+import { inlineScriptHash } from './inline-script';
+
+const strips: Record<SkyMode, { code: string; name: string; hint: string; sub: string }> = {
+	light: { code: 'EN-01', name: 'Jour', hint: 'toujours le jour', sub: '#efeee9' },
+	dark: { code: 'EN-02', name: 'Nuit', hint: 'toujours la nuit', sub: '#141412' },
+	cyan: { code: 'EN-03', name: 'Cyanotype', hint: 'tirage bleu', sub: '#12305a' },
+	auto: { code: 'EN-04', name: 'Auto', hint: 'suit le soleil à Besançon', sub: '' },
+};
+
+// The chosen strip goes to the front, the others keep the fan's order behind it.
+const show = `(() => {
+	const fan = document.querySelector('[data-nuancier]');
+	const bg = document.documentElement.dataset.bg;
+	const inputs = [...fan.querySelectorAll('input')];
+	const chosen = inputs.find((input) => input.value === bg) || inputs.find((input) => input.value === 'auto');
+	chosen.checked = true;
+	[...inputs.filter((input) => input !== chosen), chosen].forEach((input, slot) => {
+		input.closest('[data-slot]').dataset.slot = slot;
+	});
+	fan.hidden = false;
+})();`;
+Astro.csp?.insertScriptHash(inlineScriptHash(show));
+---
+
+{/* The accent ring that rides the edge of the new paper as it spreads; drawn with the page, under the reveal. */}
+<span class="ring" aria-hidden="true" data-nuancier-ring></span>
+<fieldset class="fan" data-nuancier hidden>
+	<legend class="visually-hidden">Papier du site</legend>
+	{
+		skyModes.map((value, index) => {
+			const { code, name, hint, sub } = strips[value];
+			return (
+				<div class="slot" data-slot={index}>
+					<label class="lam" data-paper={value}>
+						<input type="radio" name="bg" value={value} autocomplete="off" />
+						<span class="visually-hidden">
+							{name}, {hint}
+						</span>
+						<span class="head" aria-hidden="true">
+							<span class="chip" />
+							<span class="chip" />
+							<span class="chip" />
+						</span>
+						<span class="code" aria-hidden="true">
+							{code}
+						</span>
+						<span class="name" aria-hidden="true">
+							{name}
+						</span>
+						<span class="sub" aria-hidden="true">
+							{sub}
+						</span>
+						{value === 'auto' && <span class="sun" aria-hidden="true" />}
+						<span class="hole" aria-hidden="true" />
+						<span class="notch" aria-hidden="true" />
+					</label>
+				</div>
+			);
+		})
+	}
+	<span class="rivet" aria-hidden="true"></span>
+</fieldset>
+<script is:inline set:html={show} />
+
+<script>
+	import '../sky/nuancier';
+</script>
+
+<style>
+	/*
+	 * Sizes of the phone's board; a wider window takes the desktop's (below). The angles are the slots'
+	 * rest and open fans, back to front. Longer strips and a wider fan than the board's: each strip's box
+	 * reaches at least 24px past the next one's, a finger's target (WCAG 2.5.8), which a single rivet
+	 * cannot give four strips of the board's 100px.
+	 */
+	.fan {
+		--width: 150px;
+		--height: 160px;
+		--strip-w: 40px;
+		--strip-h: 124px;
+		--pivot-y: 115px;
+		--slot-left: 55px;
+		--slot-bottom: 14px;
+		--lift: -12px;
+		--hover-lift: -10px;
+		--launch: -56px;
+		--a0: -47deg;
+		--a1: -28deg;
+		--a2: -13deg;
+		--a3: 0deg;
+		--open0: -47deg;
+		--open1: -28deg;
+		--open2: -13deg;
+		--open3: 0deg;
+
+		position: fixed;
+		right: calc(16px + env(safe-area-inset-right, 0px));
+		bottom: calc(var(--statusline-height) + 16px);
+		/* Above the page and the statusline, under the Intro's veil and the grain. */
+		z-index: 1;
+		width: var(--width);
+		height: var(--height);
+		min-inline-size: 0;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		/* Only the strips take the pointer: the corner of the page around them stays clickable. */
+		pointer-events: none;
+	}
+
+	.fan[hidden] {
+		display: none;
+	}
+
+	@media (min-width: 861px) {
+		.fan {
+			--width: 220px;
+			--height: 220px;
+			--strip-w: 44px;
+			--strip-h: 120px;
+			--pivot-y: 108px;
+			--slot-left: 88px;
+			--slot-bottom: 20px;
+			--lift: -16px;
+			--hover-lift: -12px;
+			--launch: -64px;
+			--a0: -45deg;
+			--a1: -25deg;
+			--a2: -10deg;
+			--a3: 4deg;
+			--open0: -45deg;
+			--open1: -25deg;
+			--open2: -10deg;
+			--open3: 4deg;
+
+			right: calc(48px + env(safe-area-inset-right, 0px));
+			bottom: calc(var(--statusline-height) + 24px);
+		}
+	}
+
+	/*
+	 * Under a mouse the fan opens as the pointer comes over it; on the desktop's board it rests nearly shut.
+	 * Once a strip has the pointer, the whole book holds it: opening moves the strips from under the
+	 * pointer, which would otherwise shut the book again, and open it, and so on.
+	 */
+	@media (hover: hover) and (pointer: fine) {
+		@media (min-width: 861px) {
+			.fan {
+				--a0: -14deg;
+				--a1: -9deg;
+				--a2: -4deg;
+				--a3: 2deg;
+			}
+		}
+
+		.fan:hover {
+			--a0: var(--open0);
+			--a1: var(--open1);
+			--a2: var(--open2);
+			--a3: var(--open3);
+			pointer-events: auto;
+		}
+	}
+
+	/* The keyboard opens it too; a tap or a click, which focus without showing it, leave it as it rests. */
+	.fan:has(input:focus-visible) {
+		--a0: var(--open0);
+		--a1: var(--open1);
+		--a2: var(--open2);
+		--a3: var(--open3);
+	}
+
+	.slot {
+		position: absolute;
+		left: var(--slot-left);
+		bottom: var(--slot-bottom);
+		width: var(--strip-w);
+		height: var(--strip-h);
+		transform-origin: calc(var(--strip-w) / 2) var(--pivot-y);
+		rotate: var(--angle);
+	}
+
+	.slot[data-slot='0'] {
+		--angle: var(--a0);
+		--delay: 90ms;
+		z-index: 1;
+	}
+
+	.slot[data-slot='1'] {
+		--angle: var(--a1);
+		--delay: 60ms;
+		z-index: 2;
+	}
+
+	.slot[data-slot='2'] {
+		--angle: var(--a2);
+		--delay: 30ms;
+		z-index: 3;
+	}
+
+	.slot[data-slot='3'] {
+		--angle: var(--a3);
+		--delay: 0ms;
+		z-index: 4;
+	}
+
+	/* The strip just picked rises over the others while it is shown off. */
+	.slot[data-launch] {
+		z-index: 6;
+	}
+
+	/* The book shuts on its rivet to take the picked strip to the front, then fans out again. */
+	.fan[data-phase='closed'] .slot {
+		--angle: -3deg;
+		--delay: 0ms;
+	}
+
+	.rivet {
+		position: absolute;
+		left: calc(var(--slot-left) + var(--strip-w) / 2 - var(--rivet) / 2);
+		bottom: calc(var(--slot-bottom) + var(--strip-h) - var(--pivot-y) - var(--rivet) / 2);
+		z-index: 10;
+		--rivet: 10px;
+		width: var(--rivet);
+		height: var(--rivet);
+		box-sizing: border-box;
+		border: 1px solid #141412;
+		border-radius: 50%;
+		background: #d5d4cd;
+	}
+
+	.rivet::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		margin: auto;
+		width: 4px;
+		height: 4px;
+		border-radius: 50%;
+		background: #141412;
+	}
+
+	@media (min-width: 861px) {
+		.rivet {
+			--rivet: 12px;
+		}
+	}
+
+	/* Each strip in its own paper: the papers' exact colours, whatever the page's theme (`global.css`). */
+	.lam[data-paper='light'] {
+		--head: #efeee9;
+		--body: #efeee9;
+		--border: #a3a29b;
+		--sep: #d5d4cd;
+		--code: #5e5d58;
+		--name: #141412;
+		--hole: #5e5d58;
+		--c1: #141412;
+		--c2: #5e5d58;
+	}
+
+	.lam[data-paper='dark'] {
+		--head: #141412;
+		--body: #141412;
+		--border: #5e5d58;
+		--sep: #2c2b28;
+		--code: #b3b1a9;
+		--name: #efeee9;
+		--hole: #b3b1a9;
+		--c1: #efeee9;
+		--c2: #b3b1a9;
+	}
+
+	.lam[data-paper='cyan'] {
+		--head: #12305a;
+		--body: #12305a;
+		--border: #5f7699;
+		--sep: #24477a;
+		--code: #a8b9d3;
+		--name: #eef2f8;
+		--hole: #a8b9d3;
+		--c1: #eef2f8;
+		--c2: #a8b9d3;
+	}
+
+	/* Auto: a day's head over a night's body, the sun on the horizon between them. */
+	.lam[data-paper='auto'] {
+		--head: #efeee9;
+		--body: #141412;
+		--border: #5e5d58;
+		--sep: transparent;
+		--code: #5e5d58;
+		--name: #efeee9;
+		--hole: #b3b1a9;
+		--c1: #141412;
+		--c2: #5e5d58;
+	}
+
+	.lam {
+		position: relative;
+		display: block;
+		width: var(--strip-w);
+		height: var(--strip-h);
+		box-sizing: border-box;
+		border: 1px solid var(--border);
+		background: var(--body);
+		font-family: var(--font-mono);
+		cursor: pointer;
+		pointer-events: auto;
+		transform-origin: calc(var(--strip-w) / 2) var(--pivot-y);
+		outline: 2px solid transparent;
+		outline-offset: 3px;
+		/* A control: no double-tap zoom to wait for, no selection on a long press. */
+		touch-action: manipulation;
+		-webkit-user-select: none;
+		user-select: none;
+	}
+
+	/* The native radio spans the whole strip, invisible: it keeps the keyboard, the tap and the state. */
+	input {
+		position: absolute;
+		inset: 0;
+		margin: 0;
+		appearance: none;
+		cursor: inherit;
+	}
+
+	.lam:has(input:checked) {
+		transform: translateY(var(--lift));
+	}
+
+	.lam:has(input:focus-visible) {
+		outline-color: var(--color-ink);
+		transform: translateY(var(--hover-lift)) rotate(-1.5deg);
+	}
+
+	.lam:has(input:checked:focus-visible) {
+		transform: translateY(calc(var(--lift) + var(--hover-lift) / 2)) rotate(-1.5deg);
+	}
+
+	@media (hover: hover) and (pointer: fine) {
+		.lam:hover {
+			transform: translateY(var(--hover-lift)) rotate(-1.5deg);
+		}
+
+		.lam:has(input:checked):hover {
+			transform: translateY(calc(var(--lift) + var(--hover-lift) / 2)) rotate(-1.5deg);
+		}
+	}
+
+	.lam:active {
+		transform: translateY(-5px) scale(0.97);
+	}
+
+	.lam:has(input:checked):active {
+		transform: translateY(calc(var(--lift) * 0.75)) scale(0.97);
+	}
+
+	.slot[data-launch] .lam {
+		transform: translateY(var(--launch)) rotate(-4deg);
+	}
+
+	.head {
+		position: absolute;
+		inset: 0 0 auto;
+		height: 21px;
+		display: flex;
+		gap: 2px;
+		padding: 4px;
+		box-sizing: border-box;
+		border-bottom: 1px solid var(--sep);
+		background: var(--head);
+	}
+
+	.chip {
+		width: 5px;
+		height: 5px;
+		background: var(--c1);
+	}
+
+	.chip + .chip {
+		background: var(--c2);
+	}
+
+	.chip + .chip + .chip {
+		background: var(--color-accent);
+	}
+
+	.code {
+		position: absolute;
+		left: 4px;
+		top: 12px;
+		color: var(--code);
+		font-size: 8.5px;
+		line-height: 1;
+		white-space: nowrap;
+	}
+
+	/* Read bottom to top, along the spine. */
+	.name,
+	.sub {
+		position: absolute;
+		top: 26px;
+		height: 80px;
+		writing-mode: vertical-rl;
+		rotate: 180deg;
+		white-space: nowrap;
+	}
+
+	.name {
+		left: 9px;
+		color: var(--name);
+		font-size: 10px;
+		line-height: 13px;
+	}
+
+	/* The desktop's strips carry their paper's code too; the phone's are too narrow for it. */
+	.sub {
+		display: none;
+	}
+
+	.hole {
+		position: absolute;
+		left: calc(var(--strip-w) / 2 - 5px);
+		top: calc(var(--pivot-y) - 5px);
+		width: 8px;
+		height: 8px;
+		box-sizing: border-box;
+		border: 1px solid var(--hole);
+		border-radius: 50%;
+	}
+
+	.sun {
+		position: absolute;
+		right: 2px;
+		top: 17px;
+		width: 8px;
+		height: 4px;
+		border-radius: 4px 4px 0 0;
+		background: var(--color-accent);
+	}
+
+	/* The paper in force: its corner is cut in the accent. */
+	.notch {
+		position: absolute;
+		top: -1px;
+		right: -1px;
+		width: 10px;
+		height: 10px;
+		background: var(--color-accent);
+		clip-path: polygon(0 0, 100% 0, 100% 100%);
+		opacity: 0;
+		scale: 0.4;
+		transform-origin: 100% 0;
+	}
+
+	.lam:has(input:checked) .notch {
+		opacity: 1;
+		scale: 1;
+	}
+
+	@media (min-width: 861px) {
+		.head {
+			height: 29px;
+			padding: 5px;
+		}
+
+		.chip {
+			width: 6px;
+			height: 6px;
+		}
+
+		.code {
+			left: 5px;
+			top: 15px;
+			font-size: 9.5px;
+		}
+
+		.name,
+		.sub {
+			top: 32px;
+			height: 66px;
+		}
+
+		.name {
+			left: 6px;
+			font-size: 12px;
+			line-height: 14px;
+		}
+
+		.sub {
+			display: block;
+			left: 23px;
+			color: var(--code);
+			font-size: 9.5px;
+			line-height: 12px;
+		}
+
+		.hole {
+			left: calc(var(--strip-w) / 2 - 6px);
+			top: calc(var(--pivot-y) - 6px);
+			width: 10px;
+			height: 10px;
+		}
+
+		.sun {
+			right: 6px;
+			top: 24px;
+			width: 10px;
+			height: 5px;
+			border-radius: 5px 5px 0 0;
+		}
+
+		.notch {
+			width: 13px;
+			height: 13px;
+		}
+	}
+
+	/* Auto's own line: the next turn of the sun at Besançon, written by the sky's script (`src/sky/sky.ts`). */
+	:global(:root[data-sun='up']) .lam[data-paper='auto'] .sub::before {
+		content: '→ ' var(--sky-set);
+	}
+
+	:global(:root[data-sun='down']) .lam[data-paper='auto'] .sub::before {
+		content: '→ ' var(--sky-rise);
+	}
+
+	/* A box as large as the reveal, scaled from nothing at its centre with it (`src/sky/nuancier.ts`). */
+	.ring {
+		position: fixed;
+		left: calc(var(--x, 0px) - var(--r, 0px));
+		top: calc(var(--y, 0px) - var(--r, 0px));
+		z-index: 1;
+		width: calc(2 * var(--r, 0px));
+		height: calc(2 * var(--r, 0px));
+		box-sizing: border-box;
+		border: 2px solid var(--color-accent);
+		border-radius: 50%;
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.slot {
+			transition: rotate 460ms cubic-bezier(0.7, 0, 0.2, 1) var(--delay);
+		}
+
+		.lam {
+			transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+		}
+
+		.slot[data-launch] .lam {
+			transition-duration: 440ms;
+			transition-timing-function: cubic-bezier(0.7, 0, 0.2, 1);
+		}
+
+		.notch {
+			transition:
+				opacity 200ms linear,
+				scale 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+		}
+	}
+</style>

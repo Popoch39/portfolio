@@ -1,10 +1,10 @@
 ---
 /**
  * Vim-like statusline, fixed to the bottom of the window. Decorative, hidden from assistive
- * technologies, but for the Pause, the day's sun and `:set bg=`. Outside the smoothed content,
- * otherwise its transform would carry it along. Always ink, day or night: it stays in daylight's theme.
+ * technologies, but for the Pause and the day's sun. Outside the smoothed content, otherwise its
+ * transform would carry it along. Always ink, day or night: it stays in daylight's theme, but for the
+ * Cyanotype's night blue.
  */
-import BgSwitch from './BgSwitch.astro';
 import Pause from './Pause.astro';
 
 interface Props {
@@ -70,7 +70,8 @@ const { pause = false } = Astro.props;
 			<span><span class="sun-word">coucher </span><span class="time" data-sun="set"></span></span>
 			<span class="visually-hidden"> à Besançon aujourd’hui</span>
 		</p>
-		<BgSwitch />
+		{/* The paper in force, picked in the Nuancier: read from the root, right from the first paint. */}
+		<span class="paper" aria-hidden="true"></span>
 		<span class="encoding" aria-hidden="true">utf-8 · markdown</span>
 		<span class="segment" aria-hidden="true">Bas</span>
 		<span class="mode" aria-hidden="true">:wq</span>
@@ -184,9 +185,54 @@ const { pause = false } = Astro.props;
 		content: var(--sky-set);
 	}
 
-	/* Without the sky's script, no times to give. */
-	:global(:root:not([data-sky])) .sun {
+	/* Without the sky's script, no times to give, and no paper but the day's. */
+	:global(:root:not([data-sky])) :is(.sun, .paper) {
 		display: none;
+	}
+
+	/* The Nuancier's codes and names (ADR 0009); `auto` says which of the day or the night it gives. */
+	:global(:root) {
+		--paper-code: 'EN-04';
+		--paper-name: 'auto · jour';
+	}
+
+	:global(:root[data-theme='dark']) {
+		--paper-name: 'auto · nuit';
+	}
+
+	:global(:root[data-bg='light']) {
+		--paper-code: 'EN-01';
+		--paper-name: 'jour';
+	}
+
+	:global(:root[data-bg='dark']) {
+		--paper-code: 'EN-02';
+		--paper-name: 'nuit';
+	}
+
+	:global(:root[data-bg='cyan']) {
+		--paper-code: 'EN-03';
+		--paper-name: 'cyanotype';
+	}
+
+	.paper {
+		white-space: nowrap;
+	}
+
+	.paper::before {
+		content: 'papier ' var(--paper-code) ' · ';
+		color: var(--color-on-ink-muted);
+	}
+
+	.paper::after {
+		content: var(--paper-name);
+	}
+
+	/* On the Cyanotype the row is printed in the blueprint's own night blue. */
+	:global(:root[data-theme='cyan']) .statusline {
+		--color-ink: #0b2140;
+		--color-bar: #24477a;
+		--color-on-ink-muted: #a8b9d3;
 	}
 
 	/* The right side gives way step by step, measured on the build: the left one keeps 164px, the mode and the Pause. */
@@ -199,6 +245,13 @@ const { pause = false } = Astro.props;
 	@media (max-width: 1040px) {
 		.sun-word {
 			display: none;
+		}
+	}
+
+	/* The paper's name alone, as the Nuancier's strips carry their codes. */
+	@media (max-width: 860px) {
+		.paper::before {
+			content: none;
 		}
 	}
 

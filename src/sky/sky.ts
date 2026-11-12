@@ -3,10 +3,12 @@
  *
  * `paintSky` is written into the `<head>` as an inline script (`SkyTrigger.astro`), so that the theme
  * and the night on the hero are right from the first paint; the bundled module calls it again as time
- * passes and as the visitor picks `:set bg=`. Hence one self-contained function: no import, nothing
- * from the module's scope, all it needs comes in as arguments. It writes on the root only:
+ * passes and as the visitor picks a paper in the Nuancier. Hence one self-contained function: no import,
+ * nothing from the module's scope, all it needs comes in as arguments. It writes on the root only:
  *
- * - `data-theme`: `dark` from sunset to sunrise in `auto`, or as `:set bg=` (`data-bg`) forces it;
+ * - `data-theme`: `dark` from sunset to sunrise in `auto`, or as the Nuancier (`data-bg`) forces it,
+ *   `cyan` included;
+ * - `data-sun`: `up` or `down` at Besançon, whatever the paper;
  * - `data-sky`: how much of the hero's map the night covers, `day`, `dusk` or `night`;
  * - custom properties for the hero's terminator: its shift, its curve, the twilights' hatching, the labels.
  *
@@ -25,8 +27,11 @@ export interface SkyPlace {
 	shares: readonly [wide: number, narrow: number];
 }
 
-/** `:set bg=`'s choices; `paintSky` reads them from `data-bg` on its own (it may name nothing outside itself). */
-export const skyModes = ['auto', 'light', 'dark'] as const;
+/**
+ * The Nuancier's papers, in the fan's order (ADR 0009); `paintSky` reads them from `data-bg` on its own
+ * (it may name nothing outside itself). Under the Cyanotype the hero keeps no night, as by day.
+ */
+export const skyModes = ['light', 'dark', 'cyan', 'auto'] as const;
 export type SkyMode = (typeof skyModes)[number];
 
 /** Where the choice is remembered; `auto` is the absence of one. */
@@ -88,10 +93,11 @@ export function paintSky(root: HTMLElement, now: Date, place: SkyPlace, line: HT
 
 	const hour = minutesOf(now);
 	const bg = root.dataset.bg;
-	const mode: SkyMode = bg === 'light' || bg === 'dark' ? bg : 'auto';
+	const mode: SkyMode = bg === 'light' || bg === 'dark' || bg === 'cyan' ? bg : 'auto';
 	const evening = hour >= noon;
 	const sunDown = hour < rise || hour >= set;
 	const dark = mode === 'dark' || (mode === 'auto' && sunDown);
+	const theme = mode === 'cyan' ? 'cyan' : dark ? 'dark' : 'light';
 	// Written only when they change: a custom property or an attribute on the root restyles the whole page.
 	const mark = (key: string, value: string) => {
 		if (root.dataset[key] !== value) root.dataset[key] = value;
@@ -99,9 +105,10 @@ export function paintSky(root: HTMLElement, now: Date, place: SkyPlace, line: HT
 	const put = (name: string, value: string, on = root) => {
 		if (on.style.getPropertyValue(name) !== value) on.style.setProperty(name, value);
 	};
-	mark('theme', dark ? 'dark' : 'light');
+	mark('theme', theme);
+	mark('sun', sunDown ? 'down' : 'up');
 	const themeColor = document.querySelector('meta[name="theme-color"]');
-	const surface = dark ? '#141412' : '#efeee9';
+	const surface = theme === 'cyan' ? '#12305a' : dark ? '#141412' : '#efeee9';
 	if (themeColor && themeColor.getAttribute('content') !== surface) themeColor.setAttribute('content', surface);
 
 	const hhmm = (minutes: number) => {
@@ -177,7 +184,7 @@ export function paintSky(root: HTMLElement, now: Date, place: SkyPlace, line: HT
 	}
 	// Full night begins past the last twilight: its label keeps to the middle of what the map shows of it.
 	put('--sky-night-edge', (deepest + bend(LABEL_Y)).toFixed(4));
-	put('--sky-label-4', mode === 'dark' ? '"nuit · :set bg=dark"' : '"nuit"');
+	put('--sky-label-4', mode === 'dark' ? '"nuit · papier EN-02"' : '"nuit"');
 	// The sun's own label rides the top of the line.
 	put('--sky-chip-at', bend(0.16).toFixed(4));
 	put('--sky-chip', `"0° · ${evening ? 'coucher' : 'lever'} ${hhmm(edge)}"`);

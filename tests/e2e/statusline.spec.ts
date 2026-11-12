@@ -17,9 +17,8 @@ function rowFaults(page: Page) {
 			const box = el.getBoundingClientRect();
 			return box.width > 0 && !!row && box.top < row.bottom - 1;
 		};
-		// The switch is one segment of the row, but its choices are what must not be covered.
-		const segments = [...document.querySelectorAll<HTMLElement>('#statusline .side > *, #statusline .bg > *')]
-			.filter((el) => !el.matches('script, fieldset, .visually-hidden') && onRow(el))
+		const segments = [...document.querySelectorAll<HTMLElement>('#statusline .side > *')]
+			.filter((el) => !el.matches('script, .visually-hidden') && onRow(el))
 			.map((el) => ({
 				name: `${el.classList[0]} "${(el.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 12)}"`,
 				box: el.getBoundingClientRect(),
@@ -34,7 +33,7 @@ function rowFaults(page: Page) {
 			}
 		}
 		// What the visitor acts on or reads the state from never gives way.
-		for (const kept of document.querySelectorAll('#statusline :is([data-vim-mode], .pause, .choice)')) {
+		for (const kept of document.querySelectorAll('#statusline :is([data-vim-mode], .pause, .paper)')) {
 			if (!onRow(kept)) faults.push(`${kept.classList[0]} has left the row`);
 		}
 		return faults;
@@ -99,12 +98,10 @@ for (const [name, path] of [
 test.describe('the statusline on a phone', () => {
 	test.use({ viewport: { width: 320, height: 568 }, reducedMotion: 'reduce' });
 
-	test('keeps the Pause and every `:set bg=` choice wide enough for a finger', async ({ page }) => {
+	test('keeps the Pause wide enough for a finger', async ({ page }) => {
 		await page.goto('/');
 
-		for (const control of await page.locator('#statusline :is(.pause, .choice)').all()) {
-			const box = await control.boundingBox();
-			expect(box?.width).toBeGreaterThanOrEqual(44);
-		}
+		const box = await page.locator('#statusline .pause').boundingBox();
+		expect(box?.width).toBeGreaterThanOrEqual(44);
 	});
 });

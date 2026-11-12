@@ -32,7 +32,7 @@
 
 /*
  * The night (ADR 0008): the same ink, turned over. Set on the root while the sun is down at
- * Besançon or under `:set bg=dark`; `.theme-dark` holds it on the hero's night copy. What was ink
+ * Besançon or on the Nuancier's night paper; `.theme-dark` holds it on the hero's night copy. What was ink
  * on paper turns paper on ink (the marquee, the button); the Frise's band and the accent keep theirs.
  */
 :root[data-theme='dark'],
@@ -49,6 +49,30 @@
 	--color-accent-display: #ff5b14;
 	/* Volumes are lit a shade above the night they stand on. */
 	--color-light: #2c2b28;
+	color-scheme: dark;
+}
+
+/*
+ * The Cyanotype (03 · Nuancier, ADR 0009): a blueprint's paper, the same ink in its own blues, the
+ * accent kept. Forced only, never by the sun. The hero's map turns blue with the page: no night falls on it.
+ */
+:root[data-theme='cyan'],
+:root[data-theme='cyan'] .hero-map {
+	--color-paper: #12305a;
+	--color-ink: #eef2f8;
+	--color-ink-muted: #a8b9d3;
+	--color-ink-faint: #5f7699;
+	--color-rule: #24477a;
+	--color-bar: #c9d5e6;
+	--color-on-ink-muted: #3f5679;
+	--color-on-ink-faint: #8a9dbb;
+	/* 4.2:1 on the blue: past the floor for large text. */
+	--color-accent-display: #ff5b14;
+	--color-dark: #0b2140;
+	--color-on-dark: #eef2f8;
+	--color-on-dark-muted: #a8b9d3;
+	--color-accent-deep: color-mix(in srgb, #ff5b14 57%, #0b2140);
+	--color-light: #24477a;
 	color-scheme: dark;
 }
 
@@ -223,4 +247,29 @@ a:focus-visible {
 	@view-transition {
 		navigation: auto;
 	}
+}
+
+/*
+ * A paper picked in the Nuancier (ADR 0009, `src/sky/nuancier.ts`): no cross-fade, the new page is
+ * uncovered by its own clip, set by script. The fan has its own group, live and still, above the reveal;
+ * taps go through to the page during the reveal, so that the next pick need not wait for its end.
+ */
+:root.paper-turning [data-nuancier] {
+	view-transition-name: nuancier;
+}
+
+:root.paper-turning::view-transition {
+	pointer-events: none;
+}
+
+:root.paper-turning::view-transition-old(root),
+:root.paper-turning::view-transition-new(root),
+:root.paper-turning::view-transition-group(nuancier),
+:root.paper-turning::view-transition-new(nuancier) {
+	animation: none;
+	mix-blend-mode: normal;
+}
+
+:root.paper-turning::view-transition-old(nuancier) {
+	display: none;
 }

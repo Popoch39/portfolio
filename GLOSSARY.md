@@ -35,9 +35,13 @@ _À éviter_ : overlay, masque.
 La ligne qui sépare le jour de la nuit sur la carte du hero, là où le soleil se couche (ou se lève) à Besançon à l'heure de la visite, bordée de son liseré signal et des crépuscules hachurés. L'heure ne fait que la glisser ; elle tombe à la fin de l'Intro (ADR 0008).
 _À éviter_ : dark mode, thème sombre (pour la ligne elle-même).
 
-**Fond**
-Le choix `:set bg=` de la statusline : `auto` suit le soleil à Besançon (le site est sombre du coucher au lever), `light` garde le jour, `dark` la nuit, sur tout le site. Retenu par visiteur.
-_À éviter_ : thème, mode sombre.
+**Nuancier**
+L'éventail de bandes riveté en bas à droite de la fenêtre, une bande par papier, qui choisit le Papier du site (ADR 0009). Le papier choisi gagne la page en cercle depuis sa bande.
+_À éviter_ : theme switcher, sélecteur de thème.
+
+**Papier**
+Le fond choisi dans le Nuancier, sur tout le site : Jour (`light`), Nuit (`dark`), Cyanotype (`cyan`, tirage bleu) ou Auto (`auto`, qui suit le soleil à Besançon : sombre du coucher au lever). Retenu par visiteur.
+_À éviter_ : thème, mode sombre, `:set bg=` (retiré).
 
 **Défilement lissé**
 Défilement à la molette et au trackpad interpolé par ScrollSmoother (environ 1 s d'inertie). Jamais au doigt, jamais sous `prefers-reduced-motion: reduce`, jamais sans JS : le défilement reste alors natif. Sur un téléphone ou une tablette, il n'existe pas du tout, et les scènes épinglées défilent comme une page native.

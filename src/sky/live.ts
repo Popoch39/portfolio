@@ -1,12 +1,12 @@
 /**
- * The sky as time passes and as the visitor picks `:set bg=` (ADR 0008). The inline script in the
- * `<head>` has painted it once (`SkyTrigger.astro`); this module keeps it true.
+ * The sky as time passes and as the visitor picks a paper (ADR 0008, ADR 0009). The inline script in
+ * the `<head>` has painted it once (`SkyTrigger.astro`); this module keeps it true.
  *
  * - The page's theme turns at sunrise and sunset: one timer to the next of them, set again on every paint,
  *   and a paint whenever the tab comes back (a hidden tab's timers run late).
  * - The hero's line creeps west a few pixels a minute: a registered scene, ticking only while the map
  *   is on screen and once the Intro has ended, so that nothing runs that nobody sees.
- * - A new `:set bg=` turns the page over in a view transition, while the hero's night slides.
+ * - A paper picked in the Nuancier is applied here (`applyBg`); its reveal is `nuancier.ts`'s.
  */
 import { openingEnded, registerScene } from '../animation/base';
 import { watchOffScreen } from '../animation/offscreen';
@@ -42,18 +42,14 @@ addEventListener('pageshow', (event) => {
 	if (event.persisted) paint();
 });
 
-const choices = document.querySelector<HTMLElement>('[data-bg-switch]');
-choices?.addEventListener('change', (event) => {
-	const choice = event.target;
-	if (!(choice instanceof HTMLInputElement)) return;
-	const auto = choice.value === 'auto';
-	remember(auto ? null : choice.value);
-	turnOver(() => {
-		if (auto) delete root.dataset.bg;
-		else root.dataset.bg = choice.value;
-		paint();
-	});
-});
+/** Puts the page on the paper the visitor picked in the Nuancier, and keeps it for the next visits. */
+export function applyBg(bg: string) {
+	const auto = bg === 'auto';
+	remember(auto ? null : bg);
+	if (auto) delete root.dataset.bg;
+	else root.dataset.bg = bg;
+	paint();
+}
 
 /**
  * Keeps the choice for the next visits; tells whether it could. Storage throws when the browser
@@ -67,20 +63,6 @@ function remember(bg: string | null) {
 	} catch {
 		return false;
 	}
-}
-
-/**
- * The whole page restyled at once would be a cut: a view transition fades the old page into the new one,
- * a snapshot over a live page, on the GPU. Its own duration rides on a class (`global.css`).
- */
-function turnOver(update: () => void) {
-	const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-	if (still || !document.startViewTransition) {
-		update();
-		return;
-	}
-	root.classList.add('sky-turning');
-	document.startViewTransition(update).finished.finally(() => root.classList.remove('sky-turning'));
 }
 
 registerScene(() => {

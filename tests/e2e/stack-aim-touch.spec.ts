@@ -8,6 +8,7 @@ import {
 	expectAimed,
 	expectAtRest,
 	message,
+	pastillePoint,
 	shownLabels,
 	tool,
 	towerLook,
@@ -20,6 +21,8 @@ const { viewport, userAgent, deviceScaleFactor } = devices['Pixel 7'];
 
 /** How far from the middle of a band the finger lands: a band is too thin on a phone to be hit dead on. */
 const OFF_THE_BAND = 5;
+/** How far from the middle of a pastille the finger lands: beside the logo, a few pixels wide on a phone. */
+const OFF_THE_PASTILLE = 7;
 
 test.describe('the tower under a finger', () => {
 	test.use({ viewport, userAgent, deviceScaleFactor, hasTouch: true, isMobile: true, reducedMotion: 'no-preference' });
@@ -70,6 +73,17 @@ test.describe('the tower under a finger', () => {
 
 		await expectAimed(page, OUTILS, atRest);
 		await expect(message(page)).toHaveText('stack=Git · Outils');
+	});
+
+	test('a tap near a pastille names its tool: a logo is too small for a finger to hit dead on', async ({ page }) => {
+		await visitTower(page);
+		const atRest = await towerLook(page);
+		const { x, y } = await pastillePoint(page, OUTILS);
+
+		await page.touchscreen.tap(x + OFF_THE_PASTILLE, y);
+
+		await expectAimed(page, OUTILS, atRest);
+		await expect(message(page)).toHaveText(/^stack=(Bun|Git|Neovim|tmux) · Outils$/);
 	});
 
 	test('a swipe over the tower scrolls the page and aims at nothing', async ({ page }) => {

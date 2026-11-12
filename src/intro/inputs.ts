@@ -6,7 +6,7 @@ import type { Surface } from './canvas';
 import type { Palette, Rgb } from './globe';
 import { GRAIN_TILE, SPHERE_GRAIN } from './grain';
 
-/** The page's ink and accent (`--color-ink`, `--color-accent` on `element`), whatever their CSS notation. */
+/** The paper's colours (`--color-*` on `element`), whatever their CSS notation. */
 export function readPalette(element: Element): Palette {
 	const style = getComputedStyle(element);
 	const probe = document.createElement('canvas');
@@ -19,7 +19,12 @@ export function readPalette(element: Element): Palette {
 		const [red, green, blue] = context.getImageData(0, 0, 1, 1).data;
 		return [red, green, blue];
 	};
-	return { ink: rgb('--color-ink'), accent: rgb('--color-accent') };
+	return {
+		ink: rgb('--color-ink'),
+		accent: rgb('--color-accent'),
+		paper: rgb('--color-paper'),
+		light: rgb('--color-light'),
+	};
 }
 
 /** The painter's scratch canvas on the main thread: a page canvas where `OffscreenCanvas` is missing. */

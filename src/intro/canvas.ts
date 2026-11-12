@@ -34,12 +34,20 @@ export type Surface = CanvasImageSource & {
 const LIGHT = { x: 0.36, y: 0.3 };
 /** Radius of a `farthest-corner` gradient from that point, in diameters. */
 const LIGHT_REACH = Math.hypot(1 - LIGHT.x, 1 - LIGHT.y);
-const SHADING: [number, string][] = [
-	[0, '#fbfbf8'],
-	[0.34, '#ecebe5'],
-	[0.68, '#d9d8d1'],
-	[1, '#c6c5bd'],
-];
+/**
+ * The sphere's shading on the paper drawn for the visit: towards the lit side of its volumes where the
+ * light hits, a shade under the paper at the rim. On the day's paper, the mockup's greys.
+ */
+function shadingOf({ paper, light }: Palette): [number, string][] {
+	const toward = (to: Rgb, share: number) => css(paper.map((c, i) => Math.round(c + (to[i] - c) * share)) as Rgb);
+	const black: Rgb = [0, 0, 0];
+	return [
+		[0, toward(light, 0.7)],
+		[0.34, toward(black, 0.015)],
+		[0.68, toward(black, 0.09)],
+		[1, toward(black, 0.17)],
+	];
+}
 /** The grain shows least where the light hits. */
 const GRAIN_MASK: [number, string][] = [
 	[0, 'rgba(0,0,0,0.1)'],
@@ -135,6 +143,7 @@ function fingerprint(frame: Frame, grain: boolean, into: Float64Array) {
 export function globePainter(ctx: Context2D, palette: Palette, newSurface: () => Surface) {
 	const ink = css(palette.ink);
 	const accent = css(palette.accent);
+	const shading = shadingOf(palette);
 	// The sphere (shading and grain) is drawn once per grain step into its own bitmap, then scaled.
 	const sphere = newSurface();
 	const grain = newSurface();
@@ -183,7 +192,7 @@ export function globePainter(ctx: Context2D, palette: Palette, newSurface: () =>
 			return gradient;
 		};
 		s.clearRect(0, 0, size, size);
-		s.fillStyle = light(SHADING, s);
+		s.fillStyle = light(shading, s);
 		s.beginPath();
 		s.arc(size / 2, size / 2, size / 2, 0, 2 * Math.PI);
 		s.fill();

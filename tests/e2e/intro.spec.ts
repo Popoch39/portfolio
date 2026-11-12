@@ -1,6 +1,9 @@
 // Not `./fixtures`: these visits are direct, without a referrer from the site.
 import { devices, expect, test, type Locator, type Page } from '@playwright/test';
-import { scrollPosition, scrollWithWheel, statusline, swipeUp } from './helpers';
+import { drawPaper, scrollPosition, scrollWithWheel, statusline, swipeUp } from './helpers';
+
+// A direct visit draws its paper by lot: these specs play the Intro on Auto, in daylight.
+test.beforeEach(({ page }) => drawPaper(page, 'auto'));
 
 // Decorative and hidden from assistive technologies: targeted by its id, like the statusline.
 const veil = (page: Page) => page.locator('#veil');

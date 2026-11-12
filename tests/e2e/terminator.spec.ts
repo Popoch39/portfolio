@@ -1,5 +1,6 @@
 import { test as direct } from '@playwright/test';
 import { expect, test, type Page } from './fixtures';
+import { drawPaper } from './helpers';
 import { paper as option, pickPaper } from './nuancier-helpers';
 
 /**
@@ -88,7 +89,7 @@ test.describe('the Terminateur', () => {
 		await expect(root(page)).toHaveAttribute('data-sky', 'night');
 	});
 
-	test('the choice is remembered from one visit to the next, from the first paint', async ({ page }) => {
+	test('the choice is kept from page to page within the visit, from the first paint', async ({ page }) => {
 		await visitAt(page, '12:00');
 		await pickPaper(page, 'dark');
 
@@ -179,7 +180,7 @@ test.describe('the Terminateur', () => {
 		const errors: Error[] = [];
 		page.on('pageerror', (error) => errors.push(error));
 		await page.addInitScript(() => {
-			Object.defineProperty(window, 'localStorage', {
+			Object.defineProperty(window, 'sessionStorage', {
 				get() {
 					throw new DOMException('The operation is insecure.', 'SecurityError');
 				},
@@ -279,6 +280,8 @@ direct.describe('the Terminateur after the Intro', () => {
 	direct.use({ reducedMotion: 'no-preference', viewport: { width: 1440, height: 900 } });
 
 	direct('holds the night off the hero while the Intro plays, then lets it fall', async ({ page }) => {
+		// A direct visit draws its paper: Auto, the one the sun leads.
+		await drawPaper(page, 'auto');
 		// Time flows from 23:00: the Intro's own clock must run.
 		await page.clock.install({ time: at('23:00') });
 		await page.goto('/');

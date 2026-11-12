@@ -2,7 +2,7 @@
  * The statusline's write lane (spec #93): the one way a detail writes in the statusline, the way Vim
  * answers on its last row. A message takes the place of the branch and the file name, and can hold
  * the mode's segment; the display in force (the lede's mode, the paper) is hidden meanwhile by the
- * row's styles, never rewritten, so giving it back is only taking the message away.
+ * row's styles (`data-lane`), never rewritten, so giving it back is only taking the message away.
  * Not announced: the two segments it fills are `aria-hidden` like those they cover, and no live
  * region carries them (`Statusline.astro`).
  */
@@ -25,8 +25,11 @@ export interface MessageOptions {
 	hold?: boolean;
 }
 
-const messageSegment = document.querySelector<HTMLElement>('#statusline [data-lane-message]');
-const modeSegment = document.querySelector<HTMLElement>('#statusline [data-lane-mode]');
+const row = document.querySelector<HTMLElement>('#statusline');
+// Each segment keeps one text node, whose text alone is rewritten: a node taken out and another put
+// in has the browser compute again the style of some eighty elements of the page, at every message.
+const messageText = row?.querySelector('[data-lane-message]')?.appendChild(new Text());
+const modeText = row?.querySelector('[data-lane-mode]')?.appendChild(new Text());
 
 let timer: ReturnType<typeof setTimeout> | undefined;
 /** The message on display: a release only gives back the message it was handed for. */
@@ -39,8 +42,16 @@ let current: Message | undefined;
 let held: Message | undefined;
 
 function render() {
-	if (messageSegment) messageSegment.textContent = (current ?? held)?.text ?? '';
-	if (modeSegment) modeSegment.textContent = current?.mode ?? held?.mode ?? '';
+	const text = (current ?? held)?.text ?? '';
+	const mode = current?.mode ?? held?.mode ?? '';
+	if (messageText && messageText.data !== text) messageText.data = text;
+	if (modeText && modeText.data !== mode) modeText.data = mode;
+	// The row's styles read which segments show from this mark, written only when one comes or goes:
+	// a message replacing another changes its text and nothing else.
+	const shown = [text && 'message', mode && 'mode'].filter(Boolean).join(' ');
+	if (!row || (row.dataset.lane ?? '') === shown) return;
+	if (shown) row.dataset.lane = shown;
+	else delete row.dataset.lane;
 }
 
 /**

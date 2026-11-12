@@ -21,7 +21,8 @@ const { pause = false } = Astro.props;
 		{
 			/*
 			 * The write lane (`src/statusline/lane.ts`): a mode held over the lede's and a message in place
-			 * of the branch and the file name. Empty, they are not there; filled, they hide what they cover.
+			 * of the branch and the file name. Not there until the lane says so on the row (`data-lane`); shown,
+			 * they hide what they cover.
 			 */
 		}
 		<span class="mode" aria-hidden="true" data-lane-mode></span>
@@ -173,9 +174,16 @@ const { pause = false } = Astro.props;
 		white-space: nowrap;
 	}
 
-	:is(.message, [data-lane-mode]):empty,
-	.side:has(.message:not(:empty)) :is(.branch, .file),
-	[data-lane-mode]:not(:empty) + [data-vim-mode] {
+	/*
+	 * What the lane shows is said by `data-lane` on the row, which changes only when a segment comes or
+	 * goes. Read from the segments' own text (`:empty`, `:has()`), every message written, at each bague
+	 * a pointer crosses, had the style of the whole row computed again.
+	 */
+	.statusline:not([data-lane~='message']) .message,
+	.statusline:not([data-lane~='mode']) [data-lane-mode],
+	.statusline[data-lane~='message'] .branch,
+	.statusline[data-lane~='message'] .file,
+	.statusline[data-lane~='mode'] [data-vim-mode] {
 		display: none;
 	}
 
@@ -351,7 +359,7 @@ const { pause = false } = Astro.props;
 
 	/* Too little room left of the right side for a message: it borrows that side, and gives it back. */
 	@media (max-width: 1040px) {
-		.side:has(.message:not(:empty)) + .side {
+		.statusline[data-lane~='message'] .side + .side {
 			display: none;
 		}
 	}

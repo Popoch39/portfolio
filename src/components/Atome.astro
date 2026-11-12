@@ -266,7 +266,6 @@ const frame = [
 		ScrollSmoother,
 		ScrollTrigger,
 	} from '../animation/base';
-	import { towerStands } from '../atome/aim';
 
 	type Pose = { y: number; heading: number; tilt: number; spin: number; scale: number };
 	type Choreography = {
@@ -421,7 +420,8 @@ const frame = [
 
 		const tower = atome.querySelector<HTMLElement>('.atome-tower')!;
 		// Before the screen fit measures, so a list stacked under the tower counts for a single row.
-		atome.dataset.atomeScene = '';
+		// `playing` until the tower stands finished: it answers nobody meanwhile (`src/atome/aim.ts`).
+		atome.dataset.atomeScene = 'playing';
 		// The scene reads all it needs before it writes anything, and pins its section last: every read
 		// that follows a write makes the browser compute the styles again, those of the whole section once
 		// the pin has moved it into its spacer. First, the transform of every element it moves.
@@ -631,9 +631,14 @@ const frame = [
 			animation: gsap.timeline(),
 		});
 		// The tower stands once the scroll is past the scene's end and the scene has caught up with it:
-		// only then does it answer whoever aims at a bague. Two numbers compared, nothing read from the page.
-		const report = ({ progress }: ScrollTrigger) => towerStands(progress === 1 && scene.progress() === 1);
-		towerStands(false);
+		// only then does it answer whoever aims at a bague. Two numbers compared, nothing read from the page,
+		// and the mark only written when it changes.
+		let stands = false;
+		const report = ({ progress }: ScrollTrigger) => {
+			if (stands === (progress === 1 && scene.progress() === 1)) return;
+			stands = !stands;
+			atome.dataset.atomeScene = stands ? '' : 'playing';
+		};
 		const played = ScrollTrigger.create({
 			...span,
 			animation: scene,
@@ -674,8 +679,6 @@ const frame = [
 			ScrollTrigger.removeEventListener('refresh', applyFrame);
 			atome.removeEventListener('focusin', reach);
 			cancelAnimationFrame(reaching);
-			// Without the scene, the tower is the page's final state.
-			towerStands(true);
 			promote(false);
 			atome.style.removeProperty('--tower-scale');
 			delete atome.dataset.atomeScene;

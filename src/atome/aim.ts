@@ -20,17 +20,6 @@ interface Aim {
 /** How long a tap keeps its bague aimed at: a finger leaves nothing to end it, and nothing stays stuck. */
 const TAP_HOLD = 2400;
 
-/** Without a scene (reduced motion, no script of the scene yet), the tower is the page's final state. */
-let standing = true;
-let towerMoved = () => {};
-
-/** The scene says when its tower stands finished, and when it leaves that state. */
-export function towerStands(stands: boolean) {
-	if (stands === standing) return;
-	standing = stands;
-	towerMoved();
-}
-
 registerDetail(() => {
 	const atome = document.querySelector<HTMLElement>('[data-atome]');
 	if (!atome) return;
@@ -52,8 +41,14 @@ registerDetail(() => {
 	let giveBack = () => {};
 	let tapEnd: ReturnType<typeof setTimeout> | undefined;
 
+	/**
+	 * The scene marks the Atome for as long as its tower does not stand finished (`Atome.astro`).
+	 * Without a scene (reduced motion, or the scenes not built yet), the tower is the page's final state.
+	 */
+	const standing = () => atome.dataset.atomeScene !== 'playing';
+
 	const render = () => {
-		const aimed = standing ? [...aims.values()].at(-1) : undefined;
+		const aimed = standing() ? [...aims.values()].at(-1) : undefined;
 		for (const part of parts) part.toggleAttribute('data-aimed', part.dataset.bague === aimed?.bague);
 		const label = labels.get(aimed?.bague);
 		const text = aimed && label ? `stack=${aimed.tool ?? label.tools.join(',')} · ${label.category}` : '';
@@ -117,8 +112,9 @@ registerDetail(() => {
 	document.addEventListener('pointerup', onUp);
 	atome.addEventListener('focusin', onFocusIn);
 	atome.addEventListener('focusout', onFocusOut);
-	// A pointer at rest or a focused label says nothing when the scene's end arrives under it: the scene does.
-	towerMoved = render;
+	// A pointer at rest or a focused label says nothing when the scene's end arrives under it: the scene's mark does.
+	const scene = new MutationObserver(render);
+	scene.observe(atome, { attributeFilter: ['data-atome-scene'] });
 	// A label may hold the focus already, when a preference flips and the details are set up again.
 	aim('focus', focusAimOf(document.activeElement));
 	return () => {
@@ -127,7 +123,7 @@ registerDetail(() => {
 		document.removeEventListener('pointerup', onUp);
 		atome.removeEventListener('focusin', onFocusIn);
 		atome.removeEventListener('focusout', onFocusOut);
-		towerMoved = () => {};
+		scene.disconnect();
 		clearTimeout(tapEnd);
 		aims.clear();
 		render();

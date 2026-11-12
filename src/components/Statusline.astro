@@ -18,8 +18,16 @@ const { pause = false } = Astro.props;
 <div id="statusline" class="statusline mono theme-light" data-intro="statusline">
 	<div class="side">
 		{/* The home page's lede types in Vim: its mode is echoed here (`src/lede/typist.ts`). */}
+		{
+			/*
+			 * The write lane (`src/statusline/lane.ts`): a mode held over the lede's and a message in place
+			 * of the branch and the file name. Empty, they are not there; filled, they hide what they cover.
+			 */
+		}
+		<span class="mode" aria-hidden="true" data-lane-mode></span>
 		<span class="mode" aria-hidden="true" data-vim-mode>NORMAL</span>
 		{pause && <Pause />}
+		<span class="message" aria-hidden="true" data-lane-message></span>
 		<span class="segment branch" aria-hidden="true">
 			<svg
 				width="12"
@@ -156,6 +164,21 @@ const { pause = false } = Astro.props;
 		visibility: hidden;
 	}
 
+	/* The message takes what the row leaves and is cut short there, where the other segments wrap away. */
+	.message {
+		flex: 1 1 0;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	:is(.message, [data-lane-mode]):empty,
+	.side:has(.message:not(:empty)) :is(.branch, .file),
+	[data-lane-mode]:not(:empty) + [data-vim-mode] {
+		display: none;
+	}
+
 	.encoding {
 		color: var(--color-on-ink-muted);
 	}
@@ -260,6 +283,13 @@ const { pause = false } = Astro.props;
 		.branch,
 		.sun,
 		.segment {
+			display: none;
+		}
+	}
+
+	/* Too little room left of the right side for a message: it borrows that side, and gives it back. */
+	@media (max-width: 1040px) {
+		.side:has(.message:not(:empty)) + .side {
 			display: none;
 		}
 	}

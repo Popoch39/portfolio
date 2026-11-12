@@ -128,7 +128,7 @@ test.describe('the Nuancier', () => {
 		const properties = await page
 			.locator('[data-nuancier] :is(.slot, .lam)')
 			.evaluateAll((elements) => [...new Set(elements.map((el) => getComputedStyle(el).transitionProperty))]);
-		expect(properties.sort()).toEqual(['rotate, scale, opacity', 'transform']);
+		expect(properties.sort()).toEqual(['rotate, scale, opacity', 'transform, translate']);
 	});
 
 	test('rests shut on the paper in force, and opens as the pointer comes over it', async ({ page }) => {

@@ -17,7 +17,6 @@
 - **Les bandes ne bougent qu'en `rotate` et `transform`.** La chorégraphie (envol, fermeture, réouverture) tient en deux minuteries ponctuelles, effacées à chaque choix.
 - **Cibles de 24 px (WCAG 2.5.8).** Les bandes de la planche (34×100 px à −30/−20/−10/+2°) ne laissaient dépasser que 13 à 15 px : au téléphone, elles passent à 40×124 px, à −47/−28/−13/0°. Au bureau, l'éventail ouvert passe à −45/−25/−10/+4°. Sous la souris, il reste presque fermé au repos et s'ouvre au survol ; une fois survolé, tout l'éventail tient le pointeur, sinon l'ouverture déroberait la bande et le refermerait. Le clavier l'ouvre aussi ; un tap ou un clic, non.
 - **Mouvement réduit, ou pas de view transitions** : le papier change d'un coup, la bande passe devant sans bouger.
-- **La grille sur tout l'accueil**, comme sur la planche : le graticule de la carte du hero continue sur la page, ses lignes rejoignent celles de la carte au cadre. Le méridien et le parallèle dépendent du contenu du premier écran : une couche derrière le contenu (`.paper-grid`) s'ancre en CSS sur la rangée sud de la carte (`anchor()`, `anchor-size()`), commence un nombre entier de minutes avant eux, et la page la coupe (`overflow: clip`, qui ne casse ni `sticky` ni les épinglages). Sans ancrage CSS, la grille reste dans la carte. Elle prend le filet du papier en cours.
 
 ## Conséquences
 
@@ -31,5 +30,3 @@
 - **Garder `:set bg=` avec l'éventail** : deux sélecteurs à tenir synchronisés.
 - **L'éventail dans le hero seulement** : rien de masqué en lisant, mais un second sélecteur pour le reste de la page et la 404.
 - **Les angles de la planche** : 97 en accessibilité, des cibles de 13 px au doigt.
-- **La grille de la page mesurée en JS** : un script et un `ResizeObserver` pour une décoration que l'ancrage CSS place seul.
-- **Une grille de page indépendante de la carte** : ses lignes casseraient au cadre du hero.

@@ -70,13 +70,11 @@ const jsonLd = JSON.stringify({
 	<IntroTrigger slot="head" />
 	<Intro slot="overlay" />
 
-	{/* The map's scale on the whole page: the hero's graticule runs on over it (`.paper-grid`). */}
-	<main style={mapStyle}>
-		<div class="paper-grid" aria-hidden="true"></div>
+	<main>
 		<div class="wrap">
 			<section class="hero" aria-labelledby="hero-title">
 				{/* The name stands on a parallel that runs to Besançon, on a map whose scale holds (`src/hero/map.ts`). */}
-				<div class="hero-map theme-light">
+				<div class="hero-map theme-light" style={mapStyle}>
 					<HeroSheet />
 					{
 						/*
@@ -202,54 +200,10 @@ const jsonLd = JSON.stringify({
 	}
 
 	main {
-		--meridian-share: var(--meridian-share-wide);
 		display: grid;
 		grid-area: 2 / 1 / 4;
 		grid-template-columns: minmax(0, 1fr);
 		grid-template-rows: subgrid;
-	}
-
-	/*
-	 * The hero's graticule run on over the whole page, as on the board (03 · Nuancier): the same
-	 * lines, meeting the map's at its frame. They are set from the map's south row, whose top edge is
-	 * the parallel and whose width places the meridian, positions that depend on the first screen's
-	 * content: an anchor gives them to CSS. The layer starts whole minutes before them, past the page's
-	 * top and left edges, and the page clips it. Behind the content, on the page's paper. Without
-	 * anchor positioning, the graticule stays on the map alone.
-	 */
-	:global(.page) {
-		position: relative;
-		overflow: clip;
-	}
-
-	.hero-map > :global(.hero-south) {
-		anchor-name: --parallel;
-	}
-
-	.paper-grid {
-		display: none;
-	}
-
-	@supports (anchor-name: --parallel) {
-		.paper-grid {
-			display: block;
-			position: absolute;
-			z-index: -1;
-			top: calc(anchor(--parallel top) - 20 * var(--pitch-y));
-			right: 0;
-			bottom: 0;
-			left: calc(anchor(--parallel left) + var(--meridian-share) * anchor-size(--parallel width) - 40 * var(--pitch-x));
-			background-image:
-				linear-gradient(to right, var(--color-rule) 1px, transparent 1px),
-				linear-gradient(to bottom, var(--color-rule) 1px, transparent 1px);
-			background-size:
-				var(--pitch-x) 100%,
-				100% var(--pitch-y);
-			background-position:
-				var(--phase-x) 0,
-				0 var(--phase-y);
-			pointer-events: none;
-		}
 	}
 
 	main > .wrap {
@@ -272,6 +226,7 @@ const jsonLd = JSON.stringify({
 	 * window; the floor keeps room for the content.
 	 */
 	.hero-map {
+		--meridian-share: var(--meridian-share-wide);
 		--meridian: calc(var(--meridian-share) * 100%);
 		--inset: clamp(24px, 3.4vw, 48px);
 		--map-rows: minmax(auto, 54fr) minmax(auto, 46fr);
@@ -509,11 +464,8 @@ const jsonLd = JSON.stringify({
 			padding: 16px 0;
 		}
 
-		main {
-			--meridian-share: var(--meridian-share-narrow);
-		}
-
 		.hero-map {
+			--meridian-share: var(--meridian-share-narrow);
 			--inset: 14px;
 			--map-rows: minmax(auto, 44fr) minmax(auto, 56fr);
 			/* Both rows at their smallest, measured on the build: 459px. */

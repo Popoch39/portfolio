@@ -17,6 +17,8 @@ const mode = (page: Page) => statusline(page).locator('.mode:visible').first();
 declare global {
 	interface Window {
 		testCspViolations?: string[];
+		/** The first form's panel and « Proposer un café » button, held weakly. */
+		testFormLeft?: WeakRef<Element>[];
 	}
 }
 
@@ -299,6 +301,31 @@ test.describe('Formulaire du Café', () => {
 
 		await expect(hint(page)).toHaveText('pas parti : réessayez, ou écrivez à pocheron.louis@gmail.com');
 		await expect(email(page)).toHaveValue('ada@example.org');
+	});
+
+	test('nothing of a closed form survives a change of motion preference', async ({ page, browserName }) => {
+		test.skip(browserName !== 'chromium', 'garbage collection is only asked for through the Chrome DevTools Protocol');
+		await reachActions(page);
+		await coffee(page).click();
+		await name(page).fill('Ada');
+		await page.keyboard.press('Escape');
+		await expect(coffee(page)).toBeFocused();
+		// Held weakly: only the page's own references keep them.
+		await page.evaluate(() => {
+			const panel = document.querySelector('[data-cafe] form')?.parentElement;
+			const button = document.querySelector('[data-cafe] button[data-cafe-open]');
+			if (!panel || !button) throw new Error('no form nor action to watch');
+			window.testFormLeft = [new WeakRef(panel), new WeakRef(button)];
+		});
+
+		// The form's detail is undone, then set up again with a panel and buttons of its own.
+		await page.emulateMedia({ reducedMotion: 'reduce' });
+		await page.emulateMedia({ reducedMotion: 'no-preference' });
+		await expect(coffee(page)).toBeVisible();
+		const cdp = await page.context().newCDPSession(page);
+		await cdp.send('HeapProfiler.collectGarbage');
+
+		expect(await page.evaluate(() => window.testFormLeft?.map((ref) => ref.deref() !== undefined))).toEqual([false, false]);
 	});
 });
 

@@ -235,7 +235,8 @@ function followAnchors(smoother: ScrollSmoother) {
 	};
 }
 
-let lastFocusedElement: Element | null = null;
+/** Weak: the element may leave the page (a detail undone), and nothing should keep it alive. */
+let lastFocusedElement: WeakRef<Element> | undefined;
 
 /**
  * Replaces the smoother's re-centring, which leaves an element "in view" under a fixed bar: as the
@@ -244,8 +245,8 @@ let lastFocusedElement: Element | null = null;
  */
 function bringFocusIntoView(smoother: ScrollSmoother, event: Event) {
 	const element = event.target;
-	if (!(element instanceof Element) || element === lastFocusedElement) return false;
-	lastFocusedElement = element;
+	if (!(element instanceof Element) || element === lastFocusedElement?.deref()) return false;
+	lastFocusedElement = new WeakRef(element);
 	if (!smoother.content().contains(element)) return false;
 	const { top, bottom } = element.getBoundingClientRect();
 	const { top: areaTop, bottom: areaBottom } = visibleArea();

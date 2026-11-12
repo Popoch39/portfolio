@@ -71,6 +71,18 @@ test.describe('under a finger', () => {
 		expect(ungated).toEqual([]);
 	});
 
+	test('no Traîne: a finger has no cursor to draw, and a tap brings no ring', async ({ page }) => {
+		await page.goto('/');
+
+		await expect(page.locator('body')).toHaveCSS('cursor', 'auto');
+		await expect(page.locator('main p').first()).toHaveCSS('cursor', 'auto');
+		await expect(page.locator('main a[href]').first()).toHaveCSS('cursor', 'pointer');
+
+		await page.touchscreen.tap(200, 300);
+		await swipeUp(page, 200);
+		await expect(page.locator('[data-trail]')).toBeHidden();
+	});
+
 	test('the page runs under the notch and the home indicator, without the tap flash', async ({ page }) => {
 		await page.goto('/');
 

@@ -43,6 +43,10 @@ _À éviter_ : theme switcher, sélecteur de thème.
 Le fond choisi dans le Nuancier, sur tout le site : Jour (`light`), Nuit (`dark`), Cyanotype (`cyan`, tirage bleu) ou Auto (`auto`, qui suit le soleil à Besançon : sombre du coucher au lever). Retenu par visiteur.
 _À éviter_ : thème, mode sombre, `:set bg=` (retiré).
 
+**Traîne**
+Le curseur du site sous une souris, sur toutes les pages : un point d'encre, qui est l'image même du curseur (une par Papier, celle de la nuit sur la bande de la Frise et la statusline), texte compris, et un anneau fin qui le suit avec un court retard et s'ouvre sur ce qui répond au clic. Seul l'anneau est déplacé par script : rien au repos, ni pointeur sorti, ni sous le Voile ; sans retard en mouvement réduit ; sans JS, le point seul. Au doigt et en couleurs forcées, le curseur reste celui du système. Elle répond au pointeur et ne boucle pas : la Pause ne la concerne pas.
+_À éviter_ : curseur custom, follower.
+
 **Défilement lissé**
 Défilement à la molette et au trackpad interpolé par ScrollSmoother (environ 1 s d'inertie). Jamais au doigt, jamais sous `prefers-reduced-motion: reduce`, jamais sans JS : le défilement reste alors natif. Sur un téléphone ou une tablette, il n'existe pas du tout, et les scènes épinglées défilent comme une page native.
 _À éviter_ : smooth scroll (qui désigne aussi `scroll-behavior: smooth`).

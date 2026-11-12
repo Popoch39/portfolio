@@ -8,6 +8,7 @@ import Nuancier from '../components/Nuancier.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SkyTrigger from '../components/SkyTrigger.astro';
 import Statusline from '../components/Statusline.astro';
+import Trail from '../components/Trail.astro';
 import { person } from '../data/profile';
 import '../styles/global.css';
 
@@ -91,11 +92,13 @@ const ogImageAlt = `${person.name}, ${person.jobTitle.toLowerCase()} — portfol
 		</div>
 		<Statusline pause={pause} />
 		<Nuancier />
-		{/* Fixed layers over the whole window (the home page's Intro, then the grain), above the statusline. */}
+		{/* Fixed layers over the whole window (the home page's Intro, the grain, then the cursor's ring), above the statusline. */}
 		<slot name="overlay" />
 		<Grain />
+		<Trail />
 		<script>
 			import '../animation/base';
+			import '../animation/trail';
 		</script>
 	</body>
 </html>

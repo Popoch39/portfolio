@@ -42,8 +42,8 @@ test.describe('without JavaScript', () => {
 
 		const mail = page.getByRole('link', { name: 'pocheron.louis@gmail.com' });
 		await expect(mail).toHaveAttribute('href', 'mailto:pocheron.louis@gmail.com');
-		// Nothing would copy it: the pointer must not say so.
-		await expect(mail).toHaveCSS('cursor', 'pointer');
+		// Nothing would copy it: the pointer must not say so. A link's hand, behind the Traîne's point.
+		await expect(mail).toHaveCSS('cursor', /\bpointer$/);
 		await expect(statusline(page).locator('.mode:visible').first()).toHaveText('NORMAL');
 		await expect(statusline(page).locator('.message')).toBeHidden();
 		await expect(statusline(page).locator('.branch')).toBeVisible();

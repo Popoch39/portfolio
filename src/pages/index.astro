@@ -143,6 +143,8 @@ const jsonLd = JSON.stringify({
 							{/* A click yanks the address once the statusline's reactions listen (`src/statusline/yank.ts`). */}
 							<a class="contact-mail" href={mailto} data-yank>{mailUser}@<wbr />{mailDomain}</a>
 							<div class="contact-links">
+								{/* The Café's anchor; with JavaScript it opens the Formulaire du Café there (`src/cafe/form.ts`). */}
+								<a href="#cafe" data-cafe-propose>proposer un café</a>
 								<a href={person.github.url} rel="me"
 									>GitHub — {person.github.user} <span aria-hidden="true">↗</span></a
 								>

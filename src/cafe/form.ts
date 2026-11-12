@@ -8,16 +8,29 @@
  * The states are written on the section (`data-cafe-state`, `data-cafe-flavour`, `data-cafe-ok`,
  * `data-cafe-phase`) and the CSS draws them; the phase is the transition in progress, timed as on the board.
  */
-import { registerDetail } from '../animation/base';
+import { cubicBezier, gsap, registerDetail, ScrollSmoother } from '../animation/base';
 
 type Flavour = 'cafe' | 'visio';
 type State = 'rest' | 'form' | 'sent';
-type Phase = 'open' | 'close' | 'send' | 'switch' | 'again';
+/** `cut`: the form closed by the scroll, at once, without any transition. */
+type Phase = 'open' | 'close' | 'send' | 'switch' | 'again' | 'cut';
 
 /** How long each transition lasts on the board, in ms; the focus moves at its end. */
-const PHASES: Record<Phase, number> = { open: 1400, close: 1500, send: 1700, switch: 1200, again: 700 };
+const PHASES: Record<Exclude<Phase, 'cut'>, number> = { open: 1400, close: 1500, send: 1700, switch: 1200, again: 700 };
 /** Under reduced motion every change is a 0.2s fade: the phase only waits for it. */
 const REDUCED_PHASE = 220;
+
+/**
+ * Where the Montage's actions start rising in (its `ACTIONS`), as a share of its pinning: under it the moka is
+ * being put together again, which it cannot be while the form has it in pieces.
+ */
+const ACTIONS_APPEAR = 0.8;
+/** The way to the end of the pinning, on the board's camera curve: short enough to be done before the focus moves. */
+const SCROLL_DURATION = 1;
+const SCROLL_EASE = cubicBezier(0.65, 0, 0.35, 1);
+
+/** What the Montage tells of its pinning while its scene runs (`montage:progress`), `null` without it. */
+type Pinning = { progress: number; end: number } | null;
 
 const TEXTS = {
 	cafe: { heading: 'Un café, à Besançon.', switch: 'plutôt en visio', confirm: 'Envoyé. À très vite autour d’un café.' },
@@ -33,6 +46,7 @@ registerDetail(() => {
 	const links = [...(section?.querySelectorAll<HTMLAnchorElement>('a[data-cafe-open]') ?? [])];
 	if (!section || !template || !restBlock || links.length === 0) return;
 	const address = section.dataset.cafeAddress ?? '';
+	const proposeLink = document.querySelector<HTMLAnchorElement>('a[data-cafe-propose]');
 
 	// The actions open the form: buttons, no longer links that leave for the mail client.
 	const buttons = links.map((link) => {
@@ -51,10 +65,14 @@ registerDetail(() => {
 	let flavour: Flavour = 'cafe';
 	let sending: AbortController | undefined;
 	let phaseTimer: ReturnType<typeof setTimeout> | undefined;
+	let cutFrame: number | undefined;
+	let pinning: Pinning = null;
+	let scrolling: gsap.core.Tween | undefined;
 
 	/** Moves to a new state through a phase; `after` runs once the phase has played. */
 	function go(next: { state?: State; flavour?: Flavour }, phase: Phase, after?: () => void) {
 		clearTimeout(phaseTimer);
+		if (cutFrame !== undefined) cancelAnimationFrame(cutFrame);
 		state = next.state ?? state;
 		flavour = next.flavour ?? flavour;
 		section!.dataset.cafeState = state;
@@ -66,6 +84,17 @@ registerDetail(() => {
 			panel.confirm.textContent = TEXTS[flavour].confirm;
 		}
 		showVimMode(state === 'form' ? 'INSERT' : 'NORMAL');
+		if (phase === 'cut') {
+			// Held over the frame that draws the new state, so that it is drawn without transitions; given back after,
+			// for the hovers and the next phase.
+			cutFrame = requestAnimationFrame(() => {
+				cutFrame = requestAnimationFrame(() => {
+					cutFrame = undefined;
+					delete section!.dataset.cafePhase;
+				});
+			});
+			return;
+		}
 		phaseTimer = setTimeout(
 			() => {
 				delete section!.dataset.cafePhase;
@@ -77,12 +106,71 @@ registerDetail(() => {
 
 	function open(event: Event) {
 		const opener = (event.currentTarget as HTMLElement).dataset.cafeOpen;
+		// Down to where the pinning lets go, the moka and the form whole on screen; never back up, stacked, from
+		// the actions that follow the pinned screen.
+		if (pinning && scrollTop() < pinning.end) scrollToEnd(pinning.end);
+		openAs(opener === 'visio' ? 'visio' : 'cafe');
+	}
+
+	function openAs(mode: Flavour) {
 		panel ??= buildPanel(template!, restBlock!);
 		// A proposal already sent starts afresh; one left half-written is found as it was.
 		if (state === 'sent') panel.form.reset();
 		panel.hint.textContent = '';
 		markValid();
-		go({ state: 'form', flavour: opener === 'visio' ? 'visio' : 'cafe' }, 'open', () => panel?.fields.nom.focus());
+		go({ state: 'form', flavour: mode }, 'open', () => panel?.fields.nom.focus());
+	}
+
+	/**
+	 * The Contact's « proposer un café »: back to the end of the pinning, then the form in café mode. Without the
+	 * scene (reduced motion, or not built yet), the link's own anchor brings the Café and the form opens at once.
+	 */
+	function propose(event: MouseEvent) {
+		if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+		if (!pinning) return openAs('cafe');
+		event.preventDefault();
+		scrollToEnd(pinning.end, () => openAs('cafe'));
+	}
+
+	/** The moka is put together again under the form: it closes at once, everything typed kept for the next opening. */
+	function onProgress(event: Event) {
+		pinning = (event as CustomEvent<Pinning>).detail;
+		if (!pinning || pinning.progress >= ACTIONS_APPEAR || state === 'rest') return;
+		sending?.abort();
+		// A proposal already sent has nothing left to keep.
+		if (state === 'sent') panel?.form.reset();
+		go({ state: 'rest' }, 'cut');
+	}
+
+	const scrollTop = () => ScrollSmoother.get()?.scrollTop() ?? scrollY;
+
+	/** Scrolls the page to `end` along a curve of its own, smoothed or not, then calls `then`. */
+	function scrollToEnd(end: number, then?: () => void) {
+		scrolling?.kill();
+		const smoother = ScrollSmoother.get();
+		const position = { y: scrollTop() };
+		let written = Math.round(position.y);
+		scrolling = gsap.to(position, {
+			y: Math.round(end),
+			duration: SCROLL_DURATION,
+			ease: SCROLL_EASE,
+			onUpdate: () => {
+				/*
+				 * Whole pixels, each one a move: the smoother waits for the scroll event that follows a position it is
+				 * given, and the same position given again, as the curve settles, would leave it waiting and deaf to the
+				 * next scroll the page is given.
+				 */
+				const y = Math.round(position.y);
+				if (y === written) return;
+				written = y;
+				if (smoother) smoother.scrollTop(y);
+				else scrollTo(0, y);
+			},
+			onComplete: () => {
+				scrolling = undefined;
+				then?.();
+			},
+		});
 	}
 
 	function close() {
@@ -197,9 +285,15 @@ registerDetail(() => {
 	section.addEventListener('click', onClick);
 	section.addEventListener('input', onInput);
 	section.addEventListener('submit', submit);
+	section.addEventListener('montage:progress', onProgress);
+	proposeLink?.addEventListener('click', propose);
 
 	return () => {
 		clearTimeout(phaseTimer);
+		if (cutFrame !== undefined) cancelAnimationFrame(cutFrame);
+		scrolling?.kill();
+		section.removeEventListener('montage:progress', onProgress);
+		proposeLink?.removeEventListener('click', propose);
 		sending?.abort();
 		buttons.forEach((button, index) => button.replaceWith(links[index]));
 		section.removeEventListener('keydown', onKey);

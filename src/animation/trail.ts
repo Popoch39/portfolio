@@ -73,10 +73,15 @@ if (ring)
 		// The element under the pointer only changes at a `pointerover`: nothing is looked up at each move.
 		const over = (event: PointerEvent) => {
 			if (!opened || event.pointerType !== 'mouse' || !mouse.matches || !(event.target instanceof Element)) return;
+			const link = event.target.closest(LINK) !== null;
+			// The page moving under a still pointer tells a `pointerover` too. A frame is only asked for
+			// what changes: asked for each time, it has the browser look under the pointer again, and what
+			// opens under it and moves away (the Nuancier's book in a narrow window) opens and shuts without end.
+			if (inside && link === overLink && event.clientX === pointerX && event.clientY === pointerY) return;
 			pointerX = event.clientX;
 			pointerY = event.clientY;
 			inside = true;
-			overLink = event.target.closest(LINK) !== null;
+			overLink = link;
 			schedule();
 		};
 		const moved = (event: PointerEvent) => {

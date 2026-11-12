@@ -160,6 +160,25 @@ test.describe('the Traîne', () => {
 		expect(await pointerFrames(page)).toBe(trailing);
 	});
 
+	test('the page changing under a still pointer costs nothing either: the ring asks for no frame', async ({ page }) => {
+		await countPointerFrames(page);
+		await page.goto('/');
+		await page.mouse.move(200, 300);
+		await page.mouse.move(600, 300);
+		await expectRingAt(page, { x: 600, y: 300 });
+		const landed = await pointerFrames(page);
+
+		// Something comes under the pointer, as the strips of the Nuancier do when its book opens and shuts.
+		await page.evaluate(() => {
+			const cover = document.createElement('div');
+			cover.style.cssText = 'position: fixed; inset: 0; z-index: 4';
+			document.body.append(cover);
+		});
+		await framesPass(page, 30);
+
+		expect(await pointerFrames(page)).toBe(landed);
+	});
+
 	test('the pointer leaves the window: the ring goes, and asks for no more frames', async ({ page }) => {
 		await countPointerFrames(page);
 		await page.goto('/');

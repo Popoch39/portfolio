@@ -36,7 +36,7 @@ La ligne qui sépare le jour de la nuit sur la carte du hero, là où le soleil 
 _À éviter_ : dark mode, thème sombre (pour la ligne elle-même).
 
 **Nuancier**
-L'éventail de bandes riveté en bas à droite de la fenêtre, une bande par papier, qui choisit le Papier du site (ADR 0009). Fermé au repos sur le papier en cours, il s'ouvre au survol, au clavier ou au tap. Le papier choisi gagne la page en cercle depuis sa bande.
+L'éventail de bandes riveté en bas à droite de la fenêtre, une bande par papier, qui choisit le Papier du site (ADR 0009). Fermé au repos sur le papier en cours, il s'ouvre en rosace au survol, au clavier ou au tap. Le papier choisi gagne la page en cercle depuis sa bande.
 _À éviter_ : theme switcher, sélecteur de thème.
 
 **Papier**

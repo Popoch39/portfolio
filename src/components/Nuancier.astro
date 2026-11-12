@@ -45,6 +45,8 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 	{
 		skyModes.map((value, index) => {
 			const { code, name, hint, sub } = strips[value];
+			// A two-word name runs too long for the spine: the family, then the variant beside it.
+			const [family, variant] = name.split(' ');
 			return (
 				<div class="slot" data-slot={index}>
 					<label class="lam" data-paper={value}>
@@ -60,12 +62,22 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 						<span class="code" aria-hidden="true">
 							{code}
 						</span>
-						<span class="name" aria-hidden="true">
-							{name}
-						</span>
-						<span class="sub" aria-hidden="true">
-							{sub}
-						</span>
+						{variant ? (
+							<span class="name" data-two aria-hidden="true">
+								{family}
+								<br />
+								{variant}
+							</span>
+						) : (
+							<>
+								<span class="name" aria-hidden="true">
+									{name}
+								</span>
+								<span class="sub" aria-hidden="true">
+									{sub}
+								</span>
+							</>
+						)}
 						{value === 'auto' && <span class="sun" aria-hidden="true" />}
 						<span class="hole" aria-hidden="true" />
 						<span class="notch" aria-hidden="true" />
@@ -86,9 +98,9 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 	/*
 	 * Sizes of the phone's board; a wider window takes the desktop's (below). Shut, the eight strips lie
 	 * folded behind the front one and hidden: one target (WCAG 2.5.8), which is all Lighthouse measures.
-	 * Open, they fan out from the back one's angle by an even step, a quarter circle 13° apart; under a
-	 * finger the open book also grows about its rivet (`--open-scale`), so that what shows of each strip is
-	 * wide enough that the browser's touch adjustment does not hand the tap to the strip over it.
+	 * Open, they fan out into a full rosette, 45° apart, the front one upright: no strip covers another, so
+	 * the browser's touch adjustment hands each tap to its own strip. A rosette does not fit in the corner:
+	 * the book slides inward as it opens (`--open-x`, `--open-y`), to the middle of a phone's width.
 	 */
 	.fan {
 		--width: 150px;
@@ -104,9 +116,22 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 		--from: -7deg;
 		--step: 1deg;
 		--scale: 1;
-		--open-from: -91deg;
-		--open-step: 13deg;
-		--open-scale: 1.6;
+		--open-from: -315deg;
+		--open-step: 45deg;
+		--open-scale: 1;
+		/*
+		 * Open, each strip steps out from the rivet along its own axis, leaving the rosette's heart empty:
+		 * pivoting at their feet, the strips would otherwise cover each other's names there. Their holes,
+		 * no longer on the rivet, go.
+		 */
+		--out: 0px;
+		--open-out: -40px;
+		--holes: 1;
+		/* From the rivet's place in the corner to the middle of the width, clear of the statusline. */
+		--open-x: min(0px, calc(91px - 50vw));
+		--open-y: -170px;
+		--shift-x: 0px;
+		--shift-y: 0px;
 
 		position: fixed;
 		right: calc(16px + env(safe-area-inset-right, 0px));
@@ -121,6 +146,22 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 		border: 0;
 		/* Only the strips take the pointer: the corner of the page around them stays clickable. */
 		pointer-events: none;
+		translate: var(--shift-x) var(--shift-y);
+	}
+
+	/*
+	 * What holds a mouse over the open book: the rosette's disc, stretched back down to the corner it slid
+	 * from, so that the pointer left behind on the shut strip keeps the book open while it moves.
+	 */
+	.fan::before {
+		content: '';
+		position: absolute;
+		left: calc(var(--slot-left) + var(--strip-w) / 2 - 175px);
+		top: calc(var(--height) - var(--slot-bottom) - var(--strip-h) + var(--pivot-y) - 175px);
+		width: 350px;
+		height: calc(350px - var(--open-y));
+		border-radius: 175px;
+		visibility: hidden;
 	}
 
 	.fan[hidden] {
@@ -139,9 +180,8 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 			--lift: -16px;
 			--hover-lift: -12px;
 			--launch: -64px;
-			--open-from: -80deg;
-			--open-step: 12deg;
-			--open-scale: 1;
+			--open-x: -24px;
+			--open-y: -130px;
 
 			right: calc(48px + env(safe-area-inset-right, 0px));
 			bottom: calc(var(--statusline-height) + 24px);
@@ -158,6 +198,10 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 		--from: var(--open-from);
 		--step: var(--open-step);
 		--scale: var(--open-scale);
+		--shift-x: var(--open-x);
+		--shift-y: var(--open-y);
+		--out: var(--open-out);
+		--holes: 0;
 		--hide-after: 0s;
 	}
 
@@ -166,8 +210,16 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 			--from: var(--open-from);
 			--step: var(--open-step);
 			--scale: var(--open-scale);
+			--shift-x: var(--open-x);
+			--shift-y: var(--open-y);
+			--out: var(--open-out);
+			--holes: 0;
 			--hide-after: 0s;
 			pointer-events: auto;
+		}
+
+		.fan:hover::before {
+			visibility: visible;
 		}
 	}
 
@@ -391,6 +443,7 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 		display: block;
 		width: var(--strip-w);
 		height: var(--strip-h);
+		translate: 0 var(--out);
 		box-sizing: border-box;
 		border: 1px solid var(--border);
 		background: var(--body);
@@ -518,6 +571,7 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 		box-sizing: border-box;
 		border: 1px solid var(--hole);
 		border-radius: 50%;
+		opacity: var(--holes);
 	}
 
 	.sun {
@@ -578,6 +632,12 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 			line-height: 14px;
 		}
 
+		/* Ten letters, "Catppuccin", in the 66px of the spine: the phone's size. */
+		.name[data-two] {
+			font-size: 10px;
+			line-height: 13px;
+		}
+
 		.sub {
 			display: block;
 			left: 23px;
@@ -632,6 +692,10 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 	}
 
 	@media (prefers-reduced-motion: no-preference) {
+		.fan {
+			transition: translate 460ms cubic-bezier(0.7, 0, 0.2, 1);
+		}
+
 		.slot {
 			transition:
 				rotate 460ms cubic-bezier(0.7, 0, 0.2, 1) var(--delay),
@@ -640,7 +704,9 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 		}
 
 		.lam {
-			transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+			transition:
+				transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
+				translate 460ms cubic-bezier(0.7, 0, 0.2, 1) var(--delay);
 		}
 
 		.slot[data-launch] .lam {

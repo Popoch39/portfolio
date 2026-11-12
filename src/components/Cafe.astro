@@ -440,6 +440,14 @@ const callButtons = [
 		--delay: 1s;
 	}
 
+	/*
+	 * Closed by the scroll, as the scene puts the moka together again: everything is back in one frame, the Montage's
+	 * own elements included. Important: it outranks every transition of the Démontage, whatever their selectors.
+	 */
+	.cafe[data-cafe-phase='cut'] :global(*) {
+		transition: none !important;
+	}
+
 	/* Stacked, the form takes the paragraph's place in the flow. */
 	.cafe:is([data-cafe-state='form'], [data-cafe-state='sent']) .cafe-rest,
 	.cafe:not([data-cafe-state='form'], [data-cafe-state='sent']) .cafe-panel {
@@ -1034,8 +1042,10 @@ const callButtons = [
 			transform: translateY(var(--leave-to));
 		}
 
+		/* Laid over the actions even while closed: the clicks go through it to them. */
 		.cafe:not([data-cafe-state='form'], [data-cafe-state='sent']) .cafe-panel {
 			display: grid;
+			pointer-events: none;
 		}
 
 		.cafe[data-cafe-phase='close'] .cafe-rest {

@@ -400,6 +400,14 @@ const camera = JSON.stringify(
 			montage.toggleAttribute('data-lit', index === STEP_STARTS.length - 1);
 		};
 
+		/*
+		 * The scene's progress, told to the Café (`src/cafe/form.ts`), which closes its form when the moka starts
+		 * coming apart again and scrolls to where the pinning lets go: an event with numbers already known, never a
+		 * measure. `null` once the scene is undone.
+		 */
+		const tell = (pinning: { progress: number; end: number } | null) =>
+			section.dispatchEvent(new CustomEvent('montage:progress', { detail: pinning }));
+
 		// Positions on the timeline are fractions of the pinning, the board's `contain` ranges as they are.
 		const scene = gsap.timeline({
 			defaults: { ease: 'none' },
@@ -413,9 +421,15 @@ const camera = JSON.stringify(
 				scrub: SCENE_SCRUB,
 				invalidateOnRefresh: true,
 				// A refresh moves the timeline without its update callback (a page loaded past the scene, on its anchor).
-				onRefresh: (trigger) => showStep(trigger.progress),
+				onRefresh: (trigger) => {
+					showStep(trigger.progress);
+					tell({ progress: trigger.progress, end: trigger.end });
+				},
 			},
-			onUpdate: () => showStep(scene.progress()),
+			onUpdate: () => {
+				showStep(scene.progress());
+				if (scene.scrollTrigger) tell({ progress: scene.progress(), end: scene.scrollTrigger.end });
+			},
 		});
 
 		// Lifts are in percent of each layer's own height, written at build: nothing to measure.
@@ -584,6 +598,7 @@ const camera = JSON.stringify(
 		});
 
 		return () => {
+			tell(null);
 			counter.textContent = finalLabel;
 			delete montage.dataset.lit;
 			unmarkOffScreen();

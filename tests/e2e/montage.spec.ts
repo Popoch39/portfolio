@@ -9,13 +9,14 @@ import {
 	cafeSection as section,
 } from './montage-helpers';
 
-// Without JavaScript and under reduced motion alike, the Café stays at its final state.
+// Without JavaScript and under reduced motion alike, the Café stays at its final state. With JavaScript, its
+// actions are the buttons that open the Formulaire du Café; without, mail links.
 const FINAL_STATE_CONTEXTS = [
-	{ name: 'without JavaScript', use: { javaScriptEnabled: false } },
-	{ name: 'reduced motion', use: { reducedMotion: 'reduce' as const } },
+	{ name: 'without JavaScript', use: { javaScriptEnabled: false }, mailLinks: true },
+	{ name: 'reduced motion', use: { reducedMotion: 'reduce' as const }, mailLinks: false },
 ];
 
-for (const { name, use } of FINAL_STATE_CONTEXTS) {
+for (const { name, use, mailLinks } of FINAL_STATE_CONTEXTS) {
 	test.describe(`Café, final state, ${name}`, () => {
 		test.use(use);
 
@@ -69,7 +70,9 @@ for (const { name, use } of FINAL_STATE_CONTEXTS) {
 			expect(fill?.width).toBeCloseTo(track?.width ?? 0, 0);
 		});
 
-		test('the paragraph and both actions are there, the actions write a mail to Louis', async ({ page }) => {
+		test(`the paragraph and both actions are there, ${mailLinks ? 'mail links to Louis' : 'buttons that open the form'}`, async ({
+			page,
+		}) => {
 			await page.goto('/');
 
 			const paragraph = section(page).getByText(/^À Besançon, ou en visio si vous êtes plus loin\./);
@@ -77,10 +80,12 @@ for (const { name, use } of FINAL_STATE_CONTEXTS) {
 			await expect(paragraph).toHaveText(
 				'À Besançon, ou en visio si vous êtes plus loin. Comme un moka : on assemble les pièces dans l’ordre, sans rien forcer. Et sans engagement : au pire, on aura bu un café.',
 			);
-			const coffee = section(page).getByRole('link', { name: 'Proposer un café', exact: true });
-			const visio = section(page).getByRole('link', { name: 'Plutôt en visio', exact: true });
+			const role = mailLinks ? 'link' : 'button';
+			const coffee = section(page).getByRole(role, { name: 'Proposer un café', exact: true });
+			const visio = section(page).getByRole(role, { name: 'Plutôt en visio', exact: true });
 			await expect(coffee).toBeVisible();
 			await expect(visio).toBeVisible();
+			if (!mailLinks) return;
 			await expect(coffee).toHaveAttribute('href', 'mailto:pocheron.louis@gmail.com?subject=Un%20caf%C3%A9%20%3F');
 			await expect(visio).toHaveAttribute('href', 'mailto:pocheron.louis@gmail.com?subject=Une%20visio%20%3F');
 		});
@@ -568,7 +573,7 @@ test.describe('Montage, scene', () => {
 		await page.goto('/');
 		const start = await sceneStart(page);
 		const paragraph = section(page).getByText(/^À Besançon/);
-		const actions = section(page).getByRole('link', { name: 'Proposer un café', exact: true });
+		const actions = section(page).getByRole('button', { name: 'Proposer un café', exact: true });
 		const opacity = (element: Locator) => element.evaluate((el) => {
 			let value = 1;
 			for (let node: Element | null = el; node; node = node.parentElement) value *= Number(getComputedStyle(node).opacity);
@@ -645,7 +650,7 @@ test.describe('Montage, scene', () => {
 	test('Tab reaches the actions shown: the scene moves on to where they have risen in', async ({ page }) => {
 		await page.goto('/');
 		await page.locator('#stack').getByRole('link').last().focus();
-		const coffee = section(page).getByRole('link', { name: 'Proposer un café', exact: true });
+		const coffee = section(page).getByRole('button', { name: 'Proposer un café', exact: true });
 
 		await page.keyboard.press('Tab');
 
@@ -657,7 +662,7 @@ test.describe('Montage, scene', () => {
 	test('Shift+Tab from the Contact comes back to the actions shown', async ({ page }) => {
 		await page.goto('/#contact');
 		await page.locator('#contact').getByRole('link').first().focus();
-		const visio = section(page).getByRole('link', { name: 'Plutôt en visio', exact: true });
+		const visio = section(page).getByRole('button', { name: 'Plutôt en visio', exact: true });
 
 		await page.keyboard.press('Shift+Tab');
 

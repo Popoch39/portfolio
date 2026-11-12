@@ -1,7 +1,7 @@
 /**
  * A pick in the Nuancier (03 · Nuancier, ADR 0009). The new paper spreads over the page from the strip
- * that was picked, in a circle ringed with the accent; meanwhile the strip rises, the book shuts on its
- * rivet and fans out again with that strip at the front.
+ * that was picked, in a circle ringed with the accent; meanwhile the strip rises, its book shuts on its
+ * rivet and fans out again with that strip at the front. The other book stays as it is.
  *
  * The reveal is a view transition: the old page is a snapshot, the new one is live under a `clip-path`
  * circle that grows to the farthest corner of the window. The whole page restyles once, inside the
@@ -27,26 +27,30 @@ const ring = document.querySelector<HTMLElement>('[data-nuancier-ring]');
 let timers: ReturnType<typeof setTimeout>[] = [];
 let ringAnimation: Animation | undefined;
 let current: ViewTransition | undefined;
+/** The last pick's strip, not yet at the front of its book. */
+let pending: (() => void) | undefined;
 
 fan?.addEventListener('change', (event) => {
 	const input = event.target;
 	if (!(input instanceof HTMLInputElement)) return;
 	const slot = input.closest<HTMLElement>('[data-slot]');
-	if (!slot) return;
-	pick(fan, slot, input.value);
+	const book = input.closest<HTMLElement>('[data-book]');
+	if (!slot || !book) return;
+	pick(book, slot, input.value);
 });
 
-function pick(fan: HTMLElement, slot: HTMLElement, bg: string) {
+function pick(book: HTMLElement, slot: HTMLElement, bg: string) {
 	timers.forEach(clearTimeout);
 	timers = [];
 	ringAnimation?.cancel();
-	for (const launched of fan.querySelectorAll<HTMLElement>('[data-launch]')) delete launched.dataset.launch;
-	delete fan.dataset.phase;
+	// A pick in the other book would leave the last one's strip behind: it goes to the front at once.
+	pending?.();
+	for (const launched of fan?.querySelectorAll<HTMLElement>('[data-launch]') ?? []) delete launched.dataset.launch;
 
 	const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 	if (still || !document.startViewTransition) {
 		applyBg(bg);
-		toFront(fan, slot);
+		toFront(book, slot);
 		return;
 	}
 
@@ -62,15 +66,17 @@ function pick(fan: HTMLElement, slot: HTMLElement, bg: string) {
 	ring?.style.setProperty('--r', `${r}px`);
 
 	slot.dataset.launch = '';
+	pending = () => {
+		pending = undefined;
+		toFront(book, slot);
+		delete book.dataset.phase;
+	};
 	timers.push(
 		setTimeout(() => {
 			delete slot.dataset.launch;
-			fan.dataset.phase = 'closed';
+			book.dataset.phase = 'closed';
 		}, SHUT_AT),
-		setTimeout(() => {
-			toFront(fan, slot);
-			delete fan.dataset.phase;
-		}, SHUT_AT + SHUTTING),
+		setTimeout(() => pending?.(), SHUT_AT + SHUTTING),
 	);
 
 	root.classList.add('paper-turning');
@@ -101,9 +107,9 @@ function pick(fan: HTMLElement, slot: HTMLElement, bg: string) {
 	});
 }
 
-/** The picked strip goes to the front of the book; the others keep their order behind it. */
-function toFront(fan: HTMLElement, slot: HTMLElement) {
-	const slots = [...fan.querySelectorAll<HTMLElement>('[data-slot]')].sort(
+/** The picked strip goes to the front of its book; the others keep their order behind it. */
+function toFront(book: HTMLElement, slot: HTMLElement) {
+	const slots = [...book.querySelectorAll<HTMLElement>('[data-slot]')].sort(
 		(a, b) => Number(a.dataset.slot) - Number(b.dataset.slot),
 	);
 	[...slots.filter((other) => other !== slot), slot].forEach((each, index) => {

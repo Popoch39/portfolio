@@ -1,8 +1,22 @@
 import type { Page } from './fixtures';
 
-export type Paper = 'light' | 'dark' | 'cyan' | 'auto';
+/** The Nuancier's papers, its two books back to front as they rest by default. */
+export const papers = ['kraft', 'sanguine', 'tracing', 'light', 'phosphor', 'cyan', 'dark', 'auto'] as const;
+export type Paper = (typeof papers)[number];
 
-const names: Record<Paper, RegExp> = { light: /^Jour/, dark: /^Nuit/, cyan: /^Cyanotype/, auto: /^Auto/ };
+/** The slot of the strip at the front of its book. */
+export const FRONT = '3';
+
+const names: Record<Paper, RegExp> = {
+	light: /^Jour/,
+	dark: /^Nuit/,
+	cyan: /^Cyanotype/,
+	kraft: /^Kraft/,
+	tracing: /^Calque/,
+	sanguine: /^Sanguine/,
+	phosphor: /^Phosphore/,
+	auto: /^Auto/,
+};
 
 /** A paper of the Nuancier, by the name a screen reader gives it. */
 export const paper = (page: Page, name: Paper) => page.getByRole('radio', { name: names[name] });
@@ -42,12 +56,12 @@ export async function visiblePoint(page: Page, name: Paper) {
 }
 
 /**
- * Picks a paper as a visitor does with a mouse: over the book first, which opens it, then a click on
- * what shows of the strip.
+ * Picks a paper as a visitor does with a mouse: over the strip's book first, which opens it, then a
+ * click on what shows of the strip.
  */
 export async function pickPaper(page: Page, name: Paper) {
 	const front = await page
-		.locator('[data-nuancier] [data-slot="3"] input')
+		.locator(`[data-nuancier] [data-book]:has(input[value="${name}"]) [data-slot="${FRONT}"] input`)
 		.evaluate((input) => (input as HTMLInputElement).value as Paper);
 	const over = await visiblePoint(page, front);
 	await page.mouse.move(over.x, over.y);

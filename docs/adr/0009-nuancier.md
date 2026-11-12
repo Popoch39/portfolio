@@ -30,3 +30,11 @@
 - **Garder `:set bg=` avec l'éventail** : deux sélecteurs à tenir synchronisés.
 - **L'éventail dans le hero seulement** : rien de masqué en lisant, mais un second sélecteur pour le reste de la page et la 404.
 - **Les angles de la planche** : 97 en accessibilité, des cibles de 13 px au doigt.
+
+## Révision : huit papiers, deux livrets (2026-11-12)
+
+Louis ajoute quatre papiers, forcés seulement comme le Cyanotype, chacun avec sa seule encre et l'accent gardé : **Kraft** (`kraft`, EN-05), **Calque** (`tracing`, EN-06), **Sanguine** (`sanguine`, EN-07) et **Phosphore** (`phosphor`, EN-08). Leurs jetons sont dans `global.css`, contrastes AA vérifiés ; sur les papiers clairs, `--color-accent-display` fonce pour garder 3:1. La carte du hero prend le papier sans nuit, la statusline prend l'encre la plus profonde du papier.
+
+- **Deux livrets rivetés côte à côte**, quatre bandes chacun, avec la géométrie ci-dessus : les clairs à gauche (Kraft, Sanguine, Calque, Jour), les sombres et Auto dans le coin (Phosphore, Cyanotype, Nuit, Auto). Un seul groupe de radios : les flèches passent d'un livret à l'autre. Un choix ne ferme et ne rouvre que le livret de sa bande ; un choix dans l'autre livret pendant la bascule met tout de suite devant la bande du choix précédent.
+- **Écarté : un seul éventail de huit bandes en quart de cercle** (−90° à 0°, 13° entre bandes). L'audit `target-size` de Lighthouse raisonne sur les boîtes englobantes des bandes pivotées, qui s'y recouvrent presque entièrement : 97 sur l'accueil, 95 sur la 404. Au doigt, ce qui dépasse des bandes du fond se réduit à un coin d'environ 14 px de large, et l'ajustement tactile de Chromium donne le tap à la bande voisine. Aucun réglage d'angle ni de longueur n'y remédie dans un quart de cercle.
+- **Conséquence** : l'emprise permanente passe à environ 280 × 160 px au téléphone (360 × 220 au bureau). Lighthouse mobile reste à 100 en accessibilité.

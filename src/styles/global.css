@@ -76,6 +76,92 @@
 	color-scheme: dark;
 }
 
+/*
+ * Four more papers of the Nuancier, forced only like the Cyanotype, the hero's map turning with the page.
+ * Each keeps one ink and the accent; on the light ones the display shade of the accent goes deeper to keep
+ * 3:1 for large text.
+ */
+
+/* Kraft: brown wrapping paper, a brown-black ink. */
+:root[data-theme='kraft'],
+:root[data-theme='kraft'] .hero-map {
+	--color-paper: #d4b98f;
+	--color-ink: #22170d;
+	--color-ink-muted: #5a412a;
+	--color-ink-faint: #a88b63;
+	--color-rule: #bfa178;
+	--color-bar: #3b2a1a;
+	--color-on-ink-muted: #c9b08c;
+	--color-on-ink-faint: #7a6247;
+	--color-accent-display: #a83a0a;
+	--color-dark: #2b1e12;
+	--color-on-dark: #d4b98f;
+	--color-on-dark-muted: #bfa27a;
+	--color-accent-deep: color-mix(in srgb, #ff5b14 57%, #22170d);
+	--color-light: #e6d3b3;
+	color-scheme: light;
+}
+
+/* Calque: an architect's tracing paper, cool and pale, in graphite. */
+:root[data-theme='tracing'],
+:root[data-theme='tracing'] .hero-map {
+	--color-paper: #e3e8ea;
+	--color-ink: #1e2427;
+	--color-ink-muted: #525b61;
+	--color-ink-faint: #9aa4aa;
+	--color-rule: #c9d1d5;
+	--color-bar: #343d42;
+	--color-on-ink-muted: #aeb8be;
+	--color-on-ink-faint: #69737a;
+	--color-accent-display: #d94a0e;
+	--color-dark: #252c30;
+	--color-on-dark: #e3e8ea;
+	--color-on-dark-muted: #aeb8be;
+	--color-accent-deep: color-mix(in srgb, #ff5b14 57%, #1e2427);
+	--color-light: #f7f9fa;
+	color-scheme: light;
+}
+
+/* Sanguine: a rosy cream drawn in red chalk. */
+:root[data-theme='sanguine'],
+:root[data-theme='sanguine'] .hero-map {
+	--color-paper: #f1e2d6;
+	--color-ink: #3d140b;
+	--color-ink-muted: #7a3a28;
+	--color-ink-faint: #c4a091;
+	--color-rule: #e0c9b8;
+	--color-bar: #4e1c10;
+	--color-on-ink-muted: #d9b3a3;
+	--color-on-ink-faint: #9a5c4a;
+	--color-accent-display: #d0450c;
+	--color-dark: #45180d;
+	--color-on-dark: #f1e2d6;
+	--color-on-dark-muted: #d9b3a3;
+	--color-accent-deep: color-mix(in srgb, #ff5b14 57%, #3d140b);
+	--color-light: #fbf4ee;
+	color-scheme: light;
+}
+
+/* Phosphore: a terminal's green phosphor on its black glass. */
+:root[data-theme='phosphor'],
+:root[data-theme='phosphor'] .hero-map {
+	--color-paper: #0b130d;
+	--color-ink: #8ef0a0;
+	--color-ink-muted: #5fae6f;
+	--color-ink-faint: #2f5a38;
+	--color-rule: #1a2b1e;
+	--color-bar: #b5f5c0;
+	--color-on-ink-muted: #245a30;
+	--color-on-ink-faint: #4f8a5b;
+	--color-accent-display: #ff5b14;
+	--color-dark: #132017;
+	--color-on-dark: #8ef0a0;
+	--color-on-dark-muted: #5fae6f;
+	--color-accent-deep: color-mix(in srgb, #ff5b14 57%, #050a06);
+	--color-light: #1a2b1e;
+	color-scheme: dark;
+}
+
 /* The text colour inherited from the body is the page's: a scoped theme takes its own ink back. */
 .theme-light,
 .theme-dark {

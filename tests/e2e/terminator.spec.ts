@@ -106,11 +106,14 @@ test.describe('the Terminateur', () => {
 		await visitAt(page, '12:00');
 		await option(page, 'auto').focus();
 
-		await page.keyboard.press('ArrowRight');
-		await expect(option(page, 'light')).toBeChecked();
-		await page.keyboard.press('ArrowRight');
+		await page.keyboard.press('ArrowLeft');
 		await expect(option(page, 'dark')).toBeChecked();
 		await expect(root(page)).toHaveAttribute('data-theme', 'dark');
+		// Past the dark book's last strip, the arrows go on into the light book.
+		await page.keyboard.press('ArrowRight');
+		await page.keyboard.press('ArrowRight');
+		await expect(option(page, 'kraft')).toBeChecked();
+		await expect(root(page)).toHaveAttribute('data-theme', 'kraft');
 	});
 
 	test('the night slides in on a transform alone, and the copy stays put under it', async ({ page }) => {

@@ -36,11 +36,11 @@ La ligne qui sépare le jour de la nuit sur la carte du hero, là où le soleil 
 _À éviter_ : dark mode, thème sombre (pour la ligne elle-même).
 
 **Nuancier**
-L'éventail de bandes riveté en bas à droite de la fenêtre, une bande par papier, qui choisit le Papier du site (ADR 0009). Le papier choisi gagne la page en cercle depuis sa bande.
+Les deux éventails de bandes rivetés côte à côte en bas à droite de la fenêtre (les papiers clairs, puis les sombres avec Auto), une bande par papier, qui choisissent le Papier du site (ADR 0009). Le papier choisi gagne la page en cercle depuis sa bande.
 _À éviter_ : theme switcher, sélecteur de thème.
 
 **Papier**
-Le fond choisi dans le Nuancier, sur tout le site : Jour (`light`), Nuit (`dark`), Cyanotype (`cyan`, tirage bleu) ou Auto (`auto`, qui suit le soleil à Besançon : sombre du coucher au lever). Retenu par visiteur.
+Le fond choisi dans le Nuancier, sur tout le site : Jour (`light`), Nuit (`dark`), Cyanotype (`cyan`, tirage bleu), Kraft (`kraft`), Calque (`tracing`), Sanguine (`sanguine`), Phosphore (`phosphor`) ou Auto (`auto`, qui suit le soleil à Besançon : sombre du coucher au lever). Retenu par visiteur.
 _À éviter_ : thème, mode sombre, `:set bg=` (retiré).
 
 **Défilement lissé**

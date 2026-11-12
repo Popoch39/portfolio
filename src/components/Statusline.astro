@@ -228,11 +228,57 @@ const { pause = false } = Astro.props;
 		content: var(--paper-name);
 	}
 
-	/* On the Cyanotype the row is printed in the blueprint's own night blue. */
+	:global(:root[data-bg='kraft']) {
+		--paper-code: 'EN-05';
+		--paper-name: 'kraft';
+	}
+
+	:global(:root[data-bg='tracing']) {
+		--paper-code: 'EN-06';
+		--paper-name: 'calque';
+	}
+
+	:global(:root[data-bg='sanguine']) {
+		--paper-code: 'EN-07';
+		--paper-name: 'sanguine';
+	}
+
+	:global(:root[data-bg='phosphor']) {
+		--paper-code: 'EN-08';
+		--paper-name: 'phosphore';
+	}
+
+	/* On the coloured papers the row is printed in the paper's own deepest ink. */
 	:global(:root[data-theme='cyan']) .statusline {
 		--color-ink: #0b2140;
 		--color-bar: #24477a;
 		--color-on-ink-muted: #a8b9d3;
+	}
+
+	:global(:root[data-theme='kraft']) .statusline {
+		--color-ink: #2b1d10;
+		--color-bar: #4a3520;
+		--color-on-ink-muted: #c9b08c;
+	}
+
+	:global(:root[data-theme='tracing']) .statusline {
+		--color-ink: #1e2427;
+		--color-bar: #343d42;
+		--color-on-ink-muted: #aeb8be;
+	}
+
+	:global(:root[data-theme='sanguine']) .statusline {
+		--color-ink: #3d140b;
+		--color-bar: #5e2617;
+		--color-on-ink-muted: #d9b3a3;
+	}
+
+	/* The phosphor's row glows green on black glass, its INSERT mode included. */
+	:global(:root[data-theme='phosphor']) .statusline {
+		--color-paper: #8ef0a0;
+		--color-ink: #050a06;
+		--color-bar: #13301a;
+		--color-on-ink-muted: #6fbf7e;
 	}
 
 	/* The right side gives way step by step, measured on the build: the left one keeps 164px, the mode and the Pause. */

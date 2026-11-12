@@ -28,10 +28,11 @@ export interface SkyPlace {
 }
 
 /**
- * The Nuancier's papers (ADR 0009; their books are `Nuancier.astro`'s); `paintSky` reads them from `data-bg` on its own
+ * The Nuancier's papers, in the fan's order, light and dark in turn so that each strip's edge shows on the
+ * next (ADR 0009); `paintSky` reads them from `data-bg` on its own
  * (it may name nothing outside itself). Under every forced paper but the night, the hero keeps no night, as by day.
  */
-export const skyModes = ['light', 'dark', 'cyan', 'kraft', 'tracing', 'sanguine', 'phosphor', 'auto'] as const;
+export const skyModes = ['light', 'dark', 'kraft', 'cyan', 'tracing', 'phosphor', 'sanguine', 'auto'] as const;
 export type SkyMode = (typeof skyModes)[number];
 
 /** Where the choice is remembered; `auto` is the absence of one. */

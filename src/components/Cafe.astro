@@ -30,7 +30,7 @@ const steps = [
 ];
 ---
 
-<section id="cafe" class="cafe" aria-labelledby={titleId} data-cafe>
+<section id="cafe" class="cafe" aria-labelledby={titleId} data-cafe data-cafe-address={person.email}>
 	{/* What the pinning holds on screen when stacked; in two columns, the paragraph and the actions join it. */}
 	<div class="cafe-screen">
 		<div class="cafe-head">
@@ -58,15 +58,89 @@ const steps = [
 		</div>
 	</div>
 
-	<p class="cafe-text" data-cafe-text>
-		À {person.city}, ou en visio si vous êtes plus loin. Comme un moka&nbsp;: on assemble les pièces dans l’ordre, sans
-		rien forcer. Et sans engagement&nbsp;: au pire, on aura bu un café.
-	</p>
-	<div class="cafe-actions" data-cafe-actions>
-		<a class="button" href={mailto('Un café ?')}>Proposer un café <span class="mono" aria-hidden="true">↵</span></a>
-		<a class="cafe-visio" href={mailto('Une visio ?')}>Plutôt en visio</a>
+	{/* The scene moves the paragraph and the actions; the Formulaire du Café hides them through this block of its own. */}
+	<div class="cafe-rest" data-cafe-rest>
+		<p class="cafe-text" data-cafe-text>
+			À {person.city}, ou en visio si vous êtes plus loin. Comme un moka&nbsp;: on assemble les pièces dans l’ordre, sans
+			rien forcer. Et sans engagement&nbsp;: au pire, on aura bu un café.
+		</p>
+		{/* Mail links without JavaScript; the script turns them into the buttons that open the form (`src/cafe/form.ts`). */}
+		<div class="cafe-actions" data-cafe-actions>
+			<a class="button" href={mailto('Un café ?')} data-cafe-open="cafe"
+				>Proposer un café <span class="mono" aria-hidden="true">↵</span></a
+			>
+			<a class="cafe-visio" href={mailto('Une visio ?')} data-cafe-open="visio">Plutôt en visio</a>
+		</div>
 	</div>
+
+	{/* Inert until the first opening: out of the critical HTML, and nothing to show without JavaScript. */}
+	<template data-cafe-form>
+		<div class="cafe-panel">
+			<form class="cafe-form" novalidate aria-labelledby="cafe-form-title">
+				<div class="cafe-form-head">
+					<h3 id="cafe-form-title" class="cafe-form-title" data-cafe-heading>Un café, à Besançon.</h3>
+					<button type="button" class="mono cafe-mlink" data-cafe-switch>plutôt en visio</button>
+				</div>
+				<div class="cafe-row cafe-row-line">
+					<label class="mono cafe-label" for="cafe-nom"
+						><span class="cafe-badge" aria-hidden="true" data-badge="n">1</span>Nom</label
+					>
+					<input class="cafe-input" id="cafe-nom" name="nom" type="text" autocomplete="name" maxlength="100" />
+				</div>
+				<div class="cafe-row cafe-row-line">
+					<label class="mono cafe-label" for="cafe-email"
+						><span class="cafe-badge" aria-hidden="true" data-badge="e">2</span>E-mail</label
+					>
+					<input class="cafe-input" id="cafe-email" name="email" type="email" autocomplete="email" maxlength="254" />
+				</div>
+				{/* The values are the route's (`worker/index.ts`); the second chip says it shorter. */}
+				<div class="cafe-row" role="radiogroup" aria-labelledby="cafe-when">
+					<span class="mono cafe-label"
+						><span class="cafe-badge" aria-hidden="true" data-badge="w">3</span><span id="cafe-when">Quand&nbsp;?</span></span
+					>
+					<span class="cafe-chips">
+						<label class="cafe-chip"><input type="radio" name="quand" value="Cette semaine" /><span>Cette semaine</span></label>
+						<label class="cafe-chip"
+							><input type="radio" name="quand" value="La semaine prochaine" /><span>Semaine prochaine</span></label
+						>
+						<label class="cafe-chip"><input type="radio" name="quand" value="Plus tard" /><span>Plus tard</span></label>
+					</span>
+				</div>
+				<div class="cafe-row cafe-row-line cafe-row-message">
+					<label class="mono cafe-label" for="cafe-message"
+						><span class="cafe-badge" aria-hidden="true" data-badge="m">4</span>Message</label
+					>
+					<textarea class="cafe-input" id="cafe-message" name="message" rows="3" placeholder="facultatif" maxlength="4000"
+					></textarea>
+				</div>
+				{/* The trap: out of sight and out of reach, only a robot filling every field writes in it. */}
+				<div class="cafe-trap" aria-hidden="true">
+					<label for="cafe-site">Site</label>
+					<input id="cafe-site" name="site" type="text" tabindex="-1" autocomplete="off" />
+				</div>
+				<div class="cafe-form-actions">
+					<span class="cafe-send-group">
+						<button type="submit" class="button" data-cafe-send
+							><span data-cafe-send-label>Envoyer</span>
+							<span class="mono" aria-hidden="true" data-cafe-send-key>↵</span></button
+						>
+						<span class="mono cafe-aside">sans engagement</span>
+					</span>
+					<button type="button" class="mono cafe-mlink" data-cafe-close>esc · fermer</button>
+				</div>
+				<p class="mono cafe-hint" aria-live="polite" data-cafe-hint></p>
+			</form>
+			<div class="cafe-sent">
+				<p class="cafe-confirm" data-cafe-confirm></p>
+				<button type="button" class="mono cafe-mlink" data-cafe-again>recommencer</button>
+			</div>
+		</div>
+	</template>
 </section>
+
+<script>
+	import '../cafe/form';
+</script>
 
 <style>
 	/*
@@ -194,6 +268,323 @@ const steps = [
 	}
 
 	/*
+	 * The Formulaire du Café (`src/cafe/form.ts`), board A. The script writes the state on the section and the
+	 * phase in progress, which sets the delays: the form arrives once the paragraph has gone, and the paragraph
+	 * comes back once the form has. `--fu` is the board's pixel: 1px stacked, `--u` in two columns.
+	 */
+	.cafe-actions button {
+		border: 0;
+		font: inherit;
+		cursor: pointer;
+	}
+
+	.cafe-visio:is(button) {
+		padding: 0;
+		background: none;
+		color: var(--color-ink);
+		text-decoration: underline;
+	}
+
+	.cafe :is(button, input, textarea):focus-visible {
+		outline: 2px solid var(--color-ink);
+		outline-offset: 3px;
+	}
+
+	.cafe {
+		--arrive-from: 14px;
+		--leave-to: -10px;
+	}
+
+	.cafe-rest,
+	.cafe-form,
+	.cafe-sent {
+		--delay: 0s;
+		transition:
+			opacity 0.3s ease var(--delay),
+			transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) var(--delay),
+			visibility 0.3s linear var(--delay);
+	}
+
+	.cafe-panel {
+		--fu: 1px;
+		display: grid;
+		margin-top: 34px;
+	}
+
+	/* The form and the confirmation share a place: the panel holds the taller, nothing moves between them. */
+	.cafe-form,
+	.cafe-sent {
+		grid-area: 1 / 1;
+		min-width: 0;
+		opacity: 0;
+		visibility: hidden;
+		transform: translateY(var(--arrive-from));
+	}
+
+	.cafe[data-cafe-state='form'] .cafe-form,
+	.cafe[data-cafe-state='sent'] .cafe-sent {
+		opacity: 1;
+		visibility: visible;
+		transform: none;
+	}
+
+	.cafe[data-cafe-phase='open'] .cafe-form {
+		--delay: 0.3s;
+	}
+
+	.cafe[data-cafe-phase='send'] .cafe-sent {
+		--delay: 1s;
+	}
+
+	/* Stacked, the form takes the paragraph's place in the flow. */
+	.cafe:is([data-cafe-state='form'], [data-cafe-state='sent']) .cafe-rest,
+	.cafe:not([data-cafe-state='form'], [data-cafe-state='sent']) .cafe-panel {
+		display: none;
+	}
+
+	.cafe-form {
+		display: flex;
+		flex-direction: column;
+		margin: 0;
+	}
+
+	.cafe-form-head {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 12px;
+		min-height: 44px;
+	}
+
+	.cafe-form-title,
+	.cafe-confirm {
+		margin: 0;
+		font-size: max(20px, 24 * var(--fu));
+		line-height: 1.1;
+		font-weight: 800;
+	}
+
+	.cafe-mlink {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		padding: 0;
+		border: 0;
+		background: none;
+		color: var(--color-ink);
+		font-size: 13px;
+		text-decoration: underline;
+		text-underline-offset: 4px;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+
+	.cafe-row {
+		display: flex;
+		align-items: center;
+		min-height: max(44px, 44 * var(--fu));
+		margin-top: calc(8 * var(--fu));
+	}
+
+	.cafe-form-head + .cafe-row {
+		margin-top: calc(6 * var(--fu));
+	}
+
+	.cafe-row-line {
+		box-shadow: inset 0 -1px 0 var(--color-ink);
+	}
+
+	.cafe-row-message {
+		align-items: flex-start;
+	}
+
+	.cafe-label {
+		flex: none;
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		width: max(96px, 104 * var(--fu));
+		font-size: 13px;
+		color: var(--color-ink-muted);
+		transition: color 0.2s ease;
+	}
+
+	.cafe-row-message .cafe-label {
+		padding-top: 12px;
+	}
+
+	.cafe-row:focus-within .cafe-label {
+		color: var(--color-ink);
+	}
+
+	.cafe-badge {
+		display: inline-grid;
+		place-items: center;
+		width: 18px;
+		height: 18px;
+		box-shadow: inset 0 0 0 1px var(--color-ink);
+		background: var(--color-paper);
+		color: var(--color-ink);
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 400;
+		line-height: 1;
+		transition:
+			background-color 0.2s ease,
+			color 0.2s ease,
+			box-shadow 0.2s ease;
+	}
+
+	.cafe-row:focus-within .cafe-badge {
+		background: var(--color-ink);
+		color: var(--color-paper);
+	}
+
+	/* In place: the accent, over the focus's ink. */
+	.cafe[data-cafe-ok~='n'] [data-badge='n'],
+	.cafe[data-cafe-ok~='e'] [data-badge='e'],
+	.cafe[data-cafe-ok~='w'] [data-badge='w'],
+	.cafe[data-cafe-ok~='m'] [data-badge='m'] {
+		background: var(--color-accent);
+		color: var(--color-on-accent);
+		box-shadow: none;
+	}
+
+	/* 16px at least: a phone zooms the page into a smaller field. */
+	.cafe-input {
+		flex: 1;
+		min-width: 0;
+		height: 44px;
+		padding: 0;
+		border: 0;
+		border-radius: 0;
+		background: transparent;
+		color: var(--color-ink);
+		font: inherit;
+		font-size: max(16px, 17 * var(--fu));
+	}
+
+	textarea.cafe-input {
+		height: max(80px, 80 * var(--fu));
+		padding: 10px 0;
+		box-sizing: border-box;
+		font-size: 16px;
+		line-height: 1.4;
+		resize: none;
+	}
+
+	.cafe-input::placeholder {
+		color: var(--color-ink-muted);
+		opacity: 1;
+	}
+
+	.cafe-input:focus-visible {
+		outline-offset: 2px;
+	}
+
+	.cafe-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.cafe-chip {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+	}
+
+	/* The native radio covers its chip: the group keeps the arrows, the focus and the screen readers' reading. */
+	.cafe-chip input {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		margin: 0;
+		opacity: 0;
+		cursor: pointer;
+	}
+
+	.cafe-chip span {
+		padding: 6px 10px;
+		box-shadow: inset 0 0 0 1px var(--color-ink);
+		font-size: 14px;
+		font-weight: 600;
+		line-height: 20px;
+		white-space: nowrap;
+		transition:
+			background-color 0.2s ease,
+			color 0.2s ease;
+	}
+
+	@media (hover: hover) and (pointer: fine) {
+		.cafe-chip:hover span {
+			background: var(--color-light);
+		}
+	}
+
+	.cafe-chip input:checked + span {
+		background: var(--color-ink);
+		color: var(--color-paper);
+	}
+
+	.cafe-chip input:focus-visible + span {
+		outline: 2px solid var(--color-ink);
+		outline-offset: 3px;
+	}
+
+	.cafe-trap {
+		position: absolute;
+		left: -10000px;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+	}
+
+	.cafe-form-actions {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		align-items: center;
+		gap: 8px 18px;
+		margin-top: calc(14 * var(--fu));
+	}
+
+	.cafe-send-group {
+		display: inline-flex;
+		align-items: center;
+		gap: 18px;
+	}
+
+	.cafe-form .button {
+		border: 0;
+		font: inherit;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.cafe-form .button:disabled {
+		cursor: progress;
+	}
+
+	.cafe-hint {
+		min-height: 18px;
+		margin: calc(4 * var(--fu)) 0 0;
+		font-size: 13px;
+		line-height: 18px;
+		color: var(--color-ink);
+	}
+
+	.cafe-sent {
+		align-self: start;
+	}
+
+	.cafe-sent .cafe-mlink {
+		margin-top: 10px;
+	}
+
+	/*
 	 * Two columns, the board's layout (1280×770 above the statusline, 52px margins: 1176×770) at the scale `--u`
 	 * that fits it in the screen's height and the page column's width, the text on the left and the moka beside it.
 	 * The text keeps a readable size (16px at least), so a low window cannot hold the column: below the height
@@ -279,6 +670,55 @@ const steps = [
 			margin: 0;
 			/* It runs up beside the aside, which stays selectable through its empty top. */
 			pointer-events: none;
+		}
+
+		/*
+		 * The paragraph and the actions keep their place while the form stands over it, from the board's 382px
+		 * (its head 10px above the first field's row at 392px): opening and closing move nothing around.
+		 * Never narrower than the chips of « Quand ? » beside their label, which still stays left of the moka.
+		 */
+		.cafe-panel {
+			--fu: var(--u);
+			position: absolute;
+			top: calc(382 * var(--u));
+			left: var(--page-gutter);
+			width: max(420px, 500 * var(--u));
+			margin: 0;
+		}
+
+		.cafe:is([data-cafe-state='form'], [data-cafe-state='sent']) .cafe-rest {
+			display: block;
+			opacity: 0;
+			visibility: hidden;
+			transform: translateY(var(--leave-to));
+		}
+
+		.cafe:not([data-cafe-state='form'], [data-cafe-state='sent']) .cafe-panel {
+			display: grid;
+		}
+
+		.cafe[data-cafe-phase='close'] .cafe-rest {
+			--delay: 0.9s;
+		}
+
+		.cafe[data-cafe-phase='again'] .cafe-rest {
+			--delay: 0.3s;
+		}
+	}
+
+	/* Reduced motion: every change of state is a short fade, nothing moves. */
+	@media (prefers-reduced-motion: reduce) {
+		.cafe {
+			--arrive-from: 0px;
+			--leave-to: 0px;
+		}
+
+		.cafe-rest,
+		.cafe-form,
+		.cafe-sent {
+			transition-property: opacity, visibility;
+			transition-duration: 0.2s;
+			transition-delay: 0s;
 		}
 	}
 </style>

@@ -50,6 +50,20 @@ _À éviter_ : smooth scroll (qui désigne aussi `scroll-behavior: smooth`).
 **État final**
 Rendu que donnent le HTML et le CSS seuls : tout le contenu visible, à sa place. Une scène anime depuis un état de départ vers cet état final ; sans JS ou en mouvement réduit, la page reste à l'état final sans rien défaire.
 
+## Relief
+
+**Relief**
+La section qui suit le hero : le terrain de Besançon (la boucle du Doubs, la Citadelle, les collines) en carte à plat, nord en haut, à plus grande échelle que la carte du hero. Elle porte l'Estompage, les noms de lieux et un cartouche.
+_À éviter_ : terrain (réservé au travail sur site : « équipe terrain »), section 3D.
+
+**Estompage**
+La pièce de la section Relief : le relief ombré à l'encre et au grain, dont les ombres portées répondent à la Lampe. Ce n'est pas une Scène : il ne dépend pas du défilement, le visiteur le manipule. Son état final est l'estompage des cartes imprimées, lumière au nord-ouest. Il suit le Papier : de jour il dessine l'ombre, de nuit la lumière.
+_À éviter_ : hillshade, shader, relief 3D, plan-relief.
+
+**Lampe**
+La lumière que le visiteur tient au-dessus de l'Estompage : là où est le pointeur, ou le doigt tant qu'il touche la carte. Sans visiteur, elle est au nord-ouest. Au pointeur, elle y revient quand il sort de la carte ; au doigt, elle reste où on l'a laissée.
+_À éviter_ : soleil (réservé au Terminateur), lumière, curseur.
+
 ## Parcours
 
 **Frise**

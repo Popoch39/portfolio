@@ -63,12 +63,8 @@ const onOpeningIdle = () => {
 	if (settled) setTimeout(buildScenes);
 };
 
-// A context runs while one of its conditions holds: with reduced motion on a phone neither of the
-// scenes' does, and what answers a gesture must still be there.
-const REACTION_CONDITIONS = { ...CONDITIONS, always: 'all' };
-
-/** The scenes and reactions waiting to be built, in page order (the order their modules register them). */
-const pendingScenes: (() => void)[] = [];
+/** The scenes waiting to be built, in page order (the order their modules register them). */
+const pendingScenes: gsap.ContextFunc[] = [];
 let scenesBuilt = false;
 
 motion.add(CONDITIONS, ({ conditions }) => {
@@ -111,7 +107,7 @@ Promise.all([pageSettled, openingEnded]).then(() => setTimeout(buildScenes));
  */
 function buildScenes() {
 	if (scenesBuilt) return;
-	for (const add of pendingScenes) add();
+	for (const scene of pendingScenes) addScene(scene);
 	scenesBuilt = true;
 	ScrollTrigger.refresh();
 	// Outside the context: the landing anchor only matters at load, a preference flip later on must not
@@ -133,19 +129,7 @@ function addScene(scene: gsap.ContextFunc) {
  */
 export function registerScene(scene: gsap.ContextFunc) {
 	if (scenesBuilt) addScene(scene);
-	else pendingScenes.push(() => addScene(scene));
-}
-
-/**
- * Registers a reaction: what answers a gesture of the visitor (a click, a selection, a focus) and
- * moves nothing on its own, so it runs whatever the motion preference, reduced included. Built with
- * the scenes, never during the load; the cleanup it returns undoes its listeners when a preference
- * flips, before it is built again (`context.conditions.motionAllowed` tells it which way).
- */
-export function registerReaction(reaction: gsap.ContextFunc) {
-	const add = () => motion.add(REACTION_CONDITIONS, reaction);
-	if (scenesBuilt) add();
-	else pendingScenes.push(add);
+	else pendingScenes.push(scene);
 }
 
 /**

@@ -158,23 +158,10 @@ const jsonLd = JSON.stringify({
 </Layout>
 
 <script>
-	import { registerReaction, registerScene } from '../animation/base';
+	import { registerScene } from '../animation/base';
 	import { markOffScreen } from '../animation/offscreen';
 	import '../hero/register';
-
-	// What the statusline answers to the visitor. Fetched once the page has settled, so the first paint
-	// loads nothing for it; a context reverted meanwhile never starts it.
-	registerReaction(() => {
-		let stop: (() => void) | undefined;
-		let reverted = false;
-		import('../statusline/reactions').then(({ default: listen }) => {
-			if (!reverted) stop = listen();
-		});
-		return () => {
-			reverted = true;
-			stop?.();
-		};
-	});
+	import '../statusline/details';
 
 	// The marquee slides in CSS; registered for the context alone, so that its observer goes with a change of preference.
 	registerScene(() => {

@@ -1,8 +1,8 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
-import type { CDPSession, Page } from '@playwright/test';
-import { CPU_THROTTLING, expect, test } from './profile';
+import type { CDPSession, Locator, Page } from '@playwright/test';
+import { CPU_THROTTLING, expect, type Profile, test } from './profile';
 import { formatScroll, RESULTS, saveSection } from './report';
 import { analyseTrace, budgetBreaches, MARK, SCENE_SECTIONS, traceEvents } from './trace';
 
@@ -31,7 +31,7 @@ const SWIPE_PAUSE = 300;
 /** Long enough for Défilement lissé (1.5 s) and the scenes' lag (`SCENE_SCRUB`, 1 s) to settle. */
 const SETTLE = 3_000;
 
-test('the home page holds the fluidity budgets, Intro then scroll from top to bottom', async ({ browser, page, profile }) => {
+test('the home page holds the fluidity budgets, Intro, scroll from top to bottom, then the Formulaire du Café', async ({ browser, page, profile }) => {
 	const cdp = await page.context().newCDPSession(page);
 	await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU_THROTTLING[profile] });
 	await watchIntro(page);
@@ -46,6 +46,7 @@ test('the home page holds the fluidity budgets, Intro then scroll from top to bo
 	if (profile === 'mouse') await scrollWithWheel(page);
 	else await scrollWithFinger(page, cdp);
 	await page.waitForTimeout(SETTLE);
+	await useCafeForm(page, profile);
 	await page.evaluate((end) => performance.mark(end), MARK.end);
 	const trace = await browser.stopTracing();
 
@@ -63,6 +64,8 @@ declare global {
 	interface Window {
 		/** Settles once the Intro has ended: `true`, or `false` if it never started. */
 		perfIntroPlayed?: Promise<boolean>;
+		/** Marks the scene sections crossing the middle of the window (`markPhases`). */
+		perfPhases?: IntersectionObserver;
 	}
 }
 
@@ -129,10 +132,59 @@ function markPhases(page: Page) {
 				phaseOf.set(section, phase);
 				observer.observe(section);
 			}
+			window.perfPhases = observer;
 			performance.mark(scroll);
 		},
 		{ sections: SCENE_SECTIONS, scroll: MARK.scroll },
 	);
+}
+
+/** A visitor typing about eight characters a second. */
+const KEY_DELAY = 120;
+/**
+ * The form's longest transitions on the board (`src/cafe/form.ts`): the way back to the Café and its
+ * opening, a switch, a close, each with room for the throttled CPU.
+ */
+const OPENING = 3_500;
+const SWITCH = 2_000;
+const CLOSING = 2_500;
+
+/**
+ * From the bottom of the page, the Contact's « proposer un café » brings the Café back and opens its form;
+ * the visitor fills it, switches to visio and back, then closes it. A phase of its own: the observer that
+ * marks the scene sections stops first, so the way back through the Café is the form's.
+ */
+async function useCafeForm(page: Page, profile: Profile) {
+	await page.evaluate((enter) => {
+		window.perfPhases?.disconnect();
+		performance.mark(enter);
+	}, MARK.enter('Formulaire'));
+	const press = (locator: Locator) => (profile === 'mouse' ? locator.click() : locator.tap());
+	const section = page.locator('[data-cafe]');
+	const form = section.getByRole('form');
+
+	await press(page.locator('#contact a[data-cafe-propose]'));
+	await page.waitForTimeout(OPENING);
+	const name = form.getByRole('textbox', { name: 'Nom', exact: true });
+	await expect(name, 'the form did not open with Nom in hand').toBeFocused();
+	await name.pressSequentially('Ada Lovelace', { delay: KEY_DELAY });
+	await form.getByRole('textbox', { name: 'E-mail', exact: true }).pressSequentially('ada@example.org', { delay: KEY_DELAY });
+	await press(form.getByRole('radio', { name: 'Semaine prochaine', exact: true }));
+	await form.getByRole('textbox', { name: 'Message', exact: true }).pressSequentially('Une carte des moulins du Doubs.', { delay: KEY_DELAY });
+	expect(await section.getAttribute('data-cafe-ok'), 'the four blocks are not back in place').toBe('n e w m');
+
+	await press(form.getByRole('button', { name: 'plutôt en visio', exact: true }));
+	await page.waitForTimeout(SWITCH);
+	await expect(section).toHaveAttribute('data-cafe-flavour', 'visio');
+	await press(form.getByRole('button', { name: 'plutôt un café', exact: true }));
+	await page.waitForTimeout(SWITCH);
+	await expect(section).toHaveAttribute('data-cafe-flavour', 'cafe');
+
+	await press(form.getByRole('button', { name: 'esc · fermer', exact: true }));
+	await page.waitForTimeout(CLOSING);
+	await expect(section).toHaveAttribute('data-cafe-state', 'rest');
+	await page.waitForTimeout(SETTLE);
+	await page.evaluate((leave) => performance.mark(leave), MARK.leave('Formulaire'));
 }
 
 const scrollRange = (page: Page) => page.evaluate(() => document.documentElement.scrollHeight - innerHeight);

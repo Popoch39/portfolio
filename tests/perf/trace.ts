@@ -4,12 +4,15 @@
  * check (#45).
  */
 
-/** The phases of a run, in page order. Later tickets compare against these names: keep them stable. */
-export const PHASES = ['Intro', 'Frise', 'Atome', 'Montage', 'Reste'] as const;
+/**
+ * The phases of a run, in page order, then `Formulaire`: the Formulaire du Café used once the page has
+ * been scrolled to its bottom. Later tickets compare against these names: keep them stable.
+ */
+export const PHASES = ['Intro', 'Frise', 'Atome', 'Montage', 'Reste', 'Formulaire'] as const;
 export type Phase = (typeof PHASES)[number];
 
 /** The sections whose scene gets a phase of its own, by selector; the rest of the page is `Reste`. */
-export const SCENE_SECTIONS: Record<Exclude<Phase, 'Intro' | 'Reste'>, string> = {
+export const SCENE_SECTIONS: Record<Exclude<Phase, 'Intro' | 'Reste' | 'Formulaire'>, string> = {
 	Frise: '#parcours',
 	Atome: 'section:has([data-atome])',
 	Montage: '#cafe',

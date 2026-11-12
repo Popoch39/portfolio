@@ -47,9 +47,9 @@ if (ring)
 			const elapsed = Math.max(0, now - last);
 			last = now;
 			// Coming back into the window, the ring is on the point: it does not fly in from where it was left.
-			const reach = eased && shown ? 1 - Math.exp(-elapsed / EASE) : 1;
-			x += (pointerX - x) * reach;
-			y += (pointerY - y) * reach;
+			const covered = eased && shown ? 1 - Math.exp(-elapsed / EASE) : 1;
+			x += (pointerX - x) * covered;
+			y += (pointerY - y) * covered;
 			if (Math.abs(pointerX - x) < CAUGHT_UP && Math.abs(pointerY - y) < CAUGHT_UP) {
 				x = pointerX;
 				y = pointerY;

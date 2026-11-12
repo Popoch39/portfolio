@@ -8,6 +8,7 @@
  */
 import { registerDetail } from '../animation/base';
 import { show } from '../statusline/lane';
+import { keyboardFocusedLabel } from './label';
 
 type Gesture = 'hover' | 'tap' | 'focus';
 
@@ -71,9 +72,7 @@ registerDetail(() => {
 			target.closest<HTMLElement>('[data-tool]')?.dataset.tool ?? target.closest('.atome-tools li')?.textContent;
 		return { bague, tool: tool ?? undefined };
 	};
-	/** A label's focus only when it shows: a click or a tap focuses it too, and has already said what it aims at. */
-	const focusAimOf = (target: EventTarget | null) =>
-		target instanceof Element && target.matches('.atome-label:focus-visible') ? aimOf(target) : undefined;
+	const focusAimOf = (target: EventTarget | null) => aimOf(keyboardFocusedLabel(target) ?? null);
 
 	/** Where the pointer stood when it last came over something. */
 	let overAt = { x: Number.NaN, y: Number.NaN };

@@ -4,16 +4,17 @@
  * press, the keyboard); the selection lifted, the mode in force is back. A link focused from the
  * keyboard shows its target there, as a browser does for a hovered link.
  */
+import { registerDetail } from '../animation/base';
 import { show } from './lane';
 
 // Short, as Vim's own count is: beside `VISUAL` it needs no verb, and it fits a 320px phone's row.
-const counted = (count: number) => (count > 1 ? `${count} caractères` : '1 caractère');
+export const counted =(count: number) => (count > 1 ? `${count} caractères` : '1 caractère');
 
 /** A link's target as written in the page, without the scheme a visitor does not need to read. */
 const target = (link: HTMLAnchorElement) => (link.getAttribute('href') ?? '').replace(/^https?:\/\//, '');
 
-/** Listens to the selection and the focus; returns the way to stop and give the row back. */
-export function followModes() {
+// Listens to the selection and the focus; what it returns stops and gives the row back.
+registerDetail(() => {
 	let releaseVisual = () => {};
 	let releaseTarget = () => {};
 	let frame = 0;
@@ -54,4 +55,4 @@ export function followModes() {
 		releaseVisual();
 		releaseTarget();
 	};
-}
+});

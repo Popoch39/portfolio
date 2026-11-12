@@ -156,7 +156,8 @@ const frame = [
 			{
 				bagues.map((bague, rank) => {
 					const centre = bague.box / 2;
-					const reach = bague.radius + FINGER_REACH / 2;
+					/** The outer radius of the ring a finger may land in. */
+					const reachRadius = bague.radius + FINGER_REACH / 2;
 					/** The band (`side: false`) or the thickness under it, in ink or as the accent laid over it. */
 					const layer = ({ side, accent }: { side: boolean; accent: boolean }) => (
 						<svg
@@ -199,12 +200,12 @@ const frame = [
 								{/* A finger's reach around the band, never drawn. In a box of its own: nothing is aimed at outside its SVG's box. */}
 								<svg
 									class="bague-reach"
-									width={2 * reach}
-									height={2 * reach}
-									viewBox={`0 0 ${2 * reach} ${2 * reach}`}
-									style={`left: ${px(-reach)}; top: ${px(-reach)}`}
+									width={2 * reachRadius}
+									height={2 * reachRadius}
+									viewBox={`0 0 ${2 * reachRadius} ${2 * reachRadius}`}
+									style={`left: ${px(-reachRadius)}; top: ${px(-reachRadius)}`}
 								>
-									<circle cx={reach} cy={reach} r={bague.radius} stroke-width={FINGER_REACH} />
+									<circle cx={reachRadius} cy={reachRadius} r={bague.radius} stroke-width={FINGER_REACH} />
 								</svg>
 								<div class="bague-plane" style={`transform: rotate(${bague.spin}deg)`}>
 									{/* Carries the pastilles round the bague during the scene, on top of the bague's own spin. */}
@@ -268,6 +269,7 @@ const frame = [
 		ScrollSmoother,
 		ScrollTrigger,
 	} from '../animation/base';
+	import { keyboardFocusedLabel } from '../atome/label';
 
 	type Pose = { y: number; heading: number; tilt: number; spin: number; scale: number };
 	type Choreography = {
@@ -636,7 +638,7 @@ const frame = [
 		// only then does it answer whoever aims at a bague. Two numbers compared, nothing read from the page,
 		// and the mark only written when it changes.
 		let stands = false;
-		const report = ({ progress }: ScrollTrigger) => {
+		const markStanding = ({ progress }: ScrollTrigger) => {
 			if (stands === (progress === 1 && scene.progress() === 1)) return;
 			stands = !stands;
 			atome.dataset.atomeScene = stands ? '' : 'playing';
@@ -649,38 +651,39 @@ const frame = [
 			// mid-scene, Firefox then leaves the bagues where they stood instead of reverting them.
 			onUpdate: (self) => {
 				if (self.isActive) promote(true);
-				report(self);
+				markStanding(self);
 			},
 			onScrubComplete: (self) => {
 				if (!self.isActive) promote(false);
-				report(self);
+				markStanding(self);
 			},
 			// A page opened or resized past the scene is brought to its end without a scrub.
-			onRefresh: report,
+			onRefresh: markStanding,
 		});
 
 		// The keyboard reaching a label before the tower stands would focus a label not drawn yet: the page
 		// goes to the scene's end. Not for a click or a tap, which focus the label too. A frame later, once
 		// the base has brought the focused element into view, and only if the focus has not moved on.
-		let reaching = 0;
-		const reach = ({ target }: FocusEvent) => {
+		let scrollToEndFrame = 0;
+		const scrollToEndForLabel = ({ target }: FocusEvent) => {
 			if (played.progress === 1) return;
-			if (!(target instanceof Element) || !target.matches('.atome-label:focus-visible')) return;
-			cancelAnimationFrame(reaching);
-			reaching = requestAnimationFrame(() => {
-				if (document.activeElement !== target) return;
+			const label = keyboardFocusedLabel(target);
+			if (!label) return;
+			cancelAnimationFrame(scrollToEndFrame);
+			scrollToEndFrame = requestAnimationFrame(() => {
+				if (document.activeElement !== label) return;
 				const smoother = ScrollSmoother.get();
 				if (smoother) smoother.scrollTo(played.end, false);
 				else scrollTo(0, played.end);
 			});
 		};
-		atome.addEventListener('focusin', reach);
+		atome.addEventListener('focusin', scrollToEndForLabel);
 
 		return () => {
 			ScrollTrigger.removeEventListener('refreshInit', refit);
 			ScrollTrigger.removeEventListener('refresh', applyFrame);
-			atome.removeEventListener('focusin', reach);
-			cancelAnimationFrame(reaching);
+			atome.removeEventListener('focusin', scrollToEndForLabel);
+			cancelAnimationFrame(scrollToEndFrame);
 			promote(false);
 			atome.style.removeProperty('--tower-scale');
 			delete atome.dataset.atomeScene;

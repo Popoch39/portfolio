@@ -4,7 +4,9 @@
  * on the focused link. The link still writes a mail: a second click while the statusline says so, or
  * a modified click, follows it.
  */
+import { registerDetail } from '../animation/base';
 import { show } from './lane';
+import { counted } from './modes';
 
 /** How long the yank's answer stays, and with it the second click that opens the mail: time to read the hint. */
 const ANSWER_DURATION = 4000;
@@ -40,16 +42,17 @@ async function copyText(text: string) {
 	}
 }
 
-/** Listens to the address; returns the way to leave it a plain mail link again. */
-export function yankAddress() {
+// Listens to the address; what it returns leaves it a plain mail link again.
+registerDetail(() => {
 	const link = document.querySelector<HTMLAnchorElement>('[data-yank]');
-	if (!link) return () => {};
+	if (!link) return;
 	let release = () => {};
-	let answered: ReturnType<typeof setTimeout> | undefined;
+	/** Running for as long as the answer stays: while it does, a click follows the link. */
+	let answerTimer: ReturnType<typeof setTimeout> | undefined;
 
 	const forget = () => {
-		clearTimeout(answered);
-		answered = undefined;
+		clearTimeout(answerTimer);
+		answerTimer = undefined;
 		release();
 	};
 
@@ -57,18 +60,18 @@ export function yankAddress() {
 		// A modified click keeps the link's own behaviour.
 		if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 		// The address is already copied and the visitor asks again: this time the link is followed.
-		if (answered !== undefined) {
+		if (answerTimer !== undefined) {
 			forget();
 			return;
 		}
 		event.preventDefault();
 		const address = link.href.replace(/^mailto:/, '');
 		// Taken before the copy is awaited: a second click arriving meanwhile already opens the mail.
-		answered = setTimeout(forget, ANSWER_DURATION);
+		answerTimer = setTimeout(forget, ANSWER_DURATION);
 		const copied = await copyText(address);
-		if (answered === undefined) return;
+		if (answerTimer === undefined) return;
 		if (copied) link.dataset.yank = 'done';
-		const count = `"+y · ${address.length} caractères${tight.matches ? '' : ' copiés'}`;
+		const count = `"+y · ${counted(address.length)}${tight.matches ? '' : ' copiés'}`;
 		const answer = copied ? count : 'E: copie refusée';
 		release = show(wide.matches ? answer + HINT : answer, { hold: true });
 	};
@@ -86,4 +89,4 @@ export function yankAddress() {
 		link.dataset.yank = '';
 		forget();
 	};
-}
+});

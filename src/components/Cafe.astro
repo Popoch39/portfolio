@@ -7,6 +7,7 @@
 import Montage from './Montage.astro';
 import SectionNumber from './SectionNumber.astro';
 import { person } from '../data/profile';
+import { delays, lift } from '../cafe/lifts';
 
 interface Props {
 	number: number;
@@ -28,6 +29,22 @@ const steps = [
 	'5/6 · le couvercle',
 	'6/6 · sur le feu',
 ];
+
+/**
+ * The Repères of the Démontage, top to bottom, each beside the piece its field puts back: where its leader ends,
+ * in % of the moka's frame (board A's anchors), which follows the piece's lift. The fade comes once the piece is up.
+ */
+const tags = (
+	[
+		{ block: 'n', number: 1, text: 'le couvercle', piece: 'lid', x: 34.5, y: 60.5 },
+		{ block: 'e', number: 2, text: 'le collecteur', piece: 'collector', x: 36.5, y: 67 },
+		{ block: 'w', number: 3, text: 'le filtre', piece: 'filter', x: 38.5, y: 71.45 },
+		{ block: 'm', number: 4, text: 'la chaudière', piece: 'boiler', x: 36.5, y: 77.5 },
+	] as const
+).map(({ piece, x, y, ...tag }, rank) => ({
+	...tag,
+	style: `--tag-x: ${x}; --tag-y: calc(${y} - ${lift(piece)}); --tag-up: ${delays(piece).up}s; --tag-show: ${+(0.8 + 0.07 * rank).toFixed(2)}s`,
+}));
 ---
 
 <section id="cafe" class="cafe" aria-labelledby={titleId} data-cafe data-cafe-address={person.email}>
@@ -49,12 +66,29 @@ const steps = [
 		<p class="mono cafe-counter" data-cafe-counter data-steps={JSON.stringify(steps)}>{steps.at(-1)}</p>
 		<div class="cafe-progress" aria-hidden="true">
 			<div class="cafe-progress-fill" data-cafe-progress></div>
+			{/* The Démontage's, over the scene's fill: the rule left to fill as the blocks come back, by quarters. */}
+			<div class="cafe-progress-cover" data-cafe-progress-cover></div>
 		</div>
 
 		<div class="cafe-figure">
 			<div class="cafe-moka">
 				<Montage />
 			</div>
+		</div>
+		{/* The figure's name already says how many pieces are back. */}
+		<div class="cafe-tags" aria-hidden="true">
+			{
+				tags.map(({ block, number, text, style }) => (
+					<div class="cafe-tag" style={style} data-tag={block}>
+						<span class="cafe-tag-line" />
+						<span class="cafe-tag-dot" />
+						<span class="cafe-tag-text">
+							<span class="cafe-badge">{number}</span>
+							{text}
+						</span>
+					</div>
+				))
+			}
 		</div>
 	</div>
 
@@ -585,6 +619,189 @@ const steps = [
 	}
 
 	/*
+	 * The Démontage (board A), the moka's side of the form: one flag per block, 1 while it is up (n the lid, e the
+	 * collector, w the filter and the gasket, m the boiler and the funnel), from which the Montage's envelopes and
+	 * the Repères work out their lifts (`src/cafe/lifts.ts`). The view is where the camera steps back to: the whole
+	 * frame at ×0.94, its corner at the board's (790, 52) against the figure's (720, 18) and 444×740. The phase in
+	 * progress sets the timings, board A's.
+	 */
+	.cafe {
+		--up-n: 0;
+		--up-e: 0;
+		--up-w: 0;
+		--up-m: 0;
+		--view-scale: 0.94;
+		--view-left: calc(70 / 444);
+		--view-top: calc(34 / 740);
+		--lift-time: 0.7s;
+		--camera-time: 1s;
+		--camera-delay: 0s;
+		--fire-delay: 0s;
+	}
+
+	.cafe[data-cafe-state='form'] {
+		--up-n: 1;
+		--up-e: 1;
+		--up-w: 1;
+		--up-m: 1;
+	}
+
+	.cafe[data-cafe-state='form'][data-cafe-ok~='n'] {
+		--up-n: 0;
+	}
+
+	.cafe[data-cafe-state='form'][data-cafe-ok~='e'] {
+		--up-e: 0;
+	}
+
+	.cafe[data-cafe-state='form'][data-cafe-ok~='w'] {
+		--up-w: 0;
+	}
+
+	.cafe[data-cafe-state='form'][data-cafe-ok~='m'] {
+		--up-m: 0;
+	}
+
+	.cafe[data-cafe-phase='open'] {
+		--lift-time: 0.9s;
+	}
+
+	/* The camera waits for the pieces to start landing, the fire for them to be down. */
+	.cafe[data-cafe-phase='close'] {
+		--lift-time: 0.8s;
+		--camera-delay: 0.35s;
+		--fire-delay: 1s;
+	}
+
+	.cafe[data-cafe-phase='send'] {
+		--camera-delay: 0.4s;
+		--fire-delay: 1s;
+	}
+
+	/* Retracts from the left by quarters: what is left to fill, in the rule's colour. Out of the way at rest. */
+	.cafe-progress-cover {
+		position: absolute;
+		inset: 0;
+		background: var(--color-rule);
+		transform-origin: 100% 50%;
+		transform: scaleX(calc((var(--up-n) + var(--up-e) + var(--up-w) + var(--up-m)) / 4));
+	}
+
+	/* Two columns only: stacked, the moka is out of sight while the visitor writes. */
+	.cafe-tags {
+		display: none;
+	}
+
+	/*
+	 * A Repère is drawn by transforms from its anchor in the figure (`--x`, `--y`), which follow the view and its
+	 * piece's lift: a leader 40 board pixels long ending there, a dot at its end and the tag 48 pixels to its left.
+	 * Shown while its block is up.
+	 */
+	.cafe-tag {
+		--tag-delay: 0s;
+		--fade-delay: 0s;
+		--x: calc(444 * var(--u) * (var(--view-left) + var(--view-scale) * var(--tag-x) / 100));
+		--y: calc(740 * var(--u) * (var(--view-top) + var(--view-scale) * var(--tag-y) / 100));
+	}
+
+	.cafe-tag[data-tag='n'] {
+		--shown: var(--up-n);
+	}
+
+	.cafe-tag[data-tag='e'] {
+		--shown: var(--up-e);
+	}
+
+	.cafe-tag[data-tag='w'] {
+		--shown: var(--up-w);
+	}
+
+	.cafe-tag[data-tag='m'] {
+		--shown: var(--up-m);
+	}
+
+	.cafe-tag > * {
+		position: absolute;
+		left: 0;
+		top: 0;
+		opacity: var(--shown);
+	}
+
+	.cafe-tag-line {
+		width: calc(40 * var(--u));
+		height: 1px;
+		background: var(--color-ink);
+		transform-origin: 100% 50%;
+		transform: translate(calc(var(--x) - 40 * var(--u)), var(--y)) scaleX(var(--shown));
+	}
+
+	.cafe-tag-dot {
+		width: 5px;
+		height: 5px;
+		background: var(--color-ink);
+		transform: translate(calc(var(--x) - 2px), calc(var(--y) - 2px));
+	}
+
+	.cafe-tag-text {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 13px;
+		line-height: 18px;
+		font-weight: 600;
+		white-space: nowrap;
+		color: var(--color-ink);
+		transform: translate(calc(var(--x) - 48 * var(--u) - 100%), calc(var(--y) - 50%));
+	}
+
+	/* They go up with their piece, and show once it is up. */
+	.cafe[data-cafe-phase='open'] .cafe-tag {
+		--tag-delay: var(--tag-up);
+		--fade-delay: var(--tag-show);
+	}
+
+	/* The field in hand names its piece, in ink with the accent on its leader; the others step back. */
+	.cafe:has(.cafe-form :focus) .cafe-tag-text {
+		color: var(--color-ink-muted);
+	}
+
+	.cafe:has(#cafe-nom:focus) [data-tag='n'] .cafe-tag-text,
+	.cafe:has(#cafe-email:focus) [data-tag='e'] .cafe-tag-text,
+	.cafe:has(.cafe-chips input:focus) [data-tag='w'] .cafe-tag-text,
+	.cafe:has(#cafe-message:focus) [data-tag='m'] .cafe-tag-text {
+		color: var(--color-ink);
+	}
+
+	.cafe:has(#cafe-nom:focus) [data-tag='n'] .cafe-badge,
+	.cafe:has(#cafe-email:focus) [data-tag='e'] .cafe-badge,
+	.cafe:has(.cafe-chips input:focus) [data-tag='w'] .cafe-badge,
+	.cafe:has(#cafe-message:focus) [data-tag='m'] .cafe-badge {
+		background: var(--color-ink);
+		color: var(--color-paper);
+	}
+
+	.cafe:has(#cafe-nom:focus) [data-tag='n'] :is(.cafe-tag-line, .cafe-tag-dot),
+	.cafe:has(#cafe-email:focus) [data-tag='e'] :is(.cafe-tag-line, .cafe-tag-dot),
+	.cafe:has(.cafe-chips input:focus) [data-tag='w'] :is(.cafe-tag-line, .cafe-tag-dot),
+	.cafe:has(#cafe-message:focus) [data-tag='m'] :is(.cafe-tag-line, .cafe-tag-dot) {
+		background: var(--color-accent);
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.cafe-progress-cover {
+			transition: transform var(--lift-time) cubic-bezier(0.65, 0, 0.35, 1);
+		}
+
+		.cafe-tag > * {
+			transition:
+				transform var(--lift-time) cubic-bezier(0.16, 1, 0.3, 1) var(--tag-delay),
+				opacity 0.3s ease var(--fade-delay),
+				background-color 0.2s ease,
+				color 0.2s ease;
+		}
+	}
+
+	/*
 	 * Two columns, the board's layout (1280×770 above the statusline, 52px margins: 1176×770) at the scale `--u`
 	 * that fits it in the screen's height and the page column's width, the text on the left and the moka beside it.
 	 * The text keeps a readable size (16px at least), so a low window cannot hold the column: below the height
@@ -672,6 +889,15 @@ const steps = [
 			pointer-events: none;
 		}
 
+		/* At the figure's corner: the Repères are placed in its shares. */
+		.cafe-tags {
+			display: block;
+			position: absolute;
+			top: calc(18 * var(--u));
+			left: calc(var(--page-gutter) + 668 * var(--u));
+			pointer-events: none;
+		}
+
 		/*
 		 * The paragraph and the actions keep their place while the form stands over it, from the board's 382px
 		 * (its head 10px above the first field's row at 392px): opening and closing move nothing around.
@@ -719,6 +945,13 @@ const steps = [
 			transition-property: opacity, visibility;
 			transition-duration: 0.2s;
 			transition-delay: 0s;
+		}
+
+		.cafe-tag > * {
+			transition:
+				opacity 0.2s ease,
+				background-color 0.2s ease,
+				color 0.2s ease;
 		}
 	}
 </style>

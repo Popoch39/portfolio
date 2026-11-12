@@ -77,8 +77,8 @@ test.describe('Formulaire du Café', () => {
 		await expect(coffee(page)).toBeHidden();
 		await expect(form(page).getByRole('button', { name: 'plutôt en visio', exact: true })).toBeVisible();
 		await expect(form(page).getByText('sans engagement', { exact: true })).toBeVisible();
-		// The Montage keeps its own counter: the Démontage's comes with the moka (#113).
-		await expect(counter(page)).toHaveText('6/6 · sur le feu');
+		// The counter is the Démontage's while the form is open.
+		await expect(section(page).getByText(/^\d\/4 · /)).toHaveText('0/4 · en pièces');
 	});
 
 	test('« Plutôt en visio » opens the form in visio mode', async ({ page }) => {

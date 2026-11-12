@@ -37,6 +37,9 @@ const TEXTS = {
 	visio: { heading: 'Une visio, où que vous soyez.', switch: 'plutôt un café', confirm: 'Envoyé. À très vite en visio.' },
 };
 
+/** The counter while the form is open, by the number of blocks back in place (board A). */
+const COUNTS = ['en pièces', 'une pièce posée', 'à mi-hauteur', 'presque monté', 'prêt à chauffer'];
+
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
 registerDetail(() => {
@@ -47,6 +50,11 @@ registerDetail(() => {
 	if (!section || !template || !restBlock || links.length === 0) return;
 	const address = section.dataset.cafeAddress ?? '';
 	const proposeLink = document.querySelector<HTMLAnchorElement>('a[data-cafe-propose]');
+	const counter = section.querySelector<HTMLElement>('[data-cafe-counter]');
+	const figure = section.querySelector<HTMLElement>('[data-montage]');
+	const figureName = figure?.getAttribute('aria-label') ?? '';
+	// The Montage's step, given back as the form closes.
+	let step = counter?.textContent ?? '';
 
 	// The actions open the form: buttons, no longer links that leave for the mail client.
 	const buttons = links.map((link) => {
@@ -73,6 +81,7 @@ registerDetail(() => {
 	function go(next: { state?: State; flavour?: Flavour }, phase: Phase, after?: () => void) {
 		clearTimeout(phaseTimer);
 		if (cutFrame !== undefined) cancelAnimationFrame(cutFrame);
+		if (state !== 'form' && next.state === 'form') step = counter?.textContent ?? step;
 		state = next.state ?? state;
 		flavour = next.flavour ?? flavour;
 		section!.dataset.cafeState = state;
@@ -84,6 +93,7 @@ registerDetail(() => {
 			panel.confirm.textContent = TEXTS[flavour].confirm;
 		}
 		showVimMode(state === 'form' ? 'INSERT' : 'NORMAL');
+		describe();
 		if (phase === 'cut') {
 			// Held over the frame that draws the new state, so that it is drawn without transitions; given back after,
 			// for the hovers and the next phase.
@@ -205,7 +215,23 @@ registerDetail(() => {
 			.filter(([, ok]) => ok)
 			.map(([block]) => block)
 			.join(' ');
+		describe();
 		return valid;
+	}
+
+	/**
+	 * The counter and the figure's name follow the blocks while the form is open; otherwise they are the Montage's.
+	 * Written only when they change: a text change costs a layout.
+	 */
+	function describe() {
+		const back = state === 'form' && panel ? Object.values(validity()).filter(Boolean).length : undefined;
+		const count = back === undefined ? step : `${back}/4 · ${COUNTS[back]}`;
+		const name =
+			back === undefined
+				? figureName
+				: `Un Moka Express démonté au-dessus de son réchaud éteint : ${back} pièces sur 4 remises en place.`;
+		if (counter && counter.textContent !== count) counter.textContent = count;
+		if (figure && figure.getAttribute('aria-label') !== name) figure.setAttribute('aria-label', name);
 	}
 
 	function onInput(event: Event) {
@@ -302,7 +328,11 @@ registerDetail(() => {
 		section.removeEventListener('submit', submit);
 		panel?.root.remove();
 		for (const key of ['cafeState', 'cafeFlavour', 'cafePhase', 'cafeOk']) delete section.dataset[key];
-		if (state === 'form') showVimMode('NORMAL');
+		if (state === 'form') {
+			showVimMode('NORMAL');
+			state = 'rest';
+			describe();
+		}
 	};
 });
 

@@ -80,6 +80,17 @@ test.describe('Content Security Policy', () => {
 		expect(await violations()).toEqual([]);
 	});
 
+	// The pointer's point is a data URI in a `cursor`, its ring a bundled script.
+	test('blocks nothing the cursor needs', async ({ page, baseURL }) => {
+		const violations = await recordViolations(page);
+		await page.goto('/', { referer: baseURL });
+
+		await page.mouse.move(400, 300);
+		await page.mouse.move(420, 320);
+		await expect(page.locator('[data-trail]')).toBeVisible();
+		expect(await violations()).toEqual([]);
+	});
+
 	test('blocks nothing on the 404 page', async ({ page }) => {
 		const violations = await recordViolations(page);
 		await page.goto('/this-page-does-not-exist/');

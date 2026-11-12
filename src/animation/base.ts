@@ -149,6 +149,17 @@ export function registerReaction(reaction: gsap.ContextFunc) {
 }
 
 /**
+ * Registers a detail: the page's answer to a gesture (a press, a key). Unlike a scene, it is set up at
+ * once and whatever the preference: it only listens, and the visitor gets an answer under reduced motion
+ * too, where its styles give it in one step. What it returns undoes it with the context.
+ */
+export function registerDetail(detail: gsap.ContextFunc) {
+	// A context whose conditions all fail runs nothing: `all` keeps this one up when motion is reduced
+	// under a finger.
+	motion.add({ ...CONDITIONS, all: 'all' }, detail);
+}
+
+/**
  * Registers the opening (the Intro): built at once, unlike the other scenes, which wait for it. While
  * it plays, it calls `idle` at its dead time, when nothing it plays on the main thread moves for a
  * while (the scenes are built there), and `end` once it has ended (finished, skipped or reverted);

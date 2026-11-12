@@ -30,7 +30,12 @@ const mailto = `mailto:${person.email}`;
 			))
 		}
 	</div>
-	<Title id={night ? undefined : 'hero-title'} class="hero-title">
+	<Title
+		id={night ? undefined : 'hero-title'}
+		class="hero-title"
+		data-given={person.givenName}
+		data-family={person.familyName}
+	>
 		<span class="hero-line"><span data-intro={intro('line')}>{person.givenName}</span></span>{' '}
 		<span class="hero-line"><span data-intro={intro('line')}>{person.familyName}</span></span>
 	</Title>
@@ -134,6 +139,77 @@ const mailto = `mailto:${person.email}`;
 
 	.hero-line > span {
 		display: block;
+	}
+
+	/*
+	 * The name out of register: a second plate of each line, in the accent, lies under the ink and
+	 * slips off it at a press on « Écrire » (`src/hero/register.ts` sets `data-slipped` on the map,
+	 * which holds the day's name and the night's). Generated from the title's attributes, with an empty
+	 * alternative text: the name is neither read nor found twice. A browser without that syntax draws no plate.
+	 */
+	.hero-title {
+		position: relative;
+		/* Its own stacking context: the plates go under the name's ink, not under the map. */
+		isolation: isolate;
+	}
+
+	.hero-title::before,
+	.hero-title::after {
+		position: absolute;
+		z-index: -1;
+		/* The box of a line of the name, so that the letters land on the ink's. */
+		height: 0.786em;
+		line-height: 0.904;
+		/*
+		 * The name is text at display size, and the accent carries none on the paper (ADR 0006): the plate
+		 * takes the display shade, the charter's one exception, which holds the large-text floor on every paper.
+		 */
+		color: var(--color-accent-display);
+		pointer-events: none;
+		opacity: 0;
+	}
+
+	.hero-title::before {
+		content: attr(data-given) / '';
+		top: 0;
+		left: 0;
+	}
+
+	/* The title is as wide as its lines and their gap: the last one ends on its right edge. */
+	.hero-title::after {
+		content: attr(data-family) / '';
+		bottom: 0;
+		right: 0;
+	}
+
+	/*
+	 * A misregistration, not a slide: the plate stands off for a few frames (one alone would not be
+	 * seen), then is back in a blink, with no overshoot. The curve only shapes the way back.
+	 */
+	:global(.hero-map[data-slipped]) .hero-title::before,
+	:global(.hero-map[data-slipped]) .hero-title::after {
+		animation: register-slip 0.18s cubic-bezier(0.2, 0, 0, 1);
+	}
+
+	@keyframes register-slip {
+		0%,
+		55% {
+			opacity: 1;
+			transform: translate(0.055em, -0.04em);
+		}
+
+		100% {
+			opacity: 1;
+			transform: none;
+		}
+	}
+
+	/* Reduced motion: the plate shows out of register for the same moment, then is gone. Nothing slides. */
+	@media (prefers-reduced-motion: reduce) {
+		:global(.hero-map[data-slipped]) .hero-title::before,
+		:global(.hero-map[data-slipped]) .hero-title::after {
+			animation-timing-function: step-end;
+		}
 	}
 
 	/* A zero-height line along the parallel: the rule, the latitudes and the marker hang from it. */
@@ -342,6 +418,12 @@ const mailto = `mailto:${person.email}`;
 			flex-direction: column;
 			row-gap: 0.164em;
 			font-size: clamp(52px, 15.4vw, 96px);
+		}
+
+		/* Both lines start on the left edge. */
+		.hero-title::after {
+			right: auto;
+			left: 0;
 		}
 
 		.tick[data-shown~='narrow'] {

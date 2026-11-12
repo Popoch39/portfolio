@@ -92,6 +92,16 @@ const sections = [
 	}
 
 	/*
+	 * Just over the breakpoint the links' three-column cell is at its narrowest (180px at 861px):
+	 * the gap tightens, down to 12px, so they keep one row.
+	 */
+	@media (min-width: 861px) and (max-width: 962px) {
+		nav {
+			column-gap: clamp(12px, 8vw - 57px, 20px);
+		}
+	}
+
+	/*
 	 * The name and the specialty share a row, the sections take the next one with a finger's room.
 	 * Flex rather than the grid: every grid cell takes the full row there. The grid's gap stays, the
 	 * Intro reads it for its strips.

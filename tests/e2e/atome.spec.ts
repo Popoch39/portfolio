@@ -139,6 +139,51 @@ test.describe('Atome', () => {
 		});
 	}
 
+	// A phone on its side leaves the pinned frame some 360px: beside a tower fitted to it, the labels
+	// would sit closer than their own height. They go under it, one at a time, and the title leaves the frame.
+	for (const viewport of [
+		{ width: 844, height: 390 },
+		{ width: 667, height: 375 },
+	]) {
+		test(`${viewport.width} × ${viewport.height}: the tower keeps the frame and no label runs into another`, async ({
+			page,
+		}) => {
+			await page.setViewportSize(viewport);
+			await page.goto('/');
+			await page.evaluate(() => document.fonts.ready);
+
+			for (const pose of ['tower', 'lit'] as const) {
+				await scrollToShare(page, POSES[pose]);
+				const frame = await page.evaluate(() => ({
+					top: 0,
+					bottom: document.querySelector('#statusline')?.getBoundingClientRect().top ?? innerHeight,
+				}));
+				const box = (locator: ReturnType<typeof tower>) =>
+					locator.evaluateAll((elements) =>
+						elements
+							.filter((element) => Number(getComputedStyle(element).opacity) > 0.5)
+							.map((element) => {
+								const { top, bottom, left, right } = element.getBoundingClientRect();
+								return { top, bottom, left, right };
+							}),
+					);
+				const [towerBox] = await box(tower(page));
+				const labels = await box(page.locator('.atome-label'));
+
+				expect(towerBox.bottom - towerBox.top, `${pose}: the tower's height`).toBeGreaterThanOrEqual(0.4 * viewport.height);
+				for (const [index, label] of [towerBox, ...labels].entries()) {
+					expect(label.top, `${pose}: box ${index} above the frame`).toBeGreaterThanOrEqual(frame.top);
+					expect(label.bottom, `${pose}: box ${index} under the statusline`).toBeLessThanOrEqual(frame.bottom);
+				}
+				for (const [index, label] of labels.entries()) {
+					for (const other of labels.slice(index + 1)) {
+						expect(label.bottom <= other.top || other.bottom <= label.top, `${pose}: two labels overlap`).toBe(true);
+					}
+				}
+			}
+		});
+	}
+
 	test('the preference turning to reduced motion mid-scene leaves the final state, nothing else', async ({ page }) => {
 		await page.emulateMedia({ reducedMotion: 'reduce' });
 		await page.goto('/');

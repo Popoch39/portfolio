@@ -12,6 +12,9 @@ const LON_MINUTE = LAT_MINUTE * Math.cos((person.latitude * Math.PI) / 180);
 /** One minute of latitude, m. */
 const NAUTICAL_MILE = 1852;
 
+/** Where the marker stands across the map: 64 % of its width on desktop, 76 % on narrow screens. */
+export const meridianShares = [0.64, 0.76] as const;
+
 /** Which compositions show a tick: the desktop one (`desk`, more ticks as the map widens) or the narrow one. */
 type Shown = 'desk' | 'desk-wide' | 'desk-wider' | 'narrow';
 

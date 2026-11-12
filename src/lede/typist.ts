@@ -21,7 +21,7 @@ const RESTART_MS = 1800;
 registerScene(() => {
 	const parts = typistParts();
 	if (!parts) return;
-	const { root, buffer, versionNumber, audience, keys, statusMode, modified, pause } = parts;
+	const { root, views, statusMode, modified, pause } = parts;
 	const lede = JSON.parse(root.dataset.lede ?? '') as Lede;
 	const count = lede.versions.length;
 
@@ -71,10 +71,13 @@ registerScene(() => {
 	};
 	pause.addEventListener('change', followPause);
 
+	const showKeys = (on: boolean) => views.forEach(({ keys }) => (keys.dataset.on = String(on)));
+
 	function draw(patch: Partial<BufferState>) {
 		const mode = state.mode;
 		state = { ...state, ...patch };
-		buffer.replaceChildren(...runs(lede, state).map(runNode));
+		const drawn = runs(lede, state);
+		views.forEach(({ buffer }) => buffer.replaceChildren(...drawn.map(runNode)));
 		if (state.mode !== mode) showMode(state.mode);
 	}
 
@@ -86,28 +89,32 @@ registerScene(() => {
 
 	/** The buffer whole and at rest on a version, the keys put away. */
 	function settle(index: number) {
-		keys.replaceChildren();
-		keys.dataset.on = 'false';
+		views.forEach(({ keys }) => keys.replaceChildren());
+		showKeys(false);
 		state = { ...restingOn(lede, index), mode: state.mode };
 		draw({ mode: 'NORMAL' });
 	}
 
 	function showVersion(index: number) {
 		version = index;
-		versionNumber.textContent = `${index + 1}/${count}`;
-		audience.textContent = `pour : ${lede.versions[index].audience}`;
-		// Two identical keyframes, alternated: the fade restarts without a forced reflow.
-		audience.dataset.run = audience.dataset.run === 'a' ? 'b' : 'a';
+		views.forEach(({ versionNumber, audience }) => {
+			versionNumber.textContent = `${index + 1}/${count}`;
+			audience.textContent = `pour : ${lede.versions[index].audience}`;
+			// Two identical keyframes, alternated: the fade restarts without a forced reflow.
+			audience.dataset.run = audience.dataset.run === 'a' ? 'b' : 'a';
+		});
 	}
 
 	function press(label: string, patch?: Partial<BufferState>, fresh = false) {
-		if (fresh) keys.replaceChildren();
-		const cap = document.createElement('kbd');
-		cap.textContent = label;
-		if (label.length > 1) cap.dataset.wide = '';
-		keys.append(cap);
-		if (keys.childElementCount > MAX_KEYS) keys.firstElementChild?.remove();
-		keys.dataset.on = 'true';
+		views.forEach(({ keys }) => {
+			if (fresh) keys.replaceChildren();
+			const cap = document.createElement('kbd');
+			cap.textContent = label;
+			if (label.length > 1) cap.dataset.wide = '';
+			keys.append(cap);
+			if (keys.childElementCount > MAX_KEYS) keys.firstElementChild?.remove();
+		});
+		showKeys(true);
 		if (patch) draw(patch);
 	}
 
@@ -181,7 +188,7 @@ registerScene(() => {
 				showVersion(next);
 			},
 		]);
-		steps.push([1100, () => (keys.dataset.on = 'false')]);
+		steps.push([1100, () => showKeys(false)]);
 
 		let i = 0;
 		const go = () => {
@@ -229,20 +236,33 @@ function runNode({ text, kind }: Run) {
 	return span;
 }
 
-/** The lede's elements and the mode indicators the typist writes to; `null` when one is missing. */
-function typistParts() {
-	const root = document.querySelector<HTMLElement>('[data-lede]');
-	const parts = {
-		root,
+/** What the typist writes to in one copy of the lede. */
+type View = NonNullable<ReturnType<typeof viewOf>>;
+
+function viewOf(root: Element | null) {
+	const view = {
 		buffer: root?.querySelector<HTMLElement>('[data-buffer]'),
 		versionNumber: root?.querySelector<HTMLElement>('[data-version-number]'),
 		audience: root?.querySelector<HTMLElement>('[data-audience]'),
 		keys: root?.querySelector<HTMLElement>('[data-keys]'),
+	};
+	return allPresent(view) ? view : null;
+}
+
+/**
+ * The lede's elements and the mode indicators the typist writes to; `null` when one is missing. The
+ * lede's copy on the hero's night (ADR 0008) gets every keystroke too, so that both halves read alike.
+ */
+function typistParts() {
+	const root = document.querySelector<HTMLElement>('[data-lede]');
+	const views = [root, ...document.querySelectorAll('[data-lede-night]')].map(viewOf);
+	const parts = {
+		root,
 		statusMode: document.querySelector<HTMLElement>('#statusline [data-vim-mode]'),
 		modified: document.querySelector<HTMLElement>('#statusline [data-vim-modified]'),
 		pause: document.querySelector<HTMLInputElement>('#pause'),
 	};
-	return allPresent(parts) ? parts : null;
+	return allPresent(parts) && allPresent(views) ? { ...parts, views } : null;
 }
 
 function allPresent<T extends object>(parts: T): parts is { [K in keyof T]: NonNullable<T[K]> } {

@@ -1,0 +1,35 @@
+{
+	"model": "surface",
+	"scale": 4,
+	"width": 1600,
+	"height": 1600,
+	"encoding": "uint16, little-endian, rows from north to south, columns from west to east",
+	"altitude": {
+		"min": 232,
+		"max": 527,
+		"formula": "min + value / 65535 × (max − min), metres (IGN69)",
+		"lowest": 233.02,
+		"highest": 525.85
+	},
+	"extent": {
+		"west": 5.992188312207292,
+		"east": 6.074013152701415,
+		"south": 47.201966666666664,
+		"north": 47.25752222222222
+	},
+	"projection": "the hero map’s: north up, a minute of longitude narrowed by the cosine of the marker’s latitude",
+	"marker": {
+		"x": 624,
+		"y": 568
+	},
+	"metresPerPixel": {
+		"x": 3.8722527027831295,
+		"y": 3.8602596803619145
+	},
+	"bytes": {
+		"raw": 5120000,
+		"gzip": 4864939,
+		"brotli": 4110729
+	},
+	"sha256": "da12763d1ad385655d7e5761aab5cedacbeb660756dce86792e834828861924a"
+}

@@ -1,7 +1,9 @@
 ---
 /**
  * Vim-like statusline, fixed to the bottom of the window. Decorative, hidden from assistive
- * technologies, but for the Pause. Outside the smoothed content, otherwise its transform would carry it along.
+ * technologies, but for the Pause and the day's sun. Outside the smoothed content, otherwise its
+ * transform would carry it along. Always ink, day or night: it stays in daylight's theme, but for the
+ * Cyanotype's night blue.
  */
 import Pause from './Pause.astro';
 
@@ -13,7 +15,7 @@ interface Props {
 const { pause = false } = Astro.props;
 ---
 
-<div id="statusline" class="statusline mono" data-intro="statusline">
+<div id="statusline" class="statusline mono theme-light" data-intro="statusline">
 	<div class="side">
 		{/* The home page's lede types in Vim: its mode is echoed here (`src/lede/typist.ts`). */}
 		<span class="mode" aria-hidden="true" data-vim-mode>NORMAL</span>
@@ -37,10 +39,42 @@ const { pause = false } = Astro.props;
 		</span>
 		<span class="file" aria-hidden="true">~/louis/portfolio.md<span data-vim-modified hidden> [+]</span></span>
 	</div>
-	<div class="side" aria-hidden="true">
-		<span class="encoding">utf-8 · markdown</span>
-		<span class="segment">Bas</span>
-		<span class="mode">:wq</span>
+	<div class="side">
+		{/* Today's sunrise and sunset at Besançon, written by the sky's inline script (`src/sky/sky.ts`). */}
+		<p class="sun">
+			<svg
+				width="13"
+				height="13"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+				><path d="M3 19h18M7 19a5 5 0 0 1 10 0M12 3v7M9 6l3-3 3 3"></path></svg
+			>
+			<span><span class="sun-word">lever </span><span class="time" data-sun="rise"></span></span>
+			<svg
+				width="13"
+				height="13"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+				><path d="M3 19h18M7 19a5 5 0 0 1 10 0M12 10V3M9 7l3 3 3-3"></path></svg
+			>
+			<span><span class="sun-word">coucher </span><span class="time" data-sun="set"></span></span>
+			<span class="visually-hidden"> à Besançon aujourd’hui</span>
+		</p>
+		{/* The paper in force, picked in the Nuancier: read from the root, right from the first paint. */}
+		<span class="paper" aria-hidden="true"></span>
+		<span class="encoding" aria-hidden="true">utf-8 · markdown</span>
+		<span class="segment" aria-hidden="true">Bas</span>
+		<span class="mode" aria-hidden="true">:wq</span>
 	</div>
 </div>
 
@@ -68,6 +102,19 @@ const { pause = false } = Astro.props;
 		display: flex;
 		align-items: stretch;
 		min-width: 0;
+	}
+
+	/*
+	 * The left side takes what the right one leaves, on one row: a segment that does not fit whole wraps
+	 * onto a second row, clipped away. The file name goes first, then the branch; the queries below keep
+	 * the right side short enough for the mode and the Pause to stay at every width.
+	 */
+	.side:first-child {
+		flex: 1 1 0;
+		flex-wrap: wrap;
+		align-content: flex-start;
+		height: var(--statusline-row);
+		overflow: hidden;
 	}
 
 	.side:last-child {
@@ -100,18 +147,130 @@ const { pause = false } = Astro.props;
 	}
 
 	.file {
-		overflow: hidden;
 		white-space: nowrap;
-		text-overflow: ellipsis;
+	}
+
+	/* The mark keeps its room while hidden: the name would otherwise leave the row at each INSERT. */
+	.file [hidden] {
+		display: inline;
+		visibility: hidden;
 	}
 
 	.encoding {
 		color: var(--color-on-ink-muted);
 	}
 
-	@media (max-width: 860px) {
+	.sun {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+		margin: 0;
+		color: var(--color-on-ink-muted);
+		white-space: nowrap;
+	}
+
+	.sun svg + span {
+		margin-right: 6px;
+	}
+
+	.time {
+		color: var(--color-paper);
+	}
+
+	.time::after {
+		content: var(--sky-rise);
+	}
+
+	.time[data-sun='set']::after {
+		content: var(--sky-set);
+	}
+
+	/* Without the sky's script, no times to give, and no paper but the day's. */
+	:global(:root:not([data-sky])) :is(.sun, .paper) {
+		display: none;
+	}
+
+	/* The Nuancier's codes and names (ADR 0009); `auto` says which of the day or the night it gives. */
+	:global(:root) {
+		--paper-code: 'EN-04';
+		--paper-name: 'auto · jour';
+	}
+
+	:global(:root[data-theme='dark']) {
+		--paper-name: 'auto · nuit';
+	}
+
+	:global(:root[data-bg='light']) {
+		--paper-code: 'EN-01';
+		--paper-name: 'jour';
+	}
+
+	:global(:root[data-bg='dark']) {
+		--paper-code: 'EN-02';
+		--paper-name: 'nuit';
+	}
+
+	:global(:root[data-bg='cyan']) {
+		--paper-code: 'EN-03';
+		--paper-name: 'cyanotype';
+	}
+
+	.paper {
+		white-space: nowrap;
+	}
+
+	.paper::before {
+		content: 'papier ' var(--paper-code) ' · ';
+		color: var(--color-on-ink-muted);
+	}
+
+	.paper::after {
+		content: var(--paper-name);
+	}
+
+	/* On the Cyanotype the row is printed in the blueprint's own night blue. */
+	:global(:root[data-theme='cyan']) .statusline {
+		--color-ink: #0b2140;
+		--color-bar: #24477a;
+		--color-on-ink-muted: #a8b9d3;
+	}
+
+	/* The right side gives way step by step, measured on the build: the left one keeps 164px, the mode and the Pause. */
+	@media (max-width: 1180px) {
 		.encoding {
 			display: none;
+		}
+	}
+
+	@media (max-width: 1040px) {
+		.sun-word {
+			display: none;
+		}
+	}
+
+	/* The paper's name alone, as the Nuancier's strips carry their codes. */
+	@media (max-width: 860px) {
+		.paper::before {
+			content: none;
+		}
+	}
+
+	/* A phone keeps the Pause and the switch: the rest gives way. */
+	@media (max-width: 600px) {
+		.branch,
+		.sun,
+		.segment {
+			display: none;
+		}
+	}
+
+	/*
+	 * The narrowest phones: the segments tighten rather than lose one more. Down to 298px of row in all:
+	 * a 320px desktop window gives its scrollbar some 15px of it.
+	 */
+	@media (max-width: 380px) {
+		.side > * {
+			padding: 0 6px;
 		}
 	}
 </style>

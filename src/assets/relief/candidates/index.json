@@ -1,0 +1,448 @@
+{
+	"dataset": {
+		"source": "IGN – LiDAR HD",
+		"licence": "Licence Ouverte 2.0",
+		"service": "https://data.geopf.fr/wms-r/wms",
+		"layers": {
+			"ground": "IGNF_LIDAR-HD_MNT_ELEVATION.ELEVATIONGRIDCOVERAGE.LAMB93",
+			"surface": "IGNF_LIDAR-HD_MNS_ELEVATION.ELEVATIONGRIDCOVERAGE.LAMB93",
+			"built": "IGNF_LIDAR-HD_CLASS"
+		},
+		"tiles": 51,
+		"missions": [
+			"22LHD2PH",
+			"22LHD2PI"
+		],
+		"acquired": {
+			"from": "2022-07-15",
+			"to": "2022-10-17"
+		},
+		"edited": [
+			"2025-07-10",
+			"2025-07-17",
+			"2026-04-28"
+		]
+	},
+	"files": {
+		"ground-x16": {
+			"model": "ground",
+			"scale": 16,
+			"width": 6400,
+			"height": 6400,
+			"encoding": "uint16, little-endian, rows from north to south, columns from west to east",
+			"altitude": {
+				"min": 232,
+				"max": 527,
+				"formula": "min + value / 65535 × (max − min), metres (IGN69)",
+				"lowest": 232.97,
+				"highest": 510.04
+			},
+			"extent": {
+				"west": 5.992188312207292,
+				"east": 6.074013152701415,
+				"south": 47.201966666666664,
+				"north": 47.25752222222222
+			},
+			"projection": "the hero map’s: north up, a minute of longitude narrowed by the cosine of the marker’s latitude",
+			"marker": {
+				"x": 2496,
+				"y": 2272
+			},
+			"metresPerPixel": {
+				"x": 0.9680631756957824,
+				"y": 0.9650649200904786
+			},
+			"bytes": {
+				"raw": 81920000,
+				"gzip": 69412570,
+				"brotli": 51346605
+			},
+			"sha256": "c95a25c19e1b273ec4f8c039f712a8b1bb6f3229d3b8d268cf8adb6e27842482"
+		},
+		"ground-x8": {
+			"model": "ground",
+			"scale": 8,
+			"width": 3200,
+			"height": 3200,
+			"encoding": "uint16, little-endian, rows from north to south, columns from west to east",
+			"altitude": {
+				"min": 232,
+				"max": 527,
+				"formula": "min + value / 65535 × (max − min), metres (IGN69)",
+				"lowest": 233,
+				"highest": 510.03
+			},
+			"extent": {
+				"west": 5.992188312207292,
+				"east": 6.074013152701415,
+				"south": 47.201966666666664,
+				"north": 47.25752222222222
+			},
+			"projection": "the hero map’s: north up, a minute of longitude narrowed by the cosine of the marker’s latitude",
+			"marker": {
+				"x": 1248,
+				"y": 1136
+			},
+			"metresPerPixel": {
+				"x": 1.9361263513915647,
+				"y": 1.9301298401809572
+			},
+			"bytes": {
+				"raw": 20480000,
+				"gzip": 17928344,
+				"brotli": 14285881
+			},
+			"sha256": "dbfc3d7f39c2bbf20b09fbf30bd912efe66d0c91e6b3a011ae460f5a626ce6c1"
+		},
+		"ground-x4": {
+			"model": "ground",
+			"scale": 4,
+			"width": 1600,
+			"height": 1600,
+			"encoding": "uint16, little-endian, rows from north to south, columns from west to east",
+			"altitude": {
+				"min": 232,
+				"max": 527,
+				"formula": "min + value / 65535 × (max − min), metres (IGN69)",
+				"lowest": 233.01,
+				"highest": 509.99
+			},
+			"extent": {
+				"west": 5.992188312207292,
+				"east": 6.074013152701415,
+				"south": 47.201966666666664,
+				"north": 47.25752222222222
+			},
+			"projection": "the hero map’s: north up, a minute of longitude narrowed by the cosine of the marker’s latitude",
+			"marker": {
+				"x": 624,
+				"y": 568
+			},
+			"metresPerPixel": {
+				"x": 3.8722527027831295,
+				"y": 3.8602596803619145
+			},
+			"bytes": {
+				"raw": 5120000,
+				"gzip": 4623204,
+				"brotli": 3828412
+			},
+			"sha256": "7d9fd25fef292fad94882b8148ff3ccb5220f5854e481504f3e7a530c050a28b"
+		},
+		"ground-x2": {
+			"model": "ground",
+			"scale": 2,
+			"width": 800,
+			"height": 800,
+			"encoding": "uint16, little-endian, rows from north to south, columns from west to east",
+			"altitude": {
+				"min": 232,
+				"max": 527,
+				"formula": "min + value / 65535 × (max − min), metres (IGN69)",
+				"lowest": 233.03,
+				"highest": 509.15
+			},
+			"extent": {
+				"west": 5.992188312207292,
+				"east": 6.074013152701415,
+				"south": 47.201966666666664,
+				"north": 47.25752222222222
+			},
+			"projection": "the hero map’s: north up, a minute of longitude narrowed by the cosine of the marker’s latitude",
+			"marker": {
+				"x": 312,
+				"y": 284
+			},
+			"metresPerPixel": {
+				"x": 7.744505405566259,
+				"y": 7.720519360723829
+			},
+			"bytes": {
+				"raw": 1280000,
+				"gzip": 1188607,
+				"brotli": 1028531
+			},
+			"sha256": "d2db51becc024884c8d2e04ddf7aca6f326e97efbfb29b5557fe8533cbdef1ee"
+		},
+		"surface-x16": {
+			"model": "surface",
+			"scale": 16,
+			"width": 6400,
+			"height": 6400,
+			"encoding": "uint16, little-endian, rows from north to south, columns from west to east",
+			"altitude": {
+				"min": 232,
+				"max": 527,
+				"formula": "min + value / 65535 × (max − min), metres (IGN69)",
+				"lowest": 232.97,
+				"highest": 526.51
+			},
+			"extent": {
+				"west": 5.992188312207292,
+				"east": 6.074013152701415,
+				"south": 47.201966666666664,
+				"north": 47.25752222222222
+			},
+			"projection": "the hero map’s: north up, a minute of longitude narrowed by the cosine of the marker’s latitude",
+			"marker": {
+				"x": 2496,
+				"y": 2272
+			},
+			"metresPerPixel": {
+				"x": 0.9680631756957824,
+				"y": 0.9650649200904786
+			},
+			"bytes": {
+				"raw": 81920000,
+				"gzip": 74381617,
+				"brotli": 59409354
+			},
+			"sha256": "7330bec042ed97d3c6a4e025a3157c04122f885d068763ed76f896d6d7978536"
+		},
+		"surface-x8": {
+			"model": "surface",
+			"scale": 8,
+			"width": 3200,
+			"height": 3200,
+			"encoding": "uint16, little-endian, rows from north to south, columns from west to east",
+			"altitude": {
+				"min": 232,
+				"max": 527,
+				"formula": "min + value / 65535 × (max − min), metres (IGN69)",
+				"lowest": 233,
+				"highest": 526.27
+			},
+			"extent": {
+				"west": 5.992188312207292,
+				"east": 6.074013152701415,
+				"south": 47.201966666666664,
+				"north": 47.25752222222222
+			},
+			"projection": "the hero map’s: north up, a minute of longitude narrowed by the cosine of the marker’s latitude",
+			"marker": {
+				"x": 1248,
+				"y": 1136
+			},
+			"metresPerPixel": {
+				"x": 1.9361263513915647,
+				"y": 1.9301298401809572
+			},
+			"bytes": {
+				"raw": 20480000,
+				"gzip": 19082384,
+				"brotli": 15995484
+			},
+			"sha256": "6711152756baf917eb82c9806a9505e8aab6ed5c5b86087ddcef9e5c1bcf0652"
+		},
+		"surface-x4": {
+			"model": "surface",
+			"scale": 4,
+			"width": 1600,
+			"height": 1600,
+			"encoding": "uint16, little-endian, rows from north to south, columns from west to east",
+			"altitude": {
+				"min": 232,
+				"max": 527,
+				"formula": "min + value / 65535 × (max − min), metres (IGN69)",
+				"lowest": 233.02,
+				"highest": 525.85
+			},
+			"extent": {
+				"west": 5.992188312207292,
+				"east": 6.074013152701415,
+				"south": 47.201966666666664,
+				"north": 47.25752222222222
+			},
+			"projection": "the hero map’s: north up, a minute of longitude narrowed by the cosine of the marker’s latitude",
+			"marker": {
+				"x": 624,
+				"y": 568
+			},
+			"metresPerPixel": {
+				"x": 3.8722527027831295,
+				"y": 3.8602596803619145
+			},
+			"bytes": {
+				"raw": 5120000,
+				"gzip": 4864939,
+				"brotli": 4110729
+			},
+			"sha256": "da12763d1ad385655d7e5761aab5cedacbeb660756dce86792e834828861924a"
+		},
+		"surface-x2": {
+			"model": "surface",
+			"scale": 2,
+			"width": 800,
+			"height": 800,
+			"encoding": "uint16, little-endian, rows from north to south, columns from west to east",
+			"altitude": {
+				"min": 232,
+				"max": 527,
+				"formula": "min + value / 65535 × (max − min), metres (IGN69)",
+				"lowest": 233.04,
+				"highest": 525.1
+			},
+			"extent": {
+				"west": 5.992188312207292,
+				"east": 6.074013152701415,
+				"south": 47.201966666666664,
+				"north": 47.25752222222222
+			},
+			"projection": "the hero map’s: north up, a minute of longitude narrowed by the cosine of the marker’s latitude",
+			"marker": {
+				"x": 312,
+				"y": 284
+			},
+			"metresPerPixel": {
+				"x": 7.744505405566259,
+				"y": 7.720519360723829
+			},
+			"bytes": {
+				"raw": 1280000,
+				"gzip": 1232756,
+				"brotli": 1068140
+			},
+			"sha256": "95846bf6a6b8ed8b42a80700f398676236a80b84a5568d02202bfe1e129ef2a9"
+		},
+		"built-x16": {
+			"model": "built",
+			"scale": 16,
+			"width": 6400,
+			"height": 6400,
+			"encoding": "uint16, little-endian, rows from north to south, columns from west to east",
+			"altitude": {
+				"min": 232,
+				"max": 527,
+				"formula": "min + value / 65535 × (max − min), metres (IGN69)",
+				"lowest": 232.97,
+				"highest": 511.78
+			},
+			"extent": {
+				"west": 5.992188312207292,
+				"east": 6.074013152701415,
+				"south": 47.201966666666664,
+				"north": 47.25752222222222
+			},
+			"projection": "the hero map’s: north up, a minute of longitude narrowed by the cosine of the marker’s latitude",
+			"marker": {
+				"x": 2496,
+				"y": 2272
+			},
+			"metresPerPixel": {
+				"x": 0.9680631756957824,
+				"y": 0.9650649200904786
+			},
+			"bytes": {
+				"raw": 81920000,
+				"gzip": 70638871,
+				"brotli": 53310411
+			},
+			"sha256": "d9f648ccbe81837de693a7be7ad1f64115d4f338cdb49c5b6f53dbf43ac9bde5"
+		},
+		"built-x8": {
+			"model": "built",
+			"scale": 8,
+			"width": 3200,
+			"height": 3200,
+			"encoding": "uint16, little-endian, rows from north to south, columns from west to east",
+			"altitude": {
+				"min": 232,
+				"max": 527,
+				"formula": "min + value / 65535 × (max − min), metres (IGN69)",
+				"lowest": 233,
+				"highest": 511.62
+			},
+			"extent": {
+				"west": 5.992188312207292,
+				"east": 6.074013152701415,
+				"south": 47.201966666666664,
+				"north": 47.25752222222222
+			},
+			"projection": "the hero map’s: north up, a minute of longitude narrowed by the cosine of the marker’s latitude",
+			"marker": {
+				"x": 1248,
+				"y": 1136
+			},
+			"metresPerPixel": {
+				"x": 1.9361263513915647,
+				"y": 1.9301298401809572
+			},
+			"bytes": {
+				"raw": 20480000,
+				"gzip": 18280748,
+				"brotli": 14797911
+			},
+			"sha256": "ff386d3dcc90fded11f975cd4a856ee0a70392c76c3c9f21924e65ba23cf44db"
+		},
+		"built-x4": {
+			"model": "built",
+			"scale": 4,
+			"width": 1600,
+			"height": 1600,
+			"encoding": "uint16, little-endian, rows from north to south, columns from west to east",
+			"altitude": {
+				"min": 232,
+				"max": 527,
+				"formula": "min + value / 65535 × (max − min), metres (IGN69)",
+				"lowest": 233.01,
+				"highest": 511.33
+			},
+			"extent": {
+				"west": 5.992188312207292,
+				"east": 6.074013152701415,
+				"south": 47.201966666666664,
+				"north": 47.25752222222222
+			},
+			"projection": "the hero map’s: north up, a minute of longitude narrowed by the cosine of the marker’s latitude",
+			"marker": {
+				"x": 624,
+				"y": 568
+			},
+			"metresPerPixel": {
+				"x": 3.8722527027831295,
+				"y": 3.8602596803619145
+			},
+			"bytes": {
+				"raw": 5120000,
+				"gzip": 4715365,
+				"brotli": 3981447
+			},
+			"sha256": "ef4112e9d8d7476e29d2bfb2fa9f9383adcbdaeaa29c256291163ac55ffcfdff"
+		},
+		"built-x2": {
+			"model": "built",
+			"scale": 2,
+			"width": 800,
+			"height": 800,
+			"encoding": "uint16, little-endian, rows from north to south, columns from west to east",
+			"altitude": {
+				"min": 232,
+				"max": 527,
+				"formula": "min + value / 65535 × (max − min), metres (IGN69)",
+				"lowest": 233.03,
+				"highest": 509.98
+			},
+			"extent": {
+				"west": 5.992188312207292,
+				"east": 6.074013152701415,
+				"south": 47.201966666666664,
+				"north": 47.25752222222222
+			},
+			"projection": "the hero map’s: north up, a minute of longitude narrowed by the cosine of the marker’s latitude",
+			"marker": {
+				"x": 312,
+				"y": 284
+			},
+			"metresPerPixel": {
+				"x": 7.744505405566259,
+				"y": 7.720519360723829
+			},
+			"bytes": {
+				"raw": 1280000,
+				"gzip": 1208799,
+				"brotli": 1041009
+			},
+			"sha256": "50762fb0e2979d7dd149c7711ba0a2d8efcd137ee355fa7b0a9c2456965aa11c"
+		}
+	}
+}

@@ -9,6 +9,7 @@ import {
 	branch,
 	city,
 	countFollowed,
+	expectCopyCursor,
 	pasted,
 	shownMode,
 	visitContact,
@@ -212,7 +213,7 @@ test.describe('the statusline answers under reduced motion', () => {
 		await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
 		await expect(address(page)).toBeInViewport({ ratio: 1 });
 		await topOnceStill(address(page));
-		await expect(address(page)).toHaveCSS('cursor', 'copy');
+		await expectCopyCursor(page);
 		const followed = await countFollowed(page);
 
 		await address(page).click();

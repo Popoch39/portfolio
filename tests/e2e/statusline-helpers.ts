@@ -14,13 +14,16 @@ export const city = (page: Page) => page.locator('#contact').getByText('Besanço
 export const shownMode = (page: Page) => statusline(page).locator('.mode:visible').first();
 export const branch = (page: Page) => statusline(page).locator('.branch');
 
+/** The pointer says the address will be copied: `copy`, alone under a finger, behind the Traîne's point under a mouse. */
+export const expectCopyCursor = (page: Page) => expect(address(page)).toHaveCSS('cursor', /\bcopy$/);
+
 /**
  * Opens the home page at its end, where the Contact is, and waits for the address to say it will be
  * copied: the details are listening. Scrolled by hand: smoothed, the page is not the browser's to scroll.
  */
 export async function visitContact(page: Page) {
 	await page.goto('/');
-	await expect(address(page)).toHaveCSS('cursor', 'copy');
+	await expectCopyCursor(page);
 	await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
 	await expect(address(page)).toBeInViewport({ ratio: 1 });
 	await topOnceStill(address(page));

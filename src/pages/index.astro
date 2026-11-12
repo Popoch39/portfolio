@@ -635,6 +635,13 @@ const jsonLd = JSON.stringify({
 		cursor: copy;
 	}
 
+	/* Under a mouse the address keeps the Traîne's point like any text, whose ring opens over it: `copy` stands behind. */
+	@media (hover: hover) and (pointer: fine) and (forced-colors: none) {
+		.contact-mail:not([data-yank='']) {
+			cursor: var(--trail-point), copy;
+		}
+	}
+
 	/* The blink of a `yank` over the address just copied: a layer of accent, only its opacity moves. */
 	.contact-mail[data-yank='done']::after {
 		content: '';

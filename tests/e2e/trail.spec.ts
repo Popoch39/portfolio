@@ -135,9 +135,10 @@ test.describe('the Traîne', () => {
 		}
 	});
 
-	test('a cursor that says something stays: the Contact address keeps `copy`, and the ring opens over it', async ({ page }) => {
+	test('the Contact address keeps the point, `copy` behind it, and the ring opens over it', async ({ page }) => {
+		await page.clock.setFixedTime(noon);
 		await visitContact(page);
-		await expect(address(page)).toHaveCSS('cursor', 'copy');
+		expect(await cursorOver(address(page))).toEqual({ ...day, fallback: 'copy' });
 
 		const { x, y } = await centre(address(page));
 		await page.mouse.move(x, y);

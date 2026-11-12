@@ -209,9 +209,12 @@ test.describe('the statusline answers under reduced motion', () => {
 	test('the preference lifted mid-visit, the address is still yanked once per click', async ({ page }) => {
 		await visitContact(page);
 		await page.emulateMedia({ reducedMotion: 'no-preference' });
-		// The smoother has taken the page over: the Contact is brought back under the pointer.
-		await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
-		await expect(address(page)).toBeInViewport({ ratio: 1 });
+		// The smoother has taken the page over: the Contact is brought back under the pointer. Until it
+		// shows: the scenes are built once the preference has flipped, and their pins make the page taller.
+		await expect(async () => {
+			await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
+			await expect(address(page)).toBeInViewport({ ratio: 1, timeout: 1000 });
+		}).toPass();
 		await topOnceStill(address(page));
 		await expectCopyCursor(page);
 		const followed = await countFollowed(page);

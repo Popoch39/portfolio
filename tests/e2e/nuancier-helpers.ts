@@ -1,11 +1,11 @@
 import type { Page } from './fixtures';
 
-/** The Nuancier's papers, its two books back to front as they rest by default. */
-export const papers = ['kraft', 'sanguine', 'tracing', 'light', 'phosphor', 'cyan', 'dark', 'auto'] as const;
+/** The Nuancier's papers, back to front as the book rests by default. */
+export const papers = ['light', 'dark', 'kraft', 'cyan', 'tracing', 'phosphor', 'sanguine', 'auto'] as const;
 export type Paper = (typeof papers)[number];
 
-/** The slot of the strip at the front of its book. */
-export const FRONT = '3';
+/** The slot of the strip at the front of the book. */
+export const FRONT = '7';
 
 const names: Record<Paper, RegExp> = {
 	light: /^Jour/,
@@ -56,15 +56,32 @@ export async function visiblePoint(page: Page, name: Paper) {
 }
 
 /**
- * Picks a paper as a visitor does with a mouse: over the strip's book first, which opens it, then a
- * click on what shows of the strip.
+ * Picks a paper as a visitor does with a mouse: over the book first, which opens it, then a click on
+ * what shows of the strip.
  */
 export async function pickPaper(page: Page, name: Paper) {
-	const front = await page
-		.locator(`[data-nuancier] [data-book]:has(input[value="${name}"]) [data-slot="${FRONT}"] input`)
-		.evaluate((input) => (input as HTMLInputElement).value as Paper);
-	const over = await visiblePoint(page, front);
+	const over = await visiblePoint(page, await front(page));
 	await page.mouse.move(over.x, over.y);
+	await opened(page);
 	const { x, y } = await visiblePoint(page, name);
 	await page.mouse.click(x, y);
+}
+
+/** Opens the shut book as a finger does: a tap on the paper in force, the one strip that shows. */
+export async function openByTap(page: Page) {
+	const { x, y } = await visiblePoint(page, await front(page));
+	await page.touchscreen.tap(x, y);
+	await opened(page);
+}
+
+/** The book open: every strip shows, as a visitor waits for it before aiming at one. */
+const opened = (page: Page) =>
+	page.waitForFunction(() =>
+		[...document.querySelectorAll('[data-nuancier] .slot')].every((slot) => getComputedStyle(slot).opacity === '1'),
+	);
+
+/** The paper at the front, once the last pick has put its strip there. */
+async function front(page: Page) {
+	await still(page);
+	return page.locator(`[data-nuancier] [data-slot="${FRONT}"] input`).evaluate((input) => (input as HTMLInputElement).value as Paper);
 }

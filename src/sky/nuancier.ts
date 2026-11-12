@@ -1,7 +1,10 @@
 /**
  * A pick in the Nuancier (03 · Nuancier, ADR 0009). The new paper spreads over the page from the strip
- * that was picked, in a circle ringed with the accent; meanwhile the strip rises, its book shuts on its
- * rivet and fans out again with that strip at the front. The other book stays as it is.
+ * that was picked, in a circle ringed with the accent; meanwhile the strip rises and the book shuts on its
+ * rivet with that strip at the front. Under a mouse that is still over it, it fans out again.
+ *
+ * A tap opens the shut book (`data-open`), and a tap on the paper in force or anywhere else shuts it; a
+ * mouse opens it by coming over it, the keyboard by focusing a strip (`Nuancier.astro`).
  *
  * The reveal is a view transition: the old page is a snapshot, the new one is live under a `clip-path`
  * circle that grows to the farthest corner of the window. The whole page restyles once, inside the
@@ -27,30 +30,43 @@ const ring = document.querySelector<HTMLElement>('[data-nuancier-ring]');
 let timers: ReturnType<typeof setTimeout>[] = [];
 let ringAnimation: Animation | undefined;
 let current: ViewTransition | undefined;
-/** The last pick's strip, not yet at the front of its book. */
-let pending: (() => void) | undefined;
 
 fan?.addEventListener('change', (event) => {
 	const input = event.target;
 	if (!(input instanceof HTMLInputElement)) return;
 	const slot = input.closest<HTMLElement>('[data-slot]');
-	const book = input.closest<HTMLElement>('[data-book]');
-	if (!slot || !book) return;
-	pick(book, slot, input.value);
+	if (!slot) return;
+	pick(fan, slot, input.value);
 });
 
-function pick(book: HTMLElement, slot: HTMLElement, bg: string) {
+fan?.addEventListener('pointerdown', (event) => {
+	if (event.pointerType === 'mouse') return;
+	if (!('open' in fan.dataset)) {
+		fan.dataset.open = '';
+		return;
+	}
+	const input = event.target instanceof Element ? event.target.closest('label')?.querySelector('input') : null;
+	if (input?.checked) delete fan.dataset.open;
+});
+
+document.addEventListener('pointerdown', (event) => {
+	if (fan && 'open' in fan.dataset && !(event.target instanceof Node && fan.contains(event.target))) {
+		delete fan.dataset.open;
+	}
+});
+
+function pick(fan: HTMLElement, slot: HTMLElement, bg: string) {
 	timers.forEach(clearTimeout);
 	timers = [];
 	ringAnimation?.cancel();
-	// A pick in the other book would leave the last one's strip behind: it goes to the front at once.
-	pending?.();
-	for (const launched of fan?.querySelectorAll<HTMLElement>('[data-launch]') ?? []) delete launched.dataset.launch;
+	for (const launched of fan.querySelectorAll<HTMLElement>('[data-launch]')) delete launched.dataset.launch;
+	delete fan.dataset.phase;
 
 	const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 	if (still || !document.startViewTransition) {
 		applyBg(bg);
-		toFront(book, slot);
+		toFront(fan, slot);
+		delete fan.dataset.open;
 		return;
 	}
 
@@ -66,17 +82,16 @@ function pick(book: HTMLElement, slot: HTMLElement, bg: string) {
 	ring?.style.setProperty('--r', `${r}px`);
 
 	slot.dataset.launch = '';
-	pending = () => {
-		pending = undefined;
-		toFront(book, slot);
-		delete book.dataset.phase;
-	};
 	timers.push(
 		setTimeout(() => {
 			delete slot.dataset.launch;
-			book.dataset.phase = 'closed';
+			fan.dataset.phase = 'closed';
 		}, SHUT_AT),
-		setTimeout(() => pending?.(), SHUT_AT + SHUTTING),
+		setTimeout(() => {
+			toFront(fan, slot);
+			delete fan.dataset.phase;
+			delete fan.dataset.open;
+		}, SHUT_AT + SHUTTING),
 	);
 
 	root.classList.add('paper-turning');
@@ -107,9 +122,9 @@ function pick(book: HTMLElement, slot: HTMLElement, bg: string) {
 	});
 }
 
-/** The picked strip goes to the front of its book; the others keep their order behind it. */
-function toFront(book: HTMLElement, slot: HTMLElement) {
-	const slots = [...book.querySelectorAll<HTMLElement>('[data-slot]')].sort(
+/** The picked strip goes to the front of the book; the others keep their order behind it. */
+function toFront(fan: HTMLElement, slot: HTMLElement) {
+	const slots = [...fan.querySelectorAll<HTMLElement>('[data-slot]')].sort(
 		(a, b) => Number(a.dataset.slot) - Number(b.dataset.slot),
 	);
 	[...slots.filter((other) => other !== slot), slot].forEach((each, index) => {

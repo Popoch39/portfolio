@@ -1,11 +1,13 @@
 import { devices, expect, test, type Page } from './fixtures';
-import { FRONT, paper, papers, pickPaper, visiblePoint, type Paper } from './nuancier-helpers';
+import { FRONT, openByTap, paper, papers, pickPaper, visiblePoint, type Paper } from './nuancier-helpers';
 
 /**
- * The Nuancier (03 · Nuancier, ADR 0009): two swatch books riveted in the bottom corner of the window,
- * eight papers (Kraft, Sanguine, Calque, Jour; Phosphore, Cyanotype, Nuit, Auto). A pick spreads the new
- * paper from its strip in a circle, and its book shuts and fans out again with that strip at the front.
+ * The Nuancier (03 · Nuancier, ADR 0009): a swatch book riveted in the bottom corner of the window,
+ * eight papers, shut on the paper in force until a hover, a tap or the keyboard opens it. A pick spreads
+ * the new paper from its strip in a circle, and the book shuts with that strip at the front.
  */
+const shown = (page: Page) =>
+	page.locator('[data-nuancier] .slot').evaluateAll((slots) => slots.filter((slot) => getComputedStyle(slot).opacity === '1').length);
 
 const noon = new Date('2026-11-09T12:00:00+01:00');
 const root = (page: Page) => page.locator('html');
@@ -101,38 +103,33 @@ test.describe('the Nuancier', () => {
 		await expect(root(page)).not.toHaveClass(/paper-turning/);
 	});
 
-	test('the strips move on transforms alone', async ({ page }) => {
+	test('the strips move on transforms alone, and fade only once folded', async ({ page }) => {
 		await visit(page);
 
 		const properties = await page
 			.locator('[data-nuancier] :is(.slot, .lam)')
 			.evaluateAll((elements) => [...new Set(elements.map((el) => getComputedStyle(el).transitionProperty))]);
-		expect(properties.sort()).toEqual(['rotate', 'transform']);
+		expect(properties.sort()).toEqual(['rotate, scale, opacity', 'transform']);
+	});
+
+	test('rests shut on the paper in force, and opens as the pointer comes over it', async ({ page }) => {
+		await visit(page);
+
+		expect(await shown(page)).toBe(1);
+		const { x, y } = await visiblePoint(page, 'auto');
+		await page.mouse.move(x, y);
+		await expect.poll(() => shown(page)).toBe(8);
 	});
 
 	test('a pick during a reveal wins: the page ends on the last paper', async ({ page }) => {
 		await visit(page);
 
 		await pickPaper(page, 'dark');
-		await page.keyboard.press('ArrowLeft');
+		await page.keyboard.press('ArrowRight');
 
-		await expect(paper(page, 'cyan')).toBeChecked();
-		await expect(root(page)).toHaveAttribute('data-theme', 'cyan');
-		await expect.poll(() => slotOf(page, 'cyan')).toBe(FRONT);
-		await expect(root(page)).not.toHaveClass(/paper-turning/);
-	});
-
-	test('a pick in the other book during a reveal leaves both strips at the front of their books', async ({ page }) => {
-		await visit(page);
-
-		// The arrows run through both books: left of the dark book's first strip is the light book's last.
-		await pickPaper(page, 'phosphor');
-		await page.keyboard.press('ArrowLeft');
-
-		await expect(paper(page, 'light')).toBeChecked();
-		await expect(root(page)).toHaveAttribute('data-theme', 'light');
-		await expect.poll(() => slotOf(page, 'light')).toBe(FRONT);
-		expect(await slotOf(page, 'phosphor')).toBe(FRONT);
+		await expect(paper(page, 'kraft')).toBeChecked();
+		await expect(root(page)).toHaveAttribute('data-theme', 'kraft');
+		await expect.poll(() => slotOf(page, 'kraft')).toBe(FRONT);
 		await expect(root(page)).not.toHaveClass(/paper-turning/);
 	});
 
@@ -161,10 +158,7 @@ test.describe('the Nuancier', () => {
 
 	test('opens to the keyboard', async ({ page }) => {
 		await visit(page);
-		const backAngle = () =>
-			page
-				.locator('[data-nuancier] [data-book]:has(input[value="auto"]) [data-slot="0"]')
-				.evaluate((el) => getComputedStyle(el).rotate);
+		const backAngle = () => page.locator('[data-nuancier] [data-slot="0"]').evaluate((el) => getComputedStyle(el).rotate);
 		const resting = await backAngle();
 
 		await paper(page, 'auto').focus();
@@ -196,7 +190,9 @@ test.describe('the Nuancier under a finger', () => {
 	// Playwright does not emulate `isMobile` under Firefox.
 	test.skip(({ browserName }) => browserName === 'firefox');
 
-	test('rests half open over the statusline, and each strip takes a tap', async ({ page }) => {
+	test('rests shut over the statusline; a tap opens it, and each strip takes a tap', async ({ page }) => {
+		// Sixteen gestures, each waiting for the book to open or shut.
+		test.slow();
 		await visit(page);
 
 		const fanBox = (await fan(page).boundingBox())!;
@@ -205,11 +201,31 @@ test.describe('the Nuancier under a finger', () => {
 		expect(fanBox.x + fanBox.width).toBeLessThanOrEqual(viewport.width);
 
 		for (const name of papers) {
+			expect(await shown(page)).toBe(1);
+			await openByTap(page);
+			await expect.poll(() => shown(page)).toBe(8);
 			const { x, y } = await visiblePoint(page, name);
 			await page.touchscreen.tap(x, y);
 			await expect(paper(page, name)).toBeChecked();
 			await expect(root(page)).not.toHaveClass(/paper-turning/);
+			await expect.poll(() => shown(page)).toBe(1);
 		}
 		await expect(root(page)).toHaveAttribute('data-theme', 'light');
+	});
+
+	test('a tap on the paper in force, or beside the book, shuts it again', async ({ page }) => {
+		// The 404's empty middle: nothing there to follow.
+		await visit(page, '/nowhere');
+
+		await openByTap(page);
+		await expect.poll(() => shown(page)).toBe(8);
+		await page.touchscreen.tap(200, 520);
+		await expect.poll(() => shown(page)).toBe(1);
+
+		await openByTap(page);
+		await expect.poll(() => shown(page)).toBe(8);
+		await openByTap(page);
+		await expect.poll(() => shown(page)).toBe(1);
+		await expect(paper(page, 'auto')).toBeChecked();
 	});
 });

@@ -233,6 +233,39 @@ test.describe('the name out of register', () => {
 	});
 });
 
+test.describe('the name’s plates, from a narrow phone to a wide screen', () => {
+	test.use({ reducedMotion: 'no-preference' });
+
+	// Both compositions of the hero: the name on two lines up to 860px, on one line from 861px.
+	for (const width of [320, 360, 412, 600, 768, 860, 861, 1024, 1440, 1920]) {
+		test(`${width}px wide: each plate lies on its line of the name, set as the line is`, async ({ page }) => {
+			await page.setViewportSize({ width, height: 900 });
+			await visitAt(page, '12:00');
+
+			for (const plate of await plates(dayName(page))) expect(plate.offLine).toBeLessThanOrEqual(1);
+			// The letters stand in a plate's box where they stand in the line's: the same type, the same line.
+			const setting = await dayName(page).evaluate((title) => {
+				const read = ({ fontSize, lineHeight, height, letterSpacing, fontWeight, fontStretch }: CSSStyleDeclaration) => ({
+					fontSize,
+					lineHeight,
+					height,
+					letterSpacing,
+					fontWeight,
+					fontStretch,
+				});
+				return {
+					plates: ['::before', '::after'].map((pseudo) => read(getComputedStyle(title, pseudo))),
+					lines: [...title.querySelectorAll('.hero-line')].map((line) => ({
+						...read(getComputedStyle(line.firstElementChild ?? line)),
+						height: getComputedStyle(line).height,
+					})),
+				};
+			});
+			expect(setting.plates).toEqual(setting.lines);
+		});
+	}
+});
+
 test.describe('the name out of register, under a finger', () => {
 	// The size of a phone, where the name stands on two lines.
 	test.use({ reducedMotion: 'no-preference', viewport: devices['Pixel 7'].viewport, hasTouch: true });

@@ -75,6 +75,8 @@ registerDetail(() => {
 	let phaseTimer: ReturnType<typeof setTimeout> | undefined;
 	let cutFrame: number | undefined;
 	let pinning: Pinning = null;
+	/** After a refresh with the form open, until the scene is past the actions again (`keepInView`). */
+	let catchingUp = false;
 	let scrolling: gsap.core.Tween | undefined;
 
 	/** Moves to a new state through a phase; `after` runs once the phase has played. */
@@ -169,7 +171,86 @@ registerDetail(() => {
 	/** The moka is put together again under the form: it closes at once, everything typed kept for the next opening. */
 	function onProgress(event: Event) {
 		pinning = (event as CustomEvent<Pinning>).detail;
-		if (!pinning || pinning.progress >= ACTIONS_APPEAR || state === 'rest') return;
+		// The scene names its step as it goes through one (after a refresh, it plays its way back): the counter is the
+		// form's while it is open, written back in the same task, before anything is drawn.
+		if (state === 'form') describe();
+		// A refresh (a phone turned, the form's own height) measures the pinning from the top of the page: what it
+		// tells meanwhile is not where the visitor stands (`keepInView`).
+		if (!ScrollTrigger.isRefreshing) closeUnderActions();
+	}
+
+	/**
+	 * Undoing the pinning (a refresh, a phone turned) takes the section out of the page and puts it back, which
+	 * takes the focus away from the field in hand, and a phone's keyboard with it. A field that loses it in the task
+	 * where the pins were undone gets it back once that task is done; a visitor's own move elsewhere never does.
+	 */
+	let blurred: HTMLElement | undefined;
+	function onFocusOut(event: FocusEvent) {
+		const field = event.target;
+		if (!panel || !(field instanceof HTMLElement) || !panel.root.contains(field)) return;
+		blurred = field;
+		queueMicrotask(() => (blurred = undefined));
+	}
+
+	/** The field given back once the task is done; `keepInView`, in the same task, brings it on screen. */
+	let refocusing: HTMLElement | undefined;
+	function onPinsUndone() {
+		const field = blurred;
+		blurred = undefined;
+		if (!field) return;
+		refocusing = field;
+		queueMicrotask(() => {
+			refocusing = undefined;
+			if (document.activeElement && document.activeElement !== document.body) return;
+			field.focus({ preventScroll: true });
+		});
+	}
+
+	/**
+	 * After a refresh. The visitor has not scrolled: the layout changed under the same scroll position, which may
+	 * now fall inside the pinning. The form stays open and the page goes back to it.
+	 */
+	function keepInView() {
+		if (!pinning || state === 'rest' || !panel) return;
+		// The scrubbed scene starts again from where the refresh measured it and catches up with the scroll a second
+		// behind: on its way, it tells of an assembly the visitor never scrolled back to.
+		catchingUp = true;
+		const field = refocusing ?? (panel.form.contains(document.activeElement) ? document.activeElement : null);
+		if (pinning.progress >= ACTIONS_APPEAR) return keepFieldInView(field);
+		// Two columns, the end of the pinning shows the form whole. Stacked, the form comes after the pinned screen,
+		// out of reach while the section is held: placed from the end, where the section's top is the window's.
+		let to = pinning.end;
+		if (getComputedStyle(panel.root).position !== 'absolute') {
+			const target = (field ?? panel.form).getBoundingClientRect();
+			const offset = target.top - section!.getBoundingClientRect().top;
+			to += Math.max(0, offset - (innerHeight - target.height) / 2);
+		}
+		const smoother = ScrollSmoother.get();
+		if (smoother) smoother.scrollTo(to, false);
+		else scrollTo(0, to);
+	}
+
+	/**
+	 * The field in hand above the keyboard: as it comes up, the visible area shrinks from the bottom, and not every
+	 * browser brings the field back into it. Above the statusline too (`scroll-padding-bottom`).
+	 */
+	function keepFieldInView(field: Element | null = document.activeElement) {
+		if (!panel || !(field instanceof HTMLElement) || !panel.form.contains(field) || !visualViewport) return;
+		const { top, bottom } = field.getBoundingClientRect();
+		const statusline = document.querySelector('#statusline')?.getBoundingClientRect().top ?? innerHeight;
+		const visibleBottom = Math.min(visualViewport.offsetTop + visualViewport.height, statusline);
+		if (top >= visualViewport.offsetTop && bottom <= visibleBottom) return;
+		const smoother = ScrollSmoother.get();
+		if (!smoother) return field.scrollIntoView({ block: 'nearest' });
+		// By how far it sticks out, from where the content is drawn: the smoother's own measure of the field places
+		// it as if the pinned section around it were at the pinning's start.
+		const drawnAt = -Number(gsap.getProperty(smoother.content(), 'y'));
+		smoother.scrollTo(drawnAt + (top < visualViewport.offsetTop ? top - visualViewport.offsetTop : bottom - visibleBottom), false);
+	}
+
+	function closeUnderActions() {
+		if (pinning && pinning.progress >= ACTIONS_APPEAR) catchingUp = false;
+		if (!pinning || pinning.progress >= ACTIONS_APPEAR || state === 'rest' || catchingUp) return;
 		sending?.abort();
 		// A proposal already sent has nothing left to keep.
 		if (state === 'sent') panel?.form.reset();
@@ -336,6 +417,11 @@ registerDetail(() => {
 	section.addEventListener('input', onInput);
 	section.addEventListener('submit', submit);
 	section.addEventListener('montage:progress', onProgress);
+	section.addEventListener('focusout', onFocusOut);
+	ScrollTrigger.addEventListener('revert', onPinsUndone);
+	ScrollTrigger.addEventListener('refresh', keepInView);
+	const onVisibleAreaResize = () => keepFieldInView();
+	visualViewport?.addEventListener('resize', onVisibleAreaResize);
 	proposeLink?.addEventListener('click', propose);
 
 	return () => {
@@ -343,6 +429,10 @@ registerDetail(() => {
 		if (cutFrame !== undefined) cancelAnimationFrame(cutFrame);
 		scrolling?.kill();
 		section.removeEventListener('montage:progress', onProgress);
+		section.removeEventListener('focusout', onFocusOut);
+		ScrollTrigger.removeEventListener('revert', onPinsUndone);
+		ScrollTrigger.removeEventListener('refresh', keepInView);
+		visualViewport?.removeEventListener('resize', onVisibleAreaResize);
 		proposeLink?.removeEventListener('click', propose);
 		sending?.abort();
 		flow.disconnect();

@@ -93,6 +93,49 @@ async function fill(page: Page) {
 	await message(page).fill('Une carte des moulins du Doubs.');
 }
 
+test.describe('Démontage stacked, on a phone, reduced motion', () => {
+	test.use({ ...finger, viewport: PORTRAIT, reducedMotion: 'reduce' });
+
+	test('the mini moka and its screen only fade: nothing moves', async ({ page }) => {
+		await page.goto('/');
+		await coffee(page).scrollIntoViewIfNeeded();
+
+		// Every property that runs in the section over the opening, the switch to visio and back.
+		const running = section(page).evaluate(
+			(el) =>
+				new Promise<string[]>((resolve) => {
+					const seen = new Set<string>();
+					const start = performance.now();
+					const sample = () => {
+						for (const animation of document.getAnimations()) {
+							const target = (animation.effect as KeyframeEffect | null)?.target;
+							if (!(target instanceof Element) || !el.contains(target) || animation.playState !== 'running') continue;
+							const properties =
+								animation instanceof CSSTransition
+									? [animation.transitionProperty]
+									: (animation.effect as KeyframeEffect).getKeyframes().flatMap((frame) =>
+											Object.keys(frame).filter((key) => !['offset', 'computedOffset', 'easing', 'composite'].includes(key)),
+										);
+							for (const property of properties) seen.add(property);
+						}
+						if (performance.now() - start > 2500) resolve([...seen]);
+						else requestAnimationFrame(sample);
+					};
+					requestAnimationFrame(sample);
+				}),
+		);
+		await coffee(page).click();
+		await expect(mini(page)).toBeVisible();
+		await form(page).getByRole('button', { name: 'plutôt en visio', exact: true }).click();
+		await expect.poll(() => seen(mini(page).locator('[data-stroke="top"]'))).toBe(1);
+		await form(page).getByRole('button', { name: 'plutôt un café', exact: true }).click();
+		const properties = await running;
+
+		expect(properties.length).toBeGreaterThan(0);
+		for (const property of properties) expect(['opacity', 'visibility', 'color', 'background-color']).toContain(property);
+	});
+});
+
 test.describe('Démontage stacked, on a phone', () => {
 	test.use({ ...finger, viewport: PORTRAIT, reducedMotion: 'no-preference' });
 
@@ -184,37 +227,40 @@ test.describe('Démontage stacked, on a phone', () => {
 		await expect(message(page)).toBeFocused();
 	});
 
-	test('turning the phone with the form open keeps what was typed', async ({ page }) => {
+	test('turning the phone with the form open keeps it open, what was typed and the field in hand', async ({ page }) => {
 		await reachActions(page);
 		await coffee(page).click();
 		await settled(page);
 		await name(page).fill('Ada Lovelace');
 		await email(page).fill('ada@example.org');
+		const counter = section(page).getByText(/^\d\/[46] · /);
 
 		await page.setViewportSize(LANDSCAPE);
 		await settled(page);
+		await expect(email(page)).toBeFocused();
+		await expect(email(page)).toBeInViewport();
 		await expect(name(page)).toHaveValue('Ada Lovelace');
 		await expect(email(page)).toHaveValue('ada@example.org');
 		await expect(mini(page)).toBeVisible();
-		await message(page).focus();
-		await expect(message(page)).toBeInViewport();
+		await expect(counter).toHaveText('2/4 · à mi-hauteur');
 
 		await page.setViewportSize(PORTRAIT);
 		await settled(page);
+		await expect(email(page)).toBeFocused();
+		await expect(email(page)).toBeInViewport();
 		await expect(name(page)).toHaveValue('Ada Lovelace');
-		await expect(section(page).getByText(/^\d\/4 · /)).toHaveText('2/4 · à mi-hauteur');
+		await expect(counter).toHaveText('2/4 · à mi-hauteur');
 		await expect(mini(page)).toBeVisible();
-		await form(page).scrollIntoViewIfNeeded();
-		await expect(form(page)).toBeInViewport();
 
 		// A tablet on its side: two columns, the Montage's figure beside the form, the mini moka gone with its layout.
 		await page.setViewportSize({ width: 1024, height: 768 });
 		await settled(page);
+		await expect(email(page)).toBeFocused();
+		await expect(email(page)).toBeInViewport();
 		await expect(name(page)).toHaveValue('Ada Lovelace');
 		await expect(mini(page)).toBeHidden();
-		await form(page).scrollIntoViewIfNeeded();
-		await expect(form(page)).toBeInViewport();
 		await expect(montageFigure(page)).toBeInViewport();
+		await expect(counter).toHaveText('2/4 · à mi-hauteur');
 	});
 
 	test('the page makes room for the mini moka and the form: the Contact comes after them, and back up on closing', async ({

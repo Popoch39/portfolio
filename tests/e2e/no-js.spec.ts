@@ -1,5 +1,6 @@
 import { expect, test } from './fixtures';
 import { computedTransform, content, statusline } from './helpers';
+import { LANGAGES, bandPoint, inkOf, tool, towerLook } from './stack-aim-helpers';
 
 test.describe('without JavaScript', () => {
 	test.use({ javaScriptEnabled: false });
@@ -17,6 +18,23 @@ test.describe('without JavaScript', () => {
 			await expect(element).toHaveCSS('opacity', '1');
 		}
 		expect(await computedTransform(content(page))).toBe('none');
+	});
+
+	test('the tower stands at its final state, and aiming at a bague changes nothing', async ({ page }) => {
+		await page.goto('/');
+		await tool(page, 'Rust').scrollIntoViewIfNeeded();
+		const atRest = await towerLook(page);
+		expect(atRest.map(({ accent }) => accent)).toEqual(atRest.map(() => 0));
+		const ink = await inkOf(page, LANGAGES);
+
+		await tool(page, 'Rust').hover();
+		const { x, y } = await bandPoint(page, LANGAGES);
+		await page.mouse.move(x, y);
+
+		expect(await towerLook(page)).toEqual(atRest);
+		expect(await inkOf(page, LANGAGES)).toBe(ink);
+		await expect(statusline(page).locator('.message')).toBeHidden();
+		await expect(statusline(page).locator('.branch')).toBeVisible();
 	});
 
 	test('the statusline carries no message, and the address is a plain mail link', async ({ page }) => {

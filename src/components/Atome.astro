@@ -32,6 +32,11 @@ const BAND_HALF = 7;
 const BAND_ROOM = BAND_HALF + 1;
 /** How far a logo sits above its band, past the accent layer, so the two never fight over depth. */
 const LOGO_RAISE = 1;
+/**
+ * How wide a ring a finger may land in and still mean the band, in the band's plane: the tilt halves it
+ * on screen at the near and far sides. Two bands stand 22 apart, so two reaches barely meet.
+ */
+const FINGER_REACH = 36;
 /** Label text starts this far right of the tower axis, past the widest bague and its leader line. */
 const LABEL_OFFSET = BASE_RADIUS + 60;
 
@@ -70,8 +75,11 @@ const bagues = stack.map((group, rank) => {
 	const height = stack.length > 1 ? BASE_HEIGHT - (BASE_HEIGHT - TOP_HEIGHT) * share : 0;
 	const { spin, firstPastille, gyro, nested, drift } = RANKS[rank % RANKS.length];
 	const nestedRadius = NESTED_BASE_RADIUS - (NESTED_BASE_RADIUS - NESTED_TOP_RADIUS) * share;
-	const logos = group.items.map(logoHref).filter((href) => href !== undefined);
-	const pastilles = logos.map((href, index) => ({ href, angle: firstPastille + (360 / logos.length) * index }));
+	const logos = group.items.flatMap((tool) => {
+		const href = logoHref(tool);
+		return href === undefined ? [] : [{ tool, href }];
+	});
+	const pastilles = logos.map((logo, index) => ({ ...logo, angle: firstPastille + (360 / logos.length) * index }));
 	/**
 	 * The scene's poses, from the target to the tower: height, Z · X · Z tilt (the heading of the bague's
 	 * axis, its tilt, then its spin in its own plane), radius as a scale of the tower's.
@@ -146,8 +154,9 @@ const frame = [
 			{/* Only the scene shows it, while the bagues form the atom around it. */}
 			<span class="atome-nucleus"></span>
 			{
-				bagues.map((bague) => {
+				bagues.map((bague, rank) => {
 					const centre = bague.box / 2;
+					const reach = bague.radius + FINGER_REACH / 2;
 					/** The band (`side: false`) or the thickness under it, in ink or as the accent laid over it. */
 					const layer = ({ side, accent }: { side: boolean; accent: boolean }) => (
 						<svg
@@ -158,10 +167,15 @@ const frame = [
 							style={`left: ${px(-centre)}; top: ${px(-centre)}; transform: translateZ(${(side ? -THICKNESS : 0) + (accent ? ACCENT_RAISE : 0)}px)`}
 						>
 							{side ? (
-								<circle class="bague-side-band" cx={centre} cy={centre} r={bague.radius} />
+								<>
+									<circle class="bague-side-band" cx={centre} cy={centre} r={bague.radius} />
+									{/* What an aimed bague shows over its base bands (`src/atome/aim.ts`): the accent, in a circle of its own. */}
+									{!accent && <circle class="bague-aim" cx={centre} cy={centre} r={bague.radius} />}
+								</>
 							) : (
 								<>
 									<circle class="bague-band" cx={centre} cy={centre} r={bague.radius} />
+									{!accent && <circle class="bague-aim" cx={centre} cy={centre} r={bague.radius} />}
 									<circle class="bague-ticks" cx={centre} cy={centre} r={bague.radius} pathLength="360" />
 								</>
 							)}
@@ -169,33 +183,47 @@ const frame = [
 							<circle class="bague-edge" cx={centre} cy={centre} r={bague.radius - BAND_HALF} />
 						</svg>
 					);
+					// The seat lifts an aimed bague: an element of its own, so the lift never meets the transform the scene writes on the bague.
 					return (
-						<div
-							class="bague"
-							style={`transform: translate3d(0, ${px(bague.height)}, 0) rotateX(${TILT}deg)`}
-							data-choreography={JSON.stringify(bague.choreography)}
-						>
-							{layer({ side: true, accent: false })}
-							{layer({ side: false, accent: false })}
-							{/* The accent is a layer laid over the base one, so the scene can light it with opacity alone. */}
-							{layer({ side: true, accent: true })}
-							{layer({ side: false, accent: true })}
-							<div class="bague-plane" style={`transform: rotate(${bague.spin}deg)`}>
-								{/* Carries the pastilles round the bague during the scene, on top of the bague's own spin. */}
-								<div class="bague-track">
-									{bague.pastilles.map((pastille) => (
-										<div
-											class="pastille-slot"
-											style={`transform: rotate(${pastille.angle}deg) translateX(${px(bague.radius)})`}
-										>
-											{/* Printed on the band, its top pointing out of the ring. */}
-											<div class="pastille" style={`transform: rotate(90deg) translateZ(${LOGO_RAISE}px)`}>
-												<svg class="pastille-logo" viewBox="0 0 24 24">
-													<use href={pastille.href} />
-												</svg>
+						<div class="bague-seat" data-bague={rank}>
+							<div
+								class="bague"
+								style={`transform: translate3d(0, ${px(bague.height)}, 0) rotateX(${TILT}deg)`}
+								data-choreography={JSON.stringify(bague.choreography)}
+							>
+								{layer({ side: true, accent: false })}
+								{layer({ side: false, accent: false })}
+								{/* The accent is a layer laid over the base one, so the scene can light it with opacity alone. */}
+								{layer({ side: true, accent: true })}
+								{layer({ side: false, accent: true })}
+								{/* A finger's reach around the band, never drawn. In a box of its own: nothing is aimed at outside its SVG's box. */}
+								<svg
+									class="bague-reach"
+									width={2 * reach}
+									height={2 * reach}
+									viewBox={`0 0 ${2 * reach} ${2 * reach}`}
+									style={`left: ${px(-reach)}; top: ${px(-reach)}`}
+								>
+									<circle cx={reach} cy={reach} r={bague.radius} stroke-width={FINGER_REACH} />
+								</svg>
+								<div class="bague-plane" style={`transform: rotate(${bague.spin}deg)`}>
+									{/* Carries the pastilles round the bague during the scene, on top of the bague's own spin. */}
+									<div class="bague-track">
+										{bague.pastilles.map((pastille) => (
+											<div
+												class="pastille-slot"
+												style={`transform: rotate(${pastille.angle}deg) translateX(${px(bague.radius)})`}
+												data-tool={pastille.tool}
+											>
+												{/* Printed on the band, its top pointing out of the ring. */}
+												<div class="pastille" style={`transform: rotate(90deg) translateZ(${LOGO_RAISE}px)`}>
+													<svg class="pastille-logo" viewBox="0 0 24 24">
+														<use href={pastille.href} />
+													</svg>
+												</div>
 											</div>
-										</div>
-									))}
+										))}
+									</div>
 								</div>
 							</div>
 						</div>
@@ -206,10 +234,13 @@ const frame = [
 	</div>
 	<dl class="atome-labels">
 		{
-			bagues.map((bague) => (
+			// Each label is a stop of its own for the keyboard: focused, it aims at its bague.
+			bagues.map((bague, rank) => (
 				<div
 					class:list={['atome-label', { 'atome-label--accent': bague.accent }]}
 					style={`--label-y: ${px(bague.height)}; --leader: ${px(BASE_RADIUS + 40 - bague.radius)}`}
+					data-bague={rank}
+					tabindex="0"
 				>
 					<dt class="mono atome-category">{bague.category}</dt>
 					<dd class="atome-tools-cell">
@@ -226,7 +257,16 @@ const frame = [
 </div>
 
 <script>
-	import { cubicBezier, gsap, readTransforms, registerScene, SCENE_SCRUB, ScrollTrigger } from '../animation/base';
+	import {
+		cubicBezier,
+		gsap,
+		readTransforms,
+		registerScene,
+		SCENE_SCRUB,
+		ScrollSmoother,
+		ScrollTrigger,
+	} from '../animation/base';
+	import { towerStands } from '../atome/aim';
 
 	type Pose = { y: number; heading: number; tilt: number; spin: number; scale: number };
 	type Choreography = {
@@ -590,19 +630,52 @@ const frame = [
 			// of measuring it, and every other pin with it, as it is created.
 			animation: gsap.timeline(),
 		});
-		ScrollTrigger.create({
+		// The tower stands once the scroll is past the scene's end and the scene has caught up with it:
+		// only then does it answer whoever aims at a bague. Two numbers compared, nothing read from the page.
+		const report = ({ progress }: ScrollTrigger) => towerStands(progress === 1 && scene.progress() === 1);
+		towerStands(false);
+		const played = ScrollTrigger.create({
 			...span,
 			animation: scene,
 			scrub: SCENE_SCRUB,
 			// Not `onToggle`: ScrollTrigger runs it inside the scene's context, and when the preference flips
 			// mid-scene, Firefox then leaves the bagues where they stood instead of reverting them.
-			onUpdate: ({ isActive }) => isActive && promote(true),
-			onScrubComplete: ({ isActive }) => isActive || promote(false),
+			onUpdate: (self) => {
+				if (self.isActive) promote(true);
+				report(self);
+			},
+			onScrubComplete: (self) => {
+				if (!self.isActive) promote(false);
+				report(self);
+			},
+			// A page opened or resized past the scene is brought to its end without a scrub.
+			onRefresh: report,
 		});
+
+		// The keyboard reaching a label before the tower stands would focus a label not drawn yet: the page
+		// goes to the scene's end. Not for a click or a tap, which focus the label too. A frame later, once
+		// the base has brought the focused element into view, and only if the focus has not moved on.
+		let reaching = 0;
+		const reach = ({ target }: FocusEvent) => {
+			if (played.progress === 1) return;
+			if (!(target instanceof Element) || !target.matches('.atome-label:focus-visible')) return;
+			cancelAnimationFrame(reaching);
+			reaching = requestAnimationFrame(() => {
+				if (document.activeElement !== target) return;
+				const smoother = ScrollSmoother.get();
+				if (smoother) smoother.scrollTo(played.end, false);
+				else scrollTo(0, played.end);
+			});
+		};
+		atome.addEventListener('focusin', reach);
 
 		return () => {
 			ScrollTrigger.removeEventListener('refreshInit', refit);
 			ScrollTrigger.removeEventListener('refresh', applyFrame);
+			atome.removeEventListener('focusin', reach);
+			cancelAnimationFrame(reaching);
+			// Without the scene, the tower is the page's final state.
+			towerStands(true);
 			promote(false);
 			atome.style.removeProperty('--tower-scale');
 			delete atome.dataset.atomeScene;
@@ -642,6 +715,7 @@ const frame = [
 
 	/* The tower axis: every bague, pastille and leader line is placed from this point. */
 	.atome-drawing,
+	.bague-seat,
 	.bague,
 	.bague-plane,
 	.bague-track,
@@ -688,13 +762,71 @@ const frame = [
 		border-radius: 50%;
 	}
 
+	/* A layer's box covers the whole inside of its ring, over the bagues below: a pointer only aims at what is drawn. */
 	.bague-layer {
 		position: absolute;
 		overflow: visible;
+		pointer-events: none;
 	}
 
 	.bague-layer circle {
 		fill: none;
+		pointer-events: stroke;
+	}
+
+	/*
+	 * An aimed bague (`src/atome/aim.ts`) lifts a notch on its seat and takes the accent: circles of
+	 * their own over the base bands, under the ticks and the edges, so the answer never touches what
+	 * the scene fades.
+	 */
+	.bague-seat[data-aimed] {
+		transform: translateY(-8px);
+	}
+
+	.bague-aim {
+		stroke-width: 14;
+		opacity: 0;
+	}
+
+	.bague-top .bague-aim {
+		stroke: var(--color-accent);
+	}
+
+	.bague-side .bague-aim {
+		stroke: var(--color-accent-deep);
+	}
+
+	.bague-seat[data-aimed] .bague-aim {
+		opacity: 1;
+	}
+
+	/* Reduced motion: the bague answers in one step. */
+	@media (prefers-reduced-motion: no-preference) {
+		.bague-seat {
+			transition: transform 0.24s cubic-bezier(0.2, 0.7, 0.2, 1);
+		}
+
+		.bague-aim {
+			transition: opacity 0.24s ease-out;
+		}
+	}
+
+	/* A band is a dozen pixels wide on a phone, too thin for a finger, which gets this ring around it. */
+	.bague-reach {
+		display: none;
+	}
+
+	@media (pointer: coarse) {
+		.bague-reach {
+			display: block;
+			position: absolute;
+			fill: none;
+			pointer-events: none;
+		}
+
+		.bague-reach circle {
+			pointer-events: stroke;
+		}
 	}
 
 	.bague-band {
@@ -754,14 +886,15 @@ const frame = [
 		contain: paint;
 	}
 
-	/* Labels: one per bague, beside its height in the tower, its leader line running back to the band. */
+	/*
+	 * Labels: one per bague, beside its height in the tower, its leader line running back to the band.
+	 * The list itself has no box: laid over the Atome, it would stand between the pointer and the bagues.
+	 */
 	.atome-labels {
-		position: absolute;
-		inset: 0;
 		margin: 0;
 	}
 
-	/* Placed and linked to the scaled tower; the text itself never scales. */
+	/* Placed in the Atome's box and linked to the scaled tower; the text itself never scales. */
 	.atome-label {
 		--leader-scaled: calc(var(--leader) * var(--tower-scale));
 		position: absolute;
@@ -807,6 +940,26 @@ const frame = [
 	/* The accent never carries text on the paper: the specialty stands out in full ink. */
 	.atome-label--accent .atome-category {
 		color: var(--color-ink);
+	}
+
+	/* The label of an aimed bague answers in full ink too, its leader line in the accent. */
+	.atome-label[data-aimed] .atome-category {
+		color: var(--color-ink);
+	}
+
+	.atome-label[data-aimed]::before,
+	.atome-label[data-aimed]::after {
+		background: var(--color-accent);
+	}
+
+	/* Beside the tower a label is a row of no height, whose outline would be a line: its category carries the ring. */
+	.atome-label:focus-visible {
+		outline: none;
+	}
+
+	.atome-label:focus-visible .atome-category {
+		outline: 2px solid var(--color-ink);
+		outline-offset: 3px;
 	}
 
 	.atome-tools-cell {
@@ -869,7 +1022,6 @@ const frame = [
 		}
 
 		.atome-labels {
-			position: static;
 			margin-top: 16px;
 		}
 
@@ -898,6 +1050,19 @@ const frame = [
 
 		.atome[data-atome-scene] .atome-label {
 			grid-area: 1 / 1;
+		}
+
+		/* The label of an aimed bague takes the row from the one the scene left there. */
+		.atome[data-atome-scene]:has(.atome-label[data-aimed]) .atome-label:not([data-aimed]) {
+			visibility: hidden;
+		}
+
+		/*
+		 * The scene leaves the opacity it gave each label inline, 0 for all but the last: the one place
+		 * where the answer has to speak over the scene, which no other property can undo.
+		 */
+		.atome[data-atome-scene] .atome-label[data-aimed] {
+			opacity: 1 !important;
 		}
 
 		.atome-category,

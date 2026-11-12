@@ -746,6 +746,11 @@ const camera = JSON.stringify(
 			animation: refade-form 0.2s linear;
 		}
 
+		/* Another name for the visio's state: a switch fades the figure in again. */
+		:global(.cafe[data-cafe-state='form'][data-cafe-flavour='visio']) .montage {
+			animation: refade-visio 0.2s linear;
+		}
+
 		:global(.cafe[data-cafe-state='sent']) .montage {
 			animation: refade-sent 0.2s linear;
 		}
@@ -792,6 +797,12 @@ const camera = JSON.stringify(
 	}
 
 	@keyframes refade-form {
+		from {
+			opacity: 0;
+		}
+	}
+
+	@keyframes refade-visio {
 		from {
 			opacity: 0;
 		}

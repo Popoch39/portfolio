@@ -229,7 +229,7 @@ registerDetail(() => {
 		const name =
 			back === undefined
 				? figureName
-				: `Un Moka Express démonté au-dessus de son réchaud éteint : ${back} pièces sur 4 remises en place.`;
+				: `Un Moka Express démonté au-dessus de son réchaud éteint${flavour === 'visio' ? ', dans le cadre d’un écran' : ''} : ${back} pièces sur 4 remises en place.`;
 		if (counter && counter.textContent !== count) counter.textContent = count;
 		if (figure && figure.getAttribute('aria-label') !== name) figure.setAttribute('aria-label', name);
 	}

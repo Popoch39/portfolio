@@ -395,6 +395,278 @@ test.describe('Démontage, café mode in two columns', () => {
 	});
 });
 
+const visio = (page: Page) => section(page).getByRole('button', { name: 'Plutôt en visio', exact: true });
+const toVisio = (page: Page) => form(page).getByRole('button', { name: 'plutôt en visio', exact: true });
+const toCafe = (page: Page) => form(page).getByRole('button', { name: 'plutôt un café', exact: true });
+/** The screen's frame, drawn one stroke after the other, clockwise from the top. */
+const STROKES = ['top', 'right', 'bottom', 'left'] as const;
+/** The call inside the screen and the monitor's stand. */
+const CALL = ['café · en visio', '2 participants', 'Louis', 'vous'] as const;
+
+/**
+ * Samples the visio screen every frame for `ms`: when each stroke is first fully drawn and last seen fully drawn,
+ * when the call is first and last fully shown, and the moka's scale (the stove's width against `restWidth`).
+ */
+const watchScreen = (page: Page, ms: number) =>
+	section(page).evaluate(
+		(el, [strokes, call, ms]) =>
+			new Promise<{
+				drawn: Record<string, number>;
+				lastDrawn: Record<string, number>;
+				undrawn: Record<string, number>;
+				shown: number;
+				lastShown: number;
+				stoveFirstChange: number;
+			}>((resolve) => {
+				const start = performance.now();
+				const stove = el.querySelector('[data-layer="stove"]')!;
+				const width = stove.getBoundingClientRect().width;
+				const strokeOf = (name: string) => el.querySelector(`[data-cafe-screen] [data-stroke="${name}"]`)!;
+				// A stroke's drawn share: its length on screen against its full one, read off its transform's scale.
+				const drawnShare = (node: Element) => {
+					const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform);
+					return Math.max(Math.abs(matrix.a), 0) * Math.abs(matrix.d) * Number(getComputedStyle(node).opacity);
+				};
+				const opacityOf = (node: Element) => {
+					let opacity = 1;
+					for (let at: Element | null = node; at && at !== el; at = at.parentElement) {
+						opacity *= Number(getComputedStyle(at).opacity);
+					}
+					return opacity;
+				};
+				const callNodes = (call as string[]).map(
+					(text) => [...el.querySelectorAll('[data-cafe-screen] *')].find((node) => node.textContent?.trim() === text)!,
+				);
+				const drawn: Record<string, number> = {};
+				const lastDrawn: Record<string, number> = {};
+				const undrawn: Record<string, number> = {};
+				let shown = -1;
+				let lastShown = -1;
+				let stoveFirstChange = -1;
+				const sample = () => {
+					const now = performance.now() - start;
+					for (const name of strokes as string[]) {
+						const share = drawnShare(strokeOf(name));
+						if (share > 0.99) {
+							if (!(name in drawn)) drawn[name] = now;
+							lastDrawn[name] = now;
+						}
+						if (share < 0.01 && !(name in undrawn)) undrawn[name] = now;
+					}
+					if (callNodes.every((node) => opacityOf(node) > 0.99)) {
+						if (shown < 0) shown = now;
+						lastShown = now;
+					}
+					if (stoveFirstChange < 0 && Math.abs(stove.getBoundingClientRect().width - width) > 0.5) stoveFirstChange = now;
+					if (now > (ms as number)) resolve({ drawn, lastDrawn, undrawn, shown, lastShown, stoveFirstChange });
+					else requestAnimationFrame(sample);
+				};
+				requestAnimationFrame(sample);
+			}),
+		[STROKES as unknown as string[], CALL as unknown as string[], ms] as const,
+	);
+
+/** How much of a piece of the call shows: its opacity times that of every box around it in the section. */
+const callShown = (page: Page, text: string) =>
+	section(page)
+		.getByText(text, { exact: true })
+		.evaluate((node) => {
+			let opacity = 1;
+			for (let at: Element | null = node; at && !at.matches('[data-cafe]'); at = at.parentElement) {
+				opacity *= Number(getComputedStyle(at).opacity);
+			}
+			return opacity;
+		});
+
+const stoveWidth = (page: Page) =>
+	figure(page)
+		.locator('[data-layer="stove"]')
+		.evaluate((el) => el.getBoundingClientRect().width);
+
+test.describe('Démontage, visio mode in two columns', () => {
+	test.use({ reducedMotion: 'no-preference', viewport: { width: 1280, height: 800 } });
+
+	test('opening in visio shrinks the moka into a call’s screen, its frame drawn stroke by stroke, then the call', async ({
+		page,
+	}) => {
+		await reachActions(page);
+		const wide = await stoveWidth(page);
+
+		const watched = watchScreen(page, 2500);
+		await visio(page).click();
+		const { drawn, shown } = await watched;
+
+		// Clockwise from the top, each stroke done before the next one is.
+		expect(Object.keys(drawn).sort()).toEqual([...STROKES].sort());
+		for (let i = 1; i < STROKES.length; i++) expect(drawn[STROKES[i]], STROKES[i]).toBeGreaterThan(drawn[STROKES[i - 1]]);
+		// The call and the stand come in once the frame is whole.
+		expect(shown).toBeGreaterThan(drawn.left);
+		await settled(page);
+		// The whole moka at ×0.4 of the figure, from the close-up at ×1.56.
+		expect((await stoveWidth(page)) / wide).toBeCloseTo(0.4 / 1.5606, 2);
+		for (const text of CALL) expect(await callShown(page, text), text).toBe(1);
+		// The frame in the theme's ink.
+		const ink = await page.evaluate(() => {
+			const probe = document.createElement('i');
+			probe.style.color = 'var(--color-ink)';
+			document.body.append(probe);
+			const color = getComputedStyle(probe).color;
+			probe.remove();
+			return color;
+		});
+		for (const stroke of STROKES) {
+			await expect(section(page).locator(`[data-cafe-screen] [data-stroke="${stroke}"]`)).toHaveCSS('background-color', ink);
+		}
+	});
+
+	test('the screen is masked to assistive technologies; the figure is named in a screen', async ({ page }) => {
+		await reachActions(page);
+		await visio(page).click();
+		await settled(page);
+
+		await expect(figure(page)).toHaveAccessibleName(
+			'Un Moka Express démonté au-dessus de son réchaud éteint, dans le cadre d’un écran : 0 pièces sur 4 remises en place.',
+		);
+		const tree = await section(page).ariaSnapshot();
+		// « vous » aside, which the visio's heading says too.
+		for (const text of CALL.filter((text) => text !== 'vous')) expect(tree).not.toContain(text);
+
+		await toCafe(page).click();
+		await settled(page);
+		await expect(figure(page)).toHaveAccessibleName(
+			'Un Moka Express démonté au-dessus de son réchaud éteint : 0 pièces sur 4 remises en place.',
+		);
+	});
+
+	test('back to café, the call and the stand leave first, the frame comes undone in reverse, then the moka grows', async ({
+		page,
+	}) => {
+		await reachActions(page);
+		const wide = await stoveWidth(page);
+		await visio(page).click();
+		await settled(page);
+
+		const watched = watchScreen(page, 2000);
+		await toCafe(page).click();
+		const { lastDrawn, lastShown, undrawn, stoveFirstChange } = await watched;
+
+		expect(Object.keys(undrawn).sort()).toEqual([...STROKES].sort());
+		// Left first, top last: each stroke starts going once the one after it has.
+		for (let i = 1; i < STROKES.length; i++) {
+			expect(lastDrawn[STROKES[i - 1]], STROKES[i - 1]).toBeGreaterThan(lastDrawn[STROKES[i]]);
+		}
+		expect(stoveFirstChange).toBeGreaterThan(lastShown);
+		await settled(page);
+		expect((await stoveWidth(page)) / wide).toBeCloseTo(0.94 / 1.5606, 2);
+		for (const text of CALL) expect(await callShown(page, text), text).toBe(0);
+	});
+
+	test('closing from visio takes the screen down before the moka is whole again', async ({ page }) => {
+		await reachActions(page);
+		await visio(page).click();
+		await settled(page);
+
+		const watched = watchScreen(page, 2000);
+		await page.keyboard.press('Escape');
+		const { undrawn, lastShown, stoveFirstChange } = await watched;
+
+		expect(Object.keys(undrawn).sort()).toEqual([...STROKES].sort());
+		expect(stoveFirstChange).toBeGreaterThan(lastShown);
+		await settled(page);
+		await expect(figure(page)).toHaveAccessibleName(REST_LABEL);
+	});
+
+	test('on a switch the Repères follow the camera, and the blocks and the input stay as they were', async ({ page }) => {
+		await reachActions(page);
+		const rest = await heights(page);
+		await coffee(page).click();
+		await settled(page);
+		await name(page).fill('Ada');
+		await settled(page);
+		const before = await lifts(page, rest);
+
+		// The collector's tag against its piece, in stove heights: the camera's moves cancel out if the tag rides with it.
+		const drift = () =>
+			section(page).evaluate(
+				(el) =>
+					new Promise<number[]>((resolve) => {
+						// The innermost: the text itself, not the tag's box at the figure's corner.
+						const tag = [...el.querySelectorAll('[aria-hidden="true"] *')].findLast((node) =>
+							/^2\s*le collecteur$/.test(node.textContent?.trim() ?? ''),
+						)!;
+						const piece = el.querySelector('[data-layer="collector"]')!;
+						const stove = el.querySelector('[data-layer="stove"]')!;
+						const offsets: number[] = [];
+						const start = performance.now();
+						const sample = () => {
+							const t = tag.getBoundingClientRect();
+							const p = piece.getBoundingClientRect();
+							const s = stove.getBoundingClientRect();
+							offsets.push((t.top + t.height / 2 - p.top) / s.height);
+							if (performance.now() - start > 1600) resolve(offsets);
+							else requestAnimationFrame(sample);
+						};
+						requestAnimationFrame(sample);
+					}),
+			);
+		const spread = (offsets: number[]) => Math.max(...offsets) - Math.min(...offsets);
+
+		let watched = drift();
+		await toVisio(page).click();
+		expect(spread(await watched)).toBeLessThan(0.03);
+		await settled(page);
+		watched = drift();
+		await toCafe(page).click();
+		expect(spread(await watched)).toBeLessThan(0.03);
+		await settled(page);
+
+		const after = await lifts(page, rest);
+		for (const piece of PIECES) expect(after[piece], piece).toBeCloseTo(before[piece], 0);
+		await expect(name(page)).toHaveValue('Ada');
+		await expect(counter(page)).toHaveText('1/4 · une pièce posée');
+	});
+});
+
+test.describe('Démontage, visio under reduced motion', () => {
+	test.use({ reducedMotion: 'reduce', viewport: { width: 1280, height: 800 } });
+
+	test('the screen and the call fade in and out, nothing moves', async ({ page }) => {
+		await page.goto('/');
+		await visio(page).scrollIntoViewIfNeeded();
+
+		const running = section(page).evaluate(
+			(el) =>
+				new Promise<string[]>((resolve) => {
+					const seen = new Set<string>();
+					const start = performance.now();
+					const sample = () => {
+						for (const animation of document.getAnimations()) {
+							const target = (animation.effect as KeyframeEffect | null)?.target;
+							if (!(target instanceof Element) || !el.contains(target) || animation.playState !== 'running') continue;
+							const properties =
+								animation instanceof CSSTransition
+									? [animation.transitionProperty]
+									: (animation.effect as KeyframeEffect).getKeyframes().flatMap((frame) =>
+											Object.keys(frame).filter((key) => !['offset', 'computedOffset', 'easing', 'composite'].includes(key)),
+										);
+							for (const property of properties) seen.add(property);
+						}
+						if (performance.now() - start > 2500) resolve([...seen]);
+						else requestAnimationFrame(sample);
+					};
+					requestAnimationFrame(sample);
+				}),
+		);
+		await visio(page).click();
+		await expect.poll(() => callShown(page, 'café · en visio')).toBe(1);
+		await toCafe(page).click();
+		await expect.poll(() => callShown(page, 'café · en visio')).toBe(0);
+		const properties = await running;
+		expect(properties.length).toBeGreaterThan(0);
+		for (const property of properties) expect(['opacity', 'visibility', 'color', 'background-color']).toContain(property);
+	});
+});
+
 test.describe('Démontage, reduced motion', () => {
 	test.use({ reducedMotion: 'reduce', viewport: { width: 1280, height: 800 } });
 

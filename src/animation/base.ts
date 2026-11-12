@@ -249,8 +249,14 @@ function bringFocusIntoView(smoother: ScrollSmoother, event: Event) {
 	if (!smoother.content().contains(element)) return false;
 	const { top, bottom } = element.getBoundingClientRect();
 	const { top: areaTop, bottom: areaBottom } = visibleArea();
-	if (top < areaTop) smoother.scrollTo(element, false, atTopOfVisibleArea());
-	else if (bottom > areaBottom) smoother.scrollTo(element, false, `bottom ${areaBottom}px`);
+	/*
+	 * By how far it sticks out on screen, from where the content is drawn: the smoother's own measure of an element
+	 * places it as if the section pinned around it were still at the pinning's start, and would scroll back into
+	 * the scene from a form past its end (the Café's).
+	 */
+	const drawnAt = -Number(gsap.getProperty(smoother.content(), 'y'));
+	if (top < areaTop) smoother.scrollTo(drawnAt + top - areaTop, false);
+	else if (bottom > areaBottom) smoother.scrollTo(drawnAt + bottom - areaBottom, false);
 	return false;
 }
 

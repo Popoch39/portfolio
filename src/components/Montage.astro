@@ -242,18 +242,20 @@ const camera = JSON.stringify(
 					}
 					if (outer) drawn = <div class="montage-lift" style={outer}>{drawn}</div>;
 					if (fire) drawn = <div class="montage-fire">{drawn}</div>;
-					// Copies of the same file, already loaded: one shows the knob off, the others glint.
+					// Copies of the same file, already loaded: one shows the knob off, the others glint. Out of sight in a
+					// box of their own, like the layers, the image itself opaque.
+					const copy = <img src={src} alt="" width={width} height={height} loading="lazy" decoding="async" style={place} />;
 					if (name === 'knob-off') {
 						return (
 							<Fragment>
 								{drawn}
-								<img src={src} alt="" width={width} height={height} loading="lazy" decoding="async" style={place} class="montage-fire-off" data-fire-off />
+								<div class="montage-box montage-fire-off" data-fire-off>{copy}</div>
 							</Fragment>
 						);
 					}
 					if (!glintBlock) return drawn;
 					const flash = (
-						<img src={src} alt="" width={width} height={height} loading="lazy" decoding="async" style={place} class="montage-glint" data-glint-of={glintBlock} />
+						<div class="montage-box montage-glint" data-glint-of={glintBlock}>{copy}</div>
 					);
 					return (
 						<Fragment>

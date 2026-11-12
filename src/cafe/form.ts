@@ -8,7 +8,7 @@
  * The states are written on the section (`data-cafe-state`, `data-cafe-flavour`, `data-cafe-ok`,
  * `data-cafe-phase`) and the CSS draws them; the phase is the transition in progress, timed as on the board.
  */
-import { registerDetail } from '../animation/base';
+import { registerDetail, ScrollTrigger } from '../animation/base';
 
 type Flavour = 'cafe' | 'visio';
 type State = 'rest' | 'form' | 'sent';
@@ -85,9 +85,33 @@ registerDetail(() => {
 		);
 	}
 
+	/*
+	 * Stacked, the form and its mini moka take the paragraph's place in the flow, taller than it: the pinning
+	 * holds the section's height from its last measure, and would leave the Contact running over them. A new
+	 * measure each time the height in the flow changes (opening, closing, a layout flip); in two columns the
+	 * panel stands over the paragraph, which keeps its place.
+	 */
+	let inFlow = -1;
+	const heightInFlow = () =>
+		[restBlock, panel?.root].reduce(
+			(sum, block) => (block && getComputedStyle(block).position !== 'absolute' ? sum + block.offsetHeight : sum),
+			0,
+		);
+	const flow = new ResizeObserver(() => {
+		const height = heightInFlow();
+		if (height === inFlow) return;
+		const measured = inFlow >= 0;
+		inFlow = height;
+		if (measured) ScrollTrigger.refresh();
+	});
+	flow.observe(restBlock);
+
 	function open(event: Event) {
 		const opener = (event.currentTarget as HTMLElement).dataset.cafeOpen;
-		panel ??= buildPanel(template!, restBlock!);
+		if (!panel) {
+			panel = buildPanel(template!, restBlock!);
+			flow.observe(panel.root);
+		}
 		// A proposal already sent starts afresh; one left half-written is found as it was.
 		if (state === 'sent') panel.form.reset();
 		panel.hint.textContent = '';
@@ -227,6 +251,7 @@ registerDetail(() => {
 	return () => {
 		clearTimeout(phaseTimer);
 		sending?.abort();
+		flow.disconnect();
 		buttons.forEach((button, index) => button.replaceWith(links[index]));
 		section.removeEventListener('keydown', onKey);
 		section.removeEventListener('click', onClick);

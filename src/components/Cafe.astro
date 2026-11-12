@@ -160,6 +160,23 @@ const callButtons = [
 	{/* Inert until the first opening: out of the critical HTML, and nothing to show without JavaScript. */}
 	<template data-cafe-form>
 		<div class="cafe-panel">
+			{/*
+			 * Stacked, the Montage's figure is out of sight while the visitor writes: a mini moka, its same layers,
+			 * comes apart above the form. In visio, the screen's frame and stand without the call. Its figure's name
+			 * is the Montage's.
+			 */}
+			<div class="cafe-mini" aria-hidden="true" data-cafe-mini>
+				<div class="cafe-mini-board">
+					{screenStrokes.map((stroke) => <span class="cafe-call-stroke" data-stroke={stroke} />)}
+					<div class="cafe-call-stand">
+						<span class="cafe-call-neck"></span>
+						<span class="cafe-call-base"></span>
+					</div>
+					<div class="cafe-mini-figure">
+						<Montage mini />
+					</div>
+				</div>
+			</div>
 			<form class="cafe-form" novalidate aria-labelledby="cafe-form-title">
 				<div class="cafe-form-head">
 					<h3 id="cafe-form-title" class="cafe-form-title" data-cafe-heading>Un café, à Besançon.</h3>
@@ -395,10 +412,13 @@ const callButtons = [
 		margin-top: 34px;
 	}
 
-	/* The form and the confirmation share a place: the panel holds the taller, nothing moves between them. */
+	/*
+	 * The form and the confirmation share a place under the mini moka: the panel holds the taller, nothing moves
+	 * between them.
+	 */
 	.cafe-form,
 	.cafe-sent {
-		grid-area: 1 / 1;
+		grid-area: 2 / 1;
 		min-width: 0;
 		opacity: 0;
 		visibility: hidden;
@@ -1031,9 +1051,92 @@ const callButtons = [
 	 * The call's screen (board A, visio). Stacked, out of sight: the moka is. In two columns, every part is placed
 	 * in board pixels from the board's corner, 52 of them left of the column. The strokes are drawn clockwise from
 	 * the top and undone in reverse; the call and the stand come once the frame is whole and leave first.
+	 * The frame and the stand are the mini moka's too, in its own board pixels.
 	 */
 	.cafe-call {
 		display: none;
+	}
+
+	.cafe-call-stroke,
+	.cafe-call-ui > *,
+	.cafe-call-stand > * {
+		position: absolute;
+	}
+
+	.cafe-call-stroke {
+		--undraw-delay: 0s;
+		--draw-time: 0.2s;
+		--draw-delay: 0s;
+		background: var(--color-ink);
+	}
+
+	.cafe-call-stroke[data-stroke='top'],
+	.cafe-call-stroke[data-stroke='bottom'] {
+		width: calc(576 * var(--u));
+		height: calc(2 * var(--u));
+	}
+
+	.cafe-call-stroke[data-stroke='right'],
+	.cafe-call-stroke[data-stroke='left'] {
+		width: calc(2 * var(--u));
+		height: calc(440 * var(--u));
+		--draw-time: 0.16s;
+	}
+
+	.cafe-call-stroke[data-stroke='top'] {
+		left: calc(652 * var(--u));
+		top: calc(200 * var(--u));
+		transform-origin: 0 50%;
+		--undraw-delay: 0.36s;
+	}
+
+	.cafe-call-stroke[data-stroke='right'] {
+		left: calc(1226 * var(--u));
+		top: calc(200 * var(--u));
+		transform-origin: 50% 0;
+		--undraw-delay: 0.24s;
+		--draw-delay: 0.2s;
+	}
+
+	.cafe-call-stroke[data-stroke='bottom'] {
+		left: calc(652 * var(--u));
+		top: calc(638 * var(--u));
+		transform-origin: 100% 50%;
+		--undraw-delay: 0.12s;
+		--draw-delay: 0.36s;
+	}
+
+	.cafe-call-stroke[data-stroke='left'] {
+		left: calc(652 * var(--u));
+		top: calc(200 * var(--u));
+		transform-origin: 50% 100%;
+		--draw-delay: 0.56s;
+	}
+
+	.cafe-call-ui,
+	.cafe-call-stand {
+		position: absolute;
+		left: 0;
+		top: 0;
+		opacity: var(--screen);
+	}
+
+	.cafe-call-neck {
+		left: calc(924 * var(--u));
+		top: calc(640 * var(--u));
+		width: calc(32 * var(--u));
+		height: calc(34 * var(--u));
+		background: var(--color-ink);
+		clip-path: polygon(20% 0, 80% 0, 100% 100%, 0 100%);
+	}
+
+	.cafe-call-base {
+		left: calc(870 * var(--u));
+		top: calc(674 * var(--u));
+		width: calc(140 * var(--u));
+		height: calc(4 * var(--u));
+		border-radius: calc(2 * var(--u));
+		background: var(--color-ink);
 	}
 
 	@media (min-width: 861px) and (min-height: 520px) {
@@ -1043,70 +1146,6 @@ const callButtons = [
 			top: 0;
 			left: calc(var(--page-gutter) - 52 * var(--u));
 			pointer-events: none;
-		}
-
-		.cafe-call-stroke,
-		.cafe-call-ui > *,
-		.cafe-call-stand > * {
-			position: absolute;
-		}
-
-		.cafe-call-stroke {
-			--undraw-delay: 0s;
-			--draw-time: 0.2s;
-			--draw-delay: 0s;
-			background: var(--color-ink);
-		}
-
-		.cafe-call-stroke[data-stroke='top'],
-		.cafe-call-stroke[data-stroke='bottom'] {
-			width: calc(576 * var(--u));
-			height: calc(2 * var(--u));
-		}
-
-		.cafe-call-stroke[data-stroke='right'],
-		.cafe-call-stroke[data-stroke='left'] {
-			width: calc(2 * var(--u));
-			height: calc(440 * var(--u));
-			--draw-time: 0.16s;
-		}
-
-		.cafe-call-stroke[data-stroke='top'] {
-			left: calc(652 * var(--u));
-			top: calc(200 * var(--u));
-			transform-origin: 0 50%;
-			--undraw-delay: 0.36s;
-		}
-
-		.cafe-call-stroke[data-stroke='right'] {
-			left: calc(1226 * var(--u));
-			top: calc(200 * var(--u));
-			transform-origin: 50% 0;
-			--undraw-delay: 0.24s;
-			--draw-delay: 0.2s;
-		}
-
-		.cafe-call-stroke[data-stroke='bottom'] {
-			left: calc(652 * var(--u));
-			top: calc(638 * var(--u));
-			transform-origin: 100% 50%;
-			--undraw-delay: 0.12s;
-			--draw-delay: 0.36s;
-		}
-
-		.cafe-call-stroke[data-stroke='left'] {
-			left: calc(652 * var(--u));
-			top: calc(200 * var(--u));
-			transform-origin: 50% 100%;
-			--draw-delay: 0.56s;
-		}
-
-		.cafe-call-ui,
-		.cafe-call-stand {
-			position: absolute;
-			left: 0;
-			top: 0;
-			opacity: var(--screen);
 		}
 
 		.cafe-call-ui {
@@ -1229,23 +1268,50 @@ const callButtons = [
 			width: calc(18 * var(--u));
 			height: calc(18 * var(--u));
 		}
+	}
 
-		.cafe-call-neck {
-			left: calc(924 * var(--u));
-			top: calc(640 * var(--u));
-			width: calc(32 * var(--u));
-			height: calc(34 * var(--u));
-			background: var(--color-ink);
-			clip-path: polygon(20% 0, 80% 0, 100% 100%, 0 100%);
+	/*
+	 * The mini moka (stacked): the board's stretch from the screen's left edge to its right one, 576 board pixels,
+	 * at a height that leaves the form room on a phone, upright or on its side. Its own `--u` places the frame,
+	 * the stand and the figure at the board's coordinates; the camera, the blocks and the fire are the Montage's.
+	 * Two columns, the Montage's figure is in sight.
+	 */
+	.cafe-mini {
+		--mini-height: clamp(120px, 26svh, 240px);
+		--u: calc(var(--mini-height) / 740);
+		grid-area: 1 / 1;
+		position: relative;
+		justify-self: center;
+		width: calc(576 * var(--u));
+		height: var(--mini-height);
+		margin-bottom: 16px;
+		pointer-events: none;
+	}
+
+	.cafe-mini-board {
+		position: absolute;
+		left: calc(-652 * var(--u));
+		top: calc(-18 * var(--u));
+	}
+
+	.cafe-mini-figure {
+		position: absolute;
+		left: calc(720 * var(--u));
+		top: calc(18 * var(--u));
+		width: calc(444 * var(--u));
+		height: calc(740 * var(--u));
+	}
+
+	/* Drawn from the moment the form opens: the screen starts out of sight, to be drawn stroke by stroke. */
+	@starting-style {
+		.cafe-mini :is(.cafe-call-stroke, .cafe-call-stand) {
+			--screen: 0;
 		}
+	}
 
-		.cafe-call-base {
-			left: calc(870 * var(--u));
-			top: calc(674 * var(--u));
-			width: calc(140 * var(--u));
-			height: calc(4 * var(--u));
-			border-radius: calc(2 * var(--u));
-			background: var(--color-ink);
+	@media (min-width: 861px) and (min-height: 520px) {
+		.cafe-mini {
+			display: none;
 		}
 	}
 

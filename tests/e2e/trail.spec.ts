@@ -2,6 +2,7 @@
 import { test as direct } from '@playwright/test';
 import { expect, test, type Locator, type Page } from './fixtures';
 import type { Paper } from './nuancier-helpers';
+import { address, visitContact } from './statusline-helpers';
 
 /**
  * The Traîne: the site's cursor under a mouse. A point of ink, which is the cursor's own image, and
@@ -121,6 +122,15 @@ test.describe('the Traîne', () => {
 			await page.mouse.move(x, y);
 			await expect.poll(() => ringDiameter(page)).toBeCloseTo(44, 1);
 		}
+	});
+
+	test('a cursor that says something stays: the Contact address keeps `copy`, and the ring opens over it', async ({ page }) => {
+		await visitContact(page);
+		await expect(address(page)).toHaveCSS('cursor', 'copy');
+
+		const { x, y } = await centre(address(page));
+		await page.mouse.move(x, y);
+		await expect.poll(() => ringDiameter(page)).toBeCloseTo(44, 1);
 	});
 
 	test('a still pointer costs nothing: once the ring has landed, it asks for no more frames', async ({ page }) => {

@@ -31,38 +31,12 @@ _À éviter_ : bouton play/pause, stop.
 La couche papier opaque qui couvre la fenêtre pendant l'Intro, au-dessus de la page déjà peinte à son état final. Elle s'efface en une frame quand la page se révèle. Sans la classe `intro` posée avant la première peinture (sans JS, notamment), elle n'existe pas. Si l'Intro ne démarre pas, un filet la lève quand même (ADR 0005).
 _À éviter_ : overlay, masque.
 
-**Terminateur**
-La ligne qui sépare le jour de la nuit sur la carte du hero, là où le soleil se couche (ou se lève) à Besançon à l'heure de la visite, bordée de son liseré signal et des crépuscules hachurés. L'heure ne fait que la glisser ; elle tombe à la fin de l'Intro (ADR 0008).
-_À éviter_ : dark mode, thème sombre (pour la ligne elle-même).
-
-**Nuancier**
-L'éventail de bandes riveté en bas à droite de la fenêtre, une bande par papier, qui choisit le Papier du site (ADR 0009). Le papier choisi gagne la page en cercle depuis sa bande.
-_À éviter_ : theme switcher, sélecteur de thème.
-
-**Papier**
-Le fond choisi dans le Nuancier, sur tout le site : Jour (`light`), Nuit (`dark`), Cyanotype (`cyan`, tirage bleu) ou Auto (`auto`, qui suit le soleil à Besançon : sombre du coucher au lever). Retenu par visiteur.
-_À éviter_ : thème, mode sombre, `:set bg=` (retiré).
-
 **Défilement lissé**
 Défilement à la molette et au trackpad interpolé par ScrollSmoother (environ 1 s d'inertie). Jamais au doigt, jamais sous `prefers-reduced-motion: reduce`, jamais sans JS : le défilement reste alors natif. Sur un téléphone ou une tablette, il n'existe pas du tout, et les scènes épinglées défilent comme une page native.
 _À éviter_ : smooth scroll (qui désigne aussi `scroll-behavior: smooth`).
 
 **État final**
 Rendu que donnent le HTML et le CSS seuls : tout le contenu visible, à sa place. Une scène anime depuis un état de départ vers cet état final ; sans JS ou en mouvement réduit, la page reste à l'état final sans rien défaire.
-
-## Relief
-
-**Relief**
-La section qui suit le hero : le terrain de Besançon (la boucle du Doubs, la Citadelle, les collines) en carte à plat, nord en haut, à plus grande échelle que la carte du hero. Elle porte l'Estompage, les noms de lieux et un cartouche.
-_À éviter_ : terrain (réservé au travail sur site : « équipe terrain »), section 3D.
-
-**Estompage**
-La pièce de la section Relief : le relief ombré à l'encre et au grain, dont les ombres portées répondent à la Lampe. Ce n'est pas une Scène : il ne dépend pas du défilement, le visiteur le manipule. Son état final est l'estompage des cartes imprimées, lumière au nord-ouest. Il suit le Papier : de jour il dessine l'ombre, de nuit la lumière.
-_À éviter_ : hillshade, shader, relief 3D, plan-relief.
-
-**Lampe**
-La lumière que le visiteur tient au-dessus de l'Estompage : là où est le pointeur, ou le doigt tant qu'il touche la carte. Sans visiteur, elle est au nord-ouest. Au pointeur, elle y revient quand il sort de la carte ; au doigt, elle reste où on l'a laissée.
-_À éviter_ : soleil (réservé au Terminateur), lumière, curseur.
 
 ## Parcours
 

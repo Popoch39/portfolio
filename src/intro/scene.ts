@@ -61,8 +61,7 @@ registerOpening((end, idle) => {
 
 	// The globe lands on the real page: measured now, again once the fonts are in, and on every resize.
 	let layout = measure();
-	// Daylight's ink, whatever the page's theme: read where the Intro keeps it.
-	const palette = readPalette(over);
+	const palette = readPalette(root);
 	// Drawn by a Worker on the transferred canvas where the browser can; here otherwise, or as soon as
 	// the Worker fails: a failing Worker is not a failing Intro.
 	let drawnOn = canvas;

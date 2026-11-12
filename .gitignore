@@ -4,12 +4,6 @@ dist/
 # the moka generator's workshop outputs (scripts/moka/build.mjs)
 scripts/moka/out/
 
-# the Estompage's raw downloads from the IGN (scripts/relief/elevation.mjs)
-scripts/relief/cache/
-# its candidates: only the ×4 ones (the spec's starting scale, 5 MB each) are committed, the script writes the others again
-src/assets/relief/candidates/*.u16
-!src/assets/relief/candidates/*-x4.u16
-
 # generated types
 .astro/
 

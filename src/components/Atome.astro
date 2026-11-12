@@ -269,12 +269,7 @@ const frame = [
 	 * Where the labels sit under the tower rather than beside it (the CSS's portrait layout): during the
 	 * scene they share one row, only the lit bague's showing, so the list leaves the frame's height to the tower.
 	 */
-	const LABELS_BELOW = matchMedia('(orientation: portrait), (max-width: 639px), (max-height: 500px)');
-	/**
-	 * A phone on its side: under the title, the frame would leave the tower a quarter of the window.
-	 * The frame starts at the Atome instead, and the title scrolls out above it.
-	 */
-	const LOW_WINDOW = matchMedia('(orientation: landscape) and (max-height: 500px)');
+	const LABELS_BELOW = matchMedia('(orientation: portrait), (max-width: 639px)');
 	/** How far the page scrolls, in screens, for the length of the building phase (0 to 1 on the timeline). */
 	const BUILD_SCREENS = 4;
 	/** Every element whose transform the scene moves. */
@@ -289,7 +284,7 @@ const frame = [
 
 	/**
 	 * Fits the pinned frame to the screen: the tower takes the largest scale at which it fits the height
-	 * left under the title (or without it, in a low window) and above the statusline, without going past the width-fitting scale set in CSS. The label
+	 * left under the title and above the statusline, without going past the width-fitting scale set in CSS. The label
 	 * text keeps its size. Returns how far into the section the pin starts. Reads layout, so it only runs
 	 * at setup and on refresh, never on a frame.
 	 */
@@ -312,15 +307,13 @@ const frame = [
 		const frameEnd = section.querySelector('[data-atome-frame-end]') ?? atome;
 		const note = Math.max(0, frameEnd.getBoundingClientRect().bottom - bottom);
 		// What does not scale: the title above the Atome, the list below the tower in portrait, the note.
-		// The frame starts ROOM above the title, which stays in it for the whole scene; in a low window,
-		// ROOM above the Atome.
-		const frameTop = LOW_WINDOW.matches ? top - sectionTop : padding;
-		const title = top - sectionTop - frameTop;
+		const title = top - sectionTop - padding;
 		const list = bottom - top - towerHeight * cssScale;
 
+		// The title stays in the frame for the whole scene, ROOM below the top of the window.
 		const scale = Math.min(widthScale, (frame - 2 * ROOM - title - list - note) / towerHeight);
 		atome.style.setProperty('--tower-scale', `${+scale.toFixed(3)}`);
-		return frameTop - ROOM;
+		return padding - ROOM;
 	}
 
 	/**
@@ -853,12 +846,10 @@ const frame = [
 	}
 
 	/*
-	 * Portrait, too narrow for the labels beside the tower, or too low (a phone on its side: fitted to the
-	 * frame, the tower would bring the labels closer than their own height): the tower is centred on top
-	 * and the labels are listed below it, each a single run of text so the list stays short enough for
-	 * the pinned frame. Keep the query in step with the scene's (`LABELS_BELOW`).
+	 * Portrait, or too narrow for the labels beside the tower: the tower is centred on top and the labels
+	 * are listed below it, each a single run of text so the list stays short enough for the pinned frame.
 	 */
-	@media (orientation: portrait), (max-width: 639px), (max-height: 500px) {
+	@media (orientation: portrait), (max-width: 639px) {
 		.atome {
 			height: auto;
 		}

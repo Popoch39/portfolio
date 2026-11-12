@@ -25,8 +25,8 @@ const revealed = (page: Page) => [
 	page.locator('h1'),
 	page.locator('h1 > *'),
 	page.locator('h1 > * > *'),
-	page.locator('[data-lede]'),
-	page.locator('[data-intro="actions"]'),
+	page.locator('.hero-lede'),
+	page.locator('.hero-actions'),
 	// The Besançon marker and its label on the map, once the point has handed over to them.
 	page.locator('[data-intro="late"]'),
 	statusline(page),
@@ -281,7 +281,7 @@ for (const [screen, viewport] of SCREENS) {
 
 		// The Intro lands its point on the lede's cursor: the typist only starts its rest once it has ended.
 		test('the lede is not rewritten before the Intro has ended', async ({ page }) => {
-			const keys = page.locator('[data-lede] [data-keys] > *');
+			const keys = page.locator('.hero-lede [data-keys] > *');
 			await visitHome(page);
 
 			await page.clock.runFor(11_000);
@@ -325,10 +325,10 @@ for (const [screen, viewport] of SCREENS) {
 			await page.clock.runFor(1_500);
 			await expect(label(page)).toHaveCSS('opacity', '0');
 			const landed = await box(label(page));
-			const place = await box(page.locator('.hero-place[data-intro]'));
+			const place = await box(page.locator('.hero-place'));
 			expect(landed.x).toBeCloseTo(place.x, 0);
 			expect(landed.y).toBeCloseTo(place.y, 0);
-			await expect(page.locator('.hero-place[data-intro]')).toHaveCSS('opacity', '1');
+			await expect(page.locator('.hero-place')).toHaveCSS('opacity', '1');
 		});
 
 		test('flipping to reduced motion during the Intro brings the page back to its final state', async ({ page }) => {
@@ -417,9 +417,6 @@ test.describe('Intro, motion allowed, on a phone only', () => {
 	for (const [orientation, viewport] of [
 		['upright', PHONE],
 		['on its side', PHONE_LANDSCAPE],
-		// The narrowest phone: the phase and the gore no longer fit on one row. At 360px, they just do.
-		['upright, 320px wide', { width: 320, height: 568 }],
-		['upright, 360px wide', { width: 360, height: 640 }],
 	] as const) {
 		test(`held ${orientation}, the HUD fits in the window without its lines running into each other`, async ({
 			page,

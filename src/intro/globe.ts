@@ -34,10 +34,15 @@ const popEase = cubicBezier(0.34, 1.56, 0.64, 1);
 
 export type Rgb = [red: number, green: number, blue: number];
 
-/** The page's colours, read once from its CSS: the line work turns from ink to accent. */
+/**
+ * The paper's colours, read once from its CSS: the line work turns from ink to accent, the sphere is
+ * shaded from the lit side of the paper's volumes to a shade under the paper.
+ */
 export interface Palette {
 	ink: Rgb;
 	accent: Rgb;
+	paper: Rgb;
+	light: Rgb;
 }
 
 export interface Box {

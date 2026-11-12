@@ -42,23 +42,25 @@ addEventListener('pageshow', (event) => {
 	if (event.persisted) paint();
 });
 
-/** Puts the page on the paper the visitor picked in the Nuancier, and keeps it for the next visits. */
+/**
+ * Puts the page on the paper the visitor picked in the Nuancier, for the rest of the visit: the next
+ * one draws its own (`SkyTrigger.astro`).
+ */
 export function applyBg(bg: string) {
-	const auto = bg === 'auto';
-	remember(auto ? null : bg);
-	if (auto) delete root.dataset.bg;
+	remember(bg);
+	if (bg === 'auto') delete root.dataset.bg;
 	else root.dataset.bg = bg;
 	paint();
 }
 
 /**
- * Keeps the choice for the next visits; tells whether it could. Storage throws when the browser
- * blocks site data: the choice then lasts for this visit only.
+ * Keeps the choice from page to page; tells whether it could. `auto` is kept too, so that the next
+ * draw does not land on it again. Storage throws when the browser blocks site data: the choice then
+ * lasts for this page only.
  */
-function remember(bg: string | null) {
+function remember(bg: string) {
 	try {
-		if (bg) localStorage.setItem(BG_KEY, bg);
-		else localStorage.removeItem(BG_KEY);
+		sessionStorage.setItem(BG_KEY, bg);
 		return true;
 	} catch {
 		return false;

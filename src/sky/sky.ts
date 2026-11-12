@@ -35,7 +35,10 @@ export interface SkyPlace {
 export const skyModes = ['light', 'dark', 'kraft', 'cyan', 'tracing', 'phosphor', 'sanguine', 'auto'] as const;
 export type SkyMode = (typeof skyModes)[number];
 
-/** Where the choice is remembered; `auto` is the absence of one. */
+/**
+ * Where the visit's paper is kept, in `sessionStorage`: drawn by lot as the visit begins
+ * (`SkyTrigger.astro`), or picked in the Nuancier, it lasts until the next visit draws again.
+ */
 export const BG_KEY = 'bg';
 
 export const skyPlace: SkyPlace = {

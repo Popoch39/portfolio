@@ -1,6 +1,7 @@
 /*
  * "Encre seule": ink on paper, one signal colour (ADR 0006). By day on the root; `.theme-light`
- * keeps it on what stays in daylight whatever the page does (the hero's map, the statusline, the Intro).
+ * keeps it on what stays in daylight whatever the page does (the statusline; the hero's map and the
+ * Intro under the sun's papers, which the other papers repaint).
  */
 :root,
 .theme-light {
@@ -36,6 +37,7 @@
  * on paper turns paper on ink (the marquee, the button); the Frise's band and the accent keep theirs.
  */
 :root[data-theme='dark'],
+:root[data-bg='dark'] .intro-layer,
 .theme-dark {
 	--color-paper: #141412;
 	--color-ink: #efeee9;
@@ -57,7 +59,8 @@
  * accent kept. Forced only, never by the sun. The hero's map turns blue with the page: no night falls on it.
  */
 :root[data-theme='cyan'],
-:root[data-theme='cyan'] .hero-map {
+:root[data-theme='cyan'] .hero-map,
+:root[data-theme='cyan'] .intro-layer {
 	--color-paper: #12305a;
 	--color-ink: #eef2f8;
 	--color-ink-muted: #a8b9d3;
@@ -84,7 +87,8 @@
 
 /* Kraft: brown wrapping paper, a brown-black ink. */
 :root[data-theme='kraft'],
-:root[data-theme='kraft'] .hero-map {
+:root[data-theme='kraft'] .hero-map,
+:root[data-theme='kraft'] .intro-layer {
 	--color-paper: #d4b98f;
 	--color-ink: #22170d;
 	--color-ink-muted: #5a412a;
@@ -104,7 +108,8 @@
 
 /* Calque: an architect's tracing paper, cool and pale, in graphite. */
 :root[data-theme='tracing'],
-:root[data-theme='tracing'] .hero-map {
+:root[data-theme='tracing'] .hero-map,
+:root[data-theme='tracing'] .intro-layer {
 	--color-paper: #e3e8ea;
 	--color-ink: #1e2427;
 	--color-ink-muted: #525b61;
@@ -124,7 +129,8 @@
 
 /* Sanguine: a rosy cream drawn in red chalk. */
 :root[data-theme='sanguine'],
-:root[data-theme='sanguine'] .hero-map {
+:root[data-theme='sanguine'] .hero-map,
+:root[data-theme='sanguine'] .intro-layer {
 	--color-paper: #f1e2d6;
 	--color-ink: #3d140b;
 	--color-ink-muted: #7a3a28;
@@ -144,7 +150,8 @@
 
 /* Phosphore: a terminal's green phosphor on its black glass. */
 :root[data-theme='phosphor'],
-:root[data-theme='phosphor'] .hero-map {
+:root[data-theme='phosphor'] .hero-map,
+:root[data-theme='phosphor'] .intro-layer {
 	--color-paper: #0b130d;
 	--color-ink: #8ef0a0;
 	--color-ink-muted: #5fae6f;

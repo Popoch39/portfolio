@@ -140,7 +140,8 @@ const jsonLd = JSON.stringify({
 							<h2 id="contact-title" class="visually-hidden">Contact</h2>
 							<p class="contact-wq" aria-hidden="true">:wq</p>
 							<p class="contact-lede">Un projet carto, une API, une interface React&nbsp;? Écrivez-moi.</p>
-							<a class="contact-mail" href={mailto}>{mailUser}@<wbr />{mailDomain}</a>
+							{/* A click yanks the address once the statusline's reactions listen (`src/statusline/yank.ts`). */}
+							<a class="contact-mail" href={mailto} data-yank>{mailUser}@<wbr />{mailDomain}</a>
 							<div class="contact-links">
 								<a href={person.github.url} rel="me"
 									>GitHub — {person.github.user} <span aria-hidden="true">↗</span></a
@@ -157,8 +158,22 @@ const jsonLd = JSON.stringify({
 </Layout>
 
 <script>
-	import { registerScene } from '../animation/base';
+	import { registerReaction, registerScene } from '../animation/base';
 	import { markOffScreen } from '../animation/offscreen';
+
+	// What the statusline answers to the visitor. Fetched once the page has settled, so the first paint
+	// loads nothing for it; a context reverted meanwhile never starts it.
+	registerReaction(() => {
+		let stop: (() => void) | undefined;
+		let reverted = false;
+		import('../statusline/reactions').then(({ default: listen }) => {
+			if (!reverted) stop = listen();
+		});
+		return () => {
+			reverted = true;
+			stop?.();
+		};
+	});
 
 	// The marquee slides in CSS; registered for the context alone, so that its observer goes with a change of preference.
 	registerScene(() => {
@@ -625,6 +640,29 @@ const jsonLd = JSON.stringify({
 		color: var(--color-ink);
 	}
 
+	/* The address is copied, not followed: the pointer says so while a click does yank it. */
+	.contact-mail:not([data-yank='']) {
+		position: relative;
+		cursor: copy;
+	}
+
+	/* The blink of a `yank` over the address just copied: a layer of accent, only its opacity moves. */
+	.contact-mail[data-yank='done']::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: var(--color-accent);
+		opacity: 0;
+		pointer-events: none;
+		animation: yank 0.45s ease-out;
+	}
+
+	@keyframes yank {
+		from {
+			opacity: 0.45;
+		}
+	}
+
 	.contact-links {
 		display: flex;
 		flex-wrap: wrap;
@@ -645,6 +683,11 @@ const jsonLd = JSON.stringify({
 
 		.contact-mail {
 			transition: none;
+		}
+
+		/* The highlight stands for the same moment, then goes at once: nothing fades. */
+		.contact-mail[data-yank='done']::after {
+			animation-timing-function: step-end;
 		}
 	}
 </style>

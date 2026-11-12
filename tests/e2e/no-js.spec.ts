@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures';
-import { computedTransform, content } from './helpers';
+import { computedTransform, content, statusline } from './helpers';
 
 test.describe('without JavaScript', () => {
 	test.use({ javaScriptEnabled: false });
@@ -17,5 +17,18 @@ test.describe('without JavaScript', () => {
 			await expect(element).toHaveCSS('opacity', '1');
 		}
 		expect(await computedTransform(content(page))).toBe('none');
+	});
+
+	test('the statusline carries no message, and the address is a plain mail link', async ({ page }) => {
+		await page.goto('/');
+
+		const mail = page.getByRole('link', { name: 'pocheron.louis@gmail.com' });
+		await expect(mail).toHaveAttribute('href', 'mailto:pocheron.louis@gmail.com');
+		// Nothing would copy it: the pointer must not say so.
+		await expect(mail).toHaveCSS('cursor', 'pointer');
+		await expect(statusline(page).locator('.mode:visible').first()).toHaveText('NORMAL');
+		await expect(statusline(page).locator('.message')).toBeHidden();
+		await expect(statusline(page).locator('.branch')).toBeVisible();
+		await expect(statusline(page).locator('.file')).toBeVisible();
 	});
 });

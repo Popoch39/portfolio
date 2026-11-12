@@ -36,10 +36,12 @@ const paint = `(() => {
 			return false;
 		}
 	};
+	const papers = ${JSON.stringify(skyModes)};
 	let bg = kept;
-	if (begins) {
-		const papers = ${JSON.stringify(skyModes)}.filter((paper) => paper !== kept);
-		bg = papers[Math.floor(Math.random() * papers.length)];
+	// A paper the site no longer has (kept by a visit begun before a deploy) draws again.
+	if (begins || (kept !== null && !papers.includes(kept))) {
+		const drawn = papers.filter((paper) => paper !== kept);
+		bg = drawn[Math.floor(Math.random() * drawn.length)];
 		keep(bg);
 	}
 	if (bg && bg !== 'auto') root.dataset.bg = bg;

@@ -15,12 +15,12 @@ import { inlineScriptHash } from './inline-script';
 const strips: Record<SkyMode, { code: string; name: string; hint: string; sub: string }> = {
 	light: { code: 'EN-01', name: 'Jour', hint: 'toujours le jour', sub: '#efeee9' },
 	dark: { code: 'EN-02', name: 'Nuit', hint: 'toujours la nuit', sub: '#141412' },
-	cyan: { code: 'EN-03', name: 'Cyanotype', hint: 'tirage bleu', sub: '#12305a' },
+	'solarized-light': { code: 'EN-03', name: 'Solarized Light', hint: 'd’Ethan Schoonover', sub: '#fdf6e3' },
 	auto: { code: 'EN-04', name: 'Auto', hint: 'suit le soleil à Besançon', sub: '' },
-	kraft: { code: 'EN-05', name: 'Kraft', hint: 'papier d’emballage brun', sub: '#d4b98f' },
-	tracing: { code: 'EN-06', name: 'Calque', hint: 'calque d’architecte, mine graphite', sub: '#e3e8ea' },
-	sanguine: { code: 'EN-07', name: 'Sanguine', hint: 'craie rouge sur crème', sub: '#f1e2d6' },
-	phosphor: { code: 'EN-08', name: 'Phosphore', hint: 'vert de terminal sur noir', sub: '#0b130d' },
+	nord: { code: 'EN-05', name: 'Nord', hint: 'd’Arctic Ice Studio', sub: '#2e3440' },
+	'gruvbox-light': { code: 'EN-06', name: 'Gruvbox Light', hint: 'de morhetz', sub: '#fbf1c7' },
+	'catppuccin-mocha': { code: 'EN-07', name: 'Catppuccin Mocha', hint: 'de Catppuccin', sub: '#1e1e2e' },
+	'tokyo-night': { code: 'EN-08', name: 'Tokyo Night', hint: 'd’enkia', sub: '#1a1b26' },
 };
 
 // The chosen strip goes to the front, the others keep the fan's order behind it.
@@ -280,7 +280,7 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 		}
 	}
 
-	/* Each strip in its own paper: the papers' exact colours, whatever the page's theme (`global.css`). */
+	/* Each strip in its own paper and its own signal: the papers' exact colours, whatever the page's theme (`global.css`). */
 	.lam[data-paper='light'] {
 		--head: #efeee9;
 		--body: #efeee9;
@@ -291,6 +291,7 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 		--hole: #5e5d58;
 		--c1: #141412;
 		--c2: #5e5d58;
+		--color-accent: #ff5b14;
 	}
 
 	.lam[data-paper='dark'] {
@@ -303,66 +304,72 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 		--hole: #b3b1a9;
 		--c1: #efeee9;
 		--c2: #b3b1a9;
+		--color-accent: #ff5b14;
 	}
 
-	.lam[data-paper='cyan'] {
-		--head: #12305a;
-		--body: #12305a;
-		--border: #5f7699;
-		--sep: #24477a;
-		--code: #a8b9d3;
-		--name: #eef2f8;
-		--hole: #a8b9d3;
-		--c1: #eef2f8;
-		--c2: #a8b9d3;
+	.lam[data-paper='solarized-light'] {
+		--head: #fdf6e3;
+		--body: #fdf6e3;
+		--border: #93a1a1;
+		--sep: #eee8d5;
+		--code: #586e75;
+		--name: #073642;
+		--hole: #586e75;
+		--c1: #073642;
+		--c2: #586e75;
+		--color-accent: #cb4b16;
 	}
 
-	.lam[data-paper='kraft'] {
-		--head: #d4b98f;
-		--body: #d4b98f;
-		--border: #8a6d48;
-		--sep: #bfa178;
-		--code: #5a412a;
-		--name: #22170d;
-		--hole: #5a412a;
-		--c1: #22170d;
-		--c2: #5a412a;
+	.lam[data-paper='nord'] {
+		--head: #2e3440;
+		--body: #2e3440;
+		--border: #4c566a;
+		--sep: #3b4252;
+		--code: #d8dee9;
+		--name: #eceff4;
+		--hole: #d8dee9;
+		--c1: #eceff4;
+		--c2: #d8dee9;
+		--color-accent: #d08770;
 	}
 
-	.lam[data-paper='tracing'] {
-		--head: #e3e8ea;
-		--body: #e3e8ea;
-		--border: #9aa4aa;
-		--sep: #c9d1d5;
-		--code: #525b61;
-		--name: #1e2427;
-		--hole: #525b61;
-		--c1: #1e2427;
-		--c2: #525b61;
+	.lam[data-paper='gruvbox-light'] {
+		--head: #fbf1c7;
+		--body: #fbf1c7;
+		--border: #928374;
+		--sep: #ebdbb2;
+		--code: #665c54;
+		--name: #3c3836;
+		--hole: #665c54;
+		--c1: #3c3836;
+		--c2: #665c54;
+		--color-accent: #af3a03;
 	}
 
-	.lam[data-paper='sanguine'] {
-		--head: #f1e2d6;
-		--body: #f1e2d6;
-		--border: #c4a091;
-		--sep: #e0c9b8;
-		--code: #7a3a28;
-		--name: #3d140b;
-		--hole: #7a3a28;
-		--c1: #3d140b;
-		--c2: #7a3a28;
+	.lam[data-paper='catppuccin-mocha'] {
+		--head: #1e1e2e;
+		--body: #1e1e2e;
+		--border: #6c7086;
+		--sep: #313244;
+		--code: #a6adc8;
+		--name: #cdd6f4;
+		--hole: #a6adc8;
+		--c1: #cdd6f4;
+		--c2: #a6adc8;
+		--color-accent: #fab387;
 	}
 
-	.lam[data-paper='phosphor'] {
-		--head: #0b130d;
-		--body: #0b130d;
-		--border: #2f5a38;
-		--sep: #1a2b1e;
-		--code: #5fae6f;
-		--name: #8ef0a0;
-		--hole: #5fae6f;
-		--c1: #8ef0a0;
-		--c2: #5fae6f;
+	.lam[data-paper='tokyo-night'] {
+		--head: #1a1b26;
+		--body: #1a1b26;
+		--border: #565f89;
+		--sep: #292e42;
+		--code: #a9b1d6;
+		--name: #c0caf5;
+		--hole: #a9b1d6;
+		--c1: #c0caf5;
+		--c2: #a9b1d6;
+		--color-accent: #ff9e64;
 	}
 
 	/* Auto: a day's head over a night's body, the sun on the horizon between them. */
@@ -376,6 +383,7 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 		--hole: #b3b1a9;
 		--c1: #141412;
 		--c2: #5e5d58;
+		--color-accent: #ff5b14;
 	}
 
 	.lam {

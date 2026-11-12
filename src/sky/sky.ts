@@ -32,7 +32,16 @@ export interface SkyPlace {
  * next (ADR 0009); `paintSky` reads them from `data-bg` on its own
  * (it may name nothing outside itself). Under every forced paper but the night, the hero keeps no night, as by day.
  */
-export const skyModes = ['light', 'dark', 'kraft', 'cyan', 'tracing', 'phosphor', 'sanguine', 'auto'] as const;
+export const skyModes = [
+	'light',
+	'dark',
+	'solarized-light',
+	'nord',
+	'gruvbox-light',
+	'catppuccin-mocha',
+	'tokyo-night',
+	'auto',
+] as const;
 export type SkyMode = (typeof skyModes)[number];
 
 /**
@@ -100,11 +109,11 @@ export function paintSky(root: HTMLElement, now: Date, place: SkyPlace, line: HT
 	const SURFACES: Record<string, string> = {
 		light: '#efeee9',
 		dark: '#141412',
-		cyan: '#12305a',
-		kraft: '#d4b98f',
-		tracing: '#e3e8ea',
-		sanguine: '#f1e2d6',
-		phosphor: '#0b130d',
+		'solarized-light': '#fdf6e3',
+		nord: '#2e3440',
+		'gruvbox-light': '#fbf1c7',
+		'catppuccin-mocha': '#1e1e2e',
+		'tokyo-night': '#1a1b26',
 	};
 	const bg = root.dataset.bg;
 	const mode = bg && Object.hasOwn(SURFACES, bg) ? bg : 'auto';

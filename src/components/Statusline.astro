@@ -2,8 +2,8 @@
 /**
  * Vim-like statusline, fixed to the bottom of the window. Decorative, hidden from assistive
  * technologies, but for the Pause and the day's sun. Outside the smoothed content, otherwise its
- * transform would carry it along. Always ink, day or night: it stays in daylight's theme, but for the
- * Cyanotype's night blue.
+ * transform would carry it along. Always ink, day or night: it stays in daylight's theme, but on the
+ * colour schemes' papers, where it takes the scheme's own darkest row.
  */
 import Pause from './Pause.astro';
 
@@ -210,9 +210,9 @@ const { pause = false } = Astro.props;
 		--paper-name: 'nuit';
 	}
 
-	:global(:root[data-bg='cyan']) {
+	:global(:root[data-bg='solarized-light']) {
 		--paper-code: 'EN-03';
-		--paper-name: 'cyanotype';
+		--paper-name: 'solarized light';
 	}
 
 	.paper {
@@ -228,57 +228,73 @@ const { pause = false } = Astro.props;
 		content: var(--paper-name);
 	}
 
-	:global(:root[data-bg='kraft']) {
+	:global(:root[data-bg='nord']) {
 		--paper-code: 'EN-05';
-		--paper-name: 'kraft';
+		--paper-name: 'nord';
 	}
 
-	:global(:root[data-bg='tracing']) {
+	:global(:root[data-bg='gruvbox-light']) {
 		--paper-code: 'EN-06';
-		--paper-name: 'calque';
+		--paper-name: 'gruvbox light';
 	}
 
-	:global(:root[data-bg='sanguine']) {
+	:global(:root[data-bg='catppuccin-mocha']) {
 		--paper-code: 'EN-07';
-		--paper-name: 'sanguine';
+		--paper-name: 'catppuccin mocha';
 	}
 
-	:global(:root[data-bg='phosphor']) {
+	:global(:root[data-bg='tokyo-night']) {
 		--paper-code: 'EN-08';
-		--paper-name: 'phosphore';
+		--paper-name: 'tokyo night';
 	}
 
-	/* On the coloured papers the row is printed in the paper's own deepest ink. */
-	:global(:root[data-theme='cyan']) .statusline {
-		--color-ink: #0b2140;
-		--color-bar: #24477a;
-		--color-on-ink-muted: #a8b9d3;
+	/*
+	 * On the colour schemes' papers the row is the scheme's own, like its editor's statusline: its darkest
+	 * ground, its text and its orange mode, the INSERT mode in its text colour.
+	 */
+	:global(:root[data-theme='solarized-light']) .statusline {
+		--color-paper: #fdf6e3;
+		--color-ink: #073642;
+		--color-bar: #002b36;
+		--color-on-ink-muted: #93a1a1;
+		--color-accent: #cb4b16;
+		--color-on-accent: #fff;
 	}
 
-	:global(:root[data-theme='kraft']) .statusline {
-		--color-ink: #2b1d10;
-		--color-bar: #4a3520;
-		--color-on-ink-muted: #c9b08c;
+	:global(:root[data-theme='nord']) .statusline {
+		--color-paper: #eceff4;
+		--color-ink: #3b4252;
+		--color-bar: #434c5e;
+		--color-on-ink-muted: #d8dee9;
+		--color-accent: #d08770;
+		--color-on-accent: #242933;
 	}
 
-	:global(:root[data-theme='tracing']) .statusline {
-		--color-ink: #1e2427;
-		--color-bar: #343d42;
-		--color-on-ink-muted: #aeb8be;
+	:global(:root[data-theme='gruvbox-light']) .statusline {
+		--color-paper: #fbf1c7;
+		--color-ink: #282828;
+		--color-bar: #3c3836;
+		--color-on-ink-muted: #bdae93;
+		--color-accent: #af3a03;
+		--color-on-accent: #fbf1c7;
 	}
 
-	:global(:root[data-theme='sanguine']) .statusline {
-		--color-ink: #3d140b;
-		--color-bar: #5e2617;
-		--color-on-ink-muted: #d9b3a3;
+	:global(:root[data-theme='catppuccin-mocha']) .statusline {
+		--color-paper: #cdd6f4;
+		--color-ink: #181825;
+		--color-bar: #313244;
+		--color-on-ink-muted: #a6adc8;
+		--color-accent: #fab387;
+		--color-on-accent: #11111b;
 	}
 
-	/* The phosphor's row glows green on black glass, its INSERT mode included. */
-	:global(:root[data-theme='phosphor']) .statusline {
-		--color-paper: #8ef0a0;
-		--color-ink: #050a06;
-		--color-bar: #13301a;
-		--color-on-ink-muted: #6fbf7e;
+	:global(:root[data-theme='tokyo-night']) .statusline {
+		--color-paper: #c0caf5;
+		--color-ink: #16161e;
+		--color-bar: #292e42;
+		--color-on-ink-muted: #a9b1d6;
+		--color-accent: #ff9e64;
+		--color-on-accent: #1a1b26;
 	}
 
 	/* The right side gives way step by step, measured on the build: the left one keeps 164px, the mode and the Pause. */

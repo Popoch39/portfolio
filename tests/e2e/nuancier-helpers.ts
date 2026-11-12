@@ -1,7 +1,16 @@
 import type { Page } from './fixtures';
 
 /** The Nuancier's papers, back to front as the book rests by default. */
-export const papers = ['light', 'dark', 'kraft', 'cyan', 'tracing', 'phosphor', 'sanguine', 'auto'] as const;
+export const papers = [
+	'light',
+	'dark',
+	'solarized-light',
+	'nord',
+	'gruvbox-light',
+	'catppuccin-mocha',
+	'tokyo-night',
+	'auto',
+] as const;
 export type Paper = (typeof papers)[number];
 
 /** The slot of the strip at the front of the book. */
@@ -10,11 +19,11 @@ export const FRONT = '7';
 const names: Record<Paper, RegExp> = {
 	light: /^Jour/,
 	dark: /^Nuit/,
-	cyan: /^Cyanotype/,
-	kraft: /^Kraft/,
-	tracing: /^Calque/,
-	sanguine: /^Sanguine/,
-	phosphor: /^Phosphore/,
+	'solarized-light': /^Solarized Light/,
+	nord: /^Nord/,
+	'gruvbox-light': /^Gruvbox Light/,
+	'catppuccin-mocha': /^Catppuccin Mocha/,
+	'tokyo-night': /^Tokyo Night/,
 	auto: /^Auto/,
 };
 

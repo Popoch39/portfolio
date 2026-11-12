@@ -40,7 +40,7 @@ L'éventail de bandes riveté en bas à droite de la fenêtre, une bande par pap
 _À éviter_ : theme switcher, sélecteur de thème.
 
 **Papier**
-Le fond choisi dans le Nuancier, sur tout le site : Jour (`light`), Nuit (`dark`), Cyanotype (`cyan`, tirage bleu), Kraft (`kraft`), Calque (`tracing`), Sanguine (`sanguine`), Phosphore (`phosphor`) ou Auto (`auto`, qui suit le soleil à Besançon : sombre du coucher au lever). Retenu par visiteur.
+Le fond choisi dans le Nuancier, sur tout le site, avec son encre et son signal : Jour (`light`), Nuit (`dark`), cinq palettes d'éditeur connues sous leur nom officiel (Solarized Light, Nord, Gruvbox Light, Catppuccin Mocha, Tokyo Night) ou Auto (`auto`, qui suit le soleil à Besançon : sombre du coucher au lever). Tiré au sort à chaque visite, ou choisi pour la visite.
 _À éviter_ : thème, mode sombre, `:set bg=` (retiré).
 
 **Défilement lissé**

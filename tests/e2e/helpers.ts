@@ -9,7 +9,16 @@ export const statusline = (page: Page) => page.locator('#statusline');
 export const scrollPosition = (page: Page) => page.evaluate(() => scrollY);
 
 /** The Nuancier's papers, in the order the visit's draw reads them (`skyModes`, `src/sky/sky.ts`). */
-const DRAWN_FROM = ['light', 'dark', 'kraft', 'cyan', 'tracing', 'phosphor', 'sanguine', 'auto'];
+const DRAWN_FROM = [
+	'light',
+	'dark',
+	'solarized-light',
+	'nord',
+	'gruvbox-light',
+	'catppuccin-mocha',
+	'tokyo-night',
+	'auto',
+];
 
 /**
  * The next visit that draws a paper (`SkyTrigger.astro`) lands on `paper`: the page's first call to

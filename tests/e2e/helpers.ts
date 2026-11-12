@@ -8,6 +8,46 @@ export const statusline = (page: Page) => page.locator('#statusline');
 
 export const scrollPosition = (page: Page) => page.evaluate(() => scrollY);
 
+/** The Nuancier's papers, in the order the visit's draw reads them (`skyModes`, `src/sky/sky.ts`). */
+const DRAWN_FROM = [
+	'light',
+	'dark',
+	'solarized-light',
+	'nord',
+	'gruvbox-light',
+	'catppuccin-mocha',
+	'tokyo-night',
+	'auto',
+];
+
+/**
+ * The next visit that draws a paper (`SkyTrigger.astro`) lands on `paper`: the page's first call to
+ * `Math.random`, the draw's in the `<head>`, is answered with the share that picks it. A paper the
+ * draw cannot give (the one kept in the session) leaves the draw to chance.
+ */
+export function drawPaper(page: Page, paper: string) {
+	return page.addInitScript(
+		({ paper, papers }) => {
+			const kept = (() => {
+				try {
+					return sessionStorage.getItem('bg');
+				} catch {
+					return null;
+				}
+			})();
+			const pool = papers.filter((each) => each !== kept);
+			const at = pool.indexOf(paper);
+			if (at < 0) return;
+			const random = Math.random;
+			Math.random = () => {
+				Math.random = random;
+				return (at + 0.5) / pool.length;
+			};
+		},
+		{ paper, papers: DRAWN_FROM },
+	);
+}
+
 /** Vertical offset (px) that the computed transform imposes on the element, 0 without a transform. */
 export function verticalTranslation(element: Locator): Promise<number> {
 	return element.evaluate((el) => {

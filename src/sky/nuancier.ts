@@ -1,7 +1,10 @@
 /**
  * A pick in the Nuancier (03 · Nuancier, ADR 0009). The new paper spreads over the page from the strip
- * that was picked, in a circle ringed with the accent; meanwhile the strip rises, the book shuts on its
- * rivet and fans out again with that strip at the front.
+ * that was picked, in a circle ringed with the accent; meanwhile the strip rises and the book shuts on its
+ * rivet with that strip at the front. Under a mouse that is still over it, it fans out again.
+ *
+ * A tap opens the shut book (`data-open`), and a tap on the paper in force or anywhere else shuts it; a
+ * mouse opens it by coming over it, the keyboard by focusing a strip (`Nuancier.astro`).
  *
  * The reveal is a view transition: the old page is a snapshot, the new one is live under a `clip-path`
  * circle that grows to the farthest corner of the window. The whole page restyles once, inside the
@@ -36,6 +39,22 @@ fan?.addEventListener('change', (event) => {
 	pick(fan, slot, input.value);
 });
 
+fan?.addEventListener('pointerdown', (event) => {
+	if (event.pointerType === 'mouse') return;
+	if (!('open' in fan.dataset)) {
+		fan.dataset.open = '';
+		return;
+	}
+	const input = event.target instanceof Element ? event.target.closest('label')?.querySelector('input') : null;
+	if (input?.checked) delete fan.dataset.open;
+});
+
+document.addEventListener('pointerdown', (event) => {
+	if (fan && 'open' in fan.dataset && !(event.target instanceof Node && fan.contains(event.target))) {
+		delete fan.dataset.open;
+	}
+});
+
 function pick(fan: HTMLElement, slot: HTMLElement, bg: string) {
 	timers.forEach(clearTimeout);
 	timers = [];
@@ -47,6 +66,7 @@ function pick(fan: HTMLElement, slot: HTMLElement, bg: string) {
 	if (still || !document.startViewTransition) {
 		applyBg(bg);
 		toFront(fan, slot);
+		delete fan.dataset.open;
 		return;
 	}
 
@@ -70,6 +90,7 @@ function pick(fan: HTMLElement, slot: HTMLElement, bg: string) {
 		setTimeout(() => {
 			toFront(fan, slot);
 			delete fan.dataset.phase;
+			delete fan.dataset.open;
 		}, SHUT_AT + SHUTTING),
 	);
 

@@ -12,9 +12,14 @@ import { person } from '../data/profile';
 import { coordinates } from '../hero/map';
 ---
 
-{/* The Intro plays in daylight, whatever the hour: the night falls on the hero once it has ended (ADR 0008). */}
-<div id="veil" class="veil theme-light" aria-hidden="true" data-nosnippet></div>
-<div id="intro-over" class="over theme-light" aria-hidden="true" data-nosnippet>
+{
+	/*
+	 * The Intro plays on the paper drawn for the visit (ADR 0009, `.intro-layer` in `global.css`). On Auto, in
+	 * daylight whatever the hour: the night falls on the hero once it has ended (ADR 0008).
+	 */
+}
+<div id="veil" class="veil theme-light intro-layer" aria-hidden="true" data-nosnippet></div>
+<div id="intro-over" class="over theme-light intro-layer" aria-hidden="true" data-nosnippet>
 	<canvas id="intro-grid" class="grid"></canvas>
 	<p class="mono label" data-hud="label">
 		<span
@@ -26,6 +31,7 @@ import { coordinates } from '../hero/map';
 	<div class="paper" data-hud="paper">
 		<div class="mono hud" data-hud="hud">
 			<p class="hud-phase" data-hud="phase">projection orthographique · EPSG:4326</p>
+			<p class="hud-paper"></p>
 			<p class="hud-gore"><span class="dim">fuseau</span><span data-hud="gore">05 / 12</span></p>
 			<p class="hud-centre">
 				<small>centre de la projection</small><span data-hud="lat">8,0000° N</span><span data-hud="lon"
@@ -188,6 +194,17 @@ import { coordinates } from '../hero/map';
 		gap: 6px;
 	}
 
+	/* The paper drawn for the visit, under the phase, as the statusline names it (`Statusline.astro`). */
+	.hud-paper {
+		top: calc(26px + 1.5em);
+		left: var(--edge);
+		color: var(--color-ink-muted);
+	}
+
+	.hud-paper::before {
+		content: 'papier ' var(--paper-code) ' · ' var(--paper-name);
+	}
+
 	/* A gore's width at the equator: the left tick slides and the rule scales, from the right end. */
 	.scale-bar {
 		position: relative;
@@ -250,6 +267,10 @@ import { coordinates } from '../hero/map';
 		.hud-phase,
 		.hud-gore {
 			top: 16px;
+		}
+
+		.hud-paper {
+			top: calc(16px + 1.5em);
 		}
 
 		.hud-gore {

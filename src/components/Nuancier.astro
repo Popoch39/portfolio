@@ -6,8 +6,8 @@
  * is named. Hidden without the script that paints the sky; shown, checked on the remembered choice and
  * with that strip at the front, by the inline script right after it, before the first paint.
  *
- * On a phone the fan rests half open, every spine showing; under a mouse it rests nearly shut and opens
- * on hover. The keyboard opens it too. The choreography of a pick is `src/sky/nuancier.ts`.
+ * The book rests shut, the paper in force alone showing; it opens as the pointer comes over it, to the
+ * keyboard, or on a tap, and shuts again on a pick. The choreography is `src/sky/nuancier.ts`.
  */
 import { skyModes, type SkyMode } from '../sky/sky';
 import { inlineScriptHash } from './inline-script';
@@ -15,8 +15,12 @@ import { inlineScriptHash } from './inline-script';
 const strips: Record<SkyMode, { code: string; name: string; hint: string; sub: string }> = {
 	light: { code: 'EN-01', name: 'Jour', hint: 'toujours le jour', sub: '#efeee9' },
 	dark: { code: 'EN-02', name: 'Nuit', hint: 'toujours la nuit', sub: '#141412' },
-	cyan: { code: 'EN-03', name: 'Cyanotype', hint: 'tirage bleu', sub: '#12305a' },
+	'solarized-light': { code: 'EN-03', name: 'Solarized Light', hint: 'd’Ethan Schoonover', sub: '#fdf6e3' },
 	auto: { code: 'EN-04', name: 'Auto', hint: 'suit le soleil à Besançon', sub: '' },
+	nord: { code: 'EN-05', name: 'Nord', hint: 'd’Arctic Ice Studio', sub: '#2e3440' },
+	'gruvbox-light': { code: 'EN-06', name: 'Gruvbox Light', hint: 'de morhetz', sub: '#fbf1c7' },
+	'catppuccin-mocha': { code: 'EN-07', name: 'Catppuccin Mocha', hint: 'de Catppuccin', sub: '#1e1e2e' },
+	'tokyo-night': { code: 'EN-08', name: 'Tokyo Night', hint: 'd’enkia', sub: '#1a1b26' },
 };
 
 // The chosen strip goes to the front, the others keep the fan's order behind it.
@@ -41,6 +45,8 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 	{
 		skyModes.map((value, index) => {
 			const { code, name, hint, sub } = strips[value];
+			// A two-word name runs too long for the spine: the family, then the variant beside it.
+			const [family, variant] = name.split(' ');
 			return (
 				<div class="slot" data-slot={index}>
 					<label class="lam" data-paper={value}>
@@ -56,12 +62,22 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 						<span class="code" aria-hidden="true">
 							{code}
 						</span>
-						<span class="name" aria-hidden="true">
-							{name}
-						</span>
-						<span class="sub" aria-hidden="true">
-							{sub}
-						</span>
+						{variant ? (
+							<span class="name" data-two aria-hidden="true">
+								{family}
+								<br />
+								{variant}
+							</span>
+						) : (
+							<>
+								<span class="name" aria-hidden="true">
+									{name}
+								</span>
+								<span class="sub" aria-hidden="true">
+									{sub}
+								</span>
+							</>
+						)}
 						{value === 'auto' && <span class="sun" aria-hidden="true" />}
 						<span class="hole" aria-hidden="true" />
 						<span class="notch" aria-hidden="true" />
@@ -80,10 +96,11 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 
 <style>
 	/*
-	 * Sizes of the phone's board; a wider window takes the desktop's (below). The angles are the slots'
-	 * rest and open fans, back to front. Longer strips and a wider fan than the board's: each strip's box
-	 * reaches at least 24px past the next one's, a finger's target (WCAG 2.5.8), which a single rivet
-	 * cannot give four strips of the board's 100px.
+	 * Sizes of the phone's board; a wider window takes the desktop's (below). Shut, the eight strips lie
+	 * folded behind the front one and hidden: one target (WCAG 2.5.8), which is all Lighthouse measures.
+	 * Open, they fan out into a full rosette, 45° apart, the front one upright: no strip covers another, so
+	 * the browser's touch adjustment hands each tap to its own strip. A rosette does not fit in the corner:
+	 * the book slides inward as it opens (`--open-x`, `--open-y`), to the middle of a phone's width.
 	 */
 	.fan {
 		--width: 150px;
@@ -96,14 +113,25 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 		--lift: -12px;
 		--hover-lift: -10px;
 		--launch: -56px;
-		--a0: -47deg;
-		--a1: -28deg;
-		--a2: -13deg;
-		--a3: 0deg;
-		--open0: -47deg;
-		--open1: -28deg;
-		--open2: -13deg;
-		--open3: 0deg;
+		--from: -7deg;
+		--step: 1deg;
+		--scale: 1;
+		--open-from: -315deg;
+		--open-step: 45deg;
+		--open-scale: 1;
+		/*
+		 * Open, each strip steps out from the rivet along its own axis, leaving the rosette's heart empty:
+		 * pivoting at their feet, the strips would otherwise cover each other's names there. Their holes,
+		 * no longer on the rivet, go.
+		 */
+		--out: 0px;
+		--open-out: -40px;
+		--holes: 1;
+		/* From the rivet's place in the corner to the middle of the width, clear of the statusline. */
+		--open-x: min(0px, calc(91px - 50vw));
+		--open-y: -170px;
+		--shift-x: 0px;
+		--shift-y: 0px;
 
 		position: fixed;
 		right: calc(16px + env(safe-area-inset-right, 0px));
@@ -118,6 +146,22 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 		border: 0;
 		/* Only the strips take the pointer: the corner of the page around them stays clickable. */
 		pointer-events: none;
+		translate: var(--shift-x) var(--shift-y);
+	}
+
+	/*
+	 * What holds a mouse over the open book: the rosette's disc, stretched back down to the corner it slid
+	 * from, so that the pointer left behind on the shut strip keeps the book open while it moves.
+	 */
+	.fan::before {
+		content: '';
+		position: absolute;
+		left: calc(var(--slot-left) + var(--strip-w) / 2 - 175px);
+		top: calc(var(--height) - var(--slot-bottom) - var(--strip-h) + var(--pivot-y) - 175px);
+		width: 350px;
+		height: calc(350px - var(--open-y));
+		border-radius: 175px;
+		visibility: hidden;
 	}
 
 	.fan[hidden] {
@@ -136,14 +180,8 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 			--lift: -16px;
 			--hover-lift: -12px;
 			--launch: -64px;
-			--a0: -45deg;
-			--a1: -25deg;
-			--a2: -10deg;
-			--a3: 4deg;
-			--open0: -45deg;
-			--open1: -25deg;
-			--open2: -10deg;
-			--open3: 4deg;
+			--open-x: -24px;
+			--open-y: -130px;
 
 			right: calc(48px + env(safe-area-inset-right, 0px));
 			bottom: calc(var(--statusline-height) + 24px);
@@ -151,74 +189,110 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 	}
 
 	/*
-	 * Under a mouse the fan opens as the pointer comes over it; on the desktop's board it rests nearly shut.
-	 * Once a strip has the pointer, the whole book holds it: opening moves the strips from under the
-	 * pointer, which would otherwise shut the book again, and open it, and so on.
+	 * A tap opens the book (`data-open`); the keyboard too, while a strip has its focus. Under a mouse it
+	 * opens as the pointer comes over it, and once a strip has the pointer the whole book holds it: opening
+	 * moves the strips from under the pointer, which would otherwise shut the book again, and so on.
 	 */
-	@media (hover: hover) and (pointer: fine) {
-		@media (min-width: 861px) {
-			.fan {
-				--a0: -14deg;
-				--a1: -9deg;
-				--a2: -4deg;
-				--a3: 2deg;
-			}
-		}
+	.fan[data-open],
+	.fan:has(input:focus-visible) {
+		--from: var(--open-from);
+		--step: var(--open-step);
+		--scale: var(--open-scale);
+		--shift-x: var(--open-x);
+		--shift-y: var(--open-y);
+		--out: var(--open-out);
+		--holes: 0;
+		--hide-after: 0s;
+	}
 
+	@media (hover: hover) and (pointer: fine) {
 		.fan:hover {
-			--a0: var(--open0);
-			--a1: var(--open1);
-			--a2: var(--open2);
-			--a3: var(--open3);
+			--from: var(--open-from);
+			--step: var(--open-step);
+			--scale: var(--open-scale);
+			--shift-x: var(--open-x);
+			--shift-y: var(--open-y);
+			--out: var(--open-out);
+			--holes: 0;
+			--hide-after: 0s;
 			pointer-events: auto;
 		}
+
+		.fan:hover::before {
+			visibility: visible;
+		}
 	}
 
-	/* The keyboard opens it too; a tap or a click, which focus without showing it, leave it as it rests. */
-	.fan:has(input:focus-visible) {
-		--a0: var(--open0);
-		--a1: var(--open1);
-		--a2: var(--open2);
-		--a3: var(--open3);
-	}
-
+	/*
+	 * `--n` is the slot's rank from the back; the front one moves first as the book opens and shuts. The
+	 * folded strips fade once they are behind the front one (`--hide-after`), and show at once to open.
+	 * Faded, they take no pointer but stay in the group, for the arrows and for a screen reader.
+	 */
 	.slot {
 		position: absolute;
 		left: var(--slot-left);
 		bottom: var(--slot-bottom);
+		z-index: calc(var(--n) + 1);
 		width: var(--strip-w);
 		height: var(--strip-h);
 		transform-origin: calc(var(--strip-w) / 2) var(--pivot-y);
+		--angle: calc(var(--from) + var(--n) * var(--step));
+		--delay: calc((7 - var(--n)) * 20ms);
 		rotate: var(--angle);
+		scale: var(--scale);
+		opacity: 0;
+		--events: none;
 	}
 
 	.slot[data-slot='0'] {
-		--angle: var(--a0);
-		--delay: 90ms;
-		z-index: 1;
+		--n: 0;
 	}
 
 	.slot[data-slot='1'] {
-		--angle: var(--a1);
-		--delay: 60ms;
-		z-index: 2;
+		--n: 1;
 	}
 
 	.slot[data-slot='2'] {
-		--angle: var(--a2);
-		--delay: 30ms;
-		z-index: 3;
+		--n: 2;
 	}
 
 	.slot[data-slot='3'] {
-		--angle: var(--a3);
-		--delay: 0ms;
-		z-index: 4;
+		--n: 3;
+	}
+
+	.slot[data-slot='4'] {
+		--n: 4;
+	}
+
+	.slot[data-slot='5'] {
+		--n: 5;
+	}
+
+	.slot[data-slot='6'] {
+		--n: 6;
+	}
+
+	.slot[data-slot='7'] {
+		--n: 7;
+	}
+
+	.slot[data-slot='7'],
+	.fan[data-open] .slot,
+	.fan:has(input:focus-visible) .slot {
+		opacity: 1;
+		--events: auto;
+	}
+
+	@media (hover: hover) and (pointer: fine) {
+		.fan:hover .slot {
+			opacity: 1;
+			--events: auto;
+		}
 	}
 
 	/* The strip just picked rises over the others while it is shown off. */
 	.slot[data-launch] {
-		z-index: 6;
+		z-index: 9;
 	}
 
 	/* The book shuts on its rivet to take the picked strip to the front, then fans out again. */
@@ -258,7 +332,7 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 		}
 	}
 
-	/* Each strip in its own paper: the papers' exact colours, whatever the page's theme (`global.css`). */
+	/* Each strip in its own paper and its own signal: the papers' exact colours, whatever the page's theme (`global.css`). */
 	.lam[data-paper='light'] {
 		--head: #efeee9;
 		--body: #efeee9;
@@ -269,6 +343,7 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 		--hole: #5e5d58;
 		--c1: #141412;
 		--c2: #5e5d58;
+		--color-accent: #ff5b14;
 	}
 
 	.lam[data-paper='dark'] {
@@ -281,18 +356,72 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 		--hole: #b3b1a9;
 		--c1: #efeee9;
 		--c2: #b3b1a9;
+		--color-accent: #ff5b14;
 	}
 
-	.lam[data-paper='cyan'] {
-		--head: #12305a;
-		--body: #12305a;
-		--border: #5f7699;
-		--sep: #24477a;
-		--code: #a8b9d3;
-		--name: #eef2f8;
-		--hole: #a8b9d3;
-		--c1: #eef2f8;
-		--c2: #a8b9d3;
+	.lam[data-paper='solarized-light'] {
+		--head: #fdf6e3;
+		--body: #fdf6e3;
+		--border: #93a1a1;
+		--sep: #eee8d5;
+		--code: #586e75;
+		--name: #073642;
+		--hole: #586e75;
+		--c1: #073642;
+		--c2: #586e75;
+		--color-accent: #cb4b16;
+	}
+
+	.lam[data-paper='nord'] {
+		--head: #2e3440;
+		--body: #2e3440;
+		--border: #4c566a;
+		--sep: #3b4252;
+		--code: #d8dee9;
+		--name: #eceff4;
+		--hole: #d8dee9;
+		--c1: #eceff4;
+		--c2: #d8dee9;
+		--color-accent: #d08770;
+	}
+
+	.lam[data-paper='gruvbox-light'] {
+		--head: #fbf1c7;
+		--body: #fbf1c7;
+		--border: #928374;
+		--sep: #ebdbb2;
+		--code: #665c54;
+		--name: #3c3836;
+		--hole: #665c54;
+		--c1: #3c3836;
+		--c2: #665c54;
+		--color-accent: #af3a03;
+	}
+
+	.lam[data-paper='catppuccin-mocha'] {
+		--head: #1e1e2e;
+		--body: #1e1e2e;
+		--border: #6c7086;
+		--sep: #313244;
+		--code: #a6adc8;
+		--name: #cdd6f4;
+		--hole: #a6adc8;
+		--c1: #cdd6f4;
+		--c2: #a6adc8;
+		--color-accent: #fab387;
+	}
+
+	.lam[data-paper='tokyo-night'] {
+		--head: #1a1b26;
+		--body: #1a1b26;
+		--border: #565f89;
+		--sep: #292e42;
+		--code: #a9b1d6;
+		--name: #c0caf5;
+		--hole: #a9b1d6;
+		--c1: #c0caf5;
+		--c2: #a9b1d6;
+		--color-accent: #ff9e64;
 	}
 
 	/* Auto: a day's head over a night's body, the sun on the horizon between them. */
@@ -306,6 +435,7 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 		--hole: #b3b1a9;
 		--c1: #141412;
 		--c2: #5e5d58;
+		--color-accent: #ff5b14;
 	}
 
 	.lam {
@@ -313,12 +443,13 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 		display: block;
 		width: var(--strip-w);
 		height: var(--strip-h);
+		translate: 0 var(--out);
 		box-sizing: border-box;
 		border: 1px solid var(--border);
 		background: var(--body);
 		font-family: var(--font-mono);
 		cursor: pointer;
-		pointer-events: auto;
+		pointer-events: var(--events);
 		transform-origin: calc(var(--strip-w) / 2) var(--pivot-y);
 		outline: 2px solid transparent;
 		outline-offset: 3px;
@@ -440,6 +571,7 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 		box-sizing: border-box;
 		border: 1px solid var(--hole);
 		border-radius: 50%;
+		opacity: var(--holes);
 	}
 
 	.sun {
@@ -500,6 +632,12 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 			line-height: 14px;
 		}
 
+		/* Ten letters, "Catppuccin", in the 66px of the spine: the phone's size. */
+		.name[data-two] {
+			font-size: 10px;
+			line-height: 13px;
+		}
+
 		.sub {
 			display: block;
 			left: 23px;
@@ -554,12 +692,21 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 	}
 
 	@media (prefers-reduced-motion: no-preference) {
+		.fan {
+			transition: translate 460ms cubic-bezier(0.7, 0, 0.2, 1);
+		}
+
 		.slot {
-			transition: rotate 460ms cubic-bezier(0.7, 0, 0.2, 1) var(--delay);
+			transition:
+				rotate 460ms cubic-bezier(0.7, 0, 0.2, 1) var(--delay),
+				scale 460ms cubic-bezier(0.7, 0, 0.2, 1) var(--delay),
+				opacity 0s linear var(--hide-after, calc(460ms + var(--delay)));
 		}
 
 		.lam {
-			transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+			transition:
+				transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
+				translate 460ms cubic-bezier(0.7, 0, 0.2, 1) var(--delay);
 		}
 
 		.slot[data-launch] .lam {

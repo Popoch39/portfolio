@@ -1,6 +1,7 @@
 /*
  * "Encre seule": ink on paper, one signal colour (ADR 0006). By day on the root; `.theme-light`
- * keeps it on what stays in daylight whatever the page does (the hero's map, the statusline, the Intro).
+ * keeps it on what stays in daylight whatever the page does (the statusline; the hero's map and the
+ * Intro under the sun's papers, which the other papers repaint).
  */
 :root,
 .theme-light {
@@ -36,6 +37,7 @@
  * on paper turns paper on ink (the marquee, the button); the Frise's band and the accent keep theirs.
  */
 :root[data-theme='dark'],
+:root[data-bg='dark'] .intro-layer,
 .theme-dark {
 	--color-paper: #141412;
 	--color-ink: #efeee9;
@@ -53,26 +55,129 @@
 }
 
 /*
- * The Cyanotype (03 · Nuancier, ADR 0009): a blueprint's paper, the same ink in its own blues, the
- * accent kept. Forced only, never by the sun. The hero's map turns blue with the page: no night falls on it.
+ * Five papers taken from well-known editor colour schemes (ADR 0009), forced only, never by the sun: the
+ * hero's map turns with the page and no night falls on it. Each takes its scheme's official hues, its own
+ * orange for the signal included; where an official pair fell short of AA, the nearest official hue that
+ * passes stands in, and the two retouched ones are marked.
  */
-:root[data-theme='cyan'],
-:root[data-theme='cyan'] .hero-map {
-	--color-paper: #12305a;
-	--color-ink: #eef2f8;
-	--color-ink-muted: #a8b9d3;
-	--color-ink-faint: #5f7699;
-	--color-rule: #24477a;
-	--color-bar: #c9d5e6;
-	--color-on-ink-muted: #3f5679;
-	--color-on-ink-faint: #8a9dbb;
-	/* 4.2:1 on the blue: past the floor for large text. */
-	--color-accent-display: #ff5b14;
-	--color-dark: #0b2140;
-	--color-on-dark: #eef2f8;
-	--color-on-dark-muted: #a8b9d3;
-	--color-accent-deep: color-mix(in srgb, #ff5b14 57%, #0b2140);
-	--color-light: #24477a;
+
+/* Solarized Light (Ethan Schoonover). */
+:root[data-theme='solarized-light'],
+:root[data-theme='solarized-light'] .hero-map,
+:root[data-theme='solarized-light'] .intro-layer {
+	--color-paper: #fdf6e3;
+	--color-ink: #073642;
+	/* base01: base00, the scheme's body grey, keeps only 4.1:1 on base3. */
+	--color-ink-muted: #586e75;
+	--color-ink-faint: #93a1a1;
+	--color-rule: #eee8d5;
+	--color-bar: #002b36;
+	--color-on-ink-muted: #93a1a1;
+	--color-on-ink-faint: #586e75;
+	--color-accent: #cb4b16;
+	/* 4.3:1 on base3, past the floor for large text. */
+	--color-accent-display: #cb4b16;
+	/* Retouched: base3 keeps 4.3:1 on the orange, white 4.6:1. */
+	--color-on-accent: #fff;
+	--color-dark: #002b36;
+	--color-on-dark: #fdf6e3;
+	--color-on-dark-muted: #93a1a1;
+	--color-accent-deep: color-mix(in srgb, #cb4b16 57%, #073642);
+	--color-light: #fff;
+	color-scheme: light;
+}
+
+/* Nord (Arctic Ice Studio). */
+:root[data-theme='nord'],
+:root[data-theme='nord'] .hero-map,
+:root[data-theme='nord'] .intro-layer {
+	--color-paper: #2e3440;
+	--color-ink: #eceff4;
+	--color-ink-muted: #d8dee9;
+	--color-ink-faint: #4c566a;
+	--color-rule: #3b4252;
+	--color-bar: #d8dee9;
+	--color-on-ink-muted: #4c566a;
+	--color-on-ink-faint: #81a1c1;
+	--color-accent: #d08770;
+	--color-accent-display: #d08770;
+	/* Retouched: nord0 keeps 4.4:1 on the orange, a shade deeper 5:1. */
+	--color-on-accent: #242933;
+	--color-dark: #3b4252;
+	--color-on-dark: #eceff4;
+	--color-on-dark-muted: #d8dee9;
+	--color-accent-deep: color-mix(in srgb, #d08770 57%, #2e3440);
+	--color-light: #434c5e;
+	color-scheme: dark;
+}
+
+/* Gruvbox Light (morhetz). */
+:root[data-theme='gruvbox-light'],
+:root[data-theme='gruvbox-light'] .hero-map,
+:root[data-theme='gruvbox-light'] .intro-layer {
+	--color-paper: #fbf1c7;
+	--color-ink: #3c3836;
+	--color-ink-muted: #665c54;
+	--color-ink-faint: #928374;
+	--color-rule: #ebdbb2;
+	--color-bar: #282828;
+	--color-on-ink-muted: #bdae93;
+	--color-on-ink-faint: #7c6f64;
+	--color-accent: #af3a03;
+	--color-accent-display: #af3a03;
+	--color-on-accent: #fbf1c7;
+	--color-dark: #282828;
+	--color-on-dark: #fbf1c7;
+	--color-on-dark-muted: #bdae93;
+	--color-accent-deep: color-mix(in srgb, #af3a03 57%, #3c3836);
+	--color-light: #f9f5d7;
+	color-scheme: light;
+}
+
+/* Catppuccin Mocha. */
+:root[data-theme='catppuccin-mocha'],
+:root[data-theme='catppuccin-mocha'] .hero-map,
+:root[data-theme='catppuccin-mocha'] .intro-layer {
+	--color-paper: #1e1e2e;
+	--color-ink: #cdd6f4;
+	--color-ink-muted: #a6adc8;
+	--color-ink-faint: #6c7086;
+	--color-rule: #313244;
+	--color-bar: #bac2de;
+	--color-on-ink-muted: #45475a;
+	--color-on-ink-faint: #7f849c;
+	--color-accent: #fab387;
+	--color-accent-display: #fab387;
+	--color-on-accent: #11111b;
+	--color-dark: #181825;
+	--color-on-dark: #cdd6f4;
+	--color-on-dark-muted: #a6adc8;
+	--color-accent-deep: color-mix(in srgb, #fab387 57%, #1e1e2e);
+	--color-light: #313244;
+	color-scheme: dark;
+}
+
+/* Tokyo Night (enkia). */
+:root[data-theme='tokyo-night'],
+:root[data-theme='tokyo-night'] .hero-map,
+:root[data-theme='tokyo-night'] .intro-layer {
+	--color-paper: #1a1b26;
+	--color-ink: #c0caf5;
+	--color-ink-muted: #a9b1d6;
+	--color-ink-faint: #565f89;
+	--color-rule: #292e42;
+	--color-bar: #a9b1d6;
+	/* fg_gutter: terminal_black keeps only 4.2:1 on fg_dark. */
+	--color-on-ink-muted: #3b4261;
+	--color-on-ink-faint: #737aa2;
+	--color-accent: #ff9e64;
+	--color-accent-display: #ff9e64;
+	--color-on-accent: #1a1b26;
+	--color-dark: #16161e;
+	--color-on-dark: #c0caf5;
+	--color-on-dark-muted: #a9b1d6;
+	--color-accent-deep: color-mix(in srgb, #ff9e64 57%, #1a1b26);
+	--color-light: #292e42;
 	color-scheme: dark;
 }
 

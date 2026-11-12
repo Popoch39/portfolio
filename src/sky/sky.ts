@@ -7,7 +7,7 @@
  * nothing from the module's scope, all it needs comes in as arguments. It writes on the root only:
  *
  * - `data-theme`: `dark` from sunset to sunrise in `auto`, or as the Nuancier (`data-bg`) forces it,
- *   `cyan` included;
+ *   whichever paper it is;
  * - `data-sun`: `up` or `down` at Besançon, whatever the paper;
  * - `data-sky`: how much of the hero's map the night covers, `day`, `dusk` or `night`;
  * - custom properties for the hero's terminator: its shift, its curve, the twilights' hatching, the labels.
@@ -28,13 +28,26 @@ export interface SkyPlace {
 }
 
 /**
- * The Nuancier's papers, in the fan's order (ADR 0009); `paintSky` reads them from `data-bg` on its own
- * (it may name nothing outside itself). Under the Cyanotype the hero keeps no night, as by day.
+ * The Nuancier's papers, in the fan's order, light and dark in turn so that each strip's edge shows on the
+ * next (ADR 0009); `paintSky` reads them from `data-bg` on its own
+ * (it may name nothing outside itself). Under every forced paper but the night, the hero keeps no night, as by day.
  */
-export const skyModes = ['light', 'dark', 'cyan', 'auto'] as const;
+export const skyModes = [
+	'light',
+	'dark',
+	'solarized-light',
+	'nord',
+	'gruvbox-light',
+	'catppuccin-mocha',
+	'tokyo-night',
+	'auto',
+] as const;
 export type SkyMode = (typeof skyModes)[number];
 
-/** Where the choice is remembered; `auto` is the absence of one. */
+/**
+ * Where the visit's paper is kept, in `sessionStorage`: drawn by lot as the visit begins
+ * (`SkyTrigger.astro`), or picked in the Nuancier, it lasts until the next visit draws again.
+ */
 export const BG_KEY = 'bg';
 
 export const skyPlace: SkyPlace = {
@@ -92,12 +105,21 @@ export function paintSky(root: HTMLElement, now: Date, place: SkyPlace, line: HT
 	const [rise, ...dawns] = ALTITUDES.map((a) => crossing(a, -1)) as [number, ...(number | null)[]];
 
 	const hour = minutesOf(now);
+	// Each forced paper's surface, for the browser's chrome (`global.css`); `auto` is the absence of one.
+	const SURFACES: Record<string, string> = {
+		light: '#efeee9',
+		dark: '#141412',
+		'solarized-light': '#fdf6e3',
+		nord: '#2e3440',
+		'gruvbox-light': '#fbf1c7',
+		'catppuccin-mocha': '#1e1e2e',
+		'tokyo-night': '#1a1b26',
+	};
 	const bg = root.dataset.bg;
-	const mode: SkyMode = bg === 'light' || bg === 'dark' || bg === 'cyan' ? bg : 'auto';
+	const mode = bg && Object.hasOwn(SURFACES, bg) ? bg : 'auto';
 	const evening = hour >= noon;
 	const sunDown = hour < rise || hour >= set;
-	const dark = mode === 'dark' || (mode === 'auto' && sunDown);
-	const theme = mode === 'cyan' ? 'cyan' : dark ? 'dark' : 'light';
+	const theme = mode === 'auto' ? (sunDown ? 'dark' : 'light') : mode;
 	// Written only when they change: a custom property or an attribute on the root restyles the whole page.
 	const mark = (key: string, value: string) => {
 		if (root.dataset[key] !== value) root.dataset[key] = value;
@@ -108,7 +130,7 @@ export function paintSky(root: HTMLElement, now: Date, place: SkyPlace, line: HT
 	mark('theme', theme);
 	mark('sun', sunDown ? 'down' : 'up');
 	const themeColor = document.querySelector('meta[name="theme-color"]');
-	const surface = theme === 'cyan' ? '#12305a' : dark ? '#141412' : '#efeee9';
+	const surface = SURFACES[theme];
 	if (themeColor && themeColor.getAttribute('content') !== surface) themeColor.setAttribute('content', surface);
 
 	const hhmm = (minutes: number) => {

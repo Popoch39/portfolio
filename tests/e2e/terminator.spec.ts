@@ -92,12 +92,15 @@ test.describe('the Terminateur', () => {
 	test('the choice is kept from page to page within the visit, from the first paint', async ({ page }) => {
 		await visitAt(page, '12:00');
 		await pickPaper(page, 'dark');
+		// The pick is kept as the reveal starts, a frame or two after the click: the visit ends after it.
+		await expect(root(page)).toHaveAttribute('data-theme', 'dark');
 
 		await page.goto('/');
 		await expect(option(page, 'dark')).toBeChecked();
 		await expect(root(page)).toHaveAttribute('data-theme', 'dark');
 
 		await pickPaper(page, 'auto');
+		await expect(root(page)).toHaveAttribute('data-theme', 'light');
 		await page.goto('/');
 		await expect(option(page, 'auto')).toBeChecked();
 		await expect(root(page)).toHaveAttribute('data-theme', 'light');

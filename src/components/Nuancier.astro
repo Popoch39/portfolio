@@ -151,14 +151,16 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 
 	/*
 	 * What holds a mouse over the open book: the rosette's disc, stretched back down to the corner it slid
-	 * from, so that the pointer left behind on the shut strip keeps the book open while it moves.
+	 * from, so that the pointer left behind on the shut strip keeps the book open while it moves. Stretched
+	 * sideways as well as down: past 532px of window the book slides further than the disc is wide, and a
+	 * pointer no longer held shuts it, which puts the strip back under the pointer, and so on at each frame.
 	 */
 	.fan::before {
 		content: '';
 		position: absolute;
 		left: calc(var(--slot-left) + var(--strip-w) / 2 - 175px);
 		top: calc(var(--height) - var(--slot-bottom) - var(--strip-h) + var(--pivot-y) - 175px);
-		width: 350px;
+		width: calc(350px - var(--open-x));
 		height: calc(350px - var(--open-y));
 		border-radius: 175px;
 		visibility: hidden;

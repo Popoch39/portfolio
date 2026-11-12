@@ -138,9 +138,11 @@ export function registerScene(scene: gsap.ContextFunc) {
  * too, where its styles give it in one step. What it returns undoes it with the context.
  */
 export function registerDetail(detail: gsap.ContextFunc) {
-	// A context whose conditions all fail runs nothing: `all` keeps this one up when motion is reduced
-	// under a finger.
-	motion.add({ ...CONDITIONS, all: 'all' }, detail);
+	// A context whose conditions all fail runs nothing: an always-true query keeps this one up when motion
+	// is reduced under a finger. Not under GSAP's own `all` key, which it never records as matched: the
+	// first media change anywhere in the page (a phone turned) would then revert and rebuild every detail,
+	// a form open on screen along with what was typed in it.
+	motion.add({ ...CONDITIONS, always: 'all' }, detail);
 }
 
 /**

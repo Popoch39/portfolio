@@ -14,11 +14,18 @@ const noon = new Date('2026-11-09T12:00:00+01:00');
 /** The point's ink and its halo on each paper, from the charte (`global.css`). */
 const day = { ink: '#141412', halo: '#efeee9' };
 const night = { ink: '#efeee9', halo: '#141412' };
-const blue = { ink: '#eef2f8', halo: '#12305a' };
+const solarized = { ink: '#073642', halo: '#fdf6e3' };
+const solarizedOnDark = { ink: '#fdf6e3', halo: '#002b36' };
+const gruvbox = { ink: '#3c3836', halo: '#fbf1c7' };
+const gruvboxOnDark = { ink: '#fbf1c7', halo: '#282828' };
+const nord = { ink: '#eceff4', halo: '#2e3440' };
+const catppuccin = { ink: '#cdd6f4', halo: '#1e1e2e' };
+const tokyo = { ink: '#c0caf5', halo: '#1a1b26' };
 
 async function visit(page: Page, path = '/', paper?: Exclude<Paper, 'auto'>) {
 	await page.clock.setFixedTime(noon);
-	if (paper) await page.addInitScript((bg) => localStorage.setItem('bg', bg), paper);
+	// The visit's paper, kept as a pick in the Nuancier keeps it: arriving from the site, no draw replaces it.
+	if (paper) await page.addInitScript((bg) => sessionStorage.setItem('bg', bg), paper);
 	await page.goto(path);
 }
 
@@ -46,7 +53,11 @@ test.describe('the Traîne', () => {
 	for (const [paper, point, onDark] of [
 		['light', day, night],
 		['dark', night, night],
-		['cyan', blue, blue],
+		['solarized-light', solarized, solarizedOnDark],
+		['gruvbox-light', gruvbox, gruvboxOnDark],
+		['nord', nord, nord],
+		['catppuccin-mocha', catppuccin, catppuccin],
+		['tokyo-night', tokyo, tokyo],
 	] as const) {
 		test(`${paper} paper: the pointer is a point of that paper’s ink, haloed, text and links included`, async ({ page }) => {
 			await visit(page, '/', paper);

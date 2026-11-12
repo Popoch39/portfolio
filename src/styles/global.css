@@ -263,9 +263,43 @@ a:focus-visible {
 			7 7;
 	}
 
-	:root[data-theme='cyan'],
-	:root[data-theme='cyan'] :is(.frise, #statusline) {
-		--trail-point: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 15 15'><circle cx='7.5' cy='7.5' r='3.5' fill='%23eef2f8' stroke='%2312305a' stroke-width='2' paint-order='stroke'/></svg>")
+	/* The colour schemes' light papers: their ink on the page, their paper on the band and the row. */
+	:root[data-theme='solarized-light'] {
+		--trail-point: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 15 15'><circle cx='7.5' cy='7.5' r='3.5' fill='%23073642' stroke='%23fdf6e3' stroke-width='2' paint-order='stroke'/></svg>")
+			7 7;
+	}
+
+	:root[data-theme='solarized-light'] :is(.frise, #statusline) {
+		--trail-point: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 15 15'><circle cx='7.5' cy='7.5' r='3.5' fill='%23fdf6e3' stroke='%23002b36' stroke-width='2' paint-order='stroke'/></svg>")
+			7 7;
+	}
+
+	:root[data-theme='gruvbox-light'] {
+		--trail-point: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 15 15'><circle cx='7.5' cy='7.5' r='3.5' fill='%233c3836' stroke='%23fbf1c7' stroke-width='2' paint-order='stroke'/></svg>")
+			7 7;
+	}
+
+	:root[data-theme='gruvbox-light'] :is(.frise, #statusline) {
+		--trail-point: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 15 15'><circle cx='7.5' cy='7.5' r='3.5' fill='%23fbf1c7' stroke='%23282828' stroke-width='2' paint-order='stroke'/></svg>")
+			7 7;
+	}
+
+	/* Their dark papers: the same light ink everywhere, the band and the row being dark as the page is. */
+	:root[data-theme='nord'],
+	:root[data-theme='nord'] :is(.frise, #statusline) {
+		--trail-point: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 15 15'><circle cx='7.5' cy='7.5' r='3.5' fill='%23eceff4' stroke='%232e3440' stroke-width='2' paint-order='stroke'/></svg>")
+			7 7;
+	}
+
+	:root[data-theme='catppuccin-mocha'],
+	:root[data-theme='catppuccin-mocha'] :is(.frise, #statusline) {
+		--trail-point: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 15 15'><circle cx='7.5' cy='7.5' r='3.5' fill='%23cdd6f4' stroke='%231e1e2e' stroke-width='2' paint-order='stroke'/></svg>")
+			7 7;
+	}
+
+	:root[data-theme='tokyo-night'],
+	:root[data-theme='tokyo-night'] :is(.frise, #statusline) {
+		--trail-point: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 15 15'><circle cx='7.5' cy='7.5' r='3.5' fill='%23c0caf5' stroke='%231a1b26' stroke-width='2' paint-order='stroke'/></svg>")
 			7 7;
 	}
 

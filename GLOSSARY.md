@@ -12,6 +12,10 @@ Scène la plus simple : un élément entre dans la vue et anime une fois vers so
 **Animation d'interface**
 Animation qui ne dépend ni du défilement ni d'un état JS : survol, défilement du bandeau, transition entre pages. Elle reste en CSS (les transitions entre pages sont des view transitions cross-document). Le chargement de l'accueil n'en fait plus partie : c'est l'Intro.
 
+**Détail**
+La réponse de la page à un geste du visiteur (appui, survol, tap, sélection, focus), là où une scène répond au défilement : le nom qui sort du calage, la bague visée, l'adresse copiée, les modes de la statusline, la Traîne. Il s'enregistre auprès du socle d'animation comme une scène, mais existe quelle que soit la préférence de mouvement : il ne fait qu'écouter, et répond d'un coup en mouvement réduit. Sans JS, la page reste à son État final. Un détail qui écrit dans la statusline passe par sa seule voie d'écriture, qui rend la ligne à l'affichage courant et n'annonce rien aux lecteurs d'écran.
+_À éviter_ : micro-interaction, easter egg.
+
 **Intro**
 La séquence jouée une fois au chargement de l'accueil, sous le Voile : le globe tourne vers Besançon, se découpe en fuseaux qui deviennent les colonnes de la page, le point de Besançon se pose sur le repère de la carte du hero, puis le header, le hero et la statusline se révèlent. Timeline GSAP enregistrée auprès du socle (ADR 0005). Elle ne se joue ni au retour par l'historique, ni depuis une autre page du site, ni avec une ancre, ni en mouvement réduit ; un clic, un tap ou une touche la passe, un défilement non.
 _À éviter_ : loader, splash screen.
@@ -44,7 +48,7 @@ Le fond choisi dans le Nuancier, sur tout le site, avec son encre et son signal 
 _À éviter_ : thème, mode sombre, `:set bg=` (retiré).
 
 **Traîne**
-Le curseur du site sous une souris, sur toutes les pages : un point d'encre, qui est l'image même du curseur (une par Papier, celle de la nuit sur la bande de la Frise et la statusline), texte compris, et un anneau fin qui le suit avec un court retard et s'ouvre sur ce qui répond au clic. Seul l'anneau est déplacé par script : rien au repos, ni pointeur sorti, ni sous le Voile ; sans retard en mouvement réduit ; sans JS, le point seul. Au doigt et en couleurs forcées, le curseur reste celui du système. Elle répond au pointeur et ne boucle pas : la Pause ne la concerne pas.
+Le curseur du site sous une souris, sur toutes les pages : un point d'encre, qui est l'image même du curseur (une par Papier, à l'encre claire sur la bande de la Frise et la statusline, imprimées sombres sur tous), texte compris, et un anneau fin qui le suit avec un court retard et s'ouvre sur ce qui répond au clic. Seul l'anneau est déplacé par script : rien au repos, ni pointeur sorti, ni sous le Voile ; sans retard en mouvement réduit ; sans JS, le point seul. Au doigt et en couleurs forcées, le curseur reste celui du système. Elle répond au pointeur et ne boucle pas : la Pause ne la concerne pas.
 _À éviter_ : curseur custom, follower.
 
 **Défilement lissé**
@@ -76,7 +80,7 @@ La scène de la section Stack : les bagues passent de la cible au gyroscope, pui
 _À éviter_ : gyroscope, vue éclatée.
 
 **Bague**
-L'anneau d'une catégorie de la stack, une par catégorie, dans l'ordre du profil de la base au sommet de la tour. Chaque bague passe en accent quand le défilement la met en avant ; l'étiquette SIG est en encre pleine, l'accent ne portant jamais de texte sur le papier (ADR 0006).
+L'anneau d'une catégorie de la stack, une par catégorie, dans l'ordre du profil de la base au sommet de la tour. Chaque bague passe en accent quand le défilement la met en avant, puis, la tour finie, quand le visiteur la vise (survol, tap, étiquette au focus du clavier) : elle se soulève alors d'un cran et la statusline répond `stack=` ; l'étiquette SIG est en encre pleine, l'accent ne portant jamais de texte sur le papier (ADR 0006).
 _À éviter_ : ring, orbite.
 
 **Pastille**

@@ -75,7 +75,7 @@ test.describe('off screen', () => {
 	});
 });
 
-const lede = (page: Page) => page.locator('[data-lede]');
+const lede = (page: Page) => page.locator('.hero-lede');
 
 /** How many times, over the next `ms`, the lede or its mode in the statusline changed in the DOM. */
 const ledeChangesOver = (page: Page, ms: number) =>

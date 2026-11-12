@@ -88,9 +88,9 @@ test.describe('the Pause', () => {
 	});
 });
 
-const buffer = (page: Page) => page.locator('[data-lede] [data-buffer]');
-const version = (page: Page) => page.locator('[data-lede] [data-version]');
-const keys = (page: Page) => page.locator('[data-lede] [data-keys] > *');
+const buffer = (page: Page) => page.locator('.hero-lede [data-buffer]');
+const version = (page: Page) => page.locator('.hero-lede [data-version]');
+const keys = (page: Page) => page.locator('.hero-lede [data-keys] > *');
 const mode = (page: Page) => page.locator('#statusline [data-vim-mode]');
 
 /** How many times, over the next `ms`, the lede or its mode in the statusline changed in the DOM. */

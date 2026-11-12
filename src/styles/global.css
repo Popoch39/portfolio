@@ -1,9 +1,5 @@
-/*
- * "Encre seule": ink on paper, one signal colour (ADR 0006). By day on the root; `.theme-light`
- * keeps it on what stays in daylight whatever the page does (the hero's map, the statusline, the Intro).
- */
-:root,
-.theme-light {
+:root {
+	/* "Encre seule": ink on paper, one signal colour (ADR 0006). */
 	--color-paper: #efeee9;
 	--color-ink: #141412;
 	--color-ink-muted: #5e5d58;
@@ -18,71 +14,16 @@
 	/* The accent a shade deeper, for glyphs at display size on the paper: 3.1:1, the floor for large text. */
 	--color-accent-display: #eb5210;
 	/* Text on the accent: ink keeps 5.9:1. */
-	--color-on-accent: #141412;
+	--color-on-accent: var(--color-ink);
 	/* The Frise's full-width band, a shade off the ink so the marquee and the statusline stay apart from it. */
 	--color-dark: #1c1b19;
-	--color-on-dark: #efeee9;
-	--color-on-dark-muted: #b3b1a9;
+	--color-on-dark: var(--color-paper);
+	--color-on-dark-muted: var(--color-on-ink-muted);
 	/* The shade of the accent on drawn volumes (the Atome's accent bague and its nucleus). */
-	--color-accent-deep: color-mix(in srgb, #ff5b14 57%, #141412);
+	--color-accent-deep: color-mix(in srgb, var(--color-accent) 57%, var(--color-ink));
 	/* The lit side of drawn volumes, lighter than the paper they stand on. */
 	--color-light: #fff;
-	color-scheme: light;
-}
 
-/*
- * The night (ADR 0008): the same ink, turned over. Set on the root while the sun is down at
- * Besançon or on the Nuancier's night paper; `.theme-dark` holds it on the hero's night copy. What was ink
- * on paper turns paper on ink (the marquee, the button); the Frise's band and the accent keep theirs.
- */
-:root[data-theme='dark'],
-.theme-dark {
-	--color-paper: #141412;
-	--color-ink: #efeee9;
-	--color-ink-muted: #b3b1a9;
-	--color-ink-faint: #5e5d58;
-	--color-rule: #2c2b28;
-	--color-bar: #d5d4cd;
-	--color-on-ink-muted: #5e5d58;
-	--color-on-ink-faint: #a3a29b;
-	/* 6.6:1 on the night: the display shade is not needed there. */
-	--color-accent-display: #ff5b14;
-	/* Volumes are lit a shade above the night they stand on. */
-	--color-light: #2c2b28;
-	color-scheme: dark;
-}
-
-/*
- * The Cyanotype (03 · Nuancier, ADR 0009): a blueprint's paper, the same ink in its own blues, the
- * accent kept. Forced only, never by the sun. The hero's map turns blue with the page: no night falls on it.
- */
-:root[data-theme='cyan'],
-:root[data-theme='cyan'] .hero-map {
-	--color-paper: #12305a;
-	--color-ink: #eef2f8;
-	--color-ink-muted: #a8b9d3;
-	--color-ink-faint: #5f7699;
-	--color-rule: #24477a;
-	--color-bar: #c9d5e6;
-	--color-on-ink-muted: #3f5679;
-	--color-on-ink-faint: #8a9dbb;
-	/* 4.2:1 on the blue: past the floor for large text. */
-	--color-accent-display: #ff5b14;
-	--color-dark: #0b2140;
-	--color-on-dark: #eef2f8;
-	--color-on-dark-muted: #a8b9d3;
-	--color-accent-deep: color-mix(in srgb, #ff5b14 57%, #0b2140);
-	--color-light: #24477a;
-	color-scheme: dark;
-}
-
-/* The text colour inherited from the body is the page's: a scoped theme takes its own ink back. */
-.theme-light,
-.theme-dark {
-	color: var(--color-ink);
-}
-
-:root {
 	--page-max-width: 1440px;
 	/* A phone on its side reports the notch as a side inset (both sides on iOS): the gutter never gets thinner than it. */
 	--page-gutter: max(clamp(16px, 4vw, 56px), env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
@@ -98,6 +39,7 @@
 	--statusline-height: calc(var(--statusline-row) + env(safe-area-inset-bottom, 0px));
 	scroll-padding-bottom: var(--statusline-height);
 
+	color-scheme: light;
 	/* The browser's grey flash on tap fights the press states below. */
 	-webkit-tap-highlight-color: transparent;
 }
@@ -247,29 +189,4 @@ a:focus-visible {
 	@view-transition {
 		navigation: auto;
 	}
-}
-
-/*
- * A paper picked in the Nuancier (ADR 0009, `src/sky/nuancier.ts`): no cross-fade, the new page is
- * uncovered by its own clip, set by script. The fan has its own group, live and still, above the reveal;
- * taps go through to the page during the reveal, so that the next pick need not wait for its end.
- */
-:root.paper-turning [data-nuancier] {
-	view-transition-name: nuancier;
-}
-
-:root.paper-turning::view-transition {
-	pointer-events: none;
-}
-
-:root.paper-turning::view-transition-old(root),
-:root.paper-turning::view-transition-new(root),
-:root.paper-turning::view-transition-group(nuancier),
-:root.paper-turning::view-transition-new(nuancier) {
-	animation: none;
-	mix-blend-mode: normal;
-}
-
-:root.paper-turning::view-transition-old(nuancier) {
-	display: none;
 }

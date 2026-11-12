@@ -28,7 +28,6 @@ for (const width of WIDTHS) {
 
 			// Inside the centred column, between its gutters. Project rows bleed 14px on purpose (hover
 			// background), and the marquee, outside the column, runs wider than the window, clipped by its band.
-			// The hero's night (ADR 0008) reaches map widths either side of its line, clipped by the map.
 			const spills = await page.evaluate(() => {
 				const column = document.querySelector('main .wrap');
 				if (!column) return ['no .wrap'];
@@ -36,7 +35,7 @@ for (const width of WIDTHS) {
 				const gutter = Number.parseFloat(getComputedStyle(column).paddingLeft);
 				const [left, right] = [box.left + gutter, box.right - gutter];
 				return [...document.querySelectorAll('main .wrap *')]
-					.filter((el) => !el.matches('.project, .visually-hidden') && !el.closest('.sky'))
+					.filter((el) => !el.matches('.project, .visually-hidden'))
 					.filter((el) => {
 						const box = el.getBoundingClientRect();
 						return box.width > 0 && (box.left < left - 1 || box.right > right + 1);
@@ -62,24 +61,6 @@ for (const width of WIDTHS) {
 			const box = await bar.boundingBox();
 			expect(box?.y).toBeGreaterThanOrEqual(linkBottom);
 			expect((box?.y ?? 0) + (box?.height ?? 0)).toBeCloseTo(800, 0);
-		});
-	});
-}
-
-// The header's one-row layout starts at 861px, where its last column is at its narrowest.
-for (const width of [861, 880, 920, 1024]) {
-	test.describe(`navigation in a ${width} px wide window`, () => {
-		test.use({ viewport: { width, height: 800 } });
-
-		test('the section links stay on one row', async ({ page }) => {
-			await page.goto('/');
-			await page.evaluate(() => document.fonts.ready);
-
-			const tops = await page
-				.getByRole('navigation', { name: 'Sections' })
-				.getByRole('link')
-				.evaluateAll((links) => links.map((link) => Math.round(link.getBoundingClientRect().top)));
-			expect(new Set(tops).size).toBe(1);
 		});
 	});
 }

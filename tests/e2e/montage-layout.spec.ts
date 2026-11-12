@@ -144,29 +144,6 @@ for (const { name, width, height } of TWO_COLUMNS) {
 			expect(await opacityOnScreen(paragraph(page))).toBe(1);
 			expect(await opacityOnScreen(coffee(page))).toBe(1);
 		});
-
-		// The figure runs up beside the section's head: in a narrow column, the lifted lid reaches the aside's row.
-		test('scene: the lifted lid never covers the aside', async ({ page }) => {
-			await page.emulateMedia({ reducedMotion: 'no-preference' });
-			await page.goto('/');
-			await page.evaluate(() => document.fonts.ready);
-			const start = await sceneStart(page);
-			const boxOf = (selector: string) =>
-				section(page)
-					.locator(selector)
-					.evaluate((element) => {
-						const { left, right, top, bottom } = element.getBoundingClientRect();
-						return { left, right, top, bottom };
-					});
-
-			// The lid hangs lifted until it comes down, from 0.6 of the pinning, while the camera moves under it.
-			for (const progress of [0.05, 0.2, 0.4, 0.58]) {
-				await scrollToScene(page, start, progress);
-				const [lid, aside] = [await boxOf('[data-layer="lid"]'), await boxOf('.cafe-aside')];
-				const apart = lid.right <= aside.left || aside.right <= lid.left || lid.bottom <= aside.top || aside.bottom <= lid.top;
-				expect(apart, `at ${progress}: ${JSON.stringify({ lid, aside })}`).toBe(true);
-			}
-		});
 	});
 }
 

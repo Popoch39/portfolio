@@ -11,6 +11,7 @@ import * as en from '../i18n/en';
 import * as fr from '../i18n/fr';
 import { forPage } from '../i18n/lang';
 import { restingOn, runs, slipped, slotStarts, type BufferState, type Run, type Slot } from './buffer';
+import { offerLedeHold, prerendering } from './control';
 import { showVimMode } from './vim-mode';
 
 const line = forPage({ fr: fr.ledeLine, en: en.ledeLine });
@@ -19,7 +20,7 @@ const line = forPage({ fr: fr.ledeLine, en: en.ledeLine });
 const MAX_KEYS = 10;
 
 /** What can hold the typist where it stands; it types on once none is left. */
-type Hold = 'opening' | 'off-screen' | 'paused';
+type Hold = 'opening' | 'off-screen' | 'paused' | 'bascule' | 'prerender';
 
 /** The rest before the next version is typed: once the Intro has ended, and once the Pause is released. */
 const RESTART_MS = 1800;
@@ -31,8 +32,15 @@ registerScene(() => {
 	const lede = JSON.parse(root.dataset.lede ?? '') as Lede;
 	const count = lede.versions.length;
 
-	let state = restingOn(lede, 0);
-	let version = 0;
+	// Arrived by a Bascule, the page already rests on the version the other language was on (`Anagramme.astro`).
+	const arrivedOn = () => {
+		const at = Number(root.dataset.ledeAt ?? 0);
+		return Number.isInteger(at) && at >= 0 && at < count ? at : 0;
+	};
+	let version = arrivedOn();
+	let state = restingOn(lede, version);
+	/** The version being typed, until it is whole. */
+	let typing: number | undefined;
 	let stopped = false;
 
 	// One step is pending at a time: its handle alone cancels the whole script.
@@ -92,16 +100,18 @@ registerScene(() => {
 		views.forEach(({ keys }) => keys.replaceChildren());
 		showKeys(false);
 		state = { ...restingOn(lede, index), mode: state.mode };
+		typing = undefined;
 		draw({ mode: 'NORMAL' });
 	}
 
-	function showVersion(index: number) {
+	/** `fade`: the audience rises into place; without, it is simply there (under the Anagramme, which moves it). */
+	function showVersion(index: number, fade = true) {
 		version = index;
 		views.forEach(({ versionNumber, audience }) => {
 			versionNumber.textContent = `${index + 1}/${count}`;
 			audience.textContent = line.audience(lede.versions[index].audience);
 			// Two identical keyframes, alternated: the fade restarts without a forced reflow.
-			audience.dataset.run = audience.dataset.run === 'a' ? 'b' : 'a';
+			if (fade) audience.dataset.run = audience.dataset.run === 'a' ? 'b' : 'a';
 		});
 	}
 
@@ -155,6 +165,7 @@ registerScene(() => {
 	function cycle() {
 		if (stopped) return;
 		const next = (version + 1) % count;
+		typing = next;
 		const { what, whose } = lede.versions[next];
 		const slip = next === count - 1;
 		const first = lede.before.length;
@@ -187,6 +198,7 @@ registerScene(() => {
 			() => {
 				press(line.escape, { mode: 'NORMAL', cursor: second() + state.whose.length - 1 });
 				showVersion(next);
+				typing = undefined;
 			},
 		]);
 		steps.push([1100, () => showKeys(false)]);
@@ -218,12 +230,40 @@ registerScene(() => {
 	// its first version, as rendered.
 	if (pause.checked) hold('paused');
 
+	// Prerendered for a Bascule (the other language's link hovered): nobody sees it yet, and the version
+	// it will open on is only known once it is shown, written by `Anagramme.astro`'s script, which listens first.
+	const activate = () => {
+		version = arrivedOn();
+		state = { ...restingOn(lede, version), mode: state.mode };
+		release('prerender');
+	};
+	if (prerendering()) {
+		hold('prerender');
+		document.addEventListener('prerenderingchange', activate, { once: true });
+	}
+
+	// The Bascule: the version being typed is finished at once, and the typist waits for the page to go.
+	// Back from the history's cache, the page types on from where it stood.
+	const withdrawHold = offerLedeHold(() => {
+		const at = typing ?? version;
+		hold('bascule');
+		queued = [RESTART_MS, cycle];
+		settle(at);
+		if (at !== version) showVersion(at, false);
+		return {
+			version: at,
+			resume: () => release('bascule'),
+		};
+	});
+
 	// Reverted by a change of motion preference: the lede goes back to its first version, at rest.
 	return () => {
 		stopped = true;
 		clearTimeout(pending);
 		stopWatching();
 		pause.removeEventListener('change', followPause);
+		document.removeEventListener('prerenderingchange', activate);
+		withdrawHold();
 		settle(0);
 		showVersion(0);
 	};

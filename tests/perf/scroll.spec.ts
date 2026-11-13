@@ -171,7 +171,7 @@ async function useCafeForm(page: Page, profile: Profile) {
 	await form.getByRole('textbox', { name: 'E-mail', exact: true }).pressSequentially('ada@example.org', { delay: KEY_DELAY });
 	await press(form.getByRole('radio', { name: 'Semaine prochaine', exact: true }));
 	await form.getByRole('textbox', { name: 'Message', exact: true }).pressSequentially('Une carte des moulins du Doubs.', { delay: KEY_DELAY });
-	expect(await section.getAttribute('data-cafe-ok'), 'the four blocks are not back in place').toBe('n e w m');
+	expect(await section.getAttribute('data-cafe-ok'), 'the four blocks are not back in place').toBe('name email when message');
 
 	await press(form.getByRole('button', { name: 'plutôt en visio', exact: true }));
 	await page.waitForTimeout(SWITCH);

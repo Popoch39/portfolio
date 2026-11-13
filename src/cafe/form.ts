@@ -10,6 +10,7 @@
  */
 import { cubicBezier, drawnScrollTop, gsap, registerDetail, ScrollSmoother, ScrollTrigger } from '../animation/base';
 import { showVimMode } from '../lede/vim-mode';
+import type { Block } from './lifts';
 import type { MontageProgress } from './montage-progress';
 
 type Flavour = 'cafe' | 'visio';
@@ -296,14 +297,14 @@ registerDetail(() => {
 		go({ flavour: flavour === 'cafe' ? 'visio' : 'cafe' }, 'switch');
 	}
 
-	/** Which of the four fields are in place, as the board's blocks: n (Nom), e (E-mail), w (Quand), m (Message). */
-	function validity() {
-		const { name, email, message } = panel!.fields;
+	/** Which of the four fields are in place, each one the board's block it puts back (`src/cafe/lifts.ts`). */
+	function validity(): Record<Block, boolean> {
+		const fields = panel!.fields;
 		return {
-			n: name.value.trim() !== '',
-			e: email.value.trim() !== '' && email.validity.valid,
-			w: panel!.when() !== '',
-			m: message.value.trim() !== '',
+			name: fields.name.value.trim() !== '',
+			email: fields.email.value.trim() !== '' && fields.email.validity.valid,
+			when: panel!.when() !== '',
+			message: fields.message.value.trim() !== '',
 		};
 	}
 
@@ -344,9 +345,9 @@ registerDetail(() => {
 		const { fields, hint, send, sendLabel, sendKey } = panel!;
 		const valid = markValid();
 		const missing = [
-			!valid.n && { name: 'votre nom', field: fields.name },
-			!valid.e && { name: 'votre e-mail', field: fields.email },
-			!valid.w && { name: 'quand', field: fields.firstChoice },
+			!valid.name && { name: 'votre nom', field: fields.name },
+			!valid.email && { name: 'votre e-mail', field: fields.email },
+			!valid.when && { name: 'quand', field: fields.firstChoice },
 		].filter((item) => item !== false);
 		if (missing.length > 0) {
 			hint.textContent = `encore en l’air : ${missing.map((item) => item.name).join(', ')}`;

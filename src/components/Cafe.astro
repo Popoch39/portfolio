@@ -37,10 +37,10 @@ const steps = [
  */
 const tags = (
 	[
-		{ block: 'n', number: 1, text: 'le couvercle', piece: 'lid', x: 34.5, y: 60.5 },
-		{ block: 'e', number: 2, text: 'le collecteur', piece: 'collector', x: 36.5, y: 67 },
-		{ block: 'w', number: 3, text: 'le filtre', piece: 'filter', x: 38.5, y: 71.45 },
-		{ block: 'm', number: 4, text: 'la chaudière', piece: 'boiler', x: 36.5, y: 77.5 },
+		{ block: 'name', number: 1, text: 'le couvercle', piece: 'lid', x: 34.5, y: 60.5 },
+		{ block: 'email', number: 2, text: 'le collecteur', piece: 'collector', x: 36.5, y: 67 },
+		{ block: 'when', number: 3, text: 'le filtre', piece: 'filter', x: 38.5, y: 71.45 },
+		{ block: 'message', number: 4, text: 'la chaudière', piece: 'boiler', x: 36.5, y: 77.5 },
 	] as const
 ).map(({ piece, x, y, ...tag }, rank) => ({
 	...tag,
@@ -185,20 +185,20 @@ const callButtons = [
 				</div>
 				<div class="cafe-row cafe-row-line">
 					<label class="mono cafe-label" for="cafe-name"
-						><span class="cafe-badge" aria-hidden="true" data-badge="n">1</span>Nom</label
+						><span class="cafe-badge" aria-hidden="true" data-badge="name">1</span>Nom</label
 					>
 					<input class="cafe-input" id="cafe-name" name="nom" type="text" autocomplete="name" maxlength="100" />
 				</div>
 				<div class="cafe-row cafe-row-line">
 					<label class="mono cafe-label" for="cafe-email"
-						><span class="cafe-badge" aria-hidden="true" data-badge="e">2</span>E-mail</label
+						><span class="cafe-badge" aria-hidden="true" data-badge="email">2</span>E-mail</label
 					>
 					<input class="cafe-input" id="cafe-email" name="email" type="email" autocomplete="email" maxlength="254" />
 				</div>
 				{/* The values are the route's (`worker/index.ts`), from the same list. */}
 				<div class="cafe-row" role="radiogroup" aria-labelledby="cafe-when">
 					<span class="mono cafe-label"
-						><span class="cafe-badge" aria-hidden="true" data-badge="w">3</span><span id="cafe-when">Quand&nbsp;?</span></span
+						><span class="cafe-badge" aria-hidden="true" data-badge="when">3</span><span id="cafe-when">Quand&nbsp;?</span></span
 					>
 					<span class="cafe-chips">
 						{
@@ -210,7 +210,7 @@ const callButtons = [
 				</div>
 				<div class="cafe-row cafe-row-line cafe-row-message">
 					<label class="mono cafe-label" for="cafe-message"
-						><span class="cafe-badge" aria-hidden="true" data-badge="m">4</span>Message</label
+						><span class="cafe-badge" aria-hidden="true" data-badge="message">4</span>Message</label
 					>
 					<textarea class="cafe-input" id="cafe-message" name="message" rows="3" placeholder="facultatif" maxlength="4000"
 					></textarea>
@@ -554,10 +554,10 @@ const callButtons = [
 	}
 
 	/* In place: the accent, over the focus's ink. */
-	.cafe[data-cafe-ok~='n'] [data-badge='n'],
-	.cafe[data-cafe-ok~='e'] [data-badge='e'],
-	.cafe[data-cafe-ok~='w'] [data-badge='w'],
-	.cafe[data-cafe-ok~='m'] [data-badge='m'] {
+	.cafe[data-cafe-ok~='name'] [data-badge='name'],
+	.cafe[data-cafe-ok~='email'] [data-badge='email'],
+	.cafe[data-cafe-ok~='when'] [data-badge='when'],
+	.cafe[data-cafe-ok~='message'] [data-badge='message'] {
 		background: var(--color-accent);
 		color: var(--color-on-accent);
 		box-shadow: none;
@@ -705,10 +705,10 @@ const callButtons = [
 	 * progress sets the timings, board A's.
 	 */
 	.cafe {
-		--up-n: 0;
-		--up-e: 0;
-		--up-w: 0;
-		--up-m: 0;
+		--up-name: 0;
+		--up-email: 0;
+		--up-when: 0;
+		--up-message: 0;
 		--view-scale: 0.94;
 		--view-left: calc(70 / 444);
 		--view-top: calc(34 / 740);
@@ -719,26 +719,26 @@ const callButtons = [
 	}
 
 	.cafe[data-cafe-state='form'] {
-		--up-n: 1;
-		--up-e: 1;
-		--up-w: 1;
-		--up-m: 1;
+		--up-name: 1;
+		--up-email: 1;
+		--up-when: 1;
+		--up-message: 1;
 	}
 
-	.cafe[data-cafe-state='form'][data-cafe-ok~='n'] {
-		--up-n: 0;
+	.cafe[data-cafe-state='form'][data-cafe-ok~='name'] {
+		--up-name: 0;
 	}
 
-	.cafe[data-cafe-state='form'][data-cafe-ok~='e'] {
-		--up-e: 0;
+	.cafe[data-cafe-state='form'][data-cafe-ok~='email'] {
+		--up-email: 0;
 	}
 
-	.cafe[data-cafe-state='form'][data-cafe-ok~='w'] {
-		--up-w: 0;
+	.cafe[data-cafe-state='form'][data-cafe-ok~='when'] {
+		--up-when: 0;
 	}
 
-	.cafe[data-cafe-state='form'][data-cafe-ok~='m'] {
-		--up-m: 0;
+	.cafe[data-cafe-state='form'][data-cafe-ok~='message'] {
+		--up-message: 0;
 	}
 
 	.cafe[data-cafe-phase='open'] {
@@ -797,7 +797,7 @@ const callButtons = [
 		inset: 0;
 		background: var(--color-rule);
 		transform-origin: 100% 50%;
-		transform: scaleX(calc((var(--up-n) + var(--up-e) + var(--up-w) + var(--up-m)) / 4));
+		transform: scaleX(calc((var(--up-name) + var(--up-email) + var(--up-when) + var(--up-message)) / 4));
 	}
 
 	/* Two columns only: stacked, the moka is out of sight while the visitor writes. */
@@ -817,20 +817,20 @@ const callButtons = [
 		--y: calc(740 * var(--u) * (var(--view-top) + var(--view-scale) * var(--tag-y) / 100));
 	}
 
-	.cafe-tag[data-tag='n'] {
-		--shown: var(--up-n);
+	.cafe-tag[data-tag='name'] {
+		--shown: var(--up-name);
 	}
 
-	.cafe-tag[data-tag='e'] {
-		--shown: var(--up-e);
+	.cafe-tag[data-tag='email'] {
+		--shown: var(--up-email);
 	}
 
-	.cafe-tag[data-tag='w'] {
-		--shown: var(--up-w);
+	.cafe-tag[data-tag='when'] {
+		--shown: var(--up-when);
 	}
 
-	.cafe-tag[data-tag='m'] {
-		--shown: var(--up-m);
+	.cafe-tag[data-tag='message'] {
+		--shown: var(--up-message);
 	}
 
 	.cafe-tag > * {
@@ -889,25 +889,25 @@ const callButtons = [
 		color: var(--color-ink-muted);
 	}
 
-	.cafe:has(#cafe-name:focus) [data-tag='n'] .cafe-tag-text,
-	.cafe:has(#cafe-email:focus) [data-tag='e'] .cafe-tag-text,
-	.cafe:has(.cafe-chips input:focus) [data-tag='w'] .cafe-tag-text,
-	.cafe:has(#cafe-message:focus) [data-tag='m'] .cafe-tag-text {
+	.cafe:has(#cafe-name:focus) [data-tag='name'] .cafe-tag-text,
+	.cafe:has(#cafe-email:focus) [data-tag='email'] .cafe-tag-text,
+	.cafe:has(.cafe-chips input:focus) [data-tag='when'] .cafe-tag-text,
+	.cafe:has(#cafe-message:focus) [data-tag='message'] .cafe-tag-text {
 		color: var(--color-ink);
 	}
 
-	.cafe:has(#cafe-name:focus) [data-tag='n'] .cafe-badge,
-	.cafe:has(#cafe-email:focus) [data-tag='e'] .cafe-badge,
-	.cafe:has(.cafe-chips input:focus) [data-tag='w'] .cafe-badge,
-	.cafe:has(#cafe-message:focus) [data-tag='m'] .cafe-badge {
+	.cafe:has(#cafe-name:focus) [data-tag='name'] .cafe-badge,
+	.cafe:has(#cafe-email:focus) [data-tag='email'] .cafe-badge,
+	.cafe:has(.cafe-chips input:focus) [data-tag='when'] .cafe-badge,
+	.cafe:has(#cafe-message:focus) [data-tag='message'] .cafe-badge {
 		background: var(--color-ink);
 		color: var(--color-paper);
 	}
 
-	.cafe:has(#cafe-name:focus) [data-tag='n'] :is(.cafe-tag-line, .cafe-tag-dot),
-	.cafe:has(#cafe-email:focus) [data-tag='e'] :is(.cafe-tag-line, .cafe-tag-dot),
-	.cafe:has(.cafe-chips input:focus) [data-tag='w'] :is(.cafe-tag-line, .cafe-tag-dot),
-	.cafe:has(#cafe-message:focus) [data-tag='m'] :is(.cafe-tag-line, .cafe-tag-dot) {
+	.cafe:has(#cafe-name:focus) [data-tag='name'] :is(.cafe-tag-line, .cafe-tag-dot),
+	.cafe:has(#cafe-email:focus) [data-tag='email'] :is(.cafe-tag-line, .cafe-tag-dot),
+	.cafe:has(.cafe-chips input:focus) [data-tag='when'] :is(.cafe-tag-line, .cafe-tag-dot),
+	.cafe:has(#cafe-message:focus) [data-tag='message'] :is(.cafe-tag-line, .cafe-tag-dot) {
 		background: var(--color-accent);
 	}
 

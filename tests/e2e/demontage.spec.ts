@@ -250,8 +250,8 @@ test.describe('Démontage, café mode in two columns', () => {
 		await reachActions(page);
 		await coffee(page).click();
 		await settled(page);
-		const lidGlint = figure(page).locator('[data-glint-of="n"]');
-		const boilerGlint = figure(page).locator('[data-glint-of="m"]').first();
+		const lidGlint = figure(page).locator('[data-glint-of="name"]');
+		const boilerGlint = figure(page).locator('[data-glint-of="message"]').first();
 		// The brightest the glint shows over the next second.
 		const flash = (glint: Locator) =>
 			glint.evaluate(

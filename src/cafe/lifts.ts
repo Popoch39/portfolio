@@ -2,23 +2,25 @@
  * The Démontage's lifts, worked out at build from the moka generator's (`moka.json`), for the Montage's envelopes
  * and the Café's Repères alike.
  *
- * The four blocks, bottom to top, each raised by its own flag on the Café's section (`--up-m`, `--up-w`, `--up-e`,
- * `--up-n`, 1 while the block is up): M the boiler and the funnel, W the filter and the gasket, E the collector,
- * N the lid. The generator's lift of a piece is how high it flies with every piece under it up too, clearing them.
+ * The four blocks, bottom to top, each named after the field that puts it back and raised by its own flag on the
+ * Café's section (`--up-message`, `--up-when`, `--up-email`, `--up-name`, 1 while the block is up): the message's
+ * the boiler and the funnel, the when's the filter and the gasket, the email's the collector, the name's the lid.
+ * The generator's lift of a piece is how high it flies with every piece under it up too, clearing them.
  * A block that comes down takes its own span out from under every piece above it: a piece then rests on whatever
  * is below it, wherever that is, and never sinks into it, in any order.
  */
 import moka from '../assets/moka/moka.json';
 
 type PieceName = (typeof moka.pieces)[number]['name'];
-type Block = 'm' | 'w' | 'e' | 'n';
+/** A block of pieces, by the form's field that puts it back in place. */
+export type Block = 'message' | 'when' | 'email' | 'name';
 
 /** Bottom to top. */
 const BLOCKS: [Block, PieceName[]][] = [
-	['m', ['boiler', 'funnel']],
-	['w', ['filter', 'gasket']],
-	['e', ['collector']],
-	['n', ['lid']],
+	['message', ['boiler', 'funnel']],
+	['when', ['filter', 'gasket']],
+	['email', ['collector']],
+	['name', ['lid']],
 ];
 
 const generated = new Map(moka.pieces.map(({ name, lift }) => [name, lift]));

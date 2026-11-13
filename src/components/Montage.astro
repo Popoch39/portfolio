@@ -7,7 +7,7 @@
  */
 import moka from '../assets/moka/moka.json';
 import screwStrip from '../assets/moka/screw.avif?url&no-inline';
-import { delays, lift as blockLift, liftOver } from '../cafe/lifts';
+import { delays, lift as blockLift, liftOver, type Block } from '../cafe/lifts';
 
 interface Props {
 	/**
@@ -107,7 +107,13 @@ const envelopes = (piece?: PieceName) =>
 	!piece ? {} : piece === 'funnel' ? { outer: envelope('boiler'), inner: envelope('funnel', 'boiler') } : { outer: envelope(piece) };
 
 /** Which block a silhouette glints for when its field changes: board A's, the collector has none. */
-const glintBlocks: Partial<Record<PieceName, string>> = { boiler: 'm', funnel: 'm', filter: 'w', gasket: 'w', lid: 'n' };
+const glintBlocks: Partial<Record<PieceName, Block>> = {
+	boiler: 'message',
+	funnel: 'message',
+	filter: 'when',
+	gasket: 'when',
+	lid: 'name',
+};
 
 /** What goes out with the fire as the form opens, the knob's off position aside, which a copy shows instead. */
 const fireLayers = new Set<LayerName>(['knob-on', 'glow', 'steam-0', 'steam-1', 'steam-2']);
@@ -759,9 +765,9 @@ const camera = JSON.stringify(
 			animation: glint-b 0.55s ease-out var(--lift-delay) both;
 		}
 
-		:global(.cafe[data-cafe-state='form'][data-cafe-ok~='n']) [data-glint-of='n'],
-		:global(.cafe[data-cafe-state='form'][data-cafe-ok~='w']) [data-glint-of='w'],
-		:global(.cafe[data-cafe-state='form'][data-cafe-ok~='m']) [data-glint-of='m'] {
+		:global(.cafe[data-cafe-state='form'][data-cafe-ok~='name']) [data-glint-of='name'],
+		:global(.cafe[data-cafe-state='form'][data-cafe-ok~='when']) [data-glint-of='when'],
+		:global(.cafe[data-cafe-state='form'][data-cafe-ok~='message']) [data-glint-of='message'] {
 			animation-name: glint-a;
 		}
 

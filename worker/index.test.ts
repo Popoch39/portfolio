@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, spyOn, test } from 'bun:test';
 import worker, { type Env, type OutgoingMail } from './index';
 
 /** Bindings as the Worker sees them in production, recording what it does with them. */
@@ -158,6 +158,21 @@ describe('POST /api/contact', () => {
 		const response = await worker.fetch(post(VALID), env);
 
 		expect(response.status).toBe(502);
+	});
+
+	test('logs the binding’s error code as a field of its own', async () => {
+		const { env } = bindings({ sendFails: true });
+		const logged = spyOn(console, 'error').mockImplementation(() => {});
+
+		try {
+			await worker.fetch(post(VALID), env);
+			expect(logged).toHaveBeenCalledWith('contact: the mail did not leave', {
+				code: 'E_DELIVERY_FAILED',
+				message: 'delivery failed',
+			});
+		} finally {
+			logged.mockRestore();
+		}
 	});
 
 	for (const method of ['GET', 'PUT', 'DELETE']) {

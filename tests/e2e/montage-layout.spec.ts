@@ -11,7 +11,8 @@ const opacityOnScreen = (element: Locator) =>
 	});
 
 const paragraph = (page: Page) => section(page).getByText(/^À Besançon/);
-const coffee = (page: Page) => section(page).getByRole('link', { name: 'Proposer un café', exact: true });
+// With JavaScript, the action that opens the Formulaire du Café.
+const coffee = (page: Page) => section(page).getByRole('button', { name: 'Proposer un café', exact: true });
 
 type Box = { left: number; right: number; top: number; bottom: number; width: number; height: number };
 

@@ -7,6 +7,8 @@
 import Montage from './Montage.astro';
 import SectionNumber from './SectionNumber.astro';
 import { person } from '../data/profile';
+import { delays, lift } from '../cafe/lifts';
+import { WHEN_CHOICES } from '../cafe/when';
 
 interface Props {
 	number: number;
@@ -28,9 +30,37 @@ const steps = [
 	'5/6 · le couvercle',
 	'6/6 · sur le feu',
 ];
+
+/**
+ * The Repères of the Démontage, top to bottom, each beside the piece its field puts back: where its leader ends,
+ * in % of the moka's frame (board A's anchors), which follows the piece's lift. The fade comes once the piece is up.
+ */
+const tags = (
+	[
+		{ block: 'name', number: 1, text: 'le couvercle', piece: 'lid', x: 34.5, y: 60.5 },
+		{ block: 'email', number: 2, text: 'le collecteur', piece: 'collector', x: 36.5, y: 67 },
+		{ block: 'when', number: 3, text: 'le filtre', piece: 'filter', x: 38.5, y: 71.45 },
+		{ block: 'message', number: 4, text: 'la chaudière', piece: 'boiler', x: 36.5, y: 77.5 },
+	] as const
+).map(({ piece, x, y, ...tag }, rank) => ({
+	...tag,
+	style: `--tag-x: ${x}; --tag-y: calc(${y} - ${lift(piece)}); --tag-up: ${delays(piece).up}s; --tag-show: ${+(0.8 + 0.07 * rank).toFixed(2)}s`,
+}));
+
+/** The visio screen's frame, in the order it is drawn; undone in reverse. */
+const screenStrokes = ['top', 'right', 'bottom', 'left'];
+
+/** The call's controls, board A's icons: microphone, camera, then sharing and chat off, then hang up. */
+const callButtons = [
+	{ kind: 'on', paths: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>' },
+	{ kind: 'on', paths: '<rect x="3" y="7" width="12" height="10" rx="2"/><path d="M15 11l6-3v8l-6-3"/>' },
+	{ kind: 'off', paths: '<rect x="3" y="4" width="18" height="12" rx="1"/><path d="M12 13V8M9.5 10.5L12 8l2.5 2.5M8 20h8"/>' },
+	{ kind: 'off', paths: '<path d="M4 5h16v11H9l-5 4z"/>' },
+	{ kind: 'end', paths: '<path d="M3 14c5-5 13-5 18 0l-2.5 2.5-3-1.5v-2.5a10 10 0 0 0-7 0V15l-3 1.5z"/>' },
+];
 ---
 
-<section id="cafe" class="cafe" aria-labelledby={titleId} data-cafe>
+<section id="cafe" class="cafe" aria-labelledby={titleId} data-cafe data-cafe-address={person.email}>
 	{/* What the pinning holds on screen when stacked; in two columns, the paragraph and the actions join it. */}
 	<div class="cafe-screen">
 		<div class="cafe-head">
@@ -49,6 +79,46 @@ const steps = [
 		<p class="mono cafe-counter" data-cafe-counter data-steps={JSON.stringify(steps)}>{steps.at(-1)}</p>
 		<div class="cafe-progress" aria-hidden="true">
 			<div class="cafe-progress-fill" data-cafe-progress></div>
+			{/* The Démontage's, over the scene's fill: the rule left to fill as the blocks come back, by quarters. */}
+			<div class="cafe-progress-cover" data-cafe-progress-cover></div>
+		</div>
+
+		{/* Visio mode: the call's screen the moka shrinks into, behind it. The figure's name already says so. */}
+		<div class="cafe-call" aria-hidden="true" data-cafe-screen>
+			{screenStrokes.map((stroke) => <span class="cafe-call-stroke" data-stroke={stroke} />)}
+			<div class="cafe-call-ui">
+				<div class="mono cafe-call-bar"><span>café · en visio</span><span class="cafe-call-count">2 participants</span></div>
+				<span class="cafe-call-live"></span>
+				<div class="cafe-call-tile"></div>
+				<span class="mono cafe-call-name">Louis</span>
+				<div class="cafe-call-tile cafe-call-self">
+					<svg viewBox="0 0 112 84" fill="none" stroke="currentColor" stroke-width="1.5"
+						><circle cx="56" cy="34" r="13"></circle><path d="M28 84c2-16 13-24 28-24s26 8 28 24"></path></svg
+					>
+					<span class="mono">vous</span>
+				</div>
+				<div class="cafe-call-buttons">
+					{
+						callButtons.map(({ kind, paths }) => (
+							<span class="cafe-call-button" data-kind={kind}>
+								<svg
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									set:html={paths}
+								/>
+							</span>
+						))
+					}
+				</div>
+			</div>
+			<div class="cafe-call-stand">
+				<span class="cafe-call-neck"></span>
+				<span class="cafe-call-base"></span>
+			</div>
 		</div>
 
 		<div class="cafe-figure">
@@ -56,17 +126,123 @@ const steps = [
 				<Montage />
 			</div>
 		</div>
+		{/* The figure's name already says how many pieces are back. */}
+		<div class="cafe-tags" aria-hidden="true">
+			{
+				tags.map(({ block, number, text, style }) => (
+					<div class="cafe-tag" style={style} data-tag={block}>
+						<span class="cafe-tag-line" />
+						<span class="cafe-tag-dot" />
+						<span class="cafe-tag-text">
+							<span class="cafe-badge">{number}</span>
+							{text}
+						</span>
+					</div>
+				))
+			}
+		</div>
 	</div>
 
-	<p class="cafe-text" data-cafe-text>
-		À {person.city}, ou en visio si vous êtes plus loin. Comme un moka&nbsp;: on assemble les pièces dans l’ordre, sans
-		rien forcer. Et sans engagement&nbsp;: au pire, on aura bu un café.
-	</p>
-	<div class="cafe-actions" data-cafe-actions>
-		<a class="button" href={mailto('Un café ?')}>Proposer un café <span class="mono" aria-hidden="true">↵</span></a>
-		<a class="cafe-visio" href={mailto('Une visio ?')}>Plutôt en visio</a>
+	{/* The scene moves the paragraph and the actions; the Formulaire du Café hides them through this block of its own. */}
+	<div class="cafe-rest" data-cafe-rest>
+		<p class="cafe-text" data-cafe-text>
+			À {person.city}, ou en visio si vous êtes plus loin. Comme un moka&nbsp;: on assemble les pièces dans l’ordre, sans
+			rien forcer. Et sans engagement&nbsp;: au pire, on aura bu un café.
+		</p>
+		{/* Mail links without JavaScript; the script turns them into the buttons that open the form (`src/cafe/form.ts`). */}
+		<div class="cafe-actions" data-cafe-actions>
+			<a class="button" href={mailto('Un café ?')} data-cafe-open="cafe"
+				>Proposer un café <span class="mono" aria-hidden="true">↵</span></a
+			>
+			<a class="cafe-visio" href={mailto('Une visio ?')} data-cafe-open="visio">Plutôt en visio</a>
+		</div>
 	</div>
+
+	{/* Inert until the first opening: out of the critical HTML, and nothing to show without JavaScript. */}
+	<template data-cafe-form>
+		<div class="cafe-panel">
+			{/*
+			 * Stacked, the Montage's figure is out of sight while the visitor writes: a mini moka, its same layers,
+			 * comes apart above the form. In visio, the screen's frame and stand without the call. Its figure's name
+			 * is the Montage's.
+			 */}
+			<div class="cafe-mini" aria-hidden="true" data-cafe-mini>
+				<div class="cafe-mini-board">
+					{screenStrokes.map((stroke) => <span class="cafe-call-stroke" data-stroke={stroke} />)}
+					<div class="cafe-call-stand">
+						<span class="cafe-call-neck"></span>
+						<span class="cafe-call-base"></span>
+					</div>
+					<div class="cafe-mini-figure">
+						<Montage mini />
+					</div>
+				</div>
+			</div>
+			<form class="cafe-form" novalidate aria-labelledby="cafe-form-title">
+				<div class="cafe-form-head">
+					<h3 id="cafe-form-title" class="cafe-form-title" data-cafe-heading>Un café, à Besançon.</h3>
+					<button type="button" class="mono cafe-mlink" data-cafe-switch>plutôt en visio</button>
+				</div>
+				<div class="cafe-row cafe-row-line">
+					<label class="mono cafe-label" for="cafe-name"
+						><span class="cafe-badge" aria-hidden="true" data-badge="name">1</span>Nom</label
+					>
+					<input class="cafe-input" id="cafe-name" name="nom" type="text" autocomplete="name" maxlength="100" />
+				</div>
+				<div class="cafe-row cafe-row-line">
+					<label class="mono cafe-label" for="cafe-email"
+						><span class="cafe-badge" aria-hidden="true" data-badge="email">2</span>E-mail</label
+					>
+					<input class="cafe-input" id="cafe-email" name="email" type="email" autocomplete="email" maxlength="254" />
+				</div>
+				{/* The values are the route's (`worker/index.ts`), from the same list. */}
+				<div class="cafe-row" role="radiogroup" aria-labelledby="cafe-when">
+					<span class="mono cafe-label"
+						><span class="cafe-badge" aria-hidden="true" data-badge="when">3</span><span id="cafe-when">Quand&nbsp;?</span></span
+					>
+					<span class="cafe-chips">
+						{
+							WHEN_CHOICES.map(({ value, chip }) => (
+								<label class="cafe-chip"><input type="radio" name="quand" value={value} /><span>{chip}</span></label>
+							))
+						}
+					</span>
+				</div>
+				<div class="cafe-row cafe-row-line cafe-row-message">
+					<label class="mono cafe-label" for="cafe-message"
+						><span class="cafe-badge" aria-hidden="true" data-badge="message">4</span>Message</label
+					>
+					<textarea class="cafe-input" id="cafe-message" name="message" rows="3" placeholder="facultatif" maxlength="4000"
+					></textarea>
+				</div>
+				{/* The trap: out of sight and out of reach, only a robot filling every field writes in it. */}
+				<div class="cafe-trap" aria-hidden="true">
+					<label for="cafe-site">Site</label>
+					<input id="cafe-site" name="site" type="text" tabindex="-1" autocomplete="off" />
+				</div>
+				<div class="cafe-form-actions">
+					<span class="cafe-send-group">
+						<button type="submit" class="button" data-cafe-send
+							><span data-cafe-send-label>Envoyer</span>
+							<span class="mono" aria-hidden="true" data-cafe-send-key>↵</span></button
+						>
+						<span class="mono cafe-aside">sans engagement</span>
+					</span>
+					<button type="button" class="mono cafe-mlink" data-cafe-close>esc · fermer</button>
+				</div>
+				<p class="mono cafe-hint" aria-live="polite" data-cafe-hint></p>
+			</form>
+			<div class="cafe-sent">
+				<p class="cafe-confirm" data-cafe-confirm></p>
+				<button type="button" class="mono cafe-mlink" data-cafe-again>recommencer</button>
+			</div>
+		</div>
+	</template>
 </section>
+
+<script>
+	import '../cafe/form';
+</script>
 
 <style>
 	/*
@@ -194,6 +370,562 @@ const steps = [
 	}
 
 	/*
+	 * The Formulaire du Café (`src/cafe/form.ts`), board A. The script writes the state on the section and the
+	 * phase in progress, which sets the delays: the form arrives once the paragraph has gone, and the paragraph
+	 * comes back once the form has. `--fu` is the board's pixel: 1px stacked, `--u` in two columns.
+	 */
+	.cafe-actions button {
+		border: 0;
+		font: inherit;
+		cursor: pointer;
+	}
+
+	.cafe-visio:is(button) {
+		padding: 0;
+		background: none;
+		color: var(--color-ink);
+		text-decoration: underline;
+	}
+
+	.cafe :is(button, input, textarea):focus-visible {
+		outline: 2px solid var(--color-ink);
+		outline-offset: 3px;
+	}
+
+	.cafe {
+		--arrive-from: 14px;
+		--leave-to: -10px;
+	}
+
+	.cafe-rest,
+	.cafe-form,
+	.cafe-sent {
+		--delay: 0s;
+		transition:
+			opacity 0.3s ease var(--delay),
+			transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) var(--delay),
+			visibility 0.3s linear var(--delay);
+	}
+
+	.cafe-panel {
+		--fu: 1px;
+		display: grid;
+		margin-top: 34px;
+	}
+
+	/*
+	 * The form and the confirmation share a place under the mini moka: the panel holds the taller, nothing moves
+	 * between them.
+	 */
+	.cafe-form,
+	.cafe-sent {
+		grid-area: 2 / 1;
+		min-width: 0;
+		opacity: 0;
+		visibility: hidden;
+		transform: translateY(var(--arrive-from));
+	}
+
+	.cafe[data-cafe-state='form'] .cafe-form,
+	.cafe[data-cafe-state='sent'] .cafe-sent {
+		opacity: 1;
+		visibility: visible;
+		transform: none;
+	}
+
+	.cafe[data-cafe-phase='open'] .cafe-form {
+		--delay: 0.3s;
+	}
+
+	.cafe[data-cafe-phase='send'] .cafe-sent {
+		--delay: 1s;
+	}
+
+	/*
+	 * Closed by the scroll, as the scene puts the moka together again: everything is back in one frame, the Montage's
+	 * own elements included. Important: it outranks every transition of the Démontage, whatever their selectors.
+	 */
+	.cafe[data-cafe-phase='cut'] :global(*) {
+		transition: none !important;
+	}
+
+	/* Stacked, the form takes the paragraph's place in the flow. */
+	.cafe:is([data-cafe-state='form'], [data-cafe-state='sent']) .cafe-rest,
+	.cafe:not([data-cafe-state='form'], [data-cafe-state='sent']) .cafe-panel {
+		display: none;
+	}
+
+	.cafe-form {
+		display: flex;
+		flex-direction: column;
+		margin: 0;
+	}
+
+	.cafe-form-head {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 12px;
+		min-height: 44px;
+	}
+
+	.cafe-form-title,
+	.cafe-confirm {
+		margin: 0;
+		font-size: max(20px, 24 * var(--fu));
+		line-height: 1.1;
+		font-weight: 800;
+	}
+
+	.cafe-mlink {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		padding: 0;
+		border: 0;
+		background: none;
+		color: var(--color-ink);
+		font-size: 13px;
+		text-decoration: underline;
+		text-underline-offset: 4px;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+
+	.cafe-row {
+		display: flex;
+		align-items: center;
+		min-height: max(44px, 44 * var(--fu));
+		margin-top: calc(8 * var(--fu));
+	}
+
+	.cafe-form-head + .cafe-row {
+		margin-top: calc(6 * var(--fu));
+	}
+
+	.cafe-row-line {
+		box-shadow: inset 0 -1px 0 var(--color-ink);
+	}
+
+	.cafe-row-message {
+		align-items: flex-start;
+	}
+
+	.cafe-label {
+		flex: none;
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		width: max(96px, 104 * var(--fu));
+		font-size: 13px;
+		color: var(--color-ink-muted);
+		transition: color 0.2s ease;
+	}
+
+	.cafe-row-message .cafe-label {
+		padding-top: 12px;
+	}
+
+	.cafe-row:focus-within .cafe-label {
+		color: var(--color-ink);
+	}
+
+	.cafe-badge {
+		display: inline-grid;
+		place-items: center;
+		width: 18px;
+		height: 18px;
+		box-shadow: inset 0 0 0 1px var(--color-ink);
+		background: var(--color-paper);
+		color: var(--color-ink);
+		font-family: var(--font-mono);
+		font-size: 11px;
+		font-weight: 400;
+		line-height: 1;
+		transition:
+			background-color 0.2s ease,
+			color 0.2s ease,
+			box-shadow 0.2s ease;
+	}
+
+	.cafe-row:focus-within .cafe-badge {
+		background: var(--color-ink);
+		color: var(--color-paper);
+	}
+
+	/* In place: the accent, over the focus's ink. */
+	.cafe[data-cafe-ok~='name'] [data-badge='name'],
+	.cafe[data-cafe-ok~='email'] [data-badge='email'],
+	.cafe[data-cafe-ok~='when'] [data-badge='when'],
+	.cafe[data-cafe-ok~='message'] [data-badge='message'] {
+		background: var(--color-accent);
+		color: var(--color-on-accent);
+		box-shadow: none;
+	}
+
+	/* 16px at least: a phone zooms the page into a smaller field. */
+	.cafe-input {
+		flex: 1;
+		min-width: 0;
+		height: 44px;
+		padding: 0;
+		border: 0;
+		border-radius: 0;
+		background: transparent;
+		color: var(--color-ink);
+		font: inherit;
+		font-size: max(16px, 17 * var(--fu));
+	}
+
+	textarea.cafe-input {
+		height: max(80px, 80 * var(--fu));
+		padding: 10px 0;
+		box-sizing: border-box;
+		font-size: 16px;
+		line-height: 1.4;
+		resize: none;
+	}
+
+	.cafe-input::placeholder {
+		color: var(--color-ink-muted);
+		opacity: 1;
+	}
+
+	.cafe-input:focus-visible {
+		outline-offset: 2px;
+	}
+
+	.cafe-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.cafe-chip {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+	}
+
+	/* The native radio covers its chip: the group keeps the arrows, the focus and the screen readers' reading. */
+	.cafe-chip input {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		margin: 0;
+		opacity: 0;
+		cursor: pointer;
+	}
+
+	.cafe-chip span {
+		padding: 6px 10px;
+		box-shadow: inset 0 0 0 1px var(--color-ink);
+		font-size: 14px;
+		font-weight: 600;
+		line-height: 20px;
+		white-space: nowrap;
+		transition:
+			background-color 0.2s ease,
+			color 0.2s ease;
+	}
+
+	@media (hover: hover) and (pointer: fine) {
+		.cafe-chip:hover span {
+			background: var(--color-light);
+		}
+	}
+
+	.cafe-chip input:checked + span {
+		background: var(--color-ink);
+		color: var(--color-paper);
+	}
+
+	.cafe-chip input:focus-visible + span {
+		outline: 2px solid var(--color-ink);
+		outline-offset: 3px;
+	}
+
+	.cafe-trap {
+		position: absolute;
+		left: -10000px;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+	}
+
+	.cafe-form-actions {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		align-items: center;
+		gap: 8px 18px;
+		margin-top: calc(14 * var(--fu));
+	}
+
+	.cafe-send-group {
+		display: inline-flex;
+		align-items: center;
+		gap: 18px;
+	}
+
+	.cafe-form .button {
+		border: 0;
+		font: inherit;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.cafe-form .button:disabled {
+		cursor: progress;
+	}
+
+	.cafe-hint {
+		min-height: 18px;
+		margin: calc(4 * var(--fu)) 0 0;
+		font-size: 13px;
+		line-height: 18px;
+		color: var(--color-ink);
+	}
+
+	.cafe-sent {
+		align-self: start;
+	}
+
+	.cafe-sent .cafe-mlink {
+		margin-top: 10px;
+	}
+
+	/*
+	 * The Démontage (board A), the moka's side of the form: one flag per block, 1 while it is up (n the lid, e the
+	 * collector, w the filter and the gasket, m the boiler and the funnel), from which the Montage's envelopes and
+	 * the Repères work out their lifts (`src/cafe/lifts.ts`). The view is where the camera steps back to: the whole
+	 * frame at ×0.94, its corner at the board's (790, 52) against the figure's (720, 18) and 444×740. The phase in
+	 * progress sets the timings, board A's.
+	 */
+	.cafe {
+		--up-name: 0;
+		--up-email: 0;
+		--up-when: 0;
+		--up-message: 0;
+		--view-scale: 0.94;
+		--view-left: calc(70 / 444);
+		--view-top: calc(34 / 740);
+		--lift-time: 0.7s;
+		--camera-time: 1s;
+		--camera-delay: 0s;
+		--fire-delay: 0s;
+	}
+
+	.cafe[data-cafe-state='form'] {
+		--up-name: 1;
+		--up-email: 1;
+		--up-when: 1;
+		--up-message: 1;
+	}
+
+	.cafe[data-cafe-state='form'][data-cafe-ok~='name'] {
+		--up-name: 0;
+	}
+
+	.cafe[data-cafe-state='form'][data-cafe-ok~='email'] {
+		--up-email: 0;
+	}
+
+	.cafe[data-cafe-state='form'][data-cafe-ok~='when'] {
+		--up-when: 0;
+	}
+
+	.cafe[data-cafe-state='form'][data-cafe-ok~='message'] {
+		--up-message: 0;
+	}
+
+	.cafe[data-cafe-phase='open'] {
+		--lift-time: 0.9s;
+	}
+
+	/* The camera waits for the pieces to start landing, the fire for them to be down. */
+	.cafe[data-cafe-phase='close'] {
+		--lift-time: 0.8s;
+		--camera-delay: 0.35s;
+		--fire-delay: 1s;
+	}
+
+	.cafe[data-cafe-phase='send'] {
+		--camera-delay: 0.4s;
+		--fire-delay: 1s;
+	}
+
+	/*
+	 * Visio: the whole frame at ×0.4, its corner at the board's (851, 262), inside the call's screen (`--screen`, 1
+	 * while it shows). The frame waits for the camera on opening, less on a switch, where the moka is already apart.
+	 */
+	.cafe {
+		--screen: 0;
+		--frame-delay: 0s;
+	}
+
+	.cafe[data-cafe-state='form'][data-cafe-flavour='visio'] {
+		--view-scale: 0.4;
+		--view-left: calc(131 / 444);
+		--view-top: calc(244 / 740);
+		--screen: 1;
+	}
+
+	.cafe[data-cafe-phase='open'][data-cafe-flavour='visio'] {
+		--frame-delay: 0.95s;
+	}
+
+	.cafe[data-cafe-phase='switch'] {
+		--lift-time: 0.8s;
+		--camera-time: 0.8s;
+	}
+
+	.cafe[data-cafe-phase='switch'][data-cafe-flavour='visio'] {
+		--frame-delay: 0.35s;
+	}
+
+	/* Back to café, the moka waits for the screen to come down. */
+	.cafe[data-cafe-phase='switch'][data-cafe-flavour='cafe'] {
+		--camera-delay: 0.3s;
+	}
+
+	/* Retracts from the left by quarters: what is left to fill, in the rule's colour. Out of the way at rest. */
+	.cafe-progress-cover {
+		position: absolute;
+		inset: 0;
+		background: var(--color-rule);
+		transform-origin: 100% 50%;
+		transform: scaleX(calc((var(--up-name) + var(--up-email) + var(--up-when) + var(--up-message)) / 4));
+	}
+
+	/* Two columns only: stacked, the moka is out of sight while the visitor writes. */
+	.cafe-tags {
+		display: none;
+	}
+
+	/*
+	 * A Repère is drawn by transforms from its anchor in the figure (`--x`, `--y`), which follow the view and its
+	 * piece's lift: a leader 40 board pixels long ending there, a dot at its end and the tag 48 pixels to its left.
+	 * Shown while its block is up.
+	 */
+	.cafe-tag {
+		--tag-delay: 0s;
+		--fade-delay: 0s;
+		--x: calc(444 * var(--u) * (var(--view-left) + var(--view-scale) * var(--tag-x) / 100));
+		--y: calc(740 * var(--u) * (var(--view-top) + var(--view-scale) * var(--tag-y) / 100));
+	}
+
+	.cafe-tag[data-tag='name'] {
+		--shown: var(--up-name);
+	}
+
+	.cafe-tag[data-tag='email'] {
+		--shown: var(--up-email);
+	}
+
+	.cafe-tag[data-tag='when'] {
+		--shown: var(--up-when);
+	}
+
+	.cafe-tag[data-tag='message'] {
+		--shown: var(--up-message);
+	}
+
+	.cafe-tag > * {
+		position: absolute;
+		left: 0;
+		top: 0;
+		opacity: var(--shown);
+	}
+
+	.cafe-tag-line {
+		width: calc(40 * var(--u));
+		height: 1px;
+		background: var(--color-ink);
+		transform-origin: 100% 50%;
+		transform: translate(calc(var(--x) - 40 * var(--u)), var(--y)) scaleX(var(--shown));
+	}
+
+	.cafe-tag-dot {
+		width: 5px;
+		height: 5px;
+		background: var(--color-ink);
+		transform: translate(calc(var(--x) - 2px), calc(var(--y) - 2px));
+	}
+
+	.cafe-tag-text {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 13px;
+		line-height: 18px;
+		font-weight: 600;
+		white-space: nowrap;
+		color: var(--color-ink);
+		transform: translate(calc(var(--x) - 48 * var(--u) - 100%), calc(var(--y) - 50%));
+	}
+
+	/* They go up with their piece, and show once it is up. */
+	.cafe[data-cafe-phase='open'] .cafe-tag {
+		--tag-delay: var(--tag-up);
+		--fade-delay: var(--tag-show);
+	}
+
+	/* On a switch no piece moves: they ride with the camera, its delay, length and curve. */
+	.cafe[data-cafe-phase='switch'] .cafe-tag {
+		--tag-delay: var(--camera-delay);
+		--tag-time: var(--camera-time);
+		--tag-ease: cubic-bezier(0.65, 0, 0.35, 1);
+	}
+
+	.cafe[data-cafe-phase='switch'][data-cafe-flavour='cafe'] .cafe-tag {
+		--fade-delay: 0.3s;
+	}
+
+	/* The field in hand names its piece, in ink with the accent on its leader; the others step back. */
+	.cafe:has(.cafe-form :focus) .cafe-tag-text {
+		color: var(--color-ink-muted);
+	}
+
+	.cafe:has(#cafe-name:focus) [data-tag='name'] .cafe-tag-text,
+	.cafe:has(#cafe-email:focus) [data-tag='email'] .cafe-tag-text,
+	.cafe:has(.cafe-chips input:focus) [data-tag='when'] .cafe-tag-text,
+	.cafe:has(#cafe-message:focus) [data-tag='message'] .cafe-tag-text {
+		color: var(--color-ink);
+	}
+
+	.cafe:has(#cafe-name:focus) [data-tag='name'] .cafe-badge,
+	.cafe:has(#cafe-email:focus) [data-tag='email'] .cafe-badge,
+	.cafe:has(.cafe-chips input:focus) [data-tag='when'] .cafe-badge,
+	.cafe:has(#cafe-message:focus) [data-tag='message'] .cafe-badge {
+		background: var(--color-ink);
+		color: var(--color-paper);
+	}
+
+	.cafe:has(#cafe-name:focus) [data-tag='name'] :is(.cafe-tag-line, .cafe-tag-dot),
+	.cafe:has(#cafe-email:focus) [data-tag='email'] :is(.cafe-tag-line, .cafe-tag-dot),
+	.cafe:has(.cafe-chips input:focus) [data-tag='when'] :is(.cafe-tag-line, .cafe-tag-dot),
+	.cafe:has(#cafe-message:focus) [data-tag='message'] :is(.cafe-tag-line, .cafe-tag-dot) {
+		background: var(--color-accent);
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.cafe-progress-cover {
+			transition: transform var(--lift-time) cubic-bezier(0.65, 0, 0.35, 1);
+		}
+
+		.cafe-tag > * {
+			transition:
+				transform var(--tag-time, var(--lift-time)) var(--tag-ease, cubic-bezier(0.16, 1, 0.3, 1)) var(--tag-delay),
+				opacity 0.3s ease var(--fade-delay),
+				background-color 0.2s ease,
+				color 0.2s ease;
+		}
+	}
+
+	/*
 	 * Two columns, the board's layout (1280×770 above the statusline, 52px margins: 1176×770) at the scale `--u`
 	 * that fits it in the screen's height and the page column's width, the text on the left and the moka beside it.
 	 * The text keeps a readable size (16px at least), so a low window cannot hold the column: below the height
@@ -279,6 +1011,388 @@ const steps = [
 			margin: 0;
 			/* It runs up beside the aside, which stays selectable through its empty top. */
 			pointer-events: none;
+		}
+
+		/* At the figure's corner: the Repères are placed in its shares. */
+		.cafe-tags {
+			display: block;
+			position: absolute;
+			top: calc(18 * var(--u));
+			left: calc(var(--page-gutter) + 668 * var(--u));
+			pointer-events: none;
+		}
+
+		/*
+		 * The paragraph and the actions keep their place while the form stands over it, from the board's 382px
+		 * (its head 10px above the first field's row at 392px): opening and closing move nothing around.
+		 * Never narrower than the chips of « Quand ? » beside their label, which still stays left of the moka.
+		 */
+		.cafe-panel {
+			--fu: var(--u);
+			position: absolute;
+			top: calc(382 * var(--u));
+			left: var(--page-gutter);
+			width: max(420px, 500 * var(--u));
+			margin: 0;
+		}
+
+		.cafe:is([data-cafe-state='form'], [data-cafe-state='sent']) .cafe-rest {
+			display: block;
+			opacity: 0;
+			visibility: hidden;
+			transform: translateY(var(--leave-to));
+		}
+
+		/* Laid over the actions even while closed: the clicks go through it to them. */
+		.cafe:not([data-cafe-state='form'], [data-cafe-state='sent']) .cafe-panel {
+			display: grid;
+			pointer-events: none;
+		}
+
+		.cafe[data-cafe-phase='close'] .cafe-rest {
+			--delay: 0.9s;
+		}
+
+		.cafe[data-cafe-phase='again'] .cafe-rest {
+			--delay: 0.3s;
+		}
+	}
+
+	/*
+	 * The call's screen (board A, visio). Stacked, out of sight: the moka is. In two columns, every part is placed
+	 * in board pixels from the board's corner, 52 of them left of the column. The strokes are drawn clockwise from
+	 * the top and undone in reverse; the call and the stand come once the frame is whole and leave first.
+	 * The frame and the stand are the mini moka's too, in its own board pixels.
+	 */
+	.cafe-call {
+		display: none;
+	}
+
+	.cafe-call-stroke,
+	.cafe-call-ui > *,
+	.cafe-call-stand > * {
+		position: absolute;
+	}
+
+	.cafe-call-stroke {
+		--undraw-delay: 0s;
+		--draw-time: 0.2s;
+		--draw-delay: 0s;
+		background: var(--color-ink);
+	}
+
+	.cafe-call-stroke[data-stroke='top'],
+	.cafe-call-stroke[data-stroke='bottom'] {
+		width: calc(576 * var(--u));
+		height: calc(2 * var(--u));
+	}
+
+	.cafe-call-stroke[data-stroke='right'],
+	.cafe-call-stroke[data-stroke='left'] {
+		width: calc(2 * var(--u));
+		height: calc(440 * var(--u));
+		--draw-time: 0.16s;
+	}
+
+	.cafe-call-stroke[data-stroke='top'] {
+		left: calc(652 * var(--u));
+		top: calc(200 * var(--u));
+		transform-origin: 0 50%;
+		--undraw-delay: 0.36s;
+	}
+
+	.cafe-call-stroke[data-stroke='right'] {
+		left: calc(1226 * var(--u));
+		top: calc(200 * var(--u));
+		transform-origin: 50% 0;
+		--undraw-delay: 0.24s;
+		--draw-delay: 0.2s;
+	}
+
+	.cafe-call-stroke[data-stroke='bottom'] {
+		left: calc(652 * var(--u));
+		top: calc(638 * var(--u));
+		transform-origin: 100% 50%;
+		--undraw-delay: 0.12s;
+		--draw-delay: 0.36s;
+	}
+
+	.cafe-call-stroke[data-stroke='left'] {
+		left: calc(652 * var(--u));
+		top: calc(200 * var(--u));
+		transform-origin: 50% 100%;
+		--draw-delay: 0.56s;
+	}
+
+	.cafe-call-ui,
+	.cafe-call-stand {
+		position: absolute;
+		left: 0;
+		top: 0;
+		opacity: var(--screen);
+	}
+
+	.cafe-call-neck {
+		left: calc(924 * var(--u));
+		top: calc(640 * var(--u));
+		width: calc(32 * var(--u));
+		height: calc(34 * var(--u));
+		background: var(--color-ink);
+		clip-path: polygon(20% 0, 80% 0, 100% 100%, 0 100%);
+	}
+
+	.cafe-call-base {
+		left: calc(870 * var(--u));
+		top: calc(674 * var(--u));
+		width: calc(140 * var(--u));
+		height: calc(4 * var(--u));
+		border-radius: calc(2 * var(--u));
+		background: var(--color-ink);
+	}
+
+	@media (min-width: 861px) and (min-height: 520px) {
+		.cafe-call {
+			display: block;
+			position: absolute;
+			top: 0;
+			left: calc(var(--page-gutter) - 52 * var(--u));
+			pointer-events: none;
+		}
+
+		.cafe-call-ui {
+			transform-origin: calc(940 * var(--u)) calc(420 * var(--u));
+		}
+
+		.cafe-call-bar {
+			left: calc(668 * var(--u));
+			top: calc(208 * var(--u));
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			width: calc(544 * var(--u));
+			height: calc(22 * var(--u));
+			font-size: calc(12 * var(--u));
+			line-height: calc(16 * var(--u));
+			color: var(--color-ink);
+		}
+
+		.cafe-call-count {
+			color: var(--color-ink-muted);
+		}
+
+		.cafe-call-live {
+			left: calc(936 * var(--u));
+			top: calc(214 * var(--u));
+			width: calc(7 * var(--u));
+			height: calc(7 * var(--u));
+			border-radius: 50%;
+			background: var(--color-ink);
+		}
+
+		/* The board's two greys, as shares of ink in the paper: they follow every paper. */
+		.cafe-call-tile {
+			left: calc(664 * var(--u));
+			top: calc(236 * var(--u));
+			width: calc(552 * var(--u));
+			height: calc(344 * var(--u));
+			border-radius: calc(10 * var(--u));
+			background: color-mix(in srgb, var(--color-ink) 9%, var(--color-paper));
+		}
+
+		.cafe-call-name {
+			left: calc(676 * var(--u));
+			top: calc(550 * var(--u));
+			padding: calc(2 * var(--u)) calc(8 * var(--u));
+			border-radius: calc(4 * var(--u));
+			background: var(--color-ink);
+			color: var(--color-paper);
+			font-size: calc(12 * var(--u));
+			line-height: calc(16 * var(--u));
+		}
+
+		.cafe-call-self {
+			left: calc(1092 * var(--u));
+			top: calc(482 * var(--u));
+			width: calc(112 * var(--u));
+			height: calc(84 * var(--u));
+			overflow: hidden;
+			border-radius: calc(8 * var(--u));
+			background: color-mix(in srgb, var(--color-ink) 17%, var(--color-paper));
+			color: var(--color-ink);
+		}
+
+		.cafe-call-self svg {
+			display: block;
+			width: 100%;
+			height: 100%;
+		}
+
+		.cafe-call-self span {
+			position: absolute;
+			left: calc(6 * var(--u));
+			bottom: calc(5 * var(--u));
+			font-size: calc(11 * var(--u));
+			line-height: calc(14 * var(--u));
+		}
+
+		.cafe-call-buttons {
+			left: calc(664 * var(--u));
+			top: calc(590 * var(--u));
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			gap: calc(12 * var(--u));
+			width: calc(552 * var(--u));
+			height: calc(40 * var(--u));
+		}
+
+		.cafe-call-button {
+			flex: none;
+			display: grid;
+			place-items: center;
+			width: calc(34 * var(--u));
+			height: calc(34 * var(--u));
+			border-radius: 50%;
+			background: var(--color-ink);
+			color: var(--color-paper);
+		}
+
+		.cafe-call-button svg {
+			width: calc(16 * var(--u));
+			height: calc(16 * var(--u));
+		}
+
+		.cafe-call-button[data-kind='off'] {
+			background: var(--color-paper);
+			color: var(--color-ink);
+			box-shadow: inset 0 0 0 1px var(--color-ink);
+		}
+
+		.cafe-call-button[data-kind='end'] {
+			width: calc(56 * var(--u));
+			border-radius: calc(17 * var(--u));
+			background: var(--color-accent);
+			color: var(--color-on-accent);
+		}
+
+		.cafe-call-button[data-kind='end'] svg {
+			width: calc(18 * var(--u));
+			height: calc(18 * var(--u));
+		}
+	}
+
+	/*
+	 * The mini moka (stacked): the board's stretch from the screen's left edge to its right one, 576 board pixels,
+	 * at a height that leaves the form room on a phone, upright or on its side. Its own `--u` places the frame,
+	 * the stand and the figure at the board's coordinates; the camera, the blocks and the fire are the Montage's.
+	 * Two columns, the Montage's figure is in sight.
+	 */
+	.cafe-mini {
+		--mini-height: clamp(120px, 26svh, 240px);
+		--u: calc(var(--mini-height) / 740);
+		grid-area: 1 / 1;
+		position: relative;
+		justify-self: center;
+		width: calc(576 * var(--u));
+		height: var(--mini-height);
+		margin-bottom: 16px;
+		pointer-events: none;
+	}
+
+	.cafe-mini-board {
+		position: absolute;
+		left: calc(-652 * var(--u));
+		top: calc(-18 * var(--u));
+	}
+
+	.cafe-mini-figure {
+		position: absolute;
+		left: calc(720 * var(--u));
+		top: calc(18 * var(--u));
+		width: calc(444 * var(--u));
+		height: calc(740 * var(--u));
+	}
+
+	/* Drawn from the moment the form opens: the screen starts out of sight, to be drawn stroke by stroke. */
+	@starting-style {
+		.cafe-mini :is(.cafe-call-stroke, .cafe-call-stand) {
+			--screen: 0;
+		}
+	}
+
+	@media (min-width: 861px) and (min-height: 520px) {
+		.cafe-mini {
+			display: none;
+		}
+	}
+
+	/* Drawn by their length; under reduced motion they only fade, whole. */
+	@media (prefers-reduced-motion: no-preference) {
+		.cafe-call-stroke {
+			transition: transform 0.12s linear var(--undraw-delay);
+		}
+
+		.cafe-call-stroke:is([data-stroke='top'], [data-stroke='bottom']) {
+			transform: scaleX(var(--screen));
+		}
+
+		.cafe-call-stroke:is([data-stroke='right'], [data-stroke='left']) {
+			transform: scaleY(var(--screen));
+		}
+
+		.cafe-call-ui {
+			transform: scale(calc(0.98 + var(--screen) * 0.02));
+		}
+
+		.cafe-call-stand {
+			transform: translateY(calc((1 - var(--screen)) * -8 * var(--u)));
+		}
+
+		.cafe[data-cafe-state='form'][data-cafe-flavour='visio'] .cafe-call-stroke {
+			transition: transform var(--draw-time) cubic-bezier(0.65, 0, 0.35, 1) calc(var(--frame-delay) + var(--draw-delay));
+		}
+
+		.cafe-call-ui,
+		.cafe-call-stand {
+			transition:
+				opacity 0.15s ease,
+				transform 0.15s ease;
+		}
+
+		.cafe[data-cafe-state='form'][data-cafe-flavour='visio'] :is(.cafe-call-ui, .cafe-call-stand) {
+			transition:
+				opacity 0.35s ease calc(var(--frame-delay) + 0.6s),
+				transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--frame-delay) + 0.6s);
+		}
+	}
+
+	/* Reduced motion: every change of state is a short fade, nothing moves. */
+	@media (prefers-reduced-motion: reduce) {
+		.cafe-call-stroke,
+		.cafe-call-ui,
+		.cafe-call-stand {
+			opacity: var(--screen);
+			transition: opacity 0.2s ease;
+		}
+
+		.cafe {
+			--arrive-from: 0px;
+			--leave-to: 0px;
+		}
+
+		.cafe-rest,
+		.cafe-form,
+		.cafe-sent {
+			transition-property: opacity, visibility;
+			transition-duration: 0.2s;
+			transition-delay: 0s;
+		}
+
+		.cafe-tag > * {
+			transition:
+				opacity 0.2s ease,
+				background-color 0.2s ease,
+				color 0.2s ease;
 		}
 	}
 </style>

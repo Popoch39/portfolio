@@ -7,6 +7,17 @@
  */
 import moka from '../assets/moka/moka.json';
 import screwStrip from '../assets/moka/screw.avif?url&no-inline';
+import { delays, lift as blockLift, liftOver, type Block } from '../cafe/lifts';
+
+interface Props {
+	/**
+	 * The Démontage's mini moka (Café stacked, `src/cafe/form.ts`): the same layers at the same URLs, drawn by the
+	 * Café's state alone. No scene, no screwing, and masked to assistive technologies: the Montage's figure names it.
+	 */
+	mini?: boolean;
+}
+
+const { mini = false } = Astro.props;
 
 type LayerName = keyof typeof moka.layers;
 type PieceName = (typeof moka.pieces)[number]['name'];
@@ -82,6 +93,31 @@ const drift = (box: Box, { duration, delay }: { duration: number; delay: number 
 		`--wisp-delay: ${delay}s`,
 	].join('; ');
 
+/**
+ * The Démontage's envelopes (`src/cafe/lifts.ts`): the Formulaire du Café lifts a piece through a full-stack box of
+ * its own, never through the layer the scene moves. The funnel rides on the boiler's envelope, which carries the
+ * basket's clip along, and adds its own lift inside it.
+ */
+const envelope = (piece: PieceName, carrier?: PieceName) => {
+	const { up, down } = delays(piece);
+	const height = carrier ? liftOver(piece, carrier) : blockLift(piece);
+	return `--lift: ${height}; --lift-up: ${up}s; --lift-down: ${down}s`;
+};
+const envelopes = (piece?: PieceName) =>
+	!piece ? {} : piece === 'funnel' ? { outer: envelope('boiler'), inner: envelope('funnel', 'boiler') } : { outer: envelope(piece) };
+
+/** Which block a silhouette glints for when its field changes: board A's, the collector has none. */
+const glintBlocks: Partial<Record<PieceName, Block>> = {
+	boiler: 'message',
+	funnel: 'message',
+	filter: 'when',
+	gasket: 'when',
+	lid: 'name',
+};
+
+/** What goes out with the fire as the form opens, the knob's off position aside, which a copy shows instead. */
+const fireLayers = new Set<LayerName>(['knob-on', 'glow', 'steam-0', 'steam-1', 'steam-2']);
+
 const layers = paintOrder.map(({ name, opacity, clip, piece, wisp }) => {
 	const box = moka.layers[name];
 	const src = urls[`../assets/moka/${name}.svg`];
@@ -102,6 +138,10 @@ const layers = paintOrder.map(({ name, opacity, clip, piece, wisp }) => {
 		place: [place, wisp && drift(box, wisp)].filter(Boolean).join('; '),
 		wisp: !!wisp || undefined,
 		wrapper: opacity === undefined && !clip ? null : [opacity !== undefined && `opacity: ${opacity}`, clip && `clip-path: ${clip}`].filter(Boolean).join('; '),
+		...envelopes(piece),
+		// The scene holds the silhouettes' boxes out of sight: the Démontage glints with copies of its own.
+		glintBlock: name.startsWith('edge-') && piece ? glintBlocks[piece] : undefined,
+		fire: fireLayers.has(name),
 	};
 });
 
@@ -131,6 +171,13 @@ const screw = {
 const { scale, tx, ty } = moka.fitAtOne;
 const stack = `--zoom: ${scale}; --left: ${tx}%; --top: ${ty}%`;
 /**
+ * The Démontage's camera undoes the close-up and shows the whole frame at the scale and place the Café sets
+ * (`--view-scale`, `--view-left`, `--view-top`, in shares of the figure): the frame at `t + z·f` in the figure
+ * goes to `view + s·f`, which is the stack scaled by `s/z` and moved by `view − (s/z)·t`. Both terms are linear
+ * in the view: the transition draws the board's own interpolation.
+ */
+const formCamera = `--undo-scale: ${+(1 / scale).toFixed(5)}; --undo-x: ${+(tx / scale).toFixed(4)}%; --undo-y: ${+(ty / scale).toFixed(4)}%`;
+/**
  * The board's camera keys (scale and offset of the frame, in % of the figure), as moves of the zoomed stack,
  * which scales from its top left corner: `at` is the share of the camera's range, the last key is none.
  */
@@ -145,75 +192,108 @@ const camera = JSON.stringify(
 ---
 
 <div
-	class="montage"
-	role="img"
-	aria-label="Un Moka Express en pièces au-dessus d’un réchaud, que le défilement remonte pièce par pièce avant d’allumer le feu."
-	data-montage
+	class:list={['montage', { 'montage-mini': mini }]}
+	role={mini ? undefined : 'img'}
+	aria-label={mini
+		? undefined
+		: 'Un Moka Express en pièces au-dessus d’un réchaud, que le défilement remonte pièce par pièce avant d’allumer le feu.'}
+	aria-hidden={mini ? 'true' : undefined}
+	data-montage={!mini || undefined}
 >
-	<div class="montage-stack" style={stack} data-montage-stack data-camera={camera}>
-		{
-			layers.map(({ name, src, width, height, place, wrapper, piece, lift, seat, glint, wisp }) => {
-				const image = (
-					<img
-						src={src}
-						alt=""
-						width={width}
-						height={height}
-						loading="lazy"
-						decoding="async"
-						style={place}
-						data-layer={name}
-						data-piece={piece}
-						data-lift={lift}
-						data-seat={seat}
-						data-wisp={wisp}
-					/>
-				);
-				if (name === 'collector') {
+	{/* The Démontage's camera, around the scene's: it steps back from wherever the scene left the moka. */}
+	<div class="montage-camera" style={formCamera}>
+		<div class="montage-stack" style={stack} data-montage-stack={!mini || undefined} data-camera={mini ? undefined : camera}>
+			{
+				layers.map(({ name, src, width, height, place, wrapper, piece, lift, seat, glint, wisp, outer, inner, glintBlock, fire }) => {
+					const image = (
+						<img
+							src={src}
+							alt=""
+							width={width}
+							height={height}
+							loading="lazy"
+							decoding="async"
+							style={place}
+							data-layer={name}
+							data-piece={mini ? undefined : piece}
+							data-lift={mini ? undefined : lift}
+							data-seat={mini ? undefined : seat}
+							data-wisp={wisp}
+						/>
+					);
+					if (name === 'collector' && !mini) {
+						return (
+							<div class="montage-lift" style={outer}>
+								{image}
+								<div
+									class="montage-screw"
+									style={screw.place}
+									data-screw
+									data-piece="collector"
+									data-lift={screw.lift}
+									data-seat={screw.seat}
+									hidden
+								>
+									{/* Inert until the scene puts it in: without JavaScript, browsers would load a lazy image anyway. */}
+									<template data-screw-strip>
+										<img
+											src={screwStrip}
+											alt=""
+											width={screw.width}
+											height={screw.height}
+											loading="lazy"
+											decoding="async"
+											style={screw.strip}
+											data-views={screw.views}
+										/>
+									</template>
+								</div>
+							</div>
+						);
+					}
+					let drawn = inner ? <div class="montage-lift" style={inner}>{image}</div> : image;
+					if (wrapper) {
+						drawn = (
+							<div class="montage-box" style={wrapper} data-layer-box={name} data-glint={glint}>
+								{drawn}
+							</div>
+						);
+					}
+					if (outer) drawn = <div class="montage-lift" style={outer}>{drawn}</div>;
+					if (fire) drawn = <div class="montage-fire">{drawn}</div>;
+					// Copies of the same file, already loaded: one shows the knob off, the others glint. Out of sight in a
+					// box of their own, like the layers, the image itself opaque.
+					const copy = <img src={src} alt="" width={width} height={height} loading="lazy" decoding="async" style={place} />;
+					if (name === 'knob-off') {
+						return (
+							<Fragment>
+								{drawn}
+								<div class="montage-box montage-fire-off" data-fire-off>{copy}</div>
+							</Fragment>
+						);
+					}
+					if (!glintBlock) return drawn;
+					const flash = (
+						<div class="montage-box montage-glint" data-glint-of={glintBlock}>{copy}</div>
+					);
 					return (
 						<Fragment>
-							{image}
-							<div
-								class="montage-screw"
-								style={screw.place}
-								data-screw
-								data-piece="collector"
-								data-lift={screw.lift}
-								data-seat={screw.seat}
-								hidden
-							>
-								{/* Inert until the scene puts it in: without JavaScript, browsers would load a lazy image anyway. */}
-								<template data-screw-strip>
-									<img
-										src={screwStrip}
-										alt=""
-										width={screw.width}
-										height={screw.height}
-										loading="lazy"
-										decoding="async"
-										style={screw.strip}
-										data-views={screw.views}
-									/>
-								</template>
+							{drawn}
+							<div class="montage-lift" style={outer}>
+								{inner ? <div class="montage-lift" style={inner}>{flash}</div> : flash}
 							</div>
 						</Fragment>
 					);
-				}
-				return wrapper ? (
-					<div class="montage-box" style={wrapper} data-layer-box={name} data-glint={glint}>
-						{image}
-					</div>
-				) : (
-					image
-				);
-			})
-		}
+				})
+			}
+		</div>
 	</div>
 </div>
 
 <script>
 	import { cubicBezier, gsap, registerScene, SCENE_SCRUB, ScrollSmoother } from '../animation/base';
 	import { markOffScreen } from '../animation/offscreen';
+	import type { MontageProgress } from '../cafe/montage-progress';
 
 	/** Pinning length, in stable window heights (290svh): the board's 3000px track over its 770px frame. */
 	const PIN_HEIGHTS = 2.9;
@@ -327,6 +407,15 @@ const camera = JSON.stringify(
 			montage.toggleAttribute('data-lit', index === STEP_STARTS.length - 1);
 		};
 
+		/*
+		 * The scene's progress, told to the Café (`src/cafe/form.ts`), which closes its form when the moka starts
+		 * coming apart again (under its actions) and scrolls to where the pinning lets go.
+		 */
+		const tell = (pinning: Omit<NonNullable<MontageProgress>, 'actionsAt'> | null) =>
+			section.dispatchEvent(
+				new CustomEvent<MontageProgress>('montage:progress', { detail: pinning && { ...pinning, actionsAt: ACTIONS[0] } }),
+			);
+
 		// Positions on the timeline are fractions of the pinning, the board's `contain` ranges as they are.
 		const scene = gsap.timeline({
 			defaults: { ease: 'none' },
@@ -340,9 +429,15 @@ const camera = JSON.stringify(
 				scrub: SCENE_SCRUB,
 				invalidateOnRefresh: true,
 				// A refresh moves the timeline without its update callback (a page loaded past the scene, on its anchor).
-				onRefresh: (trigger) => showStep(trigger.progress),
+				onRefresh: (trigger) => {
+					showStep(trigger.progress);
+					tell({ progress: trigger.progress, end: trigger.end });
+				},
 			},
-			onUpdate: () => showStep(scene.progress()),
+			onUpdate: () => {
+				showStep(scene.progress());
+				if (scene.scrollTrigger) tell({ progress: scene.progress(), end: scene.scrollTrigger.end });
+			},
 		});
 
 		// Lifts are in percent of each layer's own height, written at build: nothing to measure.
@@ -511,6 +606,7 @@ const camera = JSON.stringify(
 		});
 
 		return () => {
+			tell(null);
 			counter.textContent = finalLabel;
 			delete montage.dataset.lit;
 			unmarkOffScreen();
@@ -563,6 +659,206 @@ const camera = JSON.stringify(
 		width: var(--w);
 		height: var(--h);
 		display: block;
+	}
+
+	/*
+	 * The Démontage (board A), drawn from the Café's state (`src/cafe/form.ts`): its own boxes over and around the
+	 * scene's layers, never the properties the scene animates. The Café sets the blocks' flags, the view and the
+	 * phase's timings; each envelope carries its piece's lift and delays. Nothing here is transformed at rest.
+	 */
+	.montage-camera,
+	.montage-lift,
+	.montage-fire {
+		position: absolute;
+		inset: 0;
+	}
+
+	.montage-camera {
+		transform-origin: 0 0;
+	}
+
+	.montage-lift {
+		--lift-delay: 0s;
+	}
+
+	:global(.cafe[data-cafe-state='form']) .montage-camera {
+		transform: translate(
+				calc(var(--view-left) * 100% - var(--view-scale) * var(--undo-x)),
+				calc(var(--view-top) * 100% - var(--view-scale) * var(--undo-y))
+			)
+			scale(calc(var(--view-scale) * var(--undo-scale)));
+	}
+
+	:global(.cafe[data-cafe-state='form']) .montage-lift {
+		transform: translateY(calc(var(--lift) * -1%));
+	}
+
+	/* Lifted top piece first; landed bottom piece first. */
+	:global(.cafe[data-cafe-phase='open']) .montage-lift {
+		--lift-delay: var(--lift-up);
+	}
+
+	:global(.cafe:is([data-cafe-phase='close'], [data-cafe-phase='send'])) .montage-lift {
+		--lift-delay: var(--lift-down);
+	}
+
+	/* The fire goes out at once, and is lit again a second after the pieces start landing. */
+	.montage-fire-off {
+		opacity: 0;
+	}
+
+	:global(.cafe[data-cafe-state='form']) .montage-fire {
+		opacity: 0;
+	}
+
+	:global(.cafe[data-cafe-state='form']) .montage-fire-off {
+		opacity: 1;
+	}
+
+	/* Under the fire put out, the wisps hold where they were, and drift on from there once it is lit again. */
+	:global(.cafe[data-cafe-state='form']) .montage[data-lit] [data-wisp] {
+		animation-play-state: paused;
+	}
+
+	.montage-glint {
+		opacity: 0;
+	}
+
+	/*
+	 * The mini moka is drawn from the moment the form opens, already in the form's state: it starts from the
+	 * Montage's rest, whole and on the fire, so that it comes apart as the big one does.
+	 */
+	@starting-style {
+		:global(.cafe[data-cafe-state]) .montage-mini :is(.montage-camera, .montage-lift) {
+			transform: none;
+		}
+
+		:global(.cafe[data-cafe-state]) .montage-mini .montage-fire {
+			opacity: 1;
+		}
+
+		:global(.cafe[data-cafe-state]) .montage-mini .montage-fire-off {
+			opacity: 0;
+		}
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.montage-camera {
+			transition: transform var(--camera-time) cubic-bezier(0.65, 0, 0.35, 1) var(--camera-delay);
+		}
+
+		.montage-lift {
+			transition: transform var(--lift-time) cubic-bezier(0.16, 1, 0.3, 1) var(--lift-delay);
+		}
+
+		.montage-fire,
+		.montage-fire-off {
+			transition: opacity 0.4s ease var(--fire-delay);
+		}
+
+		/*
+		 * A piece glints along its edge as it moves: every block as the form opens and as everything lands, a block
+		 * again whenever its field comes into place or out of it. Three identical keyframes: changing the name is
+		 * what plays the flash again.
+		 */
+		:global(.cafe[data-cafe-state='form']) .montage-glint {
+			animation: glint-b 0.55s ease-out var(--lift-delay) both;
+		}
+
+		:global(.cafe[data-cafe-state='form'][data-cafe-ok~='name']) [data-glint-of='name'],
+		:global(.cafe[data-cafe-state='form'][data-cafe-ok~='when']) [data-glint-of='when'],
+		:global(.cafe[data-cafe-state='form'][data-cafe-ok~='message']) [data-glint-of='message'] {
+			animation-name: glint-a;
+		}
+
+		:global(.cafe:is([data-cafe-phase='close'], [data-cafe-phase='send'])) .montage-glint {
+			animation: glint-c 0.55s ease-out var(--lift-delay) both;
+		}
+	}
+
+	/* Reduced motion: the pieces and the camera jump while the whole figure fades in again, once per state. */
+	@media (prefers-reduced-motion: reduce) {
+		.montage-fire,
+		.montage-fire-off {
+			transition: opacity 0.2s ease;
+		}
+
+		:global(.cafe[data-cafe-state='form']) .montage {
+			animation: refade-form 0.2s linear;
+		}
+
+		/* Another name for the visio's state: a switch fades the figure in again. */
+		:global(.cafe[data-cafe-state='form'][data-cafe-flavour='visio']) .montage {
+			animation: refade-visio 0.2s linear;
+		}
+
+		:global(.cafe[data-cafe-state='sent']) .montage {
+			animation: refade-sent 0.2s linear;
+		}
+
+		:global(.cafe:is([data-cafe-phase='close'], [data-cafe-phase='again'])) .montage {
+			animation: refade-rest 0.2s linear;
+		}
+	}
+
+	@keyframes glint-a {
+		0% {
+			opacity: 0;
+		}
+		35% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0;
+		}
+	}
+
+	@keyframes glint-b {
+		0% {
+			opacity: 0;
+		}
+		35% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0;
+		}
+	}
+
+	@keyframes glint-c {
+		0% {
+			opacity: 0;
+		}
+		35% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0;
+		}
+	}
+
+	@keyframes refade-form {
+		from {
+			opacity: 0;
+		}
+	}
+
+	@keyframes refade-visio {
+		from {
+			opacity: 0;
+		}
+	}
+
+	@keyframes refade-sent {
+		from {
+			opacity: 0;
+		}
+	}
+
+	@keyframes refade-rest {
+		from {
+			opacity: 0;
+		}
 	}
 
 	/* Only once the scene has lit the fire: the final state's steam stands still. */

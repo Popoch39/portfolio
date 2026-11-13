@@ -138,9 +138,11 @@ export function registerScene(scene: gsap.ContextFunc) {
  * too, where its styles give it in one step. What it returns undoes it with the context.
  */
 export function registerDetail(detail: gsap.ContextFunc) {
-	// A context whose conditions all fail runs nothing: `all` keeps this one up when motion is reduced
-	// under a finger.
-	motion.add({ ...CONDITIONS, all: 'all' }, detail);
+	// A context whose conditions all fail runs nothing: an always-true query keeps this one up when motion
+	// is reduced under a finger. Not under GSAP's own `all` key, which it never records as matched: the
+	// first media change anywhere in the page (a phone turned) would then revert and rebuild every detail,
+	// a form open on screen along with what was typed in it.
+	motion.add({ ...CONDITIONS, always: 'all' }, detail);
 }
 
 /**
@@ -233,7 +235,8 @@ function followAnchors(smoother: ScrollSmoother) {
 	};
 }
 
-let lastFocusedElement: Element | null = null;
+/** Weak: the element may leave the page (a detail undone), and nothing should keep it alive. */
+let lastFocusedElement: WeakRef<Element> | undefined;
 
 /**
  * Replaces the smoother's re-centring, which leaves an element "in view" under a fixed bar: as the
@@ -242,15 +245,24 @@ let lastFocusedElement: Element | null = null;
  */
 function bringFocusIntoView(smoother: ScrollSmoother, event: Event) {
 	const element = event.target;
-	if (!(element instanceof Element) || element === lastFocusedElement) return false;
-	lastFocusedElement = element;
+	if (!(element instanceof Element) || element === lastFocusedElement?.deref()) return false;
+	lastFocusedElement = new WeakRef(element);
 	if (!smoother.content().contains(element)) return false;
 	const { top, bottom } = element.getBoundingClientRect();
 	const { top: areaTop, bottom: areaBottom } = visibleArea();
-	if (top < areaTop) smoother.scrollTo(element, false, atTopOfVisibleArea());
-	else if (bottom > areaBottom) smoother.scrollTo(element, false, `bottom ${areaBottom}px`);
+	// By how far it sticks out on screen, from where the content is drawn.
+	const drawnAt = drawnScrollTop(smoother);
+	if (top < areaTop) smoother.scrollTo(drawnAt + top - areaTop, false);
+	else if (bottom > areaBottom) smoother.scrollTo(drawnAt + bottom - areaBottom, false);
 	return false;
 }
+
+/**
+ * The scroll position the smoother's content is drawn at. Moves are taken from it, by how far an element sticks out
+ * on screen: the smoother's own measure of an element places it as if the section pinned around it were still at
+ * the pinning's start, and would scroll back into the scene from a form past its end (the Café's).
+ */
+export const drawnScrollTop = (smoother: ScrollSmoother) => -Number(gsap.getProperty(smoother.content(), 'y'));
 
 /**
  * The part of the window that no fixed bar covers, declared once in CSS (`scroll-padding` on

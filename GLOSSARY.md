@@ -93,8 +93,20 @@ L'empilement final des bagues, chacune à sa hauteur, avec son étiquette (caté
 ## Café
 
 **Café**
-La section entre la Stack et le Contact : elle propose de parler d'un projet autour d'un café, sans engagement, ou en visio. Elle invite à écrire un mail, en face du Montage.
+La section entre la Stack et le Contact : elle propose de parler d'un projet autour d'un café, sans engagement, ou en visio, en face du Montage. Ses deux actions ouvrent le Formulaire du Café, l'une en mode café, l'autre en mode visio ; sans JavaScript, elles écrivent un mail.
 _À éviter_ : CTA, section moka.
+
+**Formulaire du Café**
+Le formulaire qui s'ouvre sur place dans le Café, à la place du paragraphe et des actions, pour proposer un échange à Louis : Nom, E-mail, Quand ? et Message (facultatif), numérotés de 1 à 4. Il a deux modes, **café** (« Un café, à Besançon. ») et **visio** (« Une visio, où que vous soyez. »), entre lesquels on bascule sans perdre sa saisie. Il envoie un vrai mail par la route du Worker (ADR 0010).
+_À éviter_ : modale, popup, overlay, formulaire de contact.
+
+**Démontage**
+Ce que fait la moka quand le Formulaire du Café s'ouvre : le feu s'éteint, la caméra recule et quatre blocs se lèvent du haut vers le bas (le couvercle ; le collecteur ; le filtre et le joint ; la chaudière et l'entonnoir). Chaque champ valide repose son bloc ; l'envoi ou la fermeture reposent tout et rallument le feu. Une animation d'interface en CSS, pas une scène : l'inverse du Montage, qui reste intact.
+_À éviter_ : explosion, vue éclatée.
+
+**Repère**
+L'étiquette numérotée reliée par un trait à un bloc levé pendant le Démontage : 1 le couvercle, 2 le collecteur, 3 le filtre, 4 la chaudière. Son numéro est celui du champ qui repose le bloc.
+_À éviter_ : callout, légende, label.
 
 **Montage**
 La scène de la section Café : une Moka Express fidèle à la Bialetti se remonte pièce par pièce au-dessus d'un réchaud, puis le feu s'allume et la caméra s'approche du couvercle qui fume. Son état final est la moka montée sur le feu, vue de près.

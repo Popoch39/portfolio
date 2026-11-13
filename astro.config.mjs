@@ -16,6 +16,8 @@ export default defineConfig({
 				// The paper grain is an SVG data URI (`src/intro/grain.ts`).
 				"img-src 'self' data:",
 				"font-src 'self'",
+				// The Formulaire du Café posts to the site's own Worker (`/api/contact`, ADR 0010).
+				"connect-src 'self'",
 				"object-src 'none'",
 				"base-uri 'self'",
 				"form-action 'self'",

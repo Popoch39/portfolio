@@ -153,6 +153,9 @@ test.describe('the modes follow the visitor', () => {
 		await expect(statusline(page).locator('.message')).toHaveText(`mailto:${ADDRESS}`);
 		await expect(shownMode(page)).toHaveText(/NORMAL|INSERT/);
 
+		// The row of links opens on « proposer un café », the Café's anchor (spec #111).
+		await page.keyboard.press('Tab');
+		await expect(statusline(page).locator('.message')).toHaveText('#cafe');
 		await page.keyboard.press('Tab');
 		await expect(statusline(page).locator('.message')).toHaveText('github.com/Popoch39');
 
@@ -181,6 +184,8 @@ test.describe('the modes follow the visitor', () => {
 		await expect(statusline(page).locator('.message')).toHaveText('github.com/Popoch39/nvim');
 		await expect(shownMode(page)).toHaveText('VISUAL');
 
+		// GitHub, then « proposer un café » (spec #111), then the address.
+		await page.keyboard.press('Shift+Tab');
 		await page.keyboard.press('Shift+Tab');
 		await page.keyboard.press('Shift+Tab');
 		await expect(address(page)).toBeFocused();

@@ -78,7 +78,10 @@ async function contact(request: Request, env: Env) {
 	try {
 		await env.EMAIL.send(mailOf(proposal));
 	} catch (error) {
-		console.error('contact: the mail did not leave', error);
+		// Workers Logs keeps an Error as its text only: the `E_*` code, the one thing that says whether the
+		// domain, the quota or the delivery failed, is spelled out to be read and filtered on.
+		const { code, message } = error instanceof Error ? (error as Error & { code?: string }) : { message: String(error) };
+		console.error('contact: the mail did not leave', { code, message });
 		return answer(502);
 	}
 	return answer(200);

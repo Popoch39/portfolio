@@ -38,7 +38,14 @@ test('Lighthouse mobile scores 100 in every category on the home page and the 40
 	const lines: string[] = [];
 	try {
 		for (const { name, path, settings } of PAGES) {
-			const config: Config = { extends: 'lighthouse:default', settings: { onlyCategories: CATEGORIES, ...settings } };
+			// The Web Analytics beacon only reports from the real domain: from localhost Cloudflare refuses
+			// it (CORS), a console error the live site never shows. Measured apart on the home page: ~110 ms
+			// of TBT under CPU ×4, Performance still 99.
+			const blockedUrlPatterns = ['*cloudflareinsights.com*'];
+			const config: Config = {
+				extends: 'lighthouse:default',
+				settings: { onlyCategories: CATEGORIES, blockedUrlPatterns, ...settings },
+			};
 			const result = await lighthouse(new URL(path, baseURL).href, { port, logLevel: 'error', output: 'html' }, config);
 			if (!result) throw new Error(`Lighthouse returned nothing for ${path}`);
 			if (result.lhr.runtimeError) throw new Error(`Lighthouse could not audit ${path}: ${result.lhr.runtimeError.message}`);

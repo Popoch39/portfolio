@@ -47,6 +47,9 @@ const alternates = [
 	{ hreflang: 'x-default', href: getAbsoluteLocaleUrl(defaultLang, path) },
 ];
 const ogImageUrl = new URL(ogImage.src, Astro.site).href;
+// Public by design: the beacon carries it in the page. Set up in manual mode in the dashboard, because
+// Cloudflare does not inject into a Worker's static assets and the CSP would block it if it did.
+const WEB_ANALYTICS_TOKEN = '594da0720f4748b0a920bfe25262f9e9';
 const ogImageAlt = meta.ogImageAlt(person.name, contentOf(lang).jobTitle);
 // Open Graph writes the locale with an underscore: `fr_FR`.
 const ogLocale = meta.locale.replace('-', '_');
@@ -125,6 +128,18 @@ const ogLocale = meta.locale.replace('-', '_');
 			import '../animation/base';
 			import '../animation/trail';
 		</script>
+		{/* Cloudflare Web Analytics: visits and real Core Web Vitals, no cookie. A module, so deferred and
+		    never competing with the first paint; left out of dev so local work stays uncounted. */}
+		{
+			import.meta.env.PROD && (
+				<script
+					is:inline
+					type="module"
+					src="https://static.cloudflareinsights.com/beacon.min.js"
+					data-cf-beacon={JSON.stringify({ token: WEB_ANALYTICS_TOKEN })}
+				/>
+			)
+		}
 	</body>
 </html>
 

@@ -28,12 +28,17 @@ export default defineConfig({
 				// The paper grain is an SVG data URI (`src/intro/grain.ts`).
 				"img-src 'self' data:",
 				"font-src 'self'",
-				// The Formulaire du Café posts to the site's own Worker (`/api/contact`, ADR 0010).
-				"connect-src 'self'",
+				// The Formulaire du Café posts to the site's own Worker (`/api/contact`, ADR 0010); the
+				// Web Analytics beacon reports to Cloudflare.
+				"connect-src 'self' https://cloudflareinsights.com",
 				"object-src 'none'",
 				"base-uri 'self'",
 				"form-action 'self'",
 			],
+			// The one third-party script, agreed on: Cloudflare Web Analytics, cookieless (`Layout.astro`).
+			scriptDirective: {
+				resources: ["'self'", 'https://static.cloudflareinsights.com'],
+			},
 			styleDirective: {
 				resources: [
 					"'self'",

@@ -504,7 +504,30 @@ const callButtons = [
 	}
 
 	.cafe-row-line {
+		position: relative;
 		box-shadow: inset 0 -1px 0 var(--color-ink);
+	}
+
+	/* The focus of a field: its rule thickens, drawn from the label's side, a transform only. */
+	.cafe-row-line::after {
+		content: '';
+		position: absolute;
+		inset: auto 0 0;
+		height: 2px;
+		background: var(--color-ink);
+		transform: scaleX(0);
+		transform-origin: 0 50%;
+		pointer-events: none;
+	}
+
+	.cafe-row-line:has(.cafe-input:focus-visible)::after {
+		transform: none;
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.cafe-row-line::after {
+			transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+		}
 	}
 
 	.cafe-row-message {
@@ -591,8 +614,14 @@ const callButtons = [
 		opacity: 1;
 	}
 
-	.cafe-input:focus-visible {
+	/*
+	 * The rule carries the focus instead of a frame around a borderless field. Transparent rather than none: forced
+	 * colors paint it, and drop the rule's background.
+	 */
+	.cafe .cafe-input:focus-visible {
+		outline: 2px solid transparent;
 		outline-offset: 2px;
+		caret-color: var(--color-accent);
 	}
 
 	.cafe-chips {

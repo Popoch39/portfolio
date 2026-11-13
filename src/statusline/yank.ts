@@ -5,8 +5,11 @@
  * a modified click, follows it.
  */
 import { registerDetail } from '../animation/base';
+import { statusline } from '../i18n/fr';
+import { forPage } from '../i18n/lang';
 import { show } from './lane';
-import { counted } from './modes';
+
+const { counted, copied: copiedWord, copyRefused, secondClick } = forPage({ fr: statusline });
 
 /** How long the yank's answer stays, and with it the second click that opens the mail: time to read the hint. */
 const ANSWER_DURATION = 4000;
@@ -15,7 +18,6 @@ const ANSWER_DURATION = 4000;
 const wide = matchMedia('(min-width: 1320px)');
 /** The narrowest phones, where the row holds 23 characters beside the mode and the Pause: the count loses its verb. */
 const tight = matchMedia('(max-width: 359px)');
-const HINT = ' · un second clic ouvre le mail';
 
 /** Tells whether the text reached the clipboard. */
 async function copyText(text: string) {
@@ -71,9 +73,9 @@ registerDetail(() => {
 		const copied = await copyText(address);
 		if (answerTimer === undefined) return;
 		if (copied) link.dataset.yank = 'done';
-		const count = `"+y · ${counted(address.length)}${tight.matches ? '' : ' copiés'}`;
-		const answer = copied ? count : 'E: copie refusée';
-		release = show(wide.matches ? answer + HINT : answer, { hold: true });
+		const count = `"+y · ${counted(address.length)}${tight.matches ? '' : copiedWord}`;
+		const answer = copied ? count : copyRefused;
+		release = show(wide.matches ? answer + secondClick : answer, { hold: true });
 	};
 	const settle = () => {
 		link.dataset.yank = 'ready';

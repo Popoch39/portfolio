@@ -5,10 +5,11 @@
  * keyboard shows its target there, as a browser does for a hovered link.
  */
 import { registerDetail } from '../animation/base';
+import { statusline } from '../i18n/fr';
+import { forPage } from '../i18n/lang';
 import { show } from './lane';
 
-// Short, as Vim's own count is: beside `VISUAL` it needs no verb, and it fits a 320px phone's row.
-export const counted =(count: number) => (count > 1 ? `${count} caractères` : '1 caractère');
+export const { counted } = forPage({ fr: statusline });
 
 /** A link's target as written in the page, without the scheme a visitor does not need to read. */
 const target = (link: HTMLAnchorElement) => (link.getAttribute('href') ?? '').replace(/^https?:\/\//, '');

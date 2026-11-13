@@ -7,8 +7,12 @@
 import { openingEnded, registerScene } from '../animation/base';
 import { watchOffScreen } from '../animation/offscreen';
 import type { Lede } from '../data/profile';
+import { ledeLine } from '../i18n/fr';
+import { forPage } from '../i18n/lang';
 import { restingOn, runs, slotStarts, type BufferState, type Run, type Slot } from './buffer';
 import { showVimMode } from './vim-mode';
+
+const line = forPage({ fr: ledeLine });
 
 /** Keys kept on screen at most; narrow screens show fewer (CSS). */
 const MAX_KEYS = 10;
@@ -94,7 +98,7 @@ registerScene(() => {
 		version = index;
 		views.forEach(({ versionNumber, audience }) => {
 			versionNumber.textContent = `${index + 1}/${count}`;
-			audience.textContent = `pour : ${lede.versions[index].audience}`;
+			audience.textContent = line.audience(lede.versions[index].audience);
 			// Two identical keyframes, alternated: the fade restarts without a forced reflow.
 			audience.dataset.run = audience.dataset.run === 'a' ? 'b' : 'a';
 		});
@@ -165,7 +169,7 @@ registerScene(() => {
 		steps.push([120, () => press('w', { selected: 'what' })]);
 		steps.push([340, () => draw({ selected: undefined, what: '', mode: 'INSERT', cursor: first })]);
 		typeInto(steps, 'what', what, false);
-		steps.push([420, () => press('Échap', { mode: 'NORMAL', cursor: first + state.what.length - 1 })]);
+		steps.push([420, () => press(line.escape, { mode: 'NORMAL', cursor: first + state.what.length - 1 })]);
 
 		// To the second slot: find the "v" of "votre", one word forward.
 		steps.push([640, () => press('f', undefined, true)]);
@@ -179,7 +183,7 @@ registerScene(() => {
 		steps.push([
 			420,
 			() => {
-				press('Échap', { mode: 'NORMAL', cursor: second() + state.whose.length - 1 });
+				press(line.escape, { mode: 'NORMAL', cursor: second() + state.whose.length - 1 });
 				showVersion(next);
 			},
 		]);

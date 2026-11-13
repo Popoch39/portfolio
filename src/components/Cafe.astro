@@ -8,6 +8,7 @@ import Montage from './Montage.astro';
 import SectionNumber from './SectionNumber.astro';
 import { person } from '../data/profile';
 import { delays, lift } from '../cafe/lifts';
+import { WHEN_CHOICES } from '../cafe/when';
 
 interface Props {
 	number: number;
@@ -194,17 +195,17 @@ const callButtons = [
 					>
 					<input class="cafe-input" id="cafe-email" name="email" type="email" autocomplete="email" maxlength="254" />
 				</div>
-				{/* The values are the route's (`worker/index.ts`); the second chip says it shorter. */}
+				{/* The values are the route's (`worker/index.ts`), from the same list. */}
 				<div class="cafe-row" role="radiogroup" aria-labelledby="cafe-when">
 					<span class="mono cafe-label"
 						><span class="cafe-badge" aria-hidden="true" data-badge="w">3</span><span id="cafe-when">Quand&nbsp;?</span></span
 					>
 					<span class="cafe-chips">
-						<label class="cafe-chip"><input type="radio" name="quand" value="Cette semaine" /><span>Cette semaine</span></label>
-						<label class="cafe-chip"
-							><input type="radio" name="quand" value="La semaine prochaine" /><span>Semaine prochaine</span></label
-						>
-						<label class="cafe-chip"><input type="radio" name="quand" value="Plus tard" /><span>Plus tard</span></label>
+						{
+							WHEN_CHOICES.map(({ value, chip }) => (
+								<label class="cafe-chip"><input type="radio" name="quand" value={value} /><span>{chip}</span></label>
+							))
+						}
 					</span>
 				</div>
 				<div class="cafe-row cafe-row-line cafe-row-message">

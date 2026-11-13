@@ -3,6 +3,7 @@
  * `wrangler.jsonc`), the only server logic of a static site (ADR 0010). One route: the Formulaire du Café
  * sends its proposal to Louis by mail.
  */
+import { WHEN_VALUES } from '../src/cafe/when';
 
 interface MailAddress {
 	email: string;
@@ -33,8 +34,6 @@ const TO = 'pocheron.louis@gmail.com';
 const FROM: MailAddress = { email: 'contact@louis-pocheron.com', name: 'louis-pocheron.com' };
 
 const MODES = { cafe: { label: 'café', subject: 'Un café ?' }, visio: { label: 'visio', subject: 'Une visio ?' } };
-/** The values the form sends; the chip reads « Semaine prochaine » for the second one. */
-const WHEN = ['Cette semaine', 'La semaine prochaine', 'Plus tard'];
 
 /** Generous for a form of four fields, small enough that nobody mails Louis a book. */
 const MAX_BODY = 16_384;
@@ -102,7 +101,7 @@ function parse(body: string): Proposal | null {
 	if (site !== '') return null;
 	if (typeof mode !== 'string' || !Object.hasOwn(MODES, mode)) return null;
 	if (typeof rawName !== 'string' || typeof email !== 'string' || typeof message !== 'string') return null;
-	if (typeof when !== 'string' || !WHEN.includes(when)) return null;
+	if (typeof when !== 'string' || !WHEN_VALUES.includes(when)) return null;
 
 	const name = rawName.trim();
 	const address = email.trim();

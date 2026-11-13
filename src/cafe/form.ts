@@ -84,6 +84,9 @@ registerDetail(() => {
 		clearTimeout(phaseTimer);
 		if (cutFrame !== undefined) cancelAnimationFrame(cutFrame);
 		if (state !== 'form' && next.state === 'form') step = counter?.textContent ?? step;
+		// A proposal sent has nothing left to keep, whichever way the confirmation is left (« recommencer », Escape,
+		// the scroll): the next opening starts afresh. Anything else typed is kept from one opening to the next.
+		if (state === 'sent' && next.state && next.state !== 'sent') panel?.form.reset();
 		state = next.state ?? state;
 		flavour = next.flavour ?? flavour;
 		section!.dataset.cafeState = state;
@@ -150,8 +153,6 @@ registerDetail(() => {
 			panel = buildPanel(template!, restBlock!);
 			flow.observe(panel.root);
 		}
-		// A proposal already sent starts afresh; one left half-written is found as it was.
-		if (state === 'sent') panel.form.reset();
 		panel.hint.textContent = '';
 		markValid();
 		go({ state: 'form', flavour: mode }, 'open', () => panel?.fields.nom.focus());
@@ -252,8 +253,6 @@ registerDetail(() => {
 		if (pinning && pinning.progress >= ACTIONS_APPEAR) catchingUp = false;
 		if (!pinning || pinning.progress >= ACTIONS_APPEAR || state === 'rest' || catchingUp) return;
 		sending?.abort();
-		// A proposal already sent has nothing left to keep.
-		if (state === 'sent') panel?.form.reset();
 		go({ state: 'rest' }, 'cut');
 	}
 

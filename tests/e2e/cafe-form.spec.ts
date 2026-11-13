@@ -235,6 +235,34 @@ test.describe('Formulaire du Café', () => {
 		await again.click();
 		await expect(coffee(page)).toBeFocused();
 		await expect(paragraph(page)).toBeVisible();
+
+		// A proposal sent is not proposed again: the next opening starts afresh.
+		await coffee(page).click();
+		await expect(name(page)).toBeFocused();
+		await expect(name(page)).toHaveValue('');
+		await expect(email(page)).toHaveValue('');
+		await expect(when(page).getByRole('radio', { name: 'Semaine prochaine' })).not.toBeChecked();
+		await expect(message(page)).toHaveValue('');
+		await expect(section(page).getByText(/^\d\/4 · /)).toHaveText('0/4 · en pièces');
+	});
+
+	test('a proposal sent then closed with Escape is not found again at the next opening', async ({ page }) => {
+		const contact = await holdContact(page);
+		await reachActions(page);
+		await coffee(page).click();
+		await fill(page);
+		await send(page).click();
+		await contact.reached;
+		await contact.release(200);
+		await expect(section(page).getByRole('button', { name: 'recommencer', exact: true })).toBeFocused();
+
+		await page.keyboard.press('Escape');
+		await expect(coffee(page)).toBeFocused();
+		await visio(page).click();
+
+		await expect(name(page)).toBeFocused();
+		await expect(name(page)).toHaveValue('');
+		await expect(message(page)).toHaveValue('');
 	});
 
 	test('a send in visio mode is confirmed for a visio', async ({ page }) => {

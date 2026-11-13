@@ -7,7 +7,8 @@
 import { gsap, registerOpening, ScrollSmoother } from '../animation/base';
 import { globePainter } from './canvas';
 import { cubicBezier } from './ease';
-import { geo, intro } from '../i18n/fr';
+import * as en from '../i18n/en';
+import * as fr from '../i18n/fr';
 import { forPage } from '../i18n/lang';
 import { coordinate, decimal, fitColumns, frameAt, type Layout } from './globe';
 import { boilStep } from './grain';
@@ -29,8 +30,8 @@ import {
 	VEIL_LIFT,
 } from './timing';
 
-const words = forPage({ fr: intro });
-const geoWords = forPage({ fr: geo });
+const words = forPage({ fr: fr.intro, en: en.intro });
+const geoWords = forPage({ fr: fr.geo, en: en.geo });
 
 const reveal = cubicBezier(...REVEAL_EASE);
 

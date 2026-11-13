@@ -10,11 +10,12 @@
  */
 import { openingEnded, registerScene } from '../animation/base';
 import { watchOffScreen } from '../animation/offscreen';
-import { sky } from '../i18n/fr';
+import * as en from '../i18n/en';
+import * as fr from '../i18n/fr';
 import { forPage } from '../i18n/lang';
 import { BG_KEY, paintSky, skyPlace } from './sky';
 
-const words = forPage({ fr: sky });
+const words = forPage({ fr: fr.sky, en: en.sky });
 const root = document.documentElement;
 const map = document.querySelector<HTMLElement>('.hero-map');
 const line = map?.querySelector<HTMLElement>('.sky') ?? root;

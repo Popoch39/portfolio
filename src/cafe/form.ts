@@ -118,14 +118,17 @@ registerDetail(() => {
 	}
 
 	/*
-	 * Stacked, the form and its mini moka take the paragraph's place in the flow, taller than it: the pinning
+	 * Stacked, the form takes the paragraph's place in the flow, taller than it: the pinning
 	 * holds the section's height from its last measure, and would leave the Contact running over them. A new
 	 * measure each time the height in the flow changes (opening, closing, a layout flip); in two columns the
-	 * panel stands over the paragraph, which keeps its place.
+	 * panel stands over the paragraph, which keeps its place. The pinned screen too, sized on the window's
+	 * height: ScrollTrigger's own measure waits for the resize to settle, and the scroll events meanwhile,
+	 * read against the old pinning, would close the form.
 	 */
+	const screen = section.querySelector<HTMLElement>('[data-cafe-screen]');
 	let inFlow = -1;
 	const heightInFlow = () =>
-		[restBlock, panel?.root].reduce(
+		[screen, restBlock, panel?.root].reduce(
 			(sum, block) => (block && getComputedStyle(block).position !== 'absolute' ? sum + block.offsetHeight : sum),
 			0,
 		);
@@ -137,6 +140,7 @@ registerDetail(() => {
 		if (measured) ScrollTrigger.refresh();
 	});
 	flow.observe(restBlock);
+	if (screen) flow.observe(screen);
 
 	function open(event: Event) {
 		const opener = (event.currentTarget as HTMLElement).dataset.cafeOpen;

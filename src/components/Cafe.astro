@@ -57,7 +57,7 @@ const callButtons = [
 
 <section id="cafe" class="cafe" aria-labelledby={titleId} data-cafe data-cafe-address={person.email}>
 	{/* What the pinning holds on screen when stacked; in two columns, the paragraph and the actions join it. */}
-	<div class="cafe-screen">
+	<div class="cafe-screen" data-cafe-screen>
 		<div class="cafe-head">
 			<SectionNumber number={number} />
 			<p class="mono cafe-aside">{t.aside}</p>
@@ -151,23 +151,6 @@ const callButtons = [
 	{/* Inert until the first opening: out of the critical HTML, and nothing to show without JavaScript. */}
 	<template data-cafe-form>
 		<div class="cafe-panel">
-			{/*
-			 * Stacked, the Montage's figure is out of sight while the visitor writes: a mini moka, its same layers,
-			 * comes apart above the form. In visio, the screen's frame and stand without the call. Its figure's name
-			 * is the Montage's.
-			 */}
-			<div class="cafe-mini" aria-hidden="true" data-cafe-mini>
-				<div class="cafe-mini-board">
-					{screenStrokes.map((stroke) => <span class="cafe-call-stroke" data-stroke={stroke} />)}
-					<div class="cafe-call-stand">
-						<span class="cafe-call-neck"></span>
-						<span class="cafe-call-base"></span>
-					</div>
-					<div class="cafe-mini-figure">
-						<Montage lang={lang} mini />
-					</div>
-				</div>
-			</div>
 			<form class="cafe-form" novalidate aria-labelledby="cafe-form-title">
 				<div class="cafe-form-head">
 					<h3 id="cafe-form-title" class="cafe-form-title" data-cafe-heading>{t.flavours.cafe.heading}</h3>
@@ -408,13 +391,10 @@ const callButtons = [
 		margin-top: 34px;
 	}
 
-	/*
-	 * The form and the confirmation share a place under the mini moka: the panel holds the taller, nothing moves
-	 * between them.
-	 */
+	/* The form and the confirmation share a place: the panel holds the taller, nothing moves between them. */
 	.cafe-form,
 	.cafe-sent {
-		grid-area: 2 / 1;
+		grid-area: 1 / 1;
 		min-width: 0;
 		opacity: 0;
 		visibility: hidden;
@@ -1086,7 +1066,6 @@ const callButtons = [
 	 * The call's screen (board A, visio). Stacked, out of sight: the moka is. In two columns, every part is placed
 	 * in board pixels from the board's corner, 52 of them left of the column. The strokes are drawn clockwise from
 	 * the top and undone in reverse; the call and the stand come once the frame is whole and leave first.
-	 * The frame and the stand are the mini moka's too, in its own board pixels.
 	 */
 	.cafe-call {
 		display: none;
@@ -1302,51 +1281,6 @@ const callButtons = [
 		.cafe-call-button[data-kind='end'] svg {
 			width: calc(18 * var(--u));
 			height: calc(18 * var(--u));
-		}
-	}
-
-	/*
-	 * The mini moka (stacked): the board's stretch from the screen's left edge to its right one, 576 board pixels,
-	 * at a height that leaves the form room on a phone, upright or on its side. Its own `--u` places the frame,
-	 * the stand and the figure at the board's coordinates; the camera, the blocks and the fire are the Montage's.
-	 * Two columns, the Montage's figure is in sight.
-	 */
-	.cafe-mini {
-		--mini-height: clamp(120px, 26svh, 240px);
-		--u: calc(var(--mini-height) / 740);
-		grid-area: 1 / 1;
-		position: relative;
-		justify-self: center;
-		width: calc(576 * var(--u));
-		height: var(--mini-height);
-		margin-bottom: 16px;
-		pointer-events: none;
-	}
-
-	.cafe-mini-board {
-		position: absolute;
-		left: calc(-652 * var(--u));
-		top: calc(-18 * var(--u));
-	}
-
-	.cafe-mini-figure {
-		position: absolute;
-		left: calc(720 * var(--u));
-		top: calc(18 * var(--u));
-		width: calc(444 * var(--u));
-		height: calc(740 * var(--u));
-	}
-
-	/* Drawn from the moment the form opens: the screen starts out of sight, to be drawn stroke by stroke. */
-	@starting-style {
-		.cafe-mini :is(.cafe-call-stroke, .cafe-call-stand) {
-			--screen: 0;
-		}
-	}
-
-	@media (min-width: 861px) and (min-height: 520px) {
-		.cafe-mini {
-			display: none;
 		}
 	}
 

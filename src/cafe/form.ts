@@ -9,6 +9,7 @@
  * `data-cafe-phase`) and the CSS draws them; the phase is the transition in progress, timed as on the board.
  */
 import { cubicBezier, gsap, registerDetail, ScrollSmoother, ScrollTrigger } from '../animation/base';
+import type { MontageProgress } from './montage-progress';
 
 type Flavour = 'cafe' | 'visio';
 type State = 'rest' | 'form' | 'sent';
@@ -20,17 +21,9 @@ const PHASES: Record<Exclude<Phase, 'cut'>, number> = { open: 1400, close: 1500,
 /** Under reduced motion every change is a 0.2s fade: the phase only waits for it. */
 const REDUCED_PHASE = 220;
 
-/**
- * Where the Montage's actions start rising in (its `ACTIONS`), as a share of its pinning: under it the moka is
- * being put together again, which it cannot be while the form has it in pieces.
- */
-const ACTIONS_APPEAR = 0.8;
 /** The way to the end of the pinning, on the board's camera curve: short enough to be done before the focus moves. */
 const SCROLL_DURATION = 1;
 const SCROLL_EASE = cubicBezier(0.65, 0, 0.35, 1);
-
-/** What the Montage tells of its pinning while its scene runs (`montage:progress`), `null` without it. */
-type Pinning = { progress: number; end: number } | null;
 
 const TEXTS = {
 	cafe: { heading: 'Un café, à Besançon.', switch: 'plutôt en visio', confirm: 'Envoyé. À très vite autour d’un café.' },
@@ -74,7 +67,7 @@ registerDetail(() => {
 	let sending: AbortController | undefined;
 	let phaseTimer: ReturnType<typeof setTimeout> | undefined;
 	let cutFrame: number | undefined;
-	let pinning: Pinning = null;
+	let pinning: MontageProgress = null;
 	/** After a refresh with the form open, until the scene is past the actions again (`keepInView`). */
 	let catchingUp = false;
 	let scrolling: gsap.core.Tween | undefined;
@@ -171,7 +164,7 @@ registerDetail(() => {
 
 	/** The moka is put together again under the form: it closes at once, everything typed kept for the next opening. */
 	function onProgress(event: Event) {
-		pinning = (event as CustomEvent<Pinning>).detail;
+		pinning = (event as CustomEvent<MontageProgress>).detail;
 		// The scene names its step as it goes through one (after a refresh, it plays its way back): the counter is the
 		// form's while it is open, written back in the same task, before anything is drawn.
 		if (state === 'form') describe();
@@ -217,7 +210,7 @@ registerDetail(() => {
 		// behind: on its way, it tells of an assembly the visitor never scrolled back to.
 		catchingUp = true;
 		const field = refocusing ?? (panel.form.contains(document.activeElement) ? document.activeElement : null);
-		if (pinning.progress >= ACTIONS_APPEAR) return keepFieldInView(field);
+		if (pinning.progress >= pinning.actionsAt) return keepFieldInView(field);
 		// Two columns, the end of the pinning shows the form whole. Stacked, the form comes after the pinned screen,
 		// out of reach while the section is held: placed from the end, where the section's top is the window's.
 		let to = pinning.end;
@@ -250,8 +243,9 @@ registerDetail(() => {
 	}
 
 	function closeUnderActions() {
-		if (pinning && pinning.progress >= ACTIONS_APPEAR) catchingUp = false;
-		if (!pinning || pinning.progress >= ACTIONS_APPEAR || state === 'rest' || catchingUp) return;
+		// Under the actions, the moka is being put together again, which it cannot be while the form has it in pieces.
+		if (pinning && pinning.progress >= pinning.actionsAt) catchingUp = false;
+		if (!pinning || pinning.progress >= pinning.actionsAt || state === 'rest' || catchingUp) return;
 		sending?.abort();
 		go({ state: 'rest' }, 'cut');
 	}

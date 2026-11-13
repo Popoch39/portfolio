@@ -287,6 +287,7 @@ const camera = JSON.stringify(
 <script>
 	import { cubicBezier, gsap, registerScene, SCENE_SCRUB, ScrollSmoother } from '../animation/base';
 	import { markOffScreen } from '../animation/offscreen';
+	import type { MontageProgress } from '../cafe/montage-progress';
 
 	/** Pinning length, in stable window heights (290svh): the board's 3000px track over its 770px frame. */
 	const PIN_HEIGHTS = 2.9;
@@ -402,11 +403,12 @@ const camera = JSON.stringify(
 
 		/*
 		 * The scene's progress, told to the Café (`src/cafe/form.ts`), which closes its form when the moka starts
-		 * coming apart again and scrolls to where the pinning lets go: an event with numbers already known, never a
-		 * measure. `null` once the scene is undone.
+		 * coming apart again (under its actions) and scrolls to where the pinning lets go.
 		 */
-		const tell = (pinning: { progress: number; end: number } | null) =>
-			section.dispatchEvent(new CustomEvent('montage:progress', { detail: pinning }));
+		const tell = (pinning: Omit<NonNullable<MontageProgress>, 'actionsAt'> | null) =>
+			section.dispatchEvent(
+				new CustomEvent<MontageProgress>('montage:progress', { detail: pinning && { ...pinning, actionsAt: ACTIONS[0] } }),
+			);
 
 		// Positions on the timeline are fractions of the pinning, the board's `contain` ranges as they are.
 		const scene = gsap.timeline({

@@ -7,7 +7,8 @@
 import { openingEnded, registerScene } from '../animation/base';
 import { watchOffScreen } from '../animation/offscreen';
 import type { Lede } from '../data/profile';
-import { restingOn, runs, slotStarts, type BufferState, type Mode, type Run, type Slot } from './buffer';
+import { restingOn, runs, slotStarts, type BufferState, type Run, type Slot } from './buffer';
+import { showVimMode } from './vim-mode';
 
 /** Keys kept on screen at most; narrow screens show fewer (CSS). */
 const MAX_KEYS = 10;
@@ -21,7 +22,7 @@ const RESTART_MS = 1800;
 registerScene(() => {
 	const parts = typistParts();
 	if (!parts) return;
-	const { root, views, statusMode, modified, pause } = parts;
+	const { root, views, pause } = parts;
 	const lede = JSON.parse(root.dataset.lede ?? '') as Lede;
 	const count = lede.versions.length;
 
@@ -78,13 +79,7 @@ registerScene(() => {
 		state = { ...state, ...patch };
 		const drawn = runs(lede, state);
 		views.forEach(({ buffer }) => buffer.replaceChildren(...drawn.map(runNode)));
-		if (state.mode !== mode) showMode(state.mode);
-	}
-
-	function showMode(mode: Mode) {
-		statusMode.textContent = mode;
-		statusMode.dataset.mode = mode;
-		modified.hidden = mode !== 'INSERT';
+		if (state.mode !== mode) showVimMode(state.mode);
 	}
 
 	/** The buffer whole and at rest on a version, the keys put away. */
@@ -250,16 +245,14 @@ function viewOf(root: Element | null) {
 }
 
 /**
- * The lede's elements and the mode indicators the typist writes to; `null` when one is missing. The
- * lede's copy on the hero's night (ADR 0008) gets every keystroke too, so that both halves read alike.
+ * The lede's elements the typist writes to; `null` when one is missing. The lede's copy on the hero's night
+ * (ADR 0008) gets every keystroke too, so that both halves read alike.
  */
 function typistParts() {
 	const root = document.querySelector<HTMLElement>('[data-lede]');
 	const views = [root, ...document.querySelectorAll('[data-lede-night]')].map(viewOf);
 	const parts = {
 		root,
-		statusMode: document.querySelector<HTMLElement>('#statusline [data-vim-mode]'),
-		modified: document.querySelector<HTMLElement>('#statusline [data-vim-modified]'),
 		pause: document.querySelector<HTMLInputElement>('#pause'),
 	};
 	return allPresent(parts) && allPresent(views) ? { ...parts, views } : null;

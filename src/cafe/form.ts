@@ -8,7 +8,8 @@
  * The states are written on the section (`data-cafe-state`, `data-cafe-flavour`, `data-cafe-ok`,
  * `data-cafe-phase`) and the CSS draws them; the phase is the transition in progress, timed as on the board.
  */
-import { cubicBezier, gsap, registerDetail, ScrollSmoother, ScrollTrigger } from '../animation/base';
+import { cubicBezier, drawnScrollTop, gsap, registerDetail, ScrollSmoother, ScrollTrigger } from '../animation/base';
+import { showVimMode } from '../lede/vim-mode';
 import type { MontageProgress } from './montage-progress';
 
 type Flavour = 'cafe' | 'visio';
@@ -236,9 +237,8 @@ registerDetail(() => {
 		if (top >= visualViewport.offsetTop && bottom <= visibleBottom) return;
 		const smoother = ScrollSmoother.get();
 		if (!smoother) return field.scrollIntoView({ block: 'nearest' });
-		// By how far it sticks out, from where the content is drawn: the smoother's own measure of the field places
-		// it as if the pinned section around it were at the pinning's start.
-		const drawnAt = -Number(gsap.getProperty(smoother.content(), 'y'));
+		// By how far it sticks out, from where the content is drawn.
+		const drawnAt = drawnScrollTop(smoother);
 		smoother.scrollTo(drawnAt + (top < visualViewport.offsetTop ? top - visualViewport.offsetTop : bottom - visibleBottom), false);
 	}
 
@@ -472,17 +472,4 @@ function buildPanel(template: HTMLTemplateElement, restBlock: HTMLElement) {
 		},
 		when: () => (form.elements.namedItem('quand') as RadioNodeList).value,
 	};
-}
-
-/**
- * The statusline's Vim mode, written as the Lede's typist does (`src/lede/typist.ts`): INSERT while the
- * visitor writes in the form, NORMAL otherwise.
- */
-function showVimMode(mode: 'INSERT' | 'NORMAL') {
-	const indicator = document.querySelector<HTMLElement>('#statusline [data-vim-mode]');
-	const modified = document.querySelector<HTMLElement>('#statusline [data-vim-modified]');
-	if (!indicator) return;
-	indicator.textContent = mode;
-	indicator.dataset.mode = mode;
-	if (modified) modified.hidden = mode !== 'INSERT';
 }

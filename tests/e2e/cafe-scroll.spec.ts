@@ -62,6 +62,26 @@ async function scrollToContact(page: Page) {
 	await expect(contactLink(page)).toBeInViewport();
 }
 
+/** Stacked, the actions follow the pinned screen: past its end, until they stand above the statusline. */
+async function reachStackedActions(page: Page, start: number) {
+	await scrollToScene(page, start, 1);
+	const below = await coffee(page).evaluate((el) => el.getBoundingClientRect().bottom - (innerHeight - 60));
+	if (below > 0) {
+		await page.evaluate((by) => scrollBy(0, by), below);
+		await topOnceStill(content(page));
+	}
+	await expect(coffee(page)).toBeInViewport();
+}
+
+/**
+ * From the keyboard: a pointer has Playwright scroll the fixed wrapper under it, which the smoother puts back, and
+ * the click can land on the pinned screen over the actions.
+ */
+async function openFromKeyboard(page: Page) {
+	await coffee(page).focus();
+	await page.keyboard.press('Enter');
+}
+
 /** Counts the CSS transitions that start in the Café from now on. */
 const countTransitions = (page: Page) =>
 	section(page).evaluate((el) => {
@@ -161,6 +181,33 @@ test.describe('Formulaire du Café and the scroll', () => {
 
 		await scrollToScene(page, start, 0.6);
 		await expect(form(page)).toBeHidden();
+	});
+});
+
+test.describe('Formulaire du Café and the scroll, stacked', () => {
+	test.use({ reducedMotion: 'no-preference', viewport: { width: 412, height: 915 } });
+
+	test('opened past the pinned screen, scrolling straight back under the actions closes it at once and keeps what was typed', async ({
+		page,
+	}) => {
+		await page.goto('/');
+		const start = await sceneStart(page);
+		await reachStackedActions(page, start);
+		await openFromKeyboard(page);
+		await expect(name(page)).toBeFocused();
+		await name(page).fill('Ada Lovelace');
+		await countTransitions(page);
+
+		await scrollToScene(page, start, 0.6);
+
+		await expect(form(page)).toBeHidden();
+		expect(await transitionsSince(page)).toBe(0);
+		await expect(mode(page)).toHaveText('NORMAL');
+
+		await reachStackedActions(page, start);
+		await expect(counter(page)).toHaveText('6/6 · sur le feu');
+		await openFromKeyboard(page);
+		await expect(name(page)).toHaveValue('Ada Lovelace');
 	});
 });
 

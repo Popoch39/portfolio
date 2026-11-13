@@ -29,7 +29,12 @@ const STOVE_HEIGHT = 27.4;
 /** Brings the Café's actions above the statusline, past the pinned screen, and waits for the page to settle. */
 async function reachActions(page: Page) {
 	await page.goto('/');
-	await scrollToScene(page, await sceneStart(page), 1);
+	await actionsInView(page, await sceneStart(page));
+}
+
+/** The same, from wherever the page stands, for a scene that starts at `start`. */
+async function actionsInView(page: Page, start: number) {
+	await scrollToScene(page, start, 1);
 	const below = await coffee(page).evaluate((el) => el.getBoundingClientRect().bottom - (innerHeight - 60));
 	if (below > 0) {
 		await page.evaluate((by) => scrollBy(0, by), below);
@@ -261,6 +266,31 @@ test.describe('Démontage stacked, on a phone', () => {
 		await expect(mini(page)).toBeHidden();
 		await expect(montageFigure(page)).toBeInViewport();
 		await expect(counter).toHaveText('2/4 · à mi-hauteur');
+	});
+
+	test('opened, then the phone turned, scrolling straight back under the actions closes the form and keeps what was typed', async ({
+		page,
+	}) => {
+		await page.goto('/');
+		const start = await sceneStart(page);
+		await actionsInView(page, start);
+		await coffee(page).click();
+		await settled(page);
+		await name(page).fill('Ada Lovelace');
+		// Each one a refresh of the pinning: the form's own height, then the layout turned twice.
+		await page.setViewportSize(LANDSCAPE);
+		await settled(page);
+		await page.setViewportSize(PORTRAIT);
+		await settled(page);
+		await expect(form(page)).toBeVisible();
+
+		await scrollToScene(page, start, 0.6);
+
+		await expect(form(page)).toBeHidden();
+		await expect(statusline(page).locator('.mode:visible').first()).toHaveText('NORMAL');
+		await actionsInView(page, start);
+		await coffee(page).click();
+		await expect(name(page)).toHaveValue('Ada Lovelace');
 	});
 
 	test('the page makes room for the mini moka and the form: the Contact comes after them, and back up on closing', async ({

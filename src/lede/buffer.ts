@@ -3,6 +3,7 @@
  * Pure: the page renders it at build time, the typist again on every keystroke.
  */
 import type { Lede } from '../data/profile';
+import { breaksOf, type Tier, wrap } from './lines';
 
 export type Mode = 'NORMAL' | 'INSERT';
 export type Slot = 'what' | 'whose';
@@ -17,12 +18,14 @@ export interface BufferState {
 	selected?: Slot;
 }
 
-export type RunKind = 'text' | 'slot' | 'selected' | 'block' | 'bar';
+export type RunKind = 'text' | 'slot' | 'selected' | 'block' | 'bar' | 'break';
 
-/** A stretch of the line drawn the same way; the bar is an empty run. */
+/** A stretch of the line drawn the same way; the bar and the line breaks are empty runs. */
 export interface Run {
 	text: string;
 	kind: RunKind;
+	/** A break's tiers: the breakpoints whose lines start there. */
+	tiers?: Tier[];
 }
 
 /** Where each slot starts in the line. */
@@ -56,8 +59,11 @@ export function runs(lede: Lede, state: BufferState): Run[] {
 		return slot ? 'slot' : 'text';
 	};
 
+	const breaks = breaksOf(text);
 	const result: Run[] = [];
 	for (let i = 0; i <= text.length; i++) {
+		const tiers = breaks.get(i);
+		if (tiers) result.push({ text: '', kind: 'break', tiers });
 		if (state.mode === 'INSERT' && i === state.cursor) result.push({ text: '', kind: 'bar' });
 		if (i === text.length) break;
 		const kind = kindAt(i);
@@ -68,14 +74,31 @@ export function runs(lede: Lede, state: BufferState): Run[] {
 	return result;
 }
 
+/** The last version's second slot as the typist first mistypes it: its last three letters shuffled. */
+export function slipped(text: string) {
+	return text.slice(0, -3) + text.at(-2) + text.at(-3) + text.at(-1);
+}
+
 /**
- * Every line the buffer shows at rest or halfway between two versions (the first slot already
- * typed, the second not yet): stacked out of sight, they hold the lede at its tallest wrap.
+ * Every line the buffer can show, keystroke after keystroke, as the typist goes from one version to the
+ * next: the first slot typed letter by letter, then the second, the last version's slip included.
  */
-export function tallestLines(lede: Lede) {
+export function typedLines(lede: Lede) {
 	const { versions } = lede;
+	const prefixes = (text: string) => [...text].map((_, i) => text.slice(0, i + 1));
 	return versions.flatMap((version, i) => {
 		const next = versions[(i + 1) % versions.length];
-		return [line(lede, version), line(lede, { what: next.what, whose: version.whose })];
+		const slip = i + 1 === versions.length - 1;
+		return [
+			...['', ...prefixes(next.what)].map((what) => line(lede, { what, whose: version.whose })),
+			...['', ...prefixes(slip ? slipped(next.whose) : ''), ...prefixes(next.whose)].map((whose) =>
+				line(lede, { what: next.what, whose }),
+			),
+		];
 	});
+}
+
+/** The rows the lede needs at its tallest, keystrokes included, on a tier's columns: the height it keeps. */
+export function tallestRows(lede: Lede, columns: number) {
+	return Math.max(...typedLines(lede).map((text) => wrap(text, columns).length));
 }

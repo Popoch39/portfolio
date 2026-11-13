@@ -250,7 +250,8 @@ const jsonLd = JSON.stringify({
 		display: grid;
 		grid-template-rows: var(--map-rows);
 		flex: 1;
-		min-height: 480px;
+		/* The lede's three rows of 30px at their tallest: 492px of rows, measured on the build. */
+		min-height: 494px;
 		container: map / size;
 		border: 1px solid var(--color-ink);
 		overflow: hidden;
@@ -484,8 +485,8 @@ const jsonLd = JSON.stringify({
 			--meridian-share: var(--meridian-share-narrow);
 			--inset: 14px;
 			--map-rows: minmax(auto, 44fr) minmax(auto, 56fr);
-			/* Both rows at their smallest, measured on the build: 459px. */
-			min-height: 462px;
+			/* Both rows at their smallest, measured on the build, the lede on three rows of 30px: 544px. */
+			min-height: 546px;
 		}
 
 		/* A narrow map has no room for the twilights' names: the hatching says it alone. */
@@ -501,11 +502,12 @@ const jsonLd = JSON.stringify({
 	 */
 	@media (max-width: 600px) {
 		/*
-		 * The rows need more on a phone, where the keys stand a row higher: up to 489px on the narrowest,
-		 * the lede on three lines, then 448px at 364px of window and 0.27px more per pixel, as the name grows.
+		 * The rows need more on a phone, where the keys stand a row higher and the lede keeps four rows:
+		 * up to 534px until its type stops growing (26px, at about 400px of window), then 0.27px more per
+		 * pixel, as the name grows (590px at 600px), measured on the build.
 		 */
 		.hero-map {
-			min-height: max(494px, 27vw + 352px);
+			min-height: max(536px, 27vw + 434px);
 		}
 
 		.sky-label[data-label='4'] {

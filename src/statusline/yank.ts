@@ -5,11 +5,12 @@
  * a modified click, follows it.
  */
 import { registerDetail } from '../animation/base';
-import { statusline } from '../i18n/fr';
+import * as en from '../i18n/en';
+import * as fr from '../i18n/fr';
 import { forPage } from '../i18n/lang';
 import { show } from './lane';
 
-const { counted, copied: copiedWord, copyRefused, secondClick } = forPage({ fr: statusline });
+const { counted, copied: copiedWord, copyRefused, secondClick } = forPage({ fr: fr.statusline, en: en.statusline });
 
 /** How long the yank's answer stays, and with it the second click that opens the mail: time to read the hint. */
 const ANSWER_DURATION = 4000;

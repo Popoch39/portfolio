@@ -7,12 +7,13 @@
 import { openingEnded, registerScene } from '../animation/base';
 import { watchOffScreen } from '../animation/offscreen';
 import type { Lede } from '../data/profile';
-import { ledeLine } from '../i18n/fr';
+import * as en from '../i18n/en';
+import * as fr from '../i18n/fr';
 import { forPage } from '../i18n/lang';
 import { restingOn, runs, slotStarts, type BufferState, type Run, type Slot } from './buffer';
 import { showVimMode } from './vim-mode';
 
-const line = forPage({ fr: ledeLine });
+const line = forPage({ fr: fr.ledeLine, en: en.ledeLine });
 
 /** Keys kept on screen at most; narrow screens show fewer (CSS). */
 const MAX_KEYS = 10;

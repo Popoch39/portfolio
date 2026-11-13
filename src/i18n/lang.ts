@@ -4,7 +4,7 @@
  */
 
 /** The first is the default one, served at `/`. */
-export const languages = ['fr'] as const;
+export const languages = ['fr', 'en'] as const;
 
 export type Lang = (typeof languages)[number];
 

@@ -9,7 +9,8 @@
  * `data-cafe-phase`) and the CSS draws them; the phase is the transition in progress, timed as on the board.
  */
 import { cubicBezier, drawnScrollTop, gsap, registerDetail, ScrollSmoother, ScrollTrigger } from '../animation/base';
-import { cafe } from '../i18n/fr';
+import * as en from '../i18n/en';
+import * as fr from '../i18n/fr';
 import { forPage } from '../i18n/lang';
 import { showVimMode } from '../lede/vim-mode';
 import type { Block } from './lifts';
@@ -29,7 +30,7 @@ const REDUCED_PHASE = 220;
 const SCROLL_DURATION = 1;
 const SCROLL_EASE = cubicBezier(0.65, 0, 0.35, 1);
 
-const words = forPage({ fr: cafe });
+const words = forPage({ fr: fr.cafe, en: en.cafe });
 
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 

@@ -5,11 +5,12 @@
  * keyboard shows its target there, as a browser does for a hovered link.
  */
 import { registerDetail } from '../animation/base';
-import { statusline } from '../i18n/fr';
+import * as en from '../i18n/en';
+import * as fr from '../i18n/fr';
 import { forPage } from '../i18n/lang';
 import { show } from './lane';
 
-export const { counted } = forPage({ fr: statusline });
+export const { counted } = forPage({ fr: fr.statusline, en: en.statusline });
 
 /** A link's target as written in the page, without the scheme a visitor does not need to read. */
 const target = (link: HTMLAnchorElement) => (link.getAttribute('href') ?? '').replace(/^https?:\/\//, '');

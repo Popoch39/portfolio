@@ -1,13 +1,14 @@
 /**
  * Portfolio content: the single source for the page, its metadata and its JSON-LD.
- * Strings are visitor-facing copy, hence in French.
+ * What is the same in every language lives here; what the visitor reads lives in each language's
+ * dictionary (`content`, `src/i18n/fr.ts`), which `contentOf` indexes by language.
  */
+import { type Dictionary, dictionary, type Lang } from '../i18n';
 
 export const person = {
 	givenName: 'Louis',
 	familyName: 'Pocheron',
 	name: 'Louis Pocheron',
-	jobTitle: 'Concepteur & développeur d’applications',
 	email: 'pocheron.louis@gmail.com',
 	city: 'Besançon',
 	country: 'FR',
@@ -16,6 +17,9 @@ export const person = {
 	github: { user: 'Popoch39', url: 'https://github.com/Popoch39' },
 	nvimConfig: 'https://github.com/Popoch39/nvim',
 } as const;
+
+/** The portfolio's content in a language: profile, career, lede, offers. */
+export const contentOf = (lang: Lang) => dictionary(lang).content;
 
 export const marqueeWords = [
 	'TypeScript',
@@ -41,45 +45,6 @@ export interface Project {
 	year: number;
 }
 
-export const projects: Project[] = [
-	{
-		repo: 'pointcloud-viewer',
-		description: 'Nuages de points LiDAR dans le navigateur — bake Rust → WebAssembly, rendu three.js sur MapLibre.',
-		stack: 'Rust · WASM · React · three.js',
-		year: 2026,
-	},
-	{
-		repo: 'ma_parcelle',
-		description: 'Tout ce que les données publiques disent d’une parcelle cadastrale, sur une carte plein écran.',
-		stack: 'React 19 · Vite · MapLibre',
-		year: 2026,
-	},
-	{
-		repo: 'maptile_cacher',
-		description: 'Couche de cache rapide pour tuiles cartographiques.',
-		stack: 'Rust',
-		year: 2026,
-	},
-	{
-		repo: 'claude-tmux-notify.nvim',
-		description: 'Un toast Neovim quand une session Claude Code, dans une autre fenêtre tmux, vous attend.',
-		stack: 'Lua · Neovim · tmux · ★ 3',
-		year: 2026,
-	},
-	{
-		repo: 'claude-status-line',
-		description: 'L’usage d’abonnement Claude Code dans la status line — binaire Bun multi-plateforme.',
-		stack: 'TypeScript · Bun',
-		year: 2026,
-	},
-	{
-		repo: 'gis_3d',
-		description: 'Terrain 3D et géodonnées dans le navigateur — expérimentations, démo en ligne.',
-		stack: 'TypeScript · Next.js',
-		year: 2025,
-	},
-];
-
 export interface Mission {
 	/** Short enough to stand on a commit of the Frise. */
 	title: string;
@@ -100,86 +65,11 @@ export interface Position {
 	missions: Mission[];
 }
 
-export const positions: Position[] = [
-	{
-		start: '2023-03',
-		company: 'Da Viking Code',
-		city: 'Dijon',
-		role: person.jobTitle,
-		missions: [
-			{
-				title: 'Cartographie énergie',
-				detail: 'SIG & cartographie pour un grand acteur de l’énergie — OpenLayers, PostGIS, Laravel 12, React 19',
-			},
-			{
-				title: 'Back-office santé',
-				detail: 'Back-office d’une plateforme de santé — NestJS 11, Prisma, PostgreSQL, GraphQL',
-			},
-			{ title: 'Terrain hors-ligne', detail: 'SIG mobile terrain avec mode hors-ligne — MapLibre GL, React Native' },
-			{
-				title: 'Micro-services Rust',
-				detail: 'Micro-services Rust (Axum) — serveur de tuiles, fichiers CAD, nuages de points',
-			},
-			{ title: 'Monorepos & CI/CD', detail: 'Monorepos, Docker, CI/CD, Cloudflare Workers, authentification' },
-		],
-	},
-	{
-		start: '2022-02',
-		end: '2023-02',
-		company: 'Conseil départemental olympique et sportif',
-		shortName: 'CDOS',
-		city: 'Dijon',
-		role: person.jobTitle,
-		missions: [
-			{ title: 'Symfony', detail: 'Application web sous Symfony' },
-			{ title: 'React Native', detail: 'Application mobile React Native' },
-			{ title: 'Express', detail: 'API back-end en Node.js / TypeScript (Express)' },
-		],
-	},
-	{
-		start: '2021-09',
-		end: '2021-12',
-		company: 'Jordel Média',
-		city: 'Doucier',
-		role: 'Stage — développeur web',
-		internship: true,
-		missions: [{ title: 'CMS interne', detail: 'Nouvelles fonctionnalités sur le CMS interne de l’entreprise' }],
-	},
-];
+export const salariedPositions = (lang: Lang) => contentOf(lang).positions.filter((position) => !position.internship);
 
-export const salariedPositions = positions.filter((position) => !position.internship);
+export const currentPosition = (lang: Lang) => contentOf(lang).positions.find((position) => !position.end);
 
-export const currentPosition = positions.find((position) => !position.end);
-
-export const profile = {
-	specialty: 'SIG & cartographie à échelle industrielle',
-	/** Where the header has one line for it (phones). */
-	specialtyShort: 'SIG & cartographie',
-};
-
-/**
- * The hero's lede, rewritten in Vim from one version to the next: each version speaks to one
- * audience. `summary` is what assistive technologies read instead, all versions at once.
- */
-export const lede = {
-	before: 'Je construis ',
-	between: ' de votre ',
-	after: '.',
-	versions: [
-		{ what: 'les cartes', whose: 'réseau électrique', audience: 'les grands comptes de l’énergie' },
-		{ what: 'le site', whose: 'gîte', audience: 'les gîtes et chambres d’hôtes' },
-		{ what: 'la boutique en ligne', whose: 'commerce', audience: 'les commerces de proximité' },
-		{ what: 'le site vitrine', whose: 'restaurant', audience: 'les restaurants, cafés et boulangeries' },
-		{ what: 'la prise de rendez-vous', whose: 'salon', audience: 'les artisans, coiffeurs et instituts' },
-		{ what: 'l’API', whose: 'back-office', audience: 'les équipes produit' },
-		{ what: 'la carte', whose: 'commune', audience: 'les mairies et collectivités' },
-		{ what: 'l’outil', whose: 'équipe terrain', audience: 'les métiers de terrain' },
-	],
-	summary:
-		'Je construis des cartes, des sites vitrines, des boutiques en ligne, des prises de rendez-vous, des API et des outils : pour votre réseau électrique, votre gîte, votre commerce, votre restaurant, votre salon, votre back-office, votre commune ou votre équipe terrain.',
-};
-
-export type Lede = typeof lede;
+export type Lede = Dictionary['content']['lede'];
 
 export interface Service {
 	title: string;
@@ -191,51 +81,14 @@ export interface Service {
 	how: string;
 }
 
-/**
- * The offers behind the Accroche, in visible text: every version of the lede is covered by one of
- * them, with its own words and its audience, so that a search can find it.
- */
-export const services: Service[] = [
-	{
-		title: 'Site vitrine',
-		audience: 'restaurants, cafés, boulangeries, gîtes et chambres d’hôtes',
-		what: 'Le site vitrine de votre restaurant, le site de votre gîte : la carte ou les chambres, les horaires, l’accès, les photos et un moyen de vous joindre, lisibles d’abord sur un téléphone.',
-		how: 'Un site rapide et bien référencé sur les recherches locales, à Besançon et alentour, construit comme celui-ci.',
-	},
-	{
-		title: 'Boutique en ligne',
-		audience: 'commerces de proximité',
-		what: 'La boutique en ligne de votre commerce : le catalogue, le paiement, le retrait en magasin ou la livraison.',
-		how: 'Pour les commerces de Besançon qui veulent vendre en dehors de leurs heures d’ouverture, sans dépendre d’une place de marché.',
-	},
-	{
-		title: 'Prise de rendez-vous',
-		audience: 'artisans, coiffeurs et instituts',
-		what: 'La prise de rendez-vous de votre salon ou de votre atelier : vos clients choisissent un créneau en ligne, à toute heure, et vous gardez la main sur votre agenda.',
-		how: 'Moins d’appels pendant que vous travaillez, pour les artisans et les salons de Besançon et des environs.',
-	},
-	{
-		title: 'Cartographie & SIG',
-		audience: 'grands comptes de l’énergie, mairies et collectivités',
-		what: 'Les cartes de votre réseau électrique, la carte de votre commune : des données géographiques lisibles dans le navigateur, du serveur de tuiles à l’interface.',
-		how: 'OpenLayers, MapLibre et PostGIS : le métier que j’exerce au quotidien pour un grand acteur de l’énergie, proposé depuis Besançon aux collectivités.',
-	},
-	{
-		title: 'API & back-office',
-		audience: 'équipes produit',
-		what: 'L’API de votre back-office : des données bien modélisées, une interface d’administration et une documentation que votre équipe peut reprendre.',
-		how: 'NestJS, Laravel ou Rust, PostgreSQL : en renfort d’une équipe en place ou pour lancer un projet, depuis Besançon.',
-	},
-	{
-		title: 'Outil de terrain',
-		audience: 'métiers de terrain',
-		what: 'L’outil de votre équipe terrain : une application mobile et sa carte, utilisables même sans réseau, synchronisées au retour.',
-		how: 'MapLibre et React Native, pour les équipes qui interviennent loin d’un bureau, depuis Besançon.',
-	},
-];
-
-const monthAndYear = new Intl.DateTimeFormat('fr-FR', { month: 'short', year: 'numeric', timeZone: 'UTC' });
-const monthOnly = new Intl.DateTimeFormat('fr-FR', { month: 'short', timeZone: 'UTC' });
+/** Month formats, in the language's own words: "mars 2023", "sept.". */
+function monthFormats(lang: Lang) {
+	const { locale } = dictionary(lang).meta;
+	return {
+		monthAndYear: new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric', timeZone: 'UTC' }),
+		monthOnly: new Intl.DateTimeFormat(locale, { month: 'short', timeZone: 'UTC' }),
+	};
+}
 
 function year(month: string) {
 	return month.slice(0, 4);
@@ -252,8 +105,9 @@ export function twoDigits(n: number) {
 }
 
 /** "mars 2023 → aujourd’hui", "févr. 2022 → févr. 2023", or "sept. → déc. 2021" within a single year. */
-export function formatPeriod({ start, end }: Pick<Position, 'start' | 'end'>) {
-	if (!end) return `${monthAndYear.format(firstDayOf(start))} → aujourd’hui`;
+export function formatPeriod(lang: Lang, { start, end }: Pick<Position, 'start' | 'end'>) {
+	const { monthAndYear, monthOnly } = monthFormats(lang);
+	if (!end) return `${monthAndYear.format(firstDayOf(start))} → ${contentOf(lang).today}`;
 	const from = year(start) === year(end) ? monthOnly : monthAndYear;
 	return `${from.format(firstDayOf(start))} → ${monthAndYear.format(firstDayOf(end))}`;
 }
@@ -278,56 +132,25 @@ export interface Education {
 	city: string;
 }
 
-export const education: Education[] = [
-	{
-		start: '2022-02',
-		end: '2023-02',
-		branch: 'cda',
-		title: 'Concepteur & développeur d’applications',
-		school: 'Access Code School',
-		city: 'Besançon',
-	},
-	{
-		start: '2020-09',
-		end: '2021-12',
-		branch: 'access-code',
-		title: 'Développeur web & développeur mobile',
-		school: 'Access Code School',
-		city: 'Besançon',
-	},
-	{
-		start: '2018-09',
-		end: '2020-06',
-		branch: 'lea',
-		title: 'Langues étrangères appliquées (LEA)',
-		school: 'UFR SLHS',
-		city: 'Besançon',
-	},
-	{
-		start: '2017-09',
-		end: '2018-07',
-		title: 'Baccalauréat économique et social',
-		school: 'Lycée Carnot',
-		city: 'Dijon',
-	},
-];
+/** A bague's category, named in each language's dictionary. */
+export type StackCategory = keyof Dictionary['content']['stackCategories'];
 
 /**
  * In order from the base of the Atome's tower to its top: one bague per category.
  * `accent` marks the specialty, drawn in the accent colour wherever it sits in the list.
  */
-export const stack: { category: string; items: string[]; accent?: true }[] = [
-	{ category: 'Langages', items: ['TypeScript', 'Rust', 'PHP', 'SQL', 'Go', 'Lua'] },
-	{ category: 'Back-end', items: ['NestJS', 'Laravel', 'Axum', 'Elysia', 'Node', 'GraphQL', 'REST'] },
-	{ category: 'Front-end', items: ['React', 'Next.js', 'Vue', 'Vite', 'Tailwind'] },
+export const stack: { category: StackCategory; items: string[]; accent?: true }[] = [
+	{ category: 'languages', items: ['TypeScript', 'Rust', 'PHP', 'SQL', 'Go', 'Lua'] },
+	{ category: 'backEnd', items: ['NestJS', 'Laravel', 'Axum', 'Elysia', 'Node', 'GraphQL', 'REST'] },
+	{ category: 'frontEnd', items: ['React', 'Next.js', 'Vue', 'Vite', 'Tailwind'] },
 	{
-		category: 'SIG · CAD · 3D',
+		category: 'gis',
 		items: ['OpenLayers', 'MapLibre GL', 'PostGIS', 'Turf.js', 'Three.js', 'DWG/DXF'],
 		accent: true,
 	},
-	{ category: 'Data', items: ['PostgreSQL', 'Redis', 'Prisma', 'Drizzle'] },
-	{ category: 'DevOps', items: ['Docker', 'CI/CD', 'Cloudflare', 'AWS', 'Sentry'] },
-	{ category: 'Outils', items: ['Bun', 'Monorepo', 'Git', 'Neovim', 'tmux', 'Agile/Scrum'] },
+	{ category: 'data', items: ['PostgreSQL', 'Redis', 'Prisma', 'Drizzle'] },
+	{ category: 'devOps', items: ['Docker', 'CI/CD', 'Cloudflare', 'AWS', 'Sentry'] },
+	{ category: 'tools', items: ['Bun', 'Monorepo', 'Git', 'Neovim', 'tmux', 'Agile/Scrum'] },
 ];
 
 /**
@@ -367,8 +190,10 @@ export const toolLogos: Record<string, string> = {
 };
 
 /** Whole years since the first salaried position (internships do not count), at build time. */
-export function yearsOfExperience(now = new Date()) {
-	const first = salariedPositions.map((position) => position.start).sort()[0];
+export function yearsOfExperience(lang: Lang, now = new Date()) {
+	const first = salariedPositions(lang)
+		.map((position) => position.start)
+		.sort()[0];
 	const [year, month] = first.split('-').map(Number);
 	const months = (now.getFullYear() - year) * 12 + (now.getMonth() + 1 - month);
 	return Math.floor(months / 12);
@@ -425,14 +250,17 @@ const MIN_COMMIT_GAP = 0.035;
  * the next branch opens, or else through an unlabeled merge. The missions of the current job are
  * spread evenly between its start and HEAD, dated by the company alone.
  */
-export function careerGraph(now = new Date()): CareerGraph {
+export function careerGraph(lang: Lang, now = new Date()): CareerGraph {
 	type Event = Omit<Commit, 'position'> & { month: number };
+	const { education, positions, today, internship: internshipTitle } = contentOf(lang);
+	const { monthAndYear } = monthFormats(lang);
+	const current = currentPosition(lang);
 	const events: Event[] = [];
 	const trainings = education
 		.filter((entry): entry is Education & { branch: BranchName } => !!entry.branch)
 		.sort((a, b) => a.start.localeCompare(b.start));
 	const diploma = education.find((entry) => !entry.branch);
-	const jobs = [...salariedPositions].sort((a, b) => a.start.localeCompare(b.start));
+	const jobs = [...salariedPositions(lang)].sort((a, b) => a.start.localeCompare(b.start));
 	const headMonth = now.getUTCFullYear() * 12 + now.getUTCMonth();
 
 	if (diploma) {
@@ -489,8 +317,8 @@ export function careerGraph(now = new Date()): CareerGraph {
 			lane: host?.branch ?? 'main',
 			month: monthIndex(internship.start),
 			datetime: internship.start,
-			date: formatPeriod(internship),
-			title: `Stage — ${internship.shortName ?? internship.company}`,
+			date: formatPeriod(lang, internship),
+			title: internshipTitle(internship.shortName ?? internship.company),
 			place: placeWithMissions(internship),
 			role: internship.role,
 			details: internship.missions.map((mission) => mission.detail),
@@ -498,7 +326,7 @@ export function careerGraph(now = new Date()): CareerGraph {
 	}
 
 	for (const job of jobs) {
-		const current = job === currentPosition;
+		const isCurrent = job === current;
 		events.push({
 			kind: mergedBy.has(job) ? 'merge' : 'commit',
 			lane: 'main',
@@ -509,11 +337,11 @@ export function careerGraph(now = new Date()): CareerGraph {
 			title: job.shortName ?? job.company,
 			titleExpansion: job.shortName && job.company,
 			// The current missions are commits of their own, up to HEAD.
-			place: current ? job.city : placeWithMissions(job),
+			place: isCurrent ? job.city : placeWithMissions(job),
 			role: job.role,
-			details: current ? undefined : job.missions.map((mission) => mission.detail),
+			details: isCurrent ? undefined : job.missions.map((mission) => mission.detail),
 		});
-		if (!current) continue;
+		if (!isCurrent) continue;
 		const start = monthIndex(job.start);
 		job.missions.forEach((mission, i) => {
 			events.push({
@@ -532,9 +360,9 @@ export function careerGraph(now = new Date()): CareerGraph {
 		lane: 'main',
 		month: headMonth,
 		datetime: now.toISOString().slice(0, 10),
-		date: 'aujourd’hui',
+		date: today,
 		title: 'HEAD',
-		place: currentPosition ? `${currentPosition.company}, ${currentPosition.city}` : person.city,
+		place: current ? `${current.company}, ${current.city}` : person.city,
 	});
 
 	// Within a month, `main` comes first: a branch opened that month leaves from it.

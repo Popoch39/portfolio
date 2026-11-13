@@ -5,14 +5,18 @@
  * transform would carry it along. Always ink, day or night: it stays in daylight's theme, but on the
  * colour schemes' papers, where it takes the scheme's own darkest row.
  */
+import { person } from '../data/profile';
+import { dictionary, type Lang } from '../i18n';
 import Pause from './Pause.astro';
 
 interface Props {
+	lang: Lang;
 	/** The page has loops to stop (the marquee, the lede): the statusline carries the Pause (WCAG 2.2.2). */
 	pause?: boolean;
 }
 
-const { pause = false } = Astro.props;
+const { lang, pause = false } = Astro.props;
+const { statusline: t, sky } = dictionary(lang);
 ---
 
 <div id="statusline" class="statusline mono theme-light" data-intro="statusline">
@@ -27,7 +31,7 @@ const { pause = false } = Astro.props;
 		}
 		<span class="mode" aria-hidden="true" data-lane-mode></span>
 		<span class="mode" aria-hidden="true" data-vim-mode>NORMAL</span>
-		{pause && <Pause />}
+		{pause && <Pause lang={lang} />}
 		<span class="message" aria-hidden="true" data-lane-message></span>
 		<span class="segment branch" aria-hidden="true">
 			<svg
@@ -46,7 +50,7 @@ const { pause = false } = Astro.props;
 			>
 			<span>main</span>
 		</span>
-		<span class="file" aria-hidden="true">~/louis/portfolio.md<span data-vim-modified hidden> [+]</span></span>
+		<span class="file" aria-hidden="true">{t.file}<span data-vim-modified hidden> [+]</span></span>
 	</div>
 	<div class="side">
 		{/* Today's sunrise and sunset at Besançon, written by the sky's inline script (`src/sky/sky.ts`). */}
@@ -63,7 +67,7 @@ const { pause = false } = Astro.props;
 				aria-hidden="true"
 				><path d="M3 19h18M7 19a5 5 0 0 1 10 0M12 3v7M9 6l3-3 3 3"></path></svg
 			>
-			<span><span class="sun-word">lever </span><span class="time" data-sun="rise"></span></span>
+			<span><span class="sun-word">{sky.rise} </span><span class="time" data-sun="rise"></span></span>
 			<svg
 				width="13"
 				height="13"
@@ -76,13 +80,13 @@ const { pause = false } = Astro.props;
 				aria-hidden="true"
 				><path d="M3 19h18M7 19a5 5 0 0 1 10 0M12 10V3M9 7l3 3 3-3"></path></svg
 			>
-			<span><span class="sun-word">coucher </span><span class="time" data-sun="set"></span></span>
-			<span class="visually-hidden"> à Besançon aujourd’hui</span>
+			<span><span class="sun-word">{sky.set} </span><span class="time" data-sun="set"></span></span>
+			<span class="visually-hidden">{t.sunWhere(person.city)}</span>
 		</p>
 		{/* The paper in force, picked in the Nuancier: read from the root, right from the first paint. */}
 		<span class="paper" aria-hidden="true"></span>
 		<span class="encoding" aria-hidden="true">utf-8 · markdown</span>
-		<span class="segment" aria-hidden="true">Bas</span>
+		<span class="segment" aria-hidden="true">{t.bottom}</span>
 		<span class="mode" aria-hidden="true">:wq</span>
 	</div>
 </div>

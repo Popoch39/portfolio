@@ -9,10 +9,12 @@ import SiteHeader from '../components/SiteHeader.astro';
 import SkyTrigger from '../components/SkyTrigger.astro';
 import Statusline from '../components/Statusline.astro';
 import Trail from '../components/Trail.astro';
-import { person } from '../data/profile';
+import { contentOf, person } from '../data/profile';
+import { dictionary, type Lang } from '../i18n';
 import '../styles/global.css';
 
 interface Props {
+	lang: Lang;
 	title: string;
 	description: string;
 	/** Pages outside the index (404): no canonical URL, no social card, `noindex`. */
@@ -21,15 +23,18 @@ interface Props {
 	pause?: boolean;
 }
 
-const { title, description, noindex = false, pause = false } = Astro.props;
+const { lang, title, description, noindex = false, pause = false } = Astro.props;
+const { meta } = dictionary(lang);
 
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const ogImageUrl = new URL(ogImage.src, Astro.site).href;
-const ogImageAlt = `${person.name}, ${person.jobTitle.toLowerCase()} — portfolio`;
+const ogImageAlt = meta.ogImageAlt(person.name, contentOf(lang).jobTitle);
+// Open Graph writes the locale with an underscore: `fr_FR`.
+const ogLocale = meta.locale.replace('-', '_');
 ---
 
 <!doctype html>
-<html lang="fr">
+<html lang={lang}>
 	<head>
 		<meta charset="utf-8" />
 		{/* `cover`: the paper and the statusline run under the notch and the home indicator; `env(safe-area-inset-*)` pads the content back out. */}
@@ -42,7 +47,7 @@ const ogImageAlt = `${person.name}, ${person.jobTitle.toLowerCase()} — portfol
 		<meta name="color-scheme" content="light dark" />
 		<meta name="generator" content={Astro.generator} />
 		{/* After the theme colour, which it sets for the night. */}
-		<SkyTrigger />
+		<SkyTrigger lang={lang} />
 
 		<link rel="icon" href="/favicon.ico" sizes="32x32" />
 		<link rel="icon" href={iconUrl} type="image/svg+xml" />
@@ -58,7 +63,7 @@ const ogImageAlt = `${person.name}, ${person.jobTitle.toLowerCase()} — portfol
 				<>
 					<meta property="og:type" content="profile" />
 					<meta property="og:site_name" content={person.name} />
-					<meta property="og:locale" content="fr_FR" />
+					<meta property="og:locale" content={ogLocale} />
 					<meta property="og:url" content={canonical} />
 					<meta property="og:title" content={title} />
 					<meta property="og:description" content={description} />
@@ -85,13 +90,13 @@ const ogImageAlt = `${person.name}, ${person.jobTitle.toLowerCase()} — portfol
 		<div id="smooth-wrapper">
 			<div id="smooth-content">
 				<div id="top" class="page">
-					<SiteHeader />
+					<SiteHeader lang={lang} />
 					<slot />
 				</div>
 			</div>
 		</div>
-		<Statusline pause={pause} />
-		<Nuancier />
+		<Statusline lang={lang} pause={pause} />
+		<Nuancier lang={lang} />
 		{/* Fixed layers over the whole window (the home page's Intro, the grain, then the cursor's ring), above the statusline. */}
 		<slot name="overlay" />
 		<Grain />

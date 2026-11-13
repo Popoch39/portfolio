@@ -4,6 +4,7 @@
  * the page receives lengths in px, measured from the marker.
  */
 import { person } from '../data/profile';
+import { dictionary, type Lang } from '../i18n';
 
 /** One minute of latitude, px: the scale of the map. */
 const LAT_MINUTE = 120;
@@ -63,11 +64,14 @@ function sexagesimal(value: number) {
 	return `${Math.floor(seconds / 3600)}°${String(Math.floor(seconds / 60) % 60).padStart(2, '0')}′${String(seconds % 60).padStart(2, '0')}″`;
 }
 
-/** Besançon's coordinates, as the map's label prints them. */
-export const coordinates = {
-	latitude: `${sexagesimal(person.latitude)} ${person.latitude < 0 ? 'S' : 'N'}`,
-	longitude: `${sexagesimal(person.longitude)} ${person.longitude < 0 ? 'O' : 'E'}`,
-};
+/** Besançon's coordinates, as the map's label prints them, hemispheres in the language's letters. */
+export function coordinates(lang: Lang) {
+	const { north, south, east, west } = dictionary(lang).geo;
+	return {
+		latitude: `${sexagesimal(person.latitude)} ${person.latitude < 0 ? south : north}`,
+		longitude: `${sexagesimal(person.longitude)} ${person.longitude < 0 ? west : east}`,
+	};
+}
 
 /** The lines' spacing, and where the first one falls east and south of the marker, px. */
 export const graticule = {

@@ -1,18 +1,18 @@
 ---
 import Cursor from '../components/Cursor.astro';
+import { dictionary, type Lang } from '../i18n';
 import Layout from '../layouts/Layout.astro';
+
+const lang: Lang = 'fr';
+const { meta, notFound: t } = dictionary(lang);
 ---
 
-<Layout
-	title="Page introuvable — Louis Pocheron"
-	description="Cette page n’existe pas ou a été déplacée. Retour au portfolio de Louis Pocheron, développeur fullstack et SIG."
-	noindex
->
+<Layout lang={lang} title={meta.notFound.title} description={meta.notFound.description} noindex>
 	<main class="wrap not-found">
-		<p class="mono status">E486: Pattern not found</p>
+		<p class="mono status">{t.status}</p>
 		<h1>404<Cursor /></h1>
-		<p class="lede">Cette page n’existe pas, ou plus.</p>
-		<a class="button" href="/">Retour à l’accueil</a>
+		<p class="lede">{t.lede}</p>
+		<a class="button" href="/">{t.back}</a>
 	</main>
 </Layout>
 

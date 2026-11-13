@@ -9,27 +9,21 @@ import SectionNumber from './SectionNumber.astro';
 import { person } from '../data/profile';
 import { delays, lift } from '../cafe/lifts';
 import { WHEN_CHOICES } from '../cafe/when';
+import { dictionary, type Lang } from '../i18n';
 
 interface Props {
+	lang: Lang;
 	number: number;
 	titleId: string;
 }
 
-const { number, titleId } = Astro.props;
+const { lang, number, titleId } = Astro.props;
+const t = dictionary(lang).cafe;
 
 const mailto = (subject: string) => `mailto:${person.email}?subject=${encodeURIComponent(subject)}`;
 
 /** What the counter says at each step of the Montage, in order; the last one is the final state's. */
-const steps = [
-	'0/6 · en pièces',
-	'0/6 · la chaudière',
-	'1/6 · l’entonnoir et le café',
-	'2/6 · le filtre',
-	'3/6 · le joint',
-	'4/6 · on visse le collecteur, un tour',
-	'5/6 · le couvercle',
-	'6/6 · sur le feu',
-];
+const { steps } = t;
 
 /**
  * The Repères of the Démontage, top to bottom, each beside the piece its field puts back: where its leader ends,
@@ -37,13 +31,14 @@ const steps = [
  */
 const tags = (
 	[
-		{ block: 'name', number: 1, text: 'le couvercle', piece: 'lid', x: 34.5, y: 60.5 },
-		{ block: 'email', number: 2, text: 'le collecteur', piece: 'collector', x: 36.5, y: 67 },
-		{ block: 'when', number: 3, text: 'le filtre', piece: 'filter', x: 38.5, y: 71.45 },
-		{ block: 'message', number: 4, text: 'la chaudière', piece: 'boiler', x: 36.5, y: 77.5 },
+		{ block: 'name', number: 1, piece: 'lid', x: 34.5, y: 60.5 },
+		{ block: 'email', number: 2, piece: 'collector', x: 36.5, y: 67 },
+		{ block: 'when', number: 3, piece: 'filter', x: 38.5, y: 71.45 },
+		{ block: 'message', number: 4, piece: 'boiler', x: 36.5, y: 77.5 },
 	] as const
 ).map(({ piece, x, y, ...tag }, rank) => ({
 	...tag,
+	text: t.tags[tag.block],
 	style: `--tag-x: ${x}; --tag-y: calc(${y} - ${lift(piece)}); --tag-up: ${delays(piece).up}s; --tag-show: ${+(0.8 + 0.07 * rank).toFixed(2)}s`,
 }));
 
@@ -65,15 +60,13 @@ const callButtons = [
 	<div class="cafe-screen">
 		<div class="cafe-head">
 			<SectionNumber number={number} />
-			<p class="mono cafe-aside">on monte, puis on en parle</p>
+			<p class="mono cafe-aside">{t.aside}</p>
 		</div>
 		<div class="cafe-rule" aria-hidden="true" data-cafe-rule></div>
 
 		{/* Each line clips its own rise. */}
 		<h2 id={titleId} class="cafe-title">
-			<span class="cafe-line"><span data-cafe-line>Parlons de</span></span>
-			<span class="cafe-line"><span data-cafe-line>votre projet</span></span>
-			<span class="cafe-line"><span data-cafe-line>autour d’un café.</span></span>
+			{t.titleLines.map((line) => <span class="cafe-line"><span data-cafe-line>{line}</span></span>)}
 		</h2>
 		{/* Plain text, not a live region: the scene rewrites it at each step without interrupting a screen reader. */}
 		<p class="mono cafe-counter" data-cafe-counter data-steps={JSON.stringify(steps)}>{steps.at(-1)}</p>
@@ -87,7 +80,7 @@ const callButtons = [
 		<div class="cafe-call" aria-hidden="true" data-cafe-screen>
 			{screenStrokes.map((stroke) => <span class="cafe-call-stroke" data-stroke={stroke} />)}
 			<div class="cafe-call-ui">
-				<div class="mono cafe-call-bar"><span>café · en visio</span><span class="cafe-call-count">2 participants</span></div>
+				<div class="mono cafe-call-bar"><span>{t.call.title}</span><span class="cafe-call-count">{t.call.count}</span></div>
 				<span class="cafe-call-live"></span>
 				<div class="cafe-call-tile"></div>
 				<span class="mono cafe-call-name">Louis</span>
@@ -95,7 +88,7 @@ const callButtons = [
 					<svg viewBox="0 0 112 84" fill="none" stroke="currentColor" stroke-width="1.5"
 						><circle cx="56" cy="34" r="13"></circle><path d="M28 84c2-16 13-24 28-24s26 8 28 24"></path></svg
 					>
-					<span class="mono">vous</span>
+					<span class="mono">{t.call.you}</span>
 				</div>
 				<div class="cafe-call-buttons">
 					{
@@ -123,7 +116,7 @@ const callButtons = [
 
 		<div class="cafe-figure">
 			<div class="cafe-moka">
-				<Montage />
+				<Montage lang={lang} />
 			</div>
 		</div>
 		{/* The figure's name already says how many pieces are back. */}
@@ -145,16 +138,13 @@ const callButtons = [
 
 	{/* The scene moves the paragraph and the actions; the Formulaire du Café hides them through this block of its own. */}
 	<div class="cafe-rest" data-cafe-rest>
-		<p class="cafe-text" data-cafe-text>
-			À {person.city}, ou en visio si vous êtes plus loin. Comme un moka&nbsp;: on assemble les pièces dans l’ordre, sans
-			rien forcer. Et sans engagement&nbsp;: au pire, on aura bu un café.
-		</p>
+		<p class="cafe-text" data-cafe-text>{t.text(person.city)}</p>
 		{/* Mail links without JavaScript; the script turns them into the buttons that open the form (`src/cafe/form.ts`). */}
 		<div class="cafe-actions" data-cafe-actions>
-			<a class="button" href={mailto('Un café ?')} data-cafe-open="cafe"
-				>Proposer un café <span class="mono" aria-hidden="true">↵</span></a
+			<a class="button" href={mailto(t.proposeSubject)} data-cafe-open="cafe"
+				>{t.propose} <span class="mono" aria-hidden="true">↵</span></a
 			>
-			<a class="cafe-visio" href={mailto('Une visio ?')} data-cafe-open="visio">Plutôt en visio</a>
+			<a class="cafe-visio" href={mailto(t.visioSubject)} data-cafe-open="visio">{t.visio}</a>
 		</div>
 	</div>
 
@@ -174,67 +164,72 @@ const callButtons = [
 						<span class="cafe-call-base"></span>
 					</div>
 					<div class="cafe-mini-figure">
-						<Montage mini />
+						<Montage lang={lang} mini />
 					</div>
 				</div>
 			</div>
 			<form class="cafe-form" novalidate aria-labelledby="cafe-form-title">
 				<div class="cafe-form-head">
-					<h3 id="cafe-form-title" class="cafe-form-title" data-cafe-heading>Un café, à Besançon.</h3>
-					<button type="button" class="mono cafe-mlink" data-cafe-switch>plutôt en visio</button>
+					<h3 id="cafe-form-title" class="cafe-form-title" data-cafe-heading>{t.flavours.cafe.heading}</h3>
+					<button type="button" class="mono cafe-mlink" data-cafe-switch>{t.flavours.cafe.switch}</button>
 				</div>
 				<div class="cafe-row cafe-row-line">
 					<label class="mono cafe-label" for="cafe-name"
-						><span class="cafe-badge" aria-hidden="true" data-badge="name">1</span>Nom</label
+						><span class="cafe-badge" aria-hidden="true" data-badge="name">1</span>{t.fields.name}</label
 					>
 					<input class="cafe-input" id="cafe-name" name="nom" type="text" autocomplete="name" maxlength="100" />
 				</div>
 				<div class="cafe-row cafe-row-line">
 					<label class="mono cafe-label" for="cafe-email"
-						><span class="cafe-badge" aria-hidden="true" data-badge="email">2</span>E-mail</label
+						><span class="cafe-badge" aria-hidden="true" data-badge="email">2</span>{t.fields.email}</label
 					>
 					<input class="cafe-input" id="cafe-email" name="email" type="email" autocomplete="email" maxlength="254" />
 				</div>
 				{/* The values are the route's (`worker/index.ts`), from the same list. */}
 				<div class="cafe-row" role="radiogroup" aria-labelledby="cafe-when">
 					<span class="mono cafe-label"
-						><span class="cafe-badge" aria-hidden="true" data-badge="when">3</span><span id="cafe-when">Quand&nbsp;?</span></span
+						><span class="cafe-badge" aria-hidden="true" data-badge="when">3</span><span id="cafe-when">{t.fields.when}</span></span
 					>
 					<span class="cafe-chips">
 						{
-							WHEN_CHOICES.map(({ value, chip }) => (
-								<label class="cafe-chip"><input type="radio" name="quand" value={value} /><span>{chip}</span></label>
+							WHEN_CHOICES.map((value) => (
+								<label class="cafe-chip"><input type="radio" name="quand" value={value} /><span>{t.chips[value]}</span></label>
 							))
 						}
 					</span>
 				</div>
 				<div class="cafe-row cafe-row-line cafe-row-message">
 					<label class="mono cafe-label" for="cafe-message"
-						><span class="cafe-badge" aria-hidden="true" data-badge="message">4</span>Message</label
+						><span class="cafe-badge" aria-hidden="true" data-badge="message">4</span>{t.fields.message}</label
 					>
-					<textarea class="cafe-input" id="cafe-message" name="message" rows="3" placeholder="facultatif" maxlength="4000"
-					></textarea>
+					<textarea
+						class="cafe-input"
+						id="cafe-message"
+						name="message"
+						rows="3"
+						placeholder={t.messagePlaceholder}
+						maxlength="4000"></textarea>
 				</div>
 				{/* The trap: out of sight and out of reach, only a robot filling every field writes in it. */}
 				<div class="cafe-trap" aria-hidden="true">
-					<label for="cafe-site">Site</label>
+					<label for="cafe-site">{t.fields.trap}</label>
 					<input id="cafe-site" name="site" type="text" tabindex="-1" autocomplete="off" />
 				</div>
 				<div class="cafe-form-actions">
 					<span class="cafe-send-group">
 						<button type="submit" class="button" data-cafe-send
-							><span data-cafe-send-label>Envoyer</span>
+							><span data-cafe-send-label>{t.send}</span>
 							<span class="mono" aria-hidden="true" data-cafe-send-key>↵</span></button
 						>
-						<span class="mono cafe-aside">sans engagement</span>
+						<span class="mono cafe-aside">{t.noCommitment}</span>
 					</span>
-					<button type="button" class="mono cafe-mlink" data-cafe-close>esc · fermer</button>
+					<button type="button" class="mono cafe-mlink" data-cafe-close>{t.close}</button>
 				</div>
 				<p class="mono cafe-hint" aria-live="polite" data-cafe-hint></p>
 			</form>
 			<div class="cafe-sent">
 				<p class="cafe-confirm" data-cafe-confirm></p>
-				<button type="button" class="mono cafe-mlink" data-cafe-again>recommencer</button>
+				<button type="button" class="mono cafe-mlink" data-cafe-again>{t.again}</button>
 			</div>
 		</div>
 	</template>

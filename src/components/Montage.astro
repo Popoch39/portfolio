@@ -8,8 +8,10 @@
 import moka from '../assets/moka/moka.json';
 import screwStrip from '../assets/moka/screw.avif?url&no-inline';
 import { delays, lift as blockLift, liftOver, type Block } from '../cafe/lifts';
+import { dictionary, type Lang } from '../i18n';
 
 interface Props {
+	lang: Lang;
 	/**
 	 * The Démontage's mini moka (Café stacked, `src/cafe/form.ts`): the same layers at the same URLs, drawn by the
 	 * Café's state alone. No scene, no screwing, and masked to assistive technologies: the Montage's figure names it.
@@ -17,7 +19,8 @@ interface Props {
 	mini?: boolean;
 }
 
-const { mini = false } = Astro.props;
+const { lang, mini = false } = Astro.props;
+const { figure } = dictionary(lang).cafe;
 
 type LayerName = keyof typeof moka.layers;
 type PieceName = (typeof moka.pieces)[number]['name'];
@@ -194,9 +197,7 @@ const camera = JSON.stringify(
 <div
 	class:list={['montage', { 'montage-mini': mini }]}
 	role={mini ? undefined : 'img'}
-	aria-label={mini
-		? undefined
-		: 'Un Moka Express en pièces au-dessus d’un réchaud, que le défilement remonte pièce par pièce avant d’allumer le feu.'}
+	aria-label={mini ? undefined : figure}
 	aria-hidden={mini ? 'true' : undefined}
 	data-montage={!mini || undefined}
 >

@@ -4,15 +4,19 @@
  * (`src/lede/typist.ts`). The first version is the final state, rendered here; screen readers get
  * a stable sentence instead of the show.
  */
-import { lede } from '../data/profile';
+import { contentOf } from '../data/profile';
+import { dictionary, type Lang } from '../i18n';
 import { restingOn, runs, tallestLines } from '../lede/buffer';
 
 interface Props {
+	lang: Lang;
 	/** The copy on the hero's night (ADR 0008): the typist writes to it too; nothing of it is read out. */
 	night?: boolean;
 }
 
-const { night = false } = Astro.props;
+const { lang, night = false } = Astro.props;
+const { lede } = contentOf(lang);
+const line = dictionary(lang).ledeLine;
 const first = lede.versions[0];
 ---
 
@@ -34,8 +38,8 @@ const first = lede.versions[0];
 		>
 	</p>
 	<p class="mono version" aria-hidden="true" data-version>
-		<span class="version-number">version <span data-version-number>1/{lede.versions.length}</span></span>
-		<span data-audience>pour&nbsp;: {first.audience}</span>
+		<span class="version-number">{line.version} <span data-version-number>1/{lede.versions.length}</span></span>
+		<span data-audience>{line.audience(first.audience)}</span>
 	</p>
 	<div class="mono keys" aria-hidden="true" data-keys data-on="false"></div>
 </div>

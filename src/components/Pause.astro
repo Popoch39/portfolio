@@ -4,7 +4,14 @@
  * the lede. A native checkbox: the marquee stops in CSS alone (`:has()`), the lede follows its `change`
  * (`src/lede/typist.ts`). The choice is remembered per visitor.
  */
+import { dictionary, type Lang } from '../i18n';
 import { inlineScriptHash } from './inline-script';
+
+interface Props {
+	lang: Lang;
+}
+
+const t = dictionary(Astro.props.lang).statusline;
 
 // Inline, right after the box: the remembered choice is back before the first paint and before the lede starts.
 // Storage throws when the browser blocks site data: the Pause then lasts for this visit only.
@@ -28,7 +35,7 @@ Astro.csp?.insertScriptHash(inlineScriptHash(remember));
 <label class="pause">
 	<input id="pause" type="checkbox" autocomplete="off" />
 	<span class="box" aria-hidden="true"></span>
-	pause<span class="visually-hidden"> des animations</span>
+	{t.pause}<span class="visually-hidden">{t.pauseHidden}</span>
 </label>
 <script is:inline set:html={remember} />
 

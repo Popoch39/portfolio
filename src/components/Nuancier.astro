@@ -9,18 +9,26 @@
  * The book rests shut, the paper in force alone showing; it opens as the pointer comes over it, to the
  * keyboard, or on a tap, and shuts again on a pick. The choreography is `src/sky/nuancier.ts`.
  */
+import { dictionary, type Lang } from '../i18n';
 import { skyModes, type SkyMode } from '../sky/sky';
 import { inlineScriptHash } from './inline-script';
 
-const strips: Record<SkyMode, { code: string; name: string; hint: string; sub: string }> = {
-	light: { code: 'EN-01', name: 'Jour', hint: 'toujours le jour', sub: '#efeee9' },
-	dark: { code: 'EN-02', name: 'Nuit', hint: 'toujours la nuit', sub: '#141412' },
-	'solarized-light': { code: 'EN-03', name: 'Solarized Light', hint: 'd’Ethan Schoonover', sub: '#fdf6e3' },
-	auto: { code: 'EN-04', name: 'Auto', hint: 'suit le soleil à Besançon', sub: '' },
-	nord: { code: 'EN-05', name: 'Nord', hint: 'd’Arctic Ice Studio', sub: '#2e3440' },
-	'gruvbox-light': { code: 'EN-06', name: 'Gruvbox Light', hint: 'de morhetz', sub: '#fbf1c7' },
-	'catppuccin-mocha': { code: 'EN-07', name: 'Catppuccin Mocha', hint: 'de Catppuccin', sub: '#1e1e2e' },
-	'tokyo-night': { code: 'EN-08', name: 'Tokyo Night', hint: 'd’enkia', sub: '#1a1b26' },
+interface Props {
+	lang: Lang;
+}
+
+const t = dictionary(Astro.props.lang).nuancier;
+
+/** Each strip's code and surface; its name and hint are the language's. */
+const strips: Record<SkyMode, { code: string; sub: string }> = {
+	light: { code: 'EN-01', sub: '#efeee9' },
+	dark: { code: 'EN-02', sub: '#141412' },
+	'solarized-light': { code: 'EN-03', sub: '#fdf6e3' },
+	auto: { code: 'EN-04', sub: '' },
+	nord: { code: 'EN-05', sub: '#2e3440' },
+	'gruvbox-light': { code: 'EN-06', sub: '#fbf1c7' },
+	'catppuccin-mocha': { code: 'EN-07', sub: '#1e1e2e' },
+	'tokyo-night': { code: 'EN-08', sub: '#1a1b26' },
 };
 
 // The chosen strip goes to the front, the others keep the fan's order behind it.
@@ -41,10 +49,11 @@ Astro.csp?.insertScriptHash(inlineScriptHash(show));
 {/* The accent ring that rides the edge of the new paper as it spreads; drawn with the page, under the reveal. */}
 <span class="ring" aria-hidden="true" data-nuancier-ring></span>
 <fieldset class="fan" data-nuancier hidden>
-	<legend class="visually-hidden">Papier du site</legend>
+	<legend class="visually-hidden">{t.legend}</legend>
 	{
 		skyModes.map((value, index) => {
-			const { code, name, hint, sub } = strips[value];
+			const { code, sub } = strips[value];
+			const { name, hint } = t.papers[value];
 			// A two-word name runs too long for the spine: the family, then the variant beside it.
 			const [family, variant] = name.split(' ');
 			return (

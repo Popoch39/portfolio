@@ -8,17 +8,20 @@
  */
 import SectionHeading from './SectionHeading.astro';
 import { careerGraph, type Lane, onMain, person, salariedPositions, yearsOfExperience } from '../data/profile';
+import { dictionary, type Lang } from '../i18n';
 
 interface Props {
+	lang: Lang;
 	number: number;
 	titleId: string;
 }
 
-const { number, titleId } = Astro.props;
+const { lang, number, titleId } = Astro.props;
+const t = dictionary(lang).frise;
 
-const { commits, branches, aside } = careerGraph();
-const cities = [...new Set(salariedPositions.map((position) => position.city)), person.city];
-const summary = `~${yearsOfExperience()} ans d’expérience · ${cities.join(' & ')}`;
+const { commits, branches, aside } = careerGraph(lang);
+const cities = [...new Set(salariedPositions(lang).map((position) => position.city)), person.city];
+const summary = t.summary(yearsOfExperience(lang), cities);
 
 // Plane geometry, in px before the tilt: `main` runs along y = 0, the branches behind it.
 const SPAN = 3600;
@@ -60,12 +63,12 @@ const geometry = [
 <div class="frise-track" data-frise-track>
 	<section id="parcours" class="frise" aria-labelledby={titleId} data-frise>
 		<div class="frise-head">
-			<SectionHeading number={number} title="Parcours" titleId={titleId} aside={aside} onDark />
+			<SectionHeading number={number} title={t.title} titleId={titleId} aside={aside} onDark />
 			<p class="mono frise-summary">{summary}</p>
 		</div>
 
 		{/* Focusable at the final state, so that the keyboard scrolls it; the perspective sits on it, so the camera stays still. */}
-		<div class="frise-band" role="region" aria-label="Frise du parcours" tabindex="0" style={geometry} data-frise-band>
+		<div class="frise-band" role="region" aria-label={t.bandLabel} tabindex="0" style={geometry} data-frise-band>
 			{/* The grid and the graph lie on two copies of the plane, so that the scene can fade the graph alone under the heading. */}
 			<div class="frise-plane" aria-hidden="true">
 				<div class="frise-grid" data-frise-grid></div>

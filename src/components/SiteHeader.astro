@@ -1,22 +1,31 @@
 ---
-import { person, profile } from '../data/profile';
+import { contentOf, person } from '../data/profile';
+import { dictionary, type Lang } from '../i18n';
+
+interface Props {
+	lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = dictionary(lang).header;
+const profile = contentOf(lang);
 
 // Absolute anchors: from the 404 page, they lead back to the home page sections.
 const sections = [
-	{ href: '/#parcours', label: 'Parcours' },
-	{ href: '/#stack', label: 'Stack' },
-	{ href: '/#contact', label: 'Contact' },
+	{ href: '/#parcours', label: t.sections.parcours },
+	{ href: '/#stack', label: t.sections.stack },
+	{ href: '/#contact', label: t.sections.contact },
 ];
 ---
 
 <div class="wrap">
 	<header class="site-header grid-12" data-intro="header">
 		<a class="name" href="/#top" data-intro="name">{person.name}</a>
-		<p class="mono meta" data-intro="role">{person.jobTitle}</p>
+		<p class="mono meta" data-intro="role">{profile.jobTitle}</p>
 		<p class="mono meta specialty" data-intro="specialty">
 			<span class="long">{profile.specialty}</span><span class="short">{profile.specialtyShort}</span>
 		</p>
-		<nav aria-label="Sections" data-intro="nav">
+		<nav aria-label={t.navLabel} data-intro="nav">
 			{sections.map((section) => <a href={section.href}>{section.label}</a>)}
 		</nav>
 		<span class="rule" data-intro="rule"></span>

@@ -8,12 +8,15 @@ import IntroTrigger from '../components/IntroTrigger.astro';
 import SectionHeading from '../components/SectionHeading.astro';
 import SectionNumber from '../components/SectionNumber.astro';
 import Layout from '../layouts/Layout.astro';
-import { currentPosition, education, marqueeWords, person, profile, stack } from '../data/profile';
+import { contentOf, currentPosition, marqueeWords, person, stack } from '../data/profile';
 import { graticule, kilometre, meridianShares } from '../hero/map';
+import { dictionary, type Lang } from '../i18n';
 
-const title = 'Louis Pocheron — Développeur web & SIG à Besançon';
-const description =
-	'Sites vitrines, boutiques en ligne et prise de rendez-vous pour les commerces locaux ; cartographie SIG pour l’énergie et les collectivités. À Besançon.';
+const lang: Lang = 'fr';
+const t = dictionary(lang);
+const profile = contentOf(lang);
+const current = currentPosition(lang);
+const { title, description } = t.meta.home;
 
 const mailto = `mailto:${person.email}`;
 
@@ -36,7 +39,7 @@ const jsonLd = JSON.stringify({
 	url: canonical,
 	name: title,
 	description,
-	inLanguage: 'fr-FR',
+	inLanguage: t.meta.locale,
 	// Google reads the site name shown above the result from a WebSite node on the home page.
 	isPartOf: { '@type': 'WebSite', '@id': `${canonical}#website`, name: person.name, url: canonical },
 	mainEntity: {
@@ -47,15 +50,15 @@ const jsonLd = JSON.stringify({
 		familyName: person.familyName,
 		url: canonical,
 		email: mailto,
-		jobTitle: person.jobTitle,
+		jobTitle: profile.jobTitle,
 		description: profile.specialty,
 		address: { '@type': 'PostalAddress', addressLocality: person.city, addressCountry: person.country },
-		worksFor: currentPosition && {
+		worksFor: current && {
 			'@type': 'Organization',
-			name: currentPosition.company,
-			address: { '@type': 'PostalAddress', addressLocality: currentPosition.city, addressCountry: 'FR' },
+			name: current.company,
+			address: { '@type': 'PostalAddress', addressLocality: current.city, addressCountry: 'FR' },
 		},
-		alumniOf: [...new Set(education.map((e) => e.school))].map((name) => ({
+		alumniOf: [...new Set(profile.education.map((e) => e.school))].map((name) => ({
 			'@type': 'EducationalOrganization',
 			name,
 		})),
@@ -65,17 +68,17 @@ const jsonLd = JSON.stringify({
 }).replace(/</g, '\\u003c');
 ---
 
-<Layout title={title} description={description} pause>
+<Layout lang={lang} title={title} description={description} pause>
 	<script slot="head" type="application/ld+json" set:html={jsonLd} />
 	<IntroTrigger slot="head" />
-	<Intro slot="overlay" />
+	<Intro slot="overlay" lang={lang} />
 
 	<main>
 		<div class="wrap">
 			<section class="hero" aria-labelledby="hero-title">
 				{/* The name stands on a parallel that runs to Besançon, on a map whose scale holds (`src/hero/map.ts`). */}
 				<div class="hero-map theme-light" style={mapStyle}>
-					<HeroSheet />
+					<HeroSheet lang={lang} />
 					{
 						/*
 						 * The night (06 · Terminateur, ADR 0008): the map again in the night's ink, cut along the
@@ -87,7 +90,7 @@ const jsonLd = JSON.stringify({
 						<span class="sky-layer sky-sliver"></span>
 						<div class="sky-layer sky-night">
 							<div class="sky-sheet">
-								<HeroSheet night />
+								<HeroSheet lang={lang} night />
 							</div>
 							{[1, 2, 3].map((band) => <span class="sky-band" data-band={band} />)}
 						</div>
@@ -114,42 +117,40 @@ const jsonLd = JSON.stringify({
 				</div>
 			</div>
 
-			<Frise number={1} titleId="career-title" />
+			<Frise lang={lang} number={1} titleId="career-title" />
 
 			<div class="wrap">
 				<section id="stack" class="section" aria-labelledby="stack-title">
-					<SectionHeading number={2} title="Stack" titleId="stack-title" aside=":set stack?" />
-					<Atome />
+					<SectionHeading number={2} title={t.stackSection.title} titleId="stack-title" aside={t.stackSection.aside} />
+					<Atome lang={lang} />
 					{/* The last element the Atome's pinned frame keeps in view: its screen fit measures down to it. */}
 					<p class="mono stack-note" data-atome-frame-end>
-						éditeur : neovim · multiplexeur : tmux · runtime : bun — <a href={person.nvimConfig}
-							>la config est sur GitHub</a
-						>
+						{t.stackSection.note}<a href={person.nvimConfig}>{t.stackSection.noteLink}</a>
 					</p>
 				</section>
 			</div>
 
 			{/* Out of the column: the moka's zoomed stack runs past it, clipped by the figure. */}
-			<Cafe number={3} titleId="cafe-title" />
+			<Cafe lang={lang} number={3} titleId="cafe-title" />
 
 			<div class="wrap">
 				<section id="contact" class="contact-section" aria-labelledby="contact-title">
 					<div class="contact grid-12">
 						<SectionNumber number={4} />
 						<div class="contact-body">
-							<h2 id="contact-title" class="visually-hidden">Contact</h2>
+							<h2 id="contact-title" class="visually-hidden">{t.contact.title}</h2>
 							<p class="contact-wq" aria-hidden="true">:wq</p>
-							<p class="contact-lede">Un projet carto, une API, une interface React&nbsp;? Écrivez-moi.</p>
+							<p class="contact-lede">{t.contact.lede}</p>
 							{/* A click yanks the address once the statusline's reactions listen (`src/statusline/yank.ts`). */}
 							<a class="contact-mail" href={mailto} data-yank>{mailUser}@<wbr />{mailDomain}</a>
 							<div class="contact-links">
 								{/* The Café's anchor; with JavaScript it opens the Formulaire du Café there (`src/cafe/form.ts`). */}
-								<a href="#cafe" data-cafe-propose>proposer un café</a>
+								<a href="#cafe" data-cafe-propose>{t.contact.propose}</a>
 								<a href={person.github.url} rel="me"
 									>GitHub — {person.github.user} <span aria-hidden="true">↗</span></a
 								>
-								<a href={person.nvimConfig}>Config Neovim <span aria-hidden="true">↗</span></a>
-								<span class="dim">{person.city}, France</span>
+								<a href={person.nvimConfig}>{t.contact.nvimConfig} <span aria-hidden="true">↗</span></a>
+								<span class="dim">{person.city}, {profile.country}</span>
 							</div>
 						</div>
 					</div>

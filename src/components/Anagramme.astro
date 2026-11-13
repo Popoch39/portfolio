@@ -1,0 +1,421 @@
+---
+/**
+ * The Anagramme (ADR 0011) on the home page, both ways of it:
+ *
+ * - leaving: the build's pairing of every animated block with the other language (`#anagramme`), the
+ *   rules that pick each overlay's layout by width, and the module that plays it (`src/bascule/play.ts`);
+ * - arriving: an inline script, right after the hero, that opens the page on the version of the Accroche
+ *   the other language was on, before the first paint and without the view transition's fade. Read once,
+ *   then removed: a reload or a later visit opens on the first version.
+ *
+ * Placed after the hero: both copies of the lede (the day's and the night's) are parsed when it runs. The
+ * head expects it (`HomePage.astro`), so the page is not painted before.
+ */
+import { contentOf } from '../data/profile';
+import { dictionary, type Lang } from '../i18n';
+import { ARRIVAL_KEY } from '../bascule/anagram';
+import { anagramOf } from '../bascule/build';
+import { restingOn, runs, type Run } from '../lede/buffer';
+import { inlineScriptHash, inlineStyleHash } from './inline-script';
+
+interface Props {
+	lang: Lang;
+}
+
+const { lang } = Astro.props;
+const { data, rules } = anagramOf(lang);
+// `<` escaped: the JSON sits inside a <script> and must not be able to close it.
+const json = JSON.stringify(data).replace(/</g, '\\u003c');
+Astro.csp?.insertStyleHash(inlineStyleHash(rules));
+
+const { lede } = contentOf(lang);
+const line = dictionary(lang).ledeLine;
+const escape = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+/** A run as the typist draws it (`typist.ts`, `runNode`). */
+const html = ({ text, kind, tiers }: Run) => {
+	if (kind === 'text') return escape(text);
+	if (kind === 'break') return `<br data-tiers="${tiers?.join(' ') ?? ''}">`;
+	return `<span data-kind="${kind}">${escape(text)}</span>`;
+};
+const resting = lede.versions.map((_, version) => runs(lede, restingOn(lede, version)).map(html).join(''));
+const audiences = lede.versions.map((version) => line.audience(version.audience));
+
+const arrive = `(() => {
+	const resting = ${JSON.stringify(resting).replace(/</g, '\\u003c')};
+	const audiences = ${JSON.stringify(audiences).replace(/</g, '\\u003c')};
+	const take = () => {
+		try {
+			const raw = sessionStorage.getItem(${JSON.stringify(ARRIVAL_KEY)});
+			sessionStorage.removeItem(${JSON.stringify(ARRIVAL_KEY)});
+			return raw && JSON.parse(raw);
+		} catch {
+			return null;
+		}
+	};
+	const arrive = () => {
+		const arrival = take();
+		// Only the page the Bascule led to: a stale value, left by a navigation that never happened, is dropped.
+		if (!arrival || arrival.to !== location.pathname || !(arrival.v in resting)) return;
+		const at = arrival.v;
+		document.documentElement.dataset.arrived = 'bascule';
+		const typed = document.querySelector('[data-lede]');
+		if (!typed) return;
+		typed.dataset.ledeAt = String(at);
+		for (const view of [typed, ...document.querySelectorAll('[data-lede-night]')]) {
+			view.querySelector('[data-buffer]').innerHTML = resting[at];
+			view.querySelector('[data-version-number]').textContent = (at + 1) + '/' + resting.length;
+			view.querySelector('[data-audience]').textContent = audiences[at];
+		}
+	};
+	// A page prerendered at the link's hover runs before the click: the version is only known once it is shown.
+	if (document.prerendering) document.addEventListener('prerenderingchange', arrive, { once: true });
+	else arrive();
+})();`;
+Astro.csp?.insertScriptHash(inlineScriptHash(arrive));
+---
+
+<script is:inline id="bascule-arrival" set:html={arrive} />
+<script is:inline type="application/json" id="anagramme" set:html={json} />
+<style is:inline set:html={rules}></style>
+
+<script>
+	import '../bascule/play';
+</script>
+
+<style is:global>
+	/*
+	 * The overlays the Bascule builds (`src/bascule/play.ts`), the board's values (`TRAVEL`, `SINK`, `RISE`
+	 * and the curves in `src/bascule/anagram.ts`). Only `transform` and `opacity` move, in transitions and
+	 * keyframes the compositor plays: no script runs on any frame, and nothing is left running once landed.
+	 * Each host is the box the real text starts in; the overlay starts there too.
+	 */
+	[data-ag-host] {
+		position: relative;
+	}
+
+	.ag {
+		position: absolute;
+		top: 0;
+		left: 0;
+		display: none;
+		pointer-events: none;
+		white-space: pre;
+		/* The travelling letters go over the others within it, never over the night that lies over the day's copy. */
+		isolation: isolate;
+		--ag-tint: var(--color-accent-display);
+	}
+
+	.ag[data-align='right'] {
+		left: auto;
+		right: 0;
+	}
+
+	.ag-on .ag {
+		display: block;
+	}
+
+	/*
+	 * The real text gives way to its letters, still read out (the fill, not the visibility, is taken
+	 * away): screen readers keep hearing the real paragraphs and links, never the letters.
+	 */
+	.ag-on [data-ag-live] {
+		-webkit-text-fill-color: transparent;
+	}
+
+	.ag-on [data-ag-live] > svg,
+	.ag-on [data-ag-live] > [data-buffer],
+	.ag-on [data-ag-live] ~ [data-ag-with] {
+		visibility: hidden;
+	}
+
+	/* The outer box carries x, the middle one y, the inner one the hop: two curves make the arc. */
+	.ag > .g {
+		--bx: var(--bx0);
+		--ax: var(--ax0);
+		--by: var(--by0);
+		--ay: var(--ay0);
+		--h: var(--h0);
+		--t: var(--t0);
+		--z: var(--z0);
+		--dp: var(--dp0);
+		position: absolute;
+		top: 0;
+		left: 0;
+		display: var(--dp);
+		z-index: var(--z);
+		transform: translateX(var(--bx));
+	}
+
+	.ag-go .ag > .g {
+		transform: translateX(var(--ax));
+	}
+
+	.ag .gy {
+		display: block;
+		transform: translateY(var(--by));
+	}
+
+	.ag-go .ag .gy {
+		transform: translateY(var(--ay));
+	}
+
+	.ag .gi {
+		position: relative;
+		display: block;
+		-webkit-text-fill-color: currentColor;
+	}
+
+	/* An icon of the statusline, centred on its row as the flex row centres it. */
+	.ag .gu {
+		display: flex;
+		align-items: center;
+		height: 1lh;
+	}
+
+	/* The accent copy of a travelling letter: in flight the letter turns to the accent, and back as it lands. */
+	.ag .gt {
+		position: absolute;
+		top: 0;
+		left: 0;
+		color: var(--ag-tint);
+		-webkit-text-fill-color: currentColor;
+		opacity: 0;
+	}
+
+	/* On the ink (the button, the statusline), the accent itself. */
+	.ag:is([data-ag-key='label'], [data-ag-key='file'], [data-ag-key='sun'], [data-ag-key='paper'], [data-ag-key='bottom']) {
+		--ag-tint: var(--color-accent);
+	}
+
+	/* The statusline's segments have their padding: the text starts inside it. */
+	.ag[data-ag-key='bottom'] {
+		left: 14px;
+	}
+
+	.ag[data-ag-key='paper'] {
+		right: 14px;
+	}
+
+	/* GitHub, after the button, moves with the button's end. */
+	.ag-on [data-ag-follow] {
+		transition: transform 860ms cubic-bezier(0.65, 0, 0.35, 1) 240ms;
+	}
+
+	.ag-go [data-ag-follow] {
+		transform: translateX(var(--ag-follow));
+	}
+
+	.ag > .p {
+		transition: transform 860ms cubic-bezier(0.65, 0, 0.35, 1) var(--d);
+	}
+
+	.ag > .p > .gy {
+		transition: transform 860ms cubic-bezier(0.3, 0, 0.2, 1) var(--d);
+	}
+
+	.ag-go .ag > .p .gi {
+		animation: ag-hop 860ms linear var(--d) both;
+	}
+
+	.ag-go .ag > .p .gt {
+		animation: ag-tint 860ms linear var(--d) both;
+	}
+
+	/* Letters without a partner sink, new ones rise in place from just as low. */
+	.ag > .o {
+		transition: opacity 280ms ease-in var(--d);
+	}
+
+	.ag > .o > .gy {
+		transition: transform 280ms cubic-bezier(0.5, 0, 0.75, 0) var(--d);
+	}
+
+	.ag-go .ag > .o {
+		opacity: 0;
+	}
+
+	.ag > .n {
+		opacity: 0;
+		transition: opacity 380ms ease-out var(--d);
+	}
+
+	.ag > .n > .gy {
+		transition: transform 380ms cubic-bezier(0.2, 0.7, 0.2, 1) var(--d);
+	}
+
+	.ag-go .ag > .n {
+		opacity: 1;
+	}
+
+	@keyframes ag-hop {
+		0% {
+			transform: translateY(0);
+			animation-timing-function: cubic-bezier(0.3, 0, 0.5, 1);
+		}
+
+		50% {
+			transform: translateY(calc(var(--h) * 1em));
+			animation-timing-function: cubic-bezier(0.5, 0, 0.7, 1);
+		}
+
+		100% {
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes ag-tint {
+		0%,
+		100% {
+			opacity: 0;
+		}
+
+		14%,
+		80% {
+			opacity: var(--t);
+		}
+	}
+
+	/*
+	 * The Accroche's slots and cursor, as the buffer draws them: the source's until the letters leave, the
+	 * target's once each has landed (a colour switched after its delay, not animated). Nothing in flight.
+	 */
+	.ag .gy,
+	.ag .gi {
+		text-decoration-color: transparent;
+		text-decoration-thickness: 0.15em;
+		text-underline-offset: 0.19em;
+	}
+
+	/* Two boxes: a letter underlined on both sides loses the source's line as it leaves, and gets the target's as it lands. */
+	.ag-on:not(.ag-go) .ag > .us:not(.cs) > .gy,
+	.ag-go .ag > .ut:not(.ct) .gi {
+		text-decoration-line: underline;
+		text-decoration-color: var(--color-accent);
+	}
+
+	.ag-on:not(.ag-go) .ag > .cs .gi,
+	.ag-go .ag > .ct .gi {
+		background: var(--color-accent);
+		-webkit-text-fill-color: var(--color-on-accent);
+	}
+
+	.ag-go .ag > :is(.ut, .ct) .gi {
+		transition:
+			text-decoration-color 0s linear var(--e),
+			background-color 0s linear var(--e),
+			-webkit-text-fill-color 0s linear var(--e);
+	}
+
+	/* A slot's space: a letter that leaves no ink, for its underline alone. */
+	.ag > .sp .gi {
+		-webkit-text-fill-color: transparent;
+	}
+
+	/* The button's mark (`:wq`), muted on the ink. */
+	.ag > .m .gi {
+		color: var(--color-on-ink-muted);
+	}
+
+	/* The button's ink follows its label from one length to the other, from the left. */
+	.ag-on .button[data-ag-ink] {
+		isolation: isolate;
+		position: relative;
+		background: transparent;
+	}
+
+	.ag-on .button[data-ag-ink]::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		background: var(--color-ink);
+		transform-origin: 0 50%;
+		transition: transform 860ms cubic-bezier(0.65, 0, 0.35, 1) 240ms;
+	}
+
+	.ag-go .button[data-ag-ink]::before {
+		transform: scaleX(var(--ag-scale));
+	}
+
+	/*
+	 * The sun stands right of the paper's segment, whose words change length from one language to the
+	 * other (`build.ts`, `paperShifts`): it lands that many columns aside, by paper and by width.
+	 */
+	.ag[data-ag-key='sun'] {
+		right: 14px;
+		--ps: var(--ps-auto-day-w);
+		--ag-shift: calc(var(--ps) * 1ch);
+	}
+
+	:root[data-theme='dark'] .ag[data-ag-key='sun'] {
+		--ps: var(--ps-auto-night-w);
+	}
+
+	:root[data-bg] .ag[data-ag-key='sun'] {
+		--ps: var(--ps-named-w);
+	}
+
+	:root[data-bg='light'] .ag[data-ag-key='sun'] {
+		--ps: var(--ps-light-w);
+	}
+
+	:root[data-bg='dark'] .ag[data-ag-key='sun'] {
+		--ps: var(--ps-dark-w);
+	}
+
+	@media (max-width: 860px) {
+		.ag[data-ag-key='sun'] {
+			--ps: var(--ps-auto-day-n);
+		}
+
+		:root[data-theme='dark'] .ag[data-ag-key='sun'] {
+			--ps: var(--ps-auto-night-n);
+		}
+
+		:root[data-bg] .ag[data-ag-key='sun'] {
+			--ps: var(--ps-named-n);
+		}
+
+		:root[data-bg='light'] .ag[data-ag-key='sun'] {
+			--ps: var(--ps-light-n);
+		}
+
+		:root[data-bg='dark'] .ag[data-ag-key='sun'] {
+			--ps: var(--ps-dark-n);
+		}
+	}
+
+	/* The language being left lets go of its underline as the other one is chosen. */
+	.ag-on [data-bascule] a[aria-current] {
+		text-decoration: none;
+	}
+
+	.ag-on [data-bascule] a[data-ag-to] {
+		text-decoration: underline;
+		text-decoration-color: var(--color-accent);
+		text-decoration-thickness: 2px;
+		text-underline-offset: 4px;
+	}
+
+	/* Reduced motion: no letter travels, they are in place at once; those born or sunk fade in 180ms. */
+	@media (prefers-reduced-motion: reduce) {
+		.ag > .g,
+		.ag .gy,
+		.ag-on .button[data-ag-ink]::before,
+		.ag-on [data-ag-follow] {
+			transition: none !important;
+		}
+
+		.ag > .o,
+		.ag > .n {
+			transition: opacity 180ms linear !important;
+		}
+
+		.ag .gi,
+		.ag .gt,
+		.ag-go .ag > :is(.ut, .ct) .gi {
+			animation: none !important;
+			transition: none !important;
+		}
+	}
+</style>

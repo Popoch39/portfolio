@@ -3,6 +3,7 @@
  * The home page, in one language: what `/` and `/en/` both render (ADR 0011).
  */
 import { getAbsoluteLocaleUrl } from 'astro:i18n';
+import Anagramme from './Anagramme.astro';
 import Atome from './Atome.astro';
 import Cafe from './Cafe.astro';
 import Frise from './Frise.astro';
@@ -79,6 +80,8 @@ const jsonLd = JSON.stringify({
 <Layout lang={lang} title={title} description={description} pause>
 	<script slot="head" type="application/ld+json" set:html={jsonLd} />
 	<IntroTrigger slot="head" />
+	{/* Arrived by a Bascule, the hero opens on the other language's version: nothing is painted before (`Anagramme.astro`). */}
+	<link slot="head" rel="expect" href="#bascule-arrival" blocking="render" />
 	<Intro slot="overlay" lang={lang} />
 
 	<main>
@@ -107,6 +110,7 @@ const jsonLd = JSON.stringify({
 					</div>
 				</div>
 			</section>
+			<Anagramme lang={lang} />
 		</div>
 
 		{/* Everything after the first screen, in one block: the page's grid gives the hero its own row. */}

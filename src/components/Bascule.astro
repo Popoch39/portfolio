@@ -4,10 +4,12 @@
  * (ADR 0011). Without JavaScript a click is a navigation and nothing more.
  *
  * Each link shows its code and names its language, in that language, to screen readers. The code
- * sits in a span of its own (`data-bascule-code`), the one the Anagramme moves.
+ * sits in a span of its own (`data-bascule-code`). On the home page a click plays the Anagramme first
+ * (`src/bascule/play.ts`), the underline passing at once to the language chosen.
  */
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import { dictionary, languages, type Lang } from '../i18n';
+import { inlineScriptHash } from './inline-script';
 
 interface Props {
 	lang: Lang;
@@ -27,7 +29,15 @@ const links = languages.map((code) => {
 	if (code === lang) current = href === Astro.url.pathname ? 'page' : 'true';
 	return { code, href, current };
 });
+
+// The other language prerendered as its link is hovered or pressed: the Anagramme ends on a page already there.
+const prerender = JSON.stringify({
+	prerender: [{ where: { selector_matches: '[data-bascule-lang]:not([aria-current])' }, eagerness: 'moderate' }],
+});
+Astro.csp?.insertScriptHash(inlineScriptHash(prerender));
 ---
+
+<script is:inline type="speculationrules" set:html={prerender} />
 
 <nav class="mono bascule" aria-label={dictionary(lang).header.basculeLabel} data-bascule>
 	{

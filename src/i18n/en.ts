@@ -231,6 +231,7 @@ export const header: Dictionary['header'] = {
 	navLabel: 'Sections',
 	sections: { parcours: 'Career', stack: 'Stack', contact: 'Contact' },
 	basculeLabel: 'Language',
+	languageName: 'English',
 };
 
 export const geo: Dictionary['geo'] = {
@@ -368,6 +369,13 @@ export const cafe: Dictionary['cafe'] = {
 	failed: (address: string) => `not sent: try again, or write to ${address}`,
 };
 
+export const contactRoute: Dictionary['contactRoute'] = {
+	200: 'Sent.',
+	400: 'The proposal is incomplete or invalid.',
+	429: 'Too many sends: try again in a minute.',
+	502: 'The mail did not leave: try again later.',
+};
+
 export const notFound: Dictionary['notFound'] = {
 	status: 'E486: Pattern not found',
 	lede: 'This page doesn’t exist, or no longer does.',
@@ -389,5 +397,6 @@ export const en: Dictionary = {
 	stackSection,
 	contact,
 	cafe,
+	contactRoute,
 	notFound,
 };

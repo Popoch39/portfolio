@@ -19,9 +19,6 @@ interface Props {
 
 const { lang, path } = Astro.props;
 
-/** Each language by its own name: what a screen reader announces, in that language's voice. */
-const names: Record<Lang, string> = { fr: 'Français', en: 'English' };
-
 const links = languages.map((code) => {
 	const href = getRelativeLocaleUrl(code, path);
 	// `page` where the link is this very page; on the 404 it is the home page, still the current language.
@@ -52,7 +49,7 @@ Astro.csp?.insertScriptHash(inlineScriptHash(prerender));
 					<span aria-hidden="true" data-bascule-code>
 						{link.code.toUpperCase()}
 					</span>
-					<span class="visually-hidden">{names[link.code]}</span>
+					<span class="visually-hidden">{dictionary(link.code).header.languageName}</span>
 				</a>
 			</>
 		))

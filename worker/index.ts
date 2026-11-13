@@ -4,6 +4,8 @@
  * sends its proposal to Louis by mail.
  */
 import { WHEN_VALUES } from '../src/cafe/when';
+import { contactRoute as enMessages } from '../src/i18n/en';
+import { contactRoute as frMessages } from '../src/i18n/fr';
 import { type Lang, languages } from '../src/i18n/lang';
 
 interface MailAddress {
@@ -39,21 +41,11 @@ const MODES = { cafe: { label: 'café', subject: 'Un café ?' }, visio: { label:
 /** The visitor's language as the mail to Louis names it: the mail itself stays in French. */
 const LANGUAGE_NAMES: Record<Lang, string> = { fr: 'français', en: 'anglais' };
 
-/** What each answer says, in the page's language, for a request that gives one (`langue`); without it, `{ ok }` only. */
-const MESSAGES: Record<Lang, Record<number, string>> = {
-	fr: {
-		200: 'Envoyé.',
-		400: 'Proposition incomplète ou invalide.',
-		429: 'Trop d’envois : réessayez dans une minute.',
-		502: 'Le mail n’est pas parti : réessayez plus tard.',
-	},
-	en: {
-		200: 'Sent.',
-		400: 'The proposal is incomplete or invalid.',
-		429: 'Too many sends: try again in a minute.',
-		502: 'The mail did not leave: try again later.',
-	},
-};
+/**
+ * What each answer says, in the page's language, for a request that gives one (`langue`); without it, `{ ok }` only.
+ * One section of each dictionary, imported alone so the rest of the site's texts stay out of the Worker.
+ */
+const MESSAGES: Record<Lang, Record<number, string>> = { fr: frMessages, en: enMessages };
 
 /** Generous for a form of four fields, small enough that nobody mails Louis a book. */
 const MAX_BODY = 16_384;

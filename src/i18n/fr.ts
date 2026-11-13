@@ -243,6 +243,8 @@ export const header = {
 	sections: { parcours: 'Parcours', stack: 'Stack', contact: 'Contact' },
 	/** The Bascule's landmark, for screen readers. */
 	basculeLabel: 'Langue',
+	/** This language by its own name: what the Bascule's link to it announces, in that language's voice. */
+	languageName: 'Français',
 };
 
 /** Coordinates as the hero's map and the Intro print them. */
@@ -405,6 +407,14 @@ export const cafe = {
 	failed: (address: string) => `pas parti : réessayez, ou écrivez à ${address}`,
 };
 
+/** What the Formulaire du Café's route (`worker/index.ts`) answers, by HTTP status, to a request that gives `langue`. */
+export const contactRoute = {
+	200: 'Envoyé.',
+	400: 'Proposition incomplète ou invalide.',
+	429: 'Trop d’envois : réessayez dans une minute.',
+	502: 'Le mail n’est pas parti : réessayez plus tard.',
+};
+
 export const notFound = {
 	status: 'E486: Pattern not found',
 	lede: 'Cette page n’existe pas, ou plus.',
@@ -426,6 +436,7 @@ export const fr = {
 	stackSection,
 	contact,
 	cafe,
+	contactRoute,
 	notFound,
 };
 

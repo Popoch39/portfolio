@@ -172,9 +172,10 @@ registerScene(() => {
 		typeInto(steps, 'what', what, false);
 		steps.push([420, () => press(line.escape, { mode: 'NORMAL', cursor: first + state.what.length - 1 })]);
 
-		// To the second slot: find the "v" of "votre", one word forward.
+		// To the second slot: find the first letter of the word before it ("votre", "your"), one word forward.
+		const target = lede.between.trimEnd().lastIndexOf(' ') + 1;
 		steps.push([640, () => press('f', undefined, true)]);
-		steps.push([130, () => press('v', { cursor: second() - lede.between.length + lede.between.indexOf('v') })]);
+		steps.push([130, () => press(lede.between[target], { cursor: second() - lede.between.length + target })]);
 		steps.push([190, () => press('w', { cursor: second() })]);
 		steps.push([320, () => press('c')]);
 		steps.push([110, () => press('i')]);

@@ -1,0 +1,96 @@
+---
+/**
+ * The Bascule's control: « FR / EN », one plain link per language, to the same page in that language
+ * (ADR 0011). Without JavaScript a click is a navigation and nothing more.
+ *
+ * Each link shows its code and names its language, in that language, to screen readers. The code
+ * sits in a span of its own (`data-bascule-code`), the one the Anagramme moves.
+ */
+import { getRelativeLocaleUrl } from 'astro:i18n';
+import { dictionary, languages, type Lang } from '../i18n';
+
+interface Props {
+	lang: Lang;
+	/** The page's address under its language's root, `''` for the home page. */
+	path: string;
+}
+
+const { lang, path } = Astro.props;
+
+/** Each language by its own name: what a screen reader announces, in that language's voice. */
+const names: Record<Lang, string> = { fr: 'Français', en: 'English' };
+
+const links = languages.map((code) => {
+	const href = getRelativeLocaleUrl(code, path);
+	// `page` where the link is this very page; on the 404 it is the home page, still the current language.
+	let current: 'page' | 'true' | undefined;
+	if (code === lang) current = href === Astro.url.pathname ? 'page' : 'true';
+	return { code, href, current };
+});
+---
+
+<nav class="mono bascule" aria-label={dictionary(lang).header.basculeLabel} data-bascule>
+	{
+		links.map((link, i) => (
+			<>
+				{i > 0 && (
+					<span class="slash" aria-hidden="true">
+						/
+					</span>
+				)}
+				<a href={link.href} hreflang={link.code} lang={link.code} aria-current={link.current} data-bascule-lang={link.code}>
+					<span aria-hidden="true" data-bascule-code>
+						{link.code.toUpperCase()}
+					</span>
+					<span class="visually-hidden">{names[link.code]}</span>
+				</a>
+			</>
+		))
+	}
+</nav>
+
+<style>
+	.bascule {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 6px;
+		font-size: 13px;
+		white-space: nowrap;
+	}
+
+	a {
+		display: inline-flex;
+		align-items: center;
+		/* WCAG 2.5.8: a 24px target, like the section links beside it. */
+		min-height: 24px;
+		text-decoration: none;
+		-webkit-user-select: none;
+		user-select: none;
+	}
+
+	/* The accent never carries text on the paper: it underlines the language being read. */
+	a[aria-current] {
+		text-decoration: underline;
+		text-decoration-color: var(--color-accent);
+		text-decoration-thickness: 2px;
+		text-underline-offset: 4px;
+	}
+
+	.slash {
+		color: var(--color-ink-faint);
+	}
+
+	@media (hover: hover) and (pointer: fine) {
+		a:not([aria-current]):hover {
+			text-decoration: underline;
+			text-underline-offset: 4px;
+		}
+	}
+
+	@media (max-width: 860px) {
+		a {
+			min-height: 44px;
+		}
+	}
+</style>

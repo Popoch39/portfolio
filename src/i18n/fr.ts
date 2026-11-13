@@ -241,6 +241,8 @@ export const content = {
 export const header = {
 	navLabel: 'Sections',
 	sections: { parcours: 'Parcours', stack: 'Stack', contact: 'Contact' },
+	/** The Bascule's landmark, for screen readers. */
+	basculeLabel: 'Langue',
 };
 
 /** Coordinates as the hero's map and the Intro print them. */

@@ -1,33 +1,42 @@
 ---
+import { getRelativeLocaleUrl } from 'astro:i18n';
+import Bascule from './Bascule.astro';
 import { contentOf, person } from '../data/profile';
 import { dictionary, type Lang } from '../i18n';
 
 interface Props {
 	lang: Lang;
+	/** The page's address under its language's root, `''` for the home page: where the Bascule leads. */
+	path: string;
 }
 
-const { lang } = Astro.props;
+const { lang, path } = Astro.props;
 const t = dictionary(lang).header;
 const profile = contentOf(lang);
 
-// Absolute anchors: from the 404 page, they lead back to the home page sections.
+// Absolute anchors: from the 404 page, they lead back to the home page sections, in its language.
+const home = getRelativeLocaleUrl(lang);
 const sections = [
-	{ href: '/#parcours', label: t.sections.parcours },
-	{ href: '/#stack', label: t.sections.stack },
-	{ href: '/#contact', label: t.sections.contact },
+	{ href: `${home}#parcours`, label: t.sections.parcours },
+	{ href: `${home}#stack`, label: t.sections.stack },
+	{ href: `${home}#contact`, label: t.sections.contact },
 ];
 ---
 
 <div class="wrap">
 	<header class="site-header grid-12" data-intro="header">
-		<a class="name" href="/#top" data-intro="name">{person.name}</a>
+		<a class="name" href={`${home}#top`} data-intro="name">{person.name}</a>
 		<p class="mono meta" data-intro="role">{profile.jobTitle}</p>
 		<p class="mono meta specialty" data-intro="specialty">
 			<span class="long">{profile.specialty}</span><span class="short">{profile.specialtyShort}</span>
 		</p>
-		<nav aria-label={t.navLabel} data-intro="nav">
-			{sections.map((section) => <a href={section.href}>{section.label}</a>)}
-		</nav>
+		{/* One box on a phone, where the Bascule shares the sections' row; no box of its own on the grid. */}
+		<div class="tabs">
+			<nav aria-label={t.navLabel} data-intro="nav">
+				{sections.map((section) => <a href={section.href}>{section.label}</a>)}
+			</nav>
+			<Bascule lang={lang} path={path} />
+		</div>
 		<span class="rule" data-intro="rule"></span>
 	</header>
 </div>
@@ -55,11 +64,20 @@ const sections = [
 		transform-origin: 0 50%;
 	}
 
+	/*
+	 * Two columns are room enough for the name on one line: the third went to the Bascule, at the end
+	 * of the row, the sections keeping their three.
+	 */
 	.name {
-		grid-column: span 3;
+		grid-column: span 2;
 		font-size: 15px;
 		font-weight: 700;
 		text-decoration: none;
+		white-space: nowrap;
+	}
+
+	.tabs {
+		display: contents;
 	}
 
 	.meta {
@@ -141,8 +159,16 @@ const sections = [
 			display: inline;
 		}
 
-		nav {
+		/* The sections, then the Bascule at the end of their row. */
+		.tabs {
+			display: flex;
 			flex-basis: 100%;
+			gap: 20px;
+		}
+
+		nav {
+			flex: 1;
+			justify-content: flex-start;
 		}
 
 		nav a {

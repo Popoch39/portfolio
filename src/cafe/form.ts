@@ -11,7 +11,7 @@
 import { cubicBezier, drawnScrollTop, gsap, registerDetail, ScrollSmoother, ScrollTrigger } from '../animation/base';
 import * as en from '../i18n/en';
 import * as fr from '../i18n/fr';
-import { forPage } from '../i18n/lang';
+import { defaultLang, forPage, pageLang } from '../i18n/lang';
 import { showVimMode } from '../lede/vim-mode';
 import type { Block } from './lifts';
 import type { MontageProgress } from './montage-progress';
@@ -31,6 +31,12 @@ const SCROLL_DURATION = 1;
 const SCROLL_EASE = cubicBezier(0.65, 0, 0.35, 1);
 
 const words = forPage({ fr: fr.cafe, en: en.cafe });
+/**
+ * The page's language, sent to the route but for the default one: a proposal without it is read as French, so
+ * the French page's request stays the one it was before the field existed.
+ */
+const lang = pageLang();
+const langField = lang === defaultLang ? {} : { langue: lang };
 
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -367,6 +373,7 @@ registerDetail(() => {
 					quand: panel!.when(),
 					message: fields.message.value.trim(),
 					site: fields.site.value,
+					...langField,
 				}),
 				signal: sending.signal,
 			});

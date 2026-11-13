@@ -83,11 +83,11 @@ async function contact(request: Request, env: Env) {
 	const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
 	const { success } = await env.CONTACT_LIMIT.limit({ key: ip });
 	// Read for the language even past the limit, so that the refusal speaks the page's.
-	const body = await request.text();
-	const lang = langOf(body);
+	const data = read(await request.text());
+	const lang = data ? langOf(data) : undefined;
 	if (!success) return answer(429, {}, lang);
 
-	const proposal = parse(body);
+	const proposal = data && parse(data);
 	if (!proposal) return answer(400, {}, lang);
 
 	try {
@@ -102,25 +102,8 @@ async function contact(request: Request, env: Env) {
 	return answer(200, {}, lang);
 }
 
-/**
- * The page's language (`langue`), when the body gives a known one. Optional and read on its own, so that a body
- * otherwise invalid still gets its refusal in that language; a request without it is answered as before it existed.
- */
-function langOf(body: string): Lang | undefined {
-	if (body.length > MAX_BODY) return undefined;
-	let data: unknown;
-	try {
-		data = JSON.parse(body);
-	} catch {
-		return undefined;
-	}
-	if (!data || typeof data !== 'object' || Array.isArray(data)) return undefined;
-	const { langue } = data as Record<string, unknown>;
-	return languages.find((lang) => lang === langue);
-}
-
-/** The proposal when every field holds, `null` otherwise, whatever the browser checked. */
-function parse(body: string): Proposal | null {
+/** The body as a JSON object, `null` when it is too long, not JSON or not an object. */
+function read(body: string): Record<string, unknown> | null {
 	if (body.length > MAX_BODY) return null;
 	let data: unknown;
 	try {
@@ -129,8 +112,21 @@ function parse(body: string): Proposal | null {
 		return null;
 	}
 	if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
+	return data as Record<string, unknown>;
+}
+
+/**
+ * The page's language (`langue`), when the body gives a known one. Optional and read on its own, so that a body
+ * otherwise invalid still gets its refusal in that language; a request without it is answered as before it existed.
+ */
+function langOf({ langue }: Record<string, unknown>): Lang | undefined {
+	return languages.find((lang) => lang === langue);
+}
+
+/** The proposal when every field holds, `null` otherwise, whatever the browser checked. */
+function parse(data: Record<string, unknown>): Proposal | null {
 	// The wire keys are the form's field names, in French (ADR 0010): read once here, under English names.
-	const { mode, nom: rawName, email, quand: when, message = '', site = '' } = data as Record<string, unknown>;
+	const { mode, nom: rawName, email, quand: when, message = '', site = '' } = data;
 
 	// The trap field: hidden from people, filled in by robots that fill everything.
 	if (site !== '') return null;

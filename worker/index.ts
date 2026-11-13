@@ -51,9 +51,9 @@ const CONTROL = /[\p{Cc}]/u;
 
 interface Proposal {
 	mode: keyof typeof MODES;
-	nom: string;
+	name: string;
 	email: string;
-	quand: string;
+	when: string;
 	message: string;
 }
 
@@ -95,35 +95,36 @@ function parse(body: string): Proposal | null {
 		return null;
 	}
 	if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
-	const { mode, nom, email, quand, message = '', site = '' } = data as Record<string, unknown>;
+	// The wire keys are the form's field names, in French (ADR 0010): read once here, under English names.
+	const { mode, nom: rawName, email, quand: when, message = '', site = '' } = data as Record<string, unknown>;
 
 	// The trap field: hidden from people, filled in by robots that fill everything.
 	if (site !== '') return null;
 	if (typeof mode !== 'string' || !Object.hasOwn(MODES, mode)) return null;
-	if (typeof nom !== 'string' || typeof email !== 'string' || typeof message !== 'string') return null;
-	if (typeof quand !== 'string' || !WHEN.includes(quand)) return null;
+	if (typeof rawName !== 'string' || typeof email !== 'string' || typeof message !== 'string') return null;
+	if (typeof when !== 'string' || !WHEN.includes(when)) return null;
 
-	const name = nom.trim();
+	const name = rawName.trim();
 	const address = email.trim();
 	const text = message.trim();
 	if (!name || name.length > MAX_NAME || CONTROL.test(name)) return null;
 	if (address.length > MAX_EMAIL || !EMAIL.test(address)) return null;
 	if (text.length > MAX_MESSAGE) return null;
-	return { mode: mode as Proposal['mode'], nom: name, email: address, quand, message: text };
+	return { mode: mode as Proposal['mode'], name, email: address, when, message: text };
 }
 
 /** Plain text, every field spelled out: Louis answers with a click on « Répondre ». */
-function mailOf({ mode, nom, email, quand, message }: Proposal): OutgoingMail {
+function mailOf({ mode, name, email, when, message }: Proposal): OutgoingMail {
 	return {
 		to: TO,
 		from: FROM,
-		replyTo: { email, name: nom },
-		subject: `${MODES[mode].subject} · ${nom}`,
+		replyTo: { email, name },
+		subject: `${MODES[mode].subject} · ${name}`,
 		text: [
 			`Mode : ${MODES[mode].label}`,
-			`Nom : ${nom}`,
+			`Nom : ${name}`,
 			`E-mail : ${email}`,
-			`Quand : ${quand}`,
+			`Quand : ${when}`,
 			'',
 			message || '(pas de message)',
 		].join('\n'),

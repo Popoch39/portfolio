@@ -183,10 +183,10 @@ const callButtons = [
 					<button type="button" class="mono cafe-mlink" data-cafe-switch>plutôt en visio</button>
 				</div>
 				<div class="cafe-row cafe-row-line">
-					<label class="mono cafe-label" for="cafe-nom"
+					<label class="mono cafe-label" for="cafe-name"
 						><span class="cafe-badge" aria-hidden="true" data-badge="n">1</span>Nom</label
 					>
-					<input class="cafe-input" id="cafe-nom" name="nom" type="text" autocomplete="name" maxlength="100" />
+					<input class="cafe-input" id="cafe-name" name="nom" type="text" autocomplete="name" maxlength="100" />
 				</div>
 				<div class="cafe-row cafe-row-line">
 					<label class="mono cafe-label" for="cafe-email"
@@ -888,14 +888,14 @@ const callButtons = [
 		color: var(--color-ink-muted);
 	}
 
-	.cafe:has(#cafe-nom:focus) [data-tag='n'] .cafe-tag-text,
+	.cafe:has(#cafe-name:focus) [data-tag='n'] .cafe-tag-text,
 	.cafe:has(#cafe-email:focus) [data-tag='e'] .cafe-tag-text,
 	.cafe:has(.cafe-chips input:focus) [data-tag='w'] .cafe-tag-text,
 	.cafe:has(#cafe-message:focus) [data-tag='m'] .cafe-tag-text {
 		color: var(--color-ink);
 	}
 
-	.cafe:has(#cafe-nom:focus) [data-tag='n'] .cafe-badge,
+	.cafe:has(#cafe-name:focus) [data-tag='n'] .cafe-badge,
 	.cafe:has(#cafe-email:focus) [data-tag='e'] .cafe-badge,
 	.cafe:has(.cafe-chips input:focus) [data-tag='w'] .cafe-badge,
 	.cafe:has(#cafe-message:focus) [data-tag='m'] .cafe-badge {
@@ -903,7 +903,7 @@ const callButtons = [
 		color: var(--color-paper);
 	}
 
-	.cafe:has(#cafe-nom:focus) [data-tag='n'] :is(.cafe-tag-line, .cafe-tag-dot),
+	.cafe:has(#cafe-name:focus) [data-tag='n'] :is(.cafe-tag-line, .cafe-tag-dot),
 	.cafe:has(#cafe-email:focus) [data-tag='e'] :is(.cafe-tag-line, .cafe-tag-dot),
 	.cafe:has(.cafe-chips input:focus) [data-tag='w'] :is(.cafe-tag-line, .cafe-tag-dot),
 	.cafe:has(#cafe-message:focus) [data-tag='m'] :is(.cafe-tag-line, .cafe-tag-dot) {

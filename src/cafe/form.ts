@@ -155,7 +155,7 @@ registerDetail(() => {
 		}
 		panel.hint.textContent = '';
 		markValid();
-		go({ state: 'form', flavour: mode }, 'open', () => panel?.fields.nom.focus());
+		go({ state: 'form', flavour: mode }, 'open', () => panel?.fields.name.focus());
 	}
 
 	/**
@@ -304,11 +304,11 @@ registerDetail(() => {
 
 	/** Which of the four fields are in place, as the board's blocks: n (Nom), e (E-mail), w (Quand), m (Message). */
 	function validity() {
-		const { nom, email, message } = panel!.fields;
+		const { name, email, message } = panel!.fields;
 		return {
-			n: nom.value.trim() !== '',
+			n: name.value.trim() !== '',
 			e: email.value.trim() !== '' && email.validity.valid,
-			w: panel!.quand() !== '',
+			w: panel!.when() !== '',
 			m: message.value.trim() !== '',
 		};
 	}
@@ -350,7 +350,7 @@ registerDetail(() => {
 		const { fields, hint, send, sendLabel, sendKey } = panel!;
 		const valid = markValid();
 		const missing = [
-			!valid.n && { name: 'votre nom', field: fields.nom },
+			!valid.n && { name: 'votre nom', field: fields.name },
 			!valid.e && { name: 'votre e-mail', field: fields.email },
 			!valid.w && { name: 'quand', field: fields.firstChoice },
 		].filter((item) => item !== false);
@@ -370,11 +370,12 @@ registerDetail(() => {
 			const response = await fetch('/api/contact', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
+				// The wire keys are the form's field names, in French (ADR 0010).
 				body: JSON.stringify({
 					mode: flavour,
-					nom: fields.nom.value.trim(),
+					nom: fields.name.value.trim(),
 					email: fields.email.value.trim(),
-					quand: panel!.quand(),
+					quand: panel!.when(),
 					message: fields.message.value.trim(),
 					site: fields.site.value,
 				}),
@@ -469,13 +470,13 @@ function buildPanel(template: HTMLTemplateElement, restBlock: HTMLElement) {
 		confirm: find<HTMLElement>('[data-cafe-confirm]'),
 		again: find<HTMLButtonElement>('[data-cafe-again]'),
 		fields: {
-			nom: form.elements.namedItem('nom') as HTMLInputElement,
+			name: form.elements.namedItem('nom') as HTMLInputElement,
 			email: form.elements.namedItem('email') as HTMLInputElement,
 			message: form.elements.namedItem('message') as HTMLTextAreaElement,
 			site: form.elements.namedItem('site') as HTMLInputElement,
 			firstChoice: find<HTMLInputElement>('input[name="quand"]'),
 		},
-		quand: () => (form.elements.namedItem('quand') as RadioNodeList).value,
+		when: () => (form.elements.namedItem('quand') as RadioNodeList).value,
 	};
 }
 

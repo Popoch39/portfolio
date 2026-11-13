@@ -28,7 +28,7 @@ La phrase du hero (« Je construis les cartes de votre réseau électrique. »),
 _À éviter_ : lede (réservé au code), typewriter.
 
 **Pause**
-La bascule de la statusline, à côté de `NORMAL`, qui fige le bandeau et l'Accroche puis les relance (WCAG 2.2.2). Une case à cocher native : le bandeau s'arrête même sans JS ; l'Accroche revient entière, au repos, sur sa version courante, et reprend de là. Le choix est retenu par visiteur. Seule partie de la statusline exposée aux lecteurs d'écran.
+L'interrupteur de la statusline, à côté de `NORMAL`, qui fige le bandeau et l'Accroche puis les relance (WCAG 2.2.2). Une case à cocher native : le bandeau s'arrête même sans JS ; l'Accroche revient entière, au repos, sur sa version courante, et reprend de là. Le choix est retenu par visiteur. Seule partie de la statusline exposée aux lecteurs d'écran.
 _À éviter_ : bouton play/pause, stop.
 
 **Voile**
@@ -57,6 +57,16 @@ _À éviter_ : smooth scroll (qui désigne aussi `scroll-behavior: smooth`).
 
 **État final**
 Rendu que donnent le HTML et le CSS seuls : tout le contenu visible, à sa place. Une scène anime depuis un état de départ vers cet état final ; sans JS ou en mouvement réduit, la page reste à l'état final sans rien défaire.
+
+## Langues
+
+**Bascule**
+Le passage d'une langue du site à l'autre, du français (à `/`) à l'anglais (sous `/en/`) ou l'inverse, et son contrôle « FR / EN » dans l'en-tête, la langue courante soulignée. La langue est l'adresse et rien d'autre : rien n'est deviné ni retenu. Sans JS, c'est une simple navigation (ADR 0011).
+_À éviter_ : sélecteur de langue, language switcher ; « bascule » pour le passage café ⇄ visio du Formulaire du Café.
+
+**Anagramme**
+L'animation de la Bascule sur le haut de la page : les lettres communes aux deux langues glissent en arc vers leur nouvelle place, les autres sombrent ou naissent sur place, et les ancres (le nom, Besançon, les chiffres des coordonnées) ne bougent pas. La page d'arrivée s'ouvre sur son État final, sans Intro ni Voile.
+_À éviter_ : morphing, traduction animée.
 
 ## Parcours
 
@@ -97,7 +107,7 @@ La section entre la Stack et le Contact : elle propose de parler d'un projet aut
 _À éviter_ : CTA, section moka.
 
 **Formulaire du Café**
-Le formulaire qui s'ouvre sur place dans le Café, à la place du paragraphe et des actions, pour proposer un échange à Louis : Nom, E-mail, Quand ? et Message (facultatif), numérotés de 1 à 4. Il a deux modes, **café** (« Un café, à Besançon. ») et **visio** (« Une visio, où que vous soyez. »), entre lesquels on bascule sans perdre sa saisie. Il envoie un vrai mail par la route du Worker (ADR 0010).
+Le formulaire qui s'ouvre sur place dans le Café, à la place du paragraphe et des actions, pour proposer un échange à Louis : Nom, E-mail, Quand ? et Message (facultatif), numérotés de 1 à 4. Il a deux modes, **café** (« Un café, à Besançon. ») et **visio** (« Une visio, où que vous soyez. »), entre lesquels on passe sans perdre sa saisie. Il envoie un vrai mail par la route du Worker (ADR 0010).
 _À éviter_ : modale, popup, overlay, formulaire de contact.
 
 **Démontage**

@@ -9,6 +9,9 @@
  * `data-cafe-phase`) and the CSS draws them; the phase is the transition in progress, timed as on the board.
  */
 import { cubicBezier, drawnScrollTop, gsap, registerDetail, ScrollSmoother, ScrollTrigger } from '../animation/base';
+import * as en from '../i18n/en';
+import * as fr from '../i18n/fr';
+import { defaultLang, forPage, pageLang } from '../i18n/lang';
 import { showVimMode } from '../lede/vim-mode';
 import type { Block } from './lifts';
 import type { MontageProgress } from './montage-progress';
@@ -27,13 +30,13 @@ const REDUCED_PHASE = 220;
 const SCROLL_DURATION = 1;
 const SCROLL_EASE = cubicBezier(0.65, 0, 0.35, 1);
 
-const TEXTS = {
-	cafe: { heading: 'Un café, à Besançon.', switch: 'plutôt en visio', confirm: 'Envoyé. À très vite autour d’un café.' },
-	visio: { heading: 'Une visio, où que vous soyez.', switch: 'plutôt un café', confirm: 'Envoyé. À très vite en visio.' },
-};
-
-/** The counter while the form is open, by the number of blocks back in place (board A). */
-const COUNTS = ['en pièces', 'une pièce posée', 'à mi-hauteur', 'presque monté', 'prêt à chauffer'];
+const words = forPage({ fr: fr.cafe, en: en.cafe });
+/**
+ * The page's language, sent to the route but for the default one: a proposal without it is read as French, so
+ * the French page's request stays the one it was before the field existed.
+ */
+const lang = pageLang();
+const langField = lang === defaultLang ? {} : { langue: lang };
 
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -88,9 +91,9 @@ registerDetail(() => {
 		section!.dataset.cafeFlavour = flavour;
 		section!.dataset.cafePhase = phase;
 		if (panel) {
-			panel.heading.textContent = TEXTS[flavour].heading;
-			panel.switchButton.textContent = TEXTS[flavour].switch;
-			panel.confirm.textContent = TEXTS[flavour].confirm;
+			panel.heading.textContent = words.flavours[flavour].heading;
+			panel.switchButton.textContent = words.flavours[flavour].switch;
+			panel.confirm.textContent = words.flavours[flavour].confirm;
 		}
 		showVimMode(state === 'form' ? 'INSERT' : 'NORMAL');
 		describe();
@@ -328,11 +331,8 @@ registerDetail(() => {
 	 */
 	function describe() {
 		const back = state === 'form' && panel ? Object.values(validity()).filter(Boolean).length : undefined;
-		const count = back === undefined ? step : `${back}/4 · ${COUNTS[back]}`;
-		const name =
-			back === undefined
-				? figureName
-				: `Un Moka Express démonté au-dessus de son réchaud éteint${flavour === 'visio' ? ', dans le cadre d’un écran' : ''} : ${back} pièces sur 4 remises en place.`;
+		const count = back === undefined ? step : `${back}/4 · ${words.counts[back]}`;
+		const name = back === undefined ? figureName : words.figureOpen(back, flavour === 'visio');
 		if (counter && counter.textContent !== count) counter.textContent = count;
 		if (figure && figure.getAttribute('aria-label') !== name) figure.setAttribute('aria-label', name);
 	}
@@ -349,12 +349,12 @@ registerDetail(() => {
 		const { fields, hint, send, sendLabel, sendKey } = panel!;
 		const valid = markValid();
 		const missing = [
-			!valid.name && { name: 'votre nom', field: fields.name },
-			!valid.email && { name: 'votre e-mail', field: fields.email },
-			!valid.when && { name: 'quand', field: fields.firstChoice },
+			!valid.name && { name: words.missingNames.name, field: fields.name },
+			!valid.email && { name: words.missingNames.email, field: fields.email },
+			!valid.when && { name: words.missingNames.when, field: fields.firstChoice },
 		].filter((item) => item !== false);
 		if (missing.length > 0) {
-			hint.textContent = `encore en l’air : ${missing.map((item) => item.name).join(', ')}`;
+			hint.textContent = words.missing(missing.map((item) => item.name));
 			missing[0].field.focus();
 			return;
 		}
@@ -362,7 +362,7 @@ registerDetail(() => {
 		hint.textContent = '';
 		sending = new AbortController();
 		send.disabled = true;
-		sendLabel.textContent = 'envoi…';
+		sendLabel.textContent = words.sending;
 		sendKey.hidden = true;
 		let sent = false;
 		try {
@@ -377,6 +377,7 @@ registerDetail(() => {
 					quand: panel!.when(),
 					message: fields.message.value.trim(),
 					site: fields.site.value,
+					...langField,
 				}),
 				signal: sending.signal,
 			});
@@ -387,11 +388,11 @@ registerDetail(() => {
 		const aborted = sending.signal.aborted;
 		sending = undefined;
 		send.disabled = false;
-		sendLabel.textContent = 'Envoyer';
+		sendLabel.textContent = words.send;
 		sendKey.hidden = false;
 		if (aborted) return;
 		if (!sent) {
-			hint.textContent = `pas parti : réessayez, ou écrivez à ${address}`;
+			hint.textContent = words.failed(address);
 			return;
 		}
 		go({ state: 'sent' }, 'send', () => panel?.again.focus());

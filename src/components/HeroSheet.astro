@@ -7,13 +7,17 @@
  */
 import { person } from '../data/profile';
 import { coordinates, latTicks, lonTicks } from '../hero/map';
+import { dictionary, type Lang } from '../i18n';
 import Lede from './Lede.astro';
 
 interface Props {
+	lang: Lang;
 	night?: boolean;
 }
 
-const { night = false } = Astro.props;
+const { lang, night = false } = Astro.props;
+const t = dictionary(lang).hero;
+const { latitude, longitude } = coordinates(lang);
 // The night's copy carries no heading, no id and nothing the Intro animates: there is one page, drawn twice.
 const Title = night ? 'div' : 'h1';
 const intro = (name: string) => (night ? undefined : name);
@@ -56,15 +60,17 @@ const mailto = `mailto:${person.email}`;
 	</div>
 	<p class="mono hero-place" data-intro={intro('late')}>
 		<span class="hero-city">{person.city}</span><span class="hero-coordinates"
-			><span>{coordinates.latitude}</span><span class="hero-separator"> · </span><span>{coordinates.longitude}</span
+			><span>{latitude}</span><span class="hero-separator"> · </span><span>{longitude}</span
 			></span
 		>
 	</p>
-	<Lede night={night} />
+	<Lede lang={lang} night={night} />
 	<div class="hero-actions" data-intro={intro('actions')} data-night={night ? '' : undefined}>
 		<a class="button" href={mailto}
-			>Écrire<span class="visually-hidden"> un e-mail</span>
-			<span class="mono" aria-hidden="true">:wq</span></a
+			><span data-ag-host="label">{t.write}</span><span class="visually-hidden"
+				>{t.writeHidden}</span
+			>
+			<span class="mono" aria-hidden="true" data-ag-with>:wq</span></a
 		>
 		<a class="hero-github" href={person.github.url} rel="me">GitHub <span aria-hidden="true">↗</span></a>
 	</div>
@@ -329,6 +335,20 @@ const mailto = `mailto:${person.email}`;
 		align-items: center;
 		gap: 12px 24px;
 		margin-top: 28px;
+	}
+
+	/*
+	 * The label and its mark in Fragment Mono, one size, as the Anagramme's board draws them: the mark
+	 * stands the label's columns and the button's gap from its start, a place the build knows (ADR 0011).
+	 */
+	.hero-actions .button {
+		font-family: var(--font-mono);
+		font-size: 15px;
+		font-weight: 400;
+	}
+
+	.hero-actions .button .mono {
+		font-size: inherit;
 	}
 
 	.hero-github {

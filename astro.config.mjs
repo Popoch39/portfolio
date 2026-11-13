@@ -6,7 +6,19 @@ export default defineConfig({
 	// Canonical URLs, Open Graph, the sitemap and the JSON-LD all derive from it.
 	site: 'https://louis-pocheron.com',
 	// A single page of about 10 KB of CSS: inlined, it no longer blocks the first paint on a request.
-	build: { inlineStylesheets: 'always' },
+	// `preserve`: `en/404.astro` gives `en/404.html`, the file Cloudflare serves for an unknown URL under
+	// `/en/` (ADR 0011); `directory` would bury it in `en/404/index.html`. Index pages stay directories.
+	build: { inlineStylesheets: 'always', format: 'preserve' },
+	// Every page is a directory, and its URL says so, as Cloudflare serves it: `/`, `/en/`. Without it,
+	// `preserve` would have `astro:i18n` drop the slash.
+	trailingSlash: 'always',
+	// French at `/`, English under `/en/`: the language is the URL and nothing else (ADR 0011).
+	// Same order as `languages` (`src/i18n/lang.ts`).
+	i18n: {
+		locales: ['fr', 'en'],
+		defaultLocale: 'fr',
+		routing: { prefixDefaultLocale: false },
+	},
 	// A `<meta>` with the hashes of every script and style Astro emits. `frame-ancestors` is
 	// ignored in a `<meta>`: it is sent as a header, with the other ones, by `public/_headers`.
 	security: {

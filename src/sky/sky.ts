@@ -19,6 +19,7 @@
  */
 import { person } from '../data/profile';
 import { meridianShares } from '../hero/map';
+import type { Dictionary } from '../i18n';
 
 export interface SkyPlace {
 	latitude: number;
@@ -56,7 +57,16 @@ export const skyPlace: SkyPlace = {
 	shares: meridianShares,
 };
 
-export function paintSky(root: HTMLElement, now: Date, place: SkyPlace, line: HTMLElement = root): number {
+/** The labels' words, in the page's language. */
+export type SkyWords = Dictionary['sky'];
+
+export function paintSky(
+	root: HTMLElement,
+	now: Date,
+	place: SkyPlace,
+	words: SkyWords,
+	line: HTMLElement = root,
+): number {
 	const RAD = Math.PI / 180;
 	/** Minutes of sun time across the map's width: the twilights take about half of it in November. */
 	const SPAN = 180;
@@ -180,9 +190,7 @@ export function paintSky(root: HTMLElement, now: Date, place: SkyPlace, line: HT
 	// The twilights, hatched more sparsely towards full night: civil, nautical, astronomical.
 	const limits = evening ? [set, ...dusks] : [rise, ...dawns];
 	const offsetOf = (time: number) => (time - edge) / SPAN;
-	const names = evening
-		? ['crépuscule civil', 'crépuscule nautique', 'crépuscule astronomique']
-		: ['aube civile', 'aube nautique', 'aube astronomique'];
+	const names = evening ? words.dusks : words.dawns;
 	const DEGREES = ['0 → −6°', '−6 → −12°', '−12 → −18°'];
 	/** Where the labels hang down the map. */
 	const LABEL_Y = 0.91;
@@ -206,10 +214,10 @@ export function paintSky(root: HTMLElement, now: Date, place: SkyPlace, line: HT
 	}
 	// Full night begins past the last twilight: its label keeps to the middle of what the map shows of it.
 	put('--sky-night-edge', (deepest + bend(LABEL_Y)).toFixed(4));
-	put('--sky-label-4', mode === 'dark' ? '"nuit · papier EN-02"' : '"nuit"');
+	put('--sky-label-4', `"${mode === 'dark' ? words.nightPaper : words.night}"`);
 	// The sun's own label rides the top of the line.
 	put('--sky-chip-at', bend(0.16).toFixed(4));
-	put('--sky-chip', `"0° · ${evening ? 'coucher' : 'lever'} ${hhmm(edge)}"`);
+	put('--sky-chip', `"0° · ${evening ? words.set : words.rise} ${hhmm(edge)}"`);
 
 	// The next change of theme in `auto`: today's sunrise or sunset, or tomorrow's sunrise (a minute off at most).
 	const next = hour < rise ? rise : hour < set ? set : rise + 1440;

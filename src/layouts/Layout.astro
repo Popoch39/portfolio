@@ -1,5 +1,6 @@
 ---
 import { Font } from 'astro:assets';
+import { getAbsoluteLocaleUrl } from 'astro:i18n';
 import touchIcon from '../assets/apple-touch-icon.png';
 import iconUrl from '../assets/icon.svg?url';
 import ogImage from '../assets/og.png';
@@ -9,27 +10,50 @@ import SiteHeader from '../components/SiteHeader.astro';
 import SkyTrigger from '../components/SkyTrigger.astro';
 import Statusline from '../components/Statusline.astro';
 import Trail from '../components/Trail.astro';
-import { person } from '../data/profile';
+import { contentOf, person } from '../data/profile';
+import { defaultLang, dictionary, languages, type Lang } from '../i18n';
 import '../styles/global.css';
 
 interface Props {
+	lang: Lang;
 	title: string;
 	description: string;
 	/** Pages outside the index (404): no canonical URL, no social card, `noindex`. */
 	noindex?: boolean;
 	/** The page has loops to stop: the statusline carries the Pause. */
 	pause?: boolean;
+	/**
+	 * The page's address under its language's root, the same in every language; `''` for the home page,
+	 * where the 404 also sends the Bascule.
+	 */
+	path?: string;
 }
 
-const { title, description, noindex = false, pause = false } = Astro.props;
+const { lang, title, description, noindex = false, pause = false, path = '' } = Astro.props;
+const { meta, statusline, nuancier } = dictionary(lang);
+// The paper in force is named in CSS, from the root's `data-bg` (`Statusline.astro`): its words come in the
+// page's language, set on the root where those rules read them.
+const paperWords = [
+	`--paper-word: '${statusline.paper}'`,
+	`--paper-auto: '${nuancier.papers.auto.name.toLowerCase()}'`,
+	`--paper-day: '${nuancier.papers.light.name.toLowerCase()}'`,
+	`--paper-night: '${nuancier.papers.dark.name.toLowerCase()}'`,
+].join('; ');
 
-const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const canonical = getAbsoluteLocaleUrl(lang, path);
+// The page in every language, the default one standing for a visitor whose language is none of them.
+const alternates = [
+	...languages.map((code) => ({ hreflang: code, href: getAbsoluteLocaleUrl(code, path) })),
+	{ hreflang: 'x-default', href: getAbsoluteLocaleUrl(defaultLang, path) },
+];
 const ogImageUrl = new URL(ogImage.src, Astro.site).href;
-const ogImageAlt = `${person.name}, ${person.jobTitle.toLowerCase()} — portfolio`;
+const ogImageAlt = meta.ogImageAlt(person.name, contentOf(lang).jobTitle);
+// Open Graph writes the locale with an underscore: `fr_FR`.
+const ogLocale = meta.locale.replace('-', '_');
 ---
 
 <!doctype html>
-<html lang="fr">
+<html lang={lang} style={paperWords}>
 	<head>
 		<meta charset="utf-8" />
 		{/* `cover`: the paper and the statusline run under the notch and the home indicator; `env(safe-area-inset-*)` pads the content back out. */}
@@ -37,12 +61,13 @@ const ogImageAlt = `${person.name}, ${person.jobTitle.toLowerCase()} — portfol
 		<title>{title}</title>
 		<meta name="description" content={description} />
 		{noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={canonical} />}
+		{!noindex && alternates.map((link) => <link rel="alternate" hreflang={link.hreflang} href={link.href} />)}
 		<meta name="author" content={person.name} />
 		<meta name="theme-color" content="#efeee9" />
 		<meta name="color-scheme" content="light dark" />
 		<meta name="generator" content={Astro.generator} />
 		{/* After the theme colour, which it sets for the night. */}
-		<SkyTrigger />
+		<SkyTrigger lang={lang} />
 
 		<link rel="icon" href="/favicon.ico" sizes="32x32" />
 		<link rel="icon" href={iconUrl} type="image/svg+xml" />
@@ -58,7 +83,7 @@ const ogImageAlt = `${person.name}, ${person.jobTitle.toLowerCase()} — portfol
 				<>
 					<meta property="og:type" content="profile" />
 					<meta property="og:site_name" content={person.name} />
-					<meta property="og:locale" content="fr_FR" />
+					<meta property="og:locale" content={ogLocale} />
 					<meta property="og:url" content={canonical} />
 					<meta property="og:title" content={title} />
 					<meta property="og:description" content={description} />
@@ -85,13 +110,13 @@ const ogImageAlt = `${person.name}, ${person.jobTitle.toLowerCase()} — portfol
 		<div id="smooth-wrapper">
 			<div id="smooth-content">
 				<div id="top" class="page">
-					<SiteHeader />
+					<SiteHeader lang={lang} path={path} />
 					<slot />
 				</div>
 			</div>
 		</div>
-		<Statusline pause={pause} />
-		<Nuancier />
+		<Statusline lang={lang} pause={pause} />
+		<Nuancier lang={lang} />
 		{/* Fixed layers over the whole window (the home page's Intro, the grain, then the cursor's ring), above the statusline. */}
 		<slot name="overlay" />
 		<Grain />

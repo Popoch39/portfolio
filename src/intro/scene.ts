@@ -7,6 +7,9 @@
 import { gsap, registerOpening, ScrollSmoother } from '../animation/base';
 import { globePainter } from './canvas';
 import { cubicBezier } from './ease';
+import * as en from '../i18n/en';
+import * as fr from '../i18n/fr';
+import { forPage } from '../i18n/lang';
 import { coordinate, decimal, fitColumns, frameAt, type Layout } from './globe';
 import { boilStep } from './grain';
 import type { GlobeMessage } from './globe.worker';
@@ -26,6 +29,9 @@ import {
 	TITLE_RISE,
 	VEIL_LIFT,
 } from './timing';
+
+const words = forPage({ fr: fr.intro, en: en.intro });
+const geoWords = forPage({ fr: fr.geo, en: en.geo });
 
 const reveal = cubicBezier(...REVEAL_EASE);
 
@@ -201,12 +207,13 @@ registerOpening((end, idle) => {
 		const { phase, gore, lat, lon, goreWidth, gutter } = frame.hud;
 		if (boilStep(t) !== hudStep) {
 			hudStep = boilStep(t);
+			const { north, south, east, west, decimalSeparator: separator } = geoWords;
 			const values = [
-				phase,
+				words.phases[phase],
 				`${String(gore + 1).padStart(2, '0')} / 12`,
-				coordinate(lat, 'N', 'S'),
-				coordinate(lon, 'E', 'O'),
-				`fuseau ${decimal(goreWidth)} px · gouttière ${decimal(gutter)} px`,
+				coordinate(lat, north, south, separator),
+				coordinate(lon, east, west, separator),
+				words.scale(decimal(goreWidth, separator), decimal(gutter, separator)),
 			];
 			texts.forEach((node, i) => write(node, values[i]));
 		}

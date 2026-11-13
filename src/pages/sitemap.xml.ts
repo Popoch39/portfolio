@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 
-// Every `.astro` page except the 404, as a directory URL (`build.format` defaults to `directory`).
+// Every `.astro` page except the 404s, as a directory URL: every such page is an index (`build.format: 'preserve'`).
 // A handful of static pages does not call for the `@astrojs/sitemap` integration.
 const paths = Object.keys(import.meta.glob('./**/*.astro'))
 	.filter((file) => !file.endsWith('/404.astro'))

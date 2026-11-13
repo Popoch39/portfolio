@@ -9,8 +9,15 @@
  * which replays the Intro in the new paper. Never the same paper twice in a row. Within the visit, from
  * page to page and back, the page keeps the drawn paper, or the one picked in the Nuancier since.
  */
+import { dictionary, type Lang } from '../i18n';
 import { BG_KEY, paintSky, skyModes, skyPlace } from '../sky/sky';
 import { inlineScriptHash } from './inline-script';
+
+interface Props {
+	lang: Lang;
+}
+
+const { lang } = Astro.props;
 
 // Storage throws when the browser blocks site data: each page then draws, or follows the sun within the visit.
 const paint = `(() => {
@@ -45,7 +52,7 @@ const paint = `(() => {
 		keep(bg);
 	}
 	if (bg && bg !== 'auto') root.dataset.bg = bg;
-	(${paintSky.toString()})(root, new Date(), ${JSON.stringify(skyPlace)});
+	(${paintSky.toString()})(root, new Date(), ${JSON.stringify(skyPlace)}, ${JSON.stringify(dictionary(lang).sky)});
 })();`;
 Astro.csp?.insertScriptHash(inlineScriptHash(paint));
 ---

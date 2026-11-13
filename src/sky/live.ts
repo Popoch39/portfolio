@@ -10,8 +10,12 @@
  */
 import { openingEnded, registerScene } from '../animation/base';
 import { watchOffScreen } from '../animation/offscreen';
+import * as en from '../i18n/en';
+import * as fr from '../i18n/fr';
+import { forPage } from '../i18n/lang';
 import { BG_KEY, paintSky, skyPlace } from './sky';
 
+const words = forPage({ fr: fr.sky, en: en.sky });
 const root = document.documentElement;
 const map = document.querySelector<HTMLElement>('.hero-map');
 const line = map?.querySelector<HTMLElement>('.sky') ?? root;
@@ -21,7 +25,7 @@ let turn: ReturnType<typeof setTimeout> | undefined;
 function paint() {
 	clearTimeout(turn);
 	const half = root.dataset.skyHalf;
-	turn = setTimeout(paint, paintSky(root, new Date(), skyPlace, line));
+	turn = setTimeout(paint, paintSky(root, new Date(), skyPlace, words, line));
 	if (half !== root.dataset.skyHalf) cut();
 }
 

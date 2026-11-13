@@ -1,6 +1,13 @@
 ---
 import { stack } from '../data/profile';
+import { dictionary, type Lang } from '../i18n';
 import { logoHref } from './logo-sprite';
+
+interface Props {
+	lang: Lang;
+}
+
+const categories = dictionary(Astro.props.lang).content.stackCategories;
 
 /*
  * The Atome's final state: the tower of bagues, drawn in DOM 3D (ADR 0004). Every length and angle is
@@ -245,7 +252,7 @@ const frame = [
 					data-bague={rank}
 					tabindex="0"
 				>
-					<dt class="mono atome-category">{bague.category}</dt>
+					<dt class="mono atome-category">{categories[bague.category]}</dt>
 					<dd class="atome-tools-cell">
 						<ul class="atome-tools">
 							{bague.items.map((item) => (

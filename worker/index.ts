@@ -4,6 +4,9 @@
  * sends its proposal to Louis by mail.
  */
 import { WHEN_VALUES } from '../src/cafe/when';
+import { contactRoute as enMessages } from '../src/i18n/en';
+import { contactRoute as frMessages } from '../src/i18n/fr';
+import { type Lang, languages } from '../src/i18n/lang';
 
 interface MailAddress {
 	email: string;
@@ -34,6 +37,15 @@ const TO = 'pocheron.louis@gmail.com';
 const FROM: MailAddress = { email: 'contact@louis-pocheron.com', name: 'louis-pocheron.com' };
 
 const MODES = { cafe: { label: 'café', subject: 'Un café ?' }, visio: { label: 'visio', subject: 'Une visio ?' } };
+
+/** The visitor's language as the mail to Louis names it: the mail itself stays in French. */
+const LANGUAGE_NAMES: Record<Lang, string> = { fr: 'français', en: 'anglais' };
+
+/**
+ * What each answer says, in the page's language, for a request that gives one (`langue`); without it, `{ ok }` only.
+ * One section of each dictionary, imported alone so the rest of the site's texts stay out of the Worker.
+ */
+const MESSAGES: Record<Lang, Record<number, string>> = { fr: frMessages, en: enMessages };
 
 /** Generous for a form of four fields, small enough that nobody mails Louis a book. */
 const MAX_BODY = 16_384;
@@ -70,25 +82,28 @@ async function contact(request: Request, env: Env) {
 	// Counted before anything is read: a robot pays for its invalid attempts too.
 	const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
 	const { success } = await env.CONTACT_LIMIT.limit({ key: ip });
-	if (!success) return answer(429);
+	// Read for the language even past the limit, so that the refusal speaks the page's.
+	const data = read(await request.text());
+	const lang = data ? langOf(data) : undefined;
+	if (!success) return answer(429, {}, lang);
 
-	const proposal = parse(await request.text());
-	if (!proposal) return answer(400);
+	const proposal = data && parse(data);
+	if (!proposal) return answer(400, {}, lang);
 
 	try {
-		await env.EMAIL.send(mailOf(proposal));
+		await env.EMAIL.send(mailOf(proposal, lang));
 	} catch (error) {
 		// Workers Logs keeps an Error as its text only: the `E_*` code, the one thing that says whether the
 		// domain, the quota or the delivery failed, is spelled out to be read and filtered on.
 		const { code, message } = error instanceof Error ? (error as Error & { code?: string }) : { message: String(error) };
 		console.error('contact: the mail did not leave', { code, message });
-		return answer(502);
+		return answer(502, {}, lang);
 	}
-	return answer(200);
+	return answer(200, {}, lang);
 }
 
-/** The proposal when every field holds, `null` otherwise, whatever the browser checked. */
-function parse(body: string): Proposal | null {
+/** The body as a JSON object, `null` when it is too long, not JSON or not an object. */
+function read(body: string): Record<string, unknown> | null {
 	if (body.length > MAX_BODY) return null;
 	let data: unknown;
 	try {
@@ -97,8 +112,21 @@ function parse(body: string): Proposal | null {
 		return null;
 	}
 	if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
+	return data as Record<string, unknown>;
+}
+
+/**
+ * The page's language (`langue`), when the body gives a known one. Optional and read on its own, so that a body
+ * otherwise invalid still gets its refusal in that language; a request without it is answered as before it existed.
+ */
+function langOf({ langue }: Record<string, unknown>): Lang | undefined {
+	return languages.find((lang) => lang === langue);
+}
+
+/** The proposal when every field holds, `null` otherwise, whatever the browser checked. */
+function parse(data: Record<string, unknown>): Proposal | null {
 	// The wire keys are the form's field names, in French (ADR 0010): read once here, under English names.
-	const { mode, nom: rawName, email, quand: when, message = '', site = '' } = data as Record<string, unknown>;
+	const { mode, nom: rawName, email, quand: when, message = '', site = '' } = data;
 
 	// The trap field: hidden from people, filled in by robots that fill everything.
 	if (site !== '') return null;
@@ -115,8 +143,11 @@ function parse(body: string): Proposal | null {
 	return { mode: mode as Proposal['mode'], name, email: address, when, message: text };
 }
 
-/** Plain text, every field spelled out: Louis answers with a click on « Répondre ». */
-function mailOf({ mode, name, email, when, message }: Proposal): OutgoingMail {
+/**
+ * Plain text, every field spelled out: Louis answers with a click on « Répondre ». In French whatever the page's
+ * language, which a line gives when the form sent it, so that he knows which one to answer in.
+ */
+function mailOf({ mode, name, email, when, message }: Proposal, lang?: Lang): OutgoingMail {
 	return {
 		to: TO,
 		from: FROM,
@@ -127,15 +158,16 @@ function mailOf({ mode, name, email, when, message }: Proposal): OutgoingMail {
 			`Nom : ${name}`,
 			`E-mail : ${email}`,
 			`Quand : ${when}`,
+			...(lang ? [`Langue du visiteur : ${LANGUAGE_NAMES[lang]}`] : []),
 			'',
 			message || '(pas de message)',
 		].join('\n'),
 	};
 }
 
-function answer(status: number, headers: Record<string, string> = {}) {
+function answer(status: number, headers: Record<string, string> = {}, lang?: Lang) {
 	return Response.json(
-		{ ok: status === 200 },
+		lang ? { ok: status === 200, message: MESSAGES[lang][status] } : { ok: status === 200 },
 		{ status, headers: { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', ...headers } },
 	);
 }

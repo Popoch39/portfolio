@@ -202,9 +202,12 @@ export interface Frame {
 	};
 	/** Top-left corner of the label, and its opacity once it has faded in. */
 	label: { x: number; y: number; opacity: number };
-	/** The HUD's readouts, as numbers: the page formats them at its own pace. */
-	hud: { phase: string; gore: number; lat: number; lon: number; goreWidth: number; gutter: number };
+	/** The HUD's readouts, as numbers and the phase's key: the page words and formats them at its own pace. */
+	hud: { phase: IntroPhase; gore: number; lat: number; lon: number; goreWidth: number; gutter: number };
 }
+
+/** The Intro's phases, as the HUD names them. */
+export type IntroPhase = 'projection' | 'cut' | 'unroll' | 'straighten';
 
 /** Points of the globe projected in the window, in columns allocated once; `facing` > 0 on the near side. */
 class Points {
@@ -243,13 +246,6 @@ const majorLat = new Float64Array(PARALLELS);
 const majorHalf = new Float64Array(PARALLELS);
 const minorLat = new Float64Array(PARALLELS);
 const minorHalf = new Float64Array(PARALLELS);
-
-const PHASES = {
-	projection: 'projection orthographique · EPSG:4326',
-	cut: 'découpe · 12 fuseaux de 30°',
-	unroll: 'développement · fuseaux sinusoïdaux',
-	straighten: 'redressement · 1 fuseau = 1 colonne',
-};
 
 /** Where the globe and the Besançon point stand at `t` (s) on the measured page. */
 export function frameAt(t: number, layout: Layout): Frame {
@@ -352,10 +348,10 @@ export function frameAt(t: number, layout: Layout): Frame {
 	const asideX = besideX ? cityX + LABEL_OFFSET.x : Math.max(layout.gridLeft, room);
 	const asideY = besideX ? cityY + LABEL_OFFSET.y : cityY + LABEL_OFFSET.below;
 
-	let phaseName = PHASES.projection;
-	if (t >= STRAIGHTEN.start) phaseName = PHASES.straighten;
-	else if (t >= UNROLL.start) phaseName = PHASES.unroll;
-	else if (t >= CUT.start) phaseName = PHASES.cut;
+	let phaseName: IntroPhase = 'projection';
+	if (t >= STRAIGHTEN.start) phaseName = 'straighten';
+	else if (t >= UNROLL.start) phaseName = 'unroll';
+	else if (t >= CUT.start) phaseName = 'cut';
 	// A gore's width at the equator: one column pitch on the globe, one column once the gutters are open.
 	const goreWidth = pitch * goreShare;
 
@@ -622,9 +618,9 @@ function ripple(t: number, keys: [number, number, number][]) {
 }
 
 /** Four decimals, hemisphere letter. */
-export function coordinate(value: number, positive: string, negative: string) {
-	return `${decimal(Math.abs(value), 4)}° ${value < 0 ? negative : positive}`;
+export function coordinate(value: number, positive: string, negative: string, separator: string) {
+	return `${decimal(Math.abs(value), separator, 4)}° ${value < 0 ? negative : positive}`;
 }
 
-/** French decimal comma, one decimal unless told otherwise. */
-export const decimal = (value: number, digits = 1) => value.toFixed(digits).replace('.', ',');
+/** The language's decimal separator, one decimal unless told otherwise. */
+export const decimal = (value: number, separator: string, digits = 1) => value.toFixed(digits).replace('.', separator);

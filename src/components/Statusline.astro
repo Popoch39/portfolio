@@ -5,14 +5,18 @@
  * transform would carry it along. Always ink, day or night: it stays in daylight's theme, but on the
  * colour schemes' papers, where it takes the scheme's own darkest row.
  */
+import { person } from '../data/profile';
+import { dictionary, type Lang } from '../i18n';
 import Pause from './Pause.astro';
 
 interface Props {
+	lang: Lang;
 	/** The page has loops to stop (the marquee, the lede): the statusline carries the Pause (WCAG 2.2.2). */
 	pause?: boolean;
 }
 
-const { pause = false } = Astro.props;
+const { lang, pause = false } = Astro.props;
+const { statusline: t, sky } = dictionary(lang);
 ---
 
 <div id="statusline" class="statusline mono theme-light" data-intro="statusline">
@@ -27,7 +31,7 @@ const { pause = false } = Astro.props;
 		}
 		<span class="mode" aria-hidden="true" data-lane-mode></span>
 		<span class="mode" aria-hidden="true" data-vim-mode>NORMAL</span>
-		{pause && <Pause />}
+		{pause && <Pause lang={lang} />}
 		<span class="message" aria-hidden="true" data-lane-message></span>
 		<span class="segment branch" aria-hidden="true">
 			<svg
@@ -46,11 +50,13 @@ const { pause = false } = Astro.props;
 			>
 			<span>main</span>
 		</span>
-		<span class="file" aria-hidden="true">~/louis/portfolio.md<span data-vim-modified hidden> [+]</span></span>
+		<span class="file" aria-hidden="true"
+			><span class="file-name" data-ag-host="file">{t.file}</span><span data-vim-modified hidden> [+]</span></span
+		>
 	</div>
 	<div class="side">
 		{/* Today's sunrise and sunset at Besançon, written by the sky's inline script (`src/sky/sky.ts`). */}
-		<p class="sun">
+		<p class="sun" data-ag-host="sun">
 			<svg
 				width="13"
 				height="13"
@@ -63,7 +69,7 @@ const { pause = false } = Astro.props;
 				aria-hidden="true"
 				><path d="M3 19h18M7 19a5 5 0 0 1 10 0M12 3v7M9 6l3-3 3 3"></path></svg
 			>
-			<span><span class="sun-word">lever </span><span class="time" data-sun="rise"></span></span>
+			<span><span class="sun-word">{sky.rise} </span><span class="time" data-sun="rise"></span></span>
 			<svg
 				width="13"
 				height="13"
@@ -76,13 +82,13 @@ const { pause = false } = Astro.props;
 				aria-hidden="true"
 				><path d="M3 19h18M7 19a5 5 0 0 1 10 0M12 10V3M9 7l3 3 3-3"></path></svg
 			>
-			<span><span class="sun-word">coucher </span><span class="time" data-sun="set"></span></span>
-			<span class="visually-hidden"> à Besançon aujourd’hui</span>
+			<span><span class="sun-word">{sky.set} </span><span class="time" data-sun="set"></span></span>
+			<span class="visually-hidden">{t.sunWhere(person.city)}</span>
 		</p>
 		{/* The paper in force, picked in the Nuancier: read from the root, right from the first paint. */}
-		<span class="paper" aria-hidden="true"></span>
+		<span class="paper" aria-hidden="true" data-ag-host="paper"></span>
 		<span class="encoding" aria-hidden="true">utf-8 · markdown</span>
-		<span class="segment" aria-hidden="true">Bas</span>
+		<span class="segment" aria-hidden="true" data-ag-host="bottom">{t.bottom}</span>
 		<span class="mode" aria-hidden="true">:wq</span>
 	</div>
 </div>
@@ -159,6 +165,11 @@ const { pause = false } = Astro.props;
 		white-space: nowrap;
 	}
 
+	/* A box of the row's height: the Anagramme's letters stand on the name's lines (`src/bascule/play.ts`). */
+	.file-name {
+		display: inline-block;
+	}
+
 	/* The mark keeps its room while hidden: the name would otherwise leave the row at each INSERT. */
 	.file [hidden] {
 		display: inline;
@@ -221,24 +232,27 @@ const { pause = false } = Astro.props;
 		display: none;
 	}
 
-	/* The Nuancier's codes and names (ADR 0009); `auto` says which of the day or the night it gives. */
+	/*
+	 * The Nuancier's codes and names (ADR 0009); `auto` says which of the day or the night it gives. The
+	 * names that are words come in the page's language, from the root (`Layout.astro`).
+	 */
 	:global(:root) {
 		--paper-code: 'EN-04';
-		--paper-name: 'auto · jour';
+		--paper-name: var(--paper-auto) ' · ' var(--paper-day);
 	}
 
 	:global(:root[data-theme='dark']) {
-		--paper-name: 'auto · nuit';
+		--paper-name: var(--paper-auto) ' · ' var(--paper-night);
 	}
 
 	:global(:root[data-bg='light']) {
 		--paper-code: 'EN-01';
-		--paper-name: 'jour';
+		--paper-name: var(--paper-day);
 	}
 
 	:global(:root[data-bg='dark']) {
 		--paper-code: 'EN-02';
-		--paper-name: 'nuit';
+		--paper-name: var(--paper-night);
 	}
 
 	:global(:root[data-bg='solarized-light']) {
@@ -251,7 +265,7 @@ const { pause = false } = Astro.props;
 	}
 
 	.paper::before {
-		content: 'papier ' var(--paper-code) ' · ';
+		content: var(--paper-word) ' ' var(--paper-code) ' · ';
 		color: var(--color-on-ink-muted);
 	}
 

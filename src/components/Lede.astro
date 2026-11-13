@@ -4,17 +4,38 @@
  * (`src/lede/typist.ts`). The first version is the final state, rendered here; screen readers get
  * a stable sentence instead of the show.
  */
-import { lede } from '../data/profile';
-import { restingOn, runs, tallestLines } from '../lede/buffer';
+import { contentOf } from '../data/profile';
+import { dictionary, languages, type Lang } from '../i18n';
+import { restingOn, runs } from '../lede/buffer';
+import { ledeLayout } from '../lede/layout';
+import { tallestRules, type Tier } from '../lede/lines';
+import { inlineStyleHash } from './inline-script';
 
 interface Props {
+	lang: Lang;
 	/** The copy on the hero's night (ADR 0008): the typist writes to it too; nothing of it is read out. */
 	night?: boolean;
 }
 
-const { night = false } = Astro.props;
+const { lang, night = false } = Astro.props;
+const { lede } = contentOf(lang);
+const line = dictionary(lang).ledeLine;
 const first = lede.versions[0];
+// The tallest wrap in either language: both pages keep the same rows, and nothing moves at the Bascule.
+const rows = (tier: Tier) => Math.max(...languages.map((code) => ledeLayout(code)[tier].rows));
+// The audience's rows likewise, every version and both languages, by the width of its line (`.version`).
+const audienceRows = tallestRules(
+	'[data-rows="audience"]',
+	languages.flatMap((code) =>
+		contentOf(code).lede.versions.map((version) => dictionary(code).ledeLine.audience(version.audience)),
+	),
+	24,
+	100,
+);
+Astro.csp?.insertStyleHash(inlineStyleHash(audienceRows));
 ---
+
+<style is:inline set:html={audienceRows}></style>
 
 <div
 	class="hero-lede"
@@ -23,19 +44,32 @@ const first = lede.versions[0];
 	data-lede-night={night ? '' : undefined}
 >
 	{!night && <p class="visually-hidden">{lede.summary}</p>}
-	<p class="sentence" aria-hidden="true" data-nosnippet>
-		<span class="ghosts">{tallestLines(lede).map((line) => <span>{line}</span>)}</span>
-		<span data-buffer
-			>{
-				runs(lede, restingOn(lede, 0)).map(({ text, kind }) =>
-					kind === 'text' ? text : <span data-kind={kind}>{text}</span>,
-				)
-			}</span
+	<div class="sentence-box">
+		<p
+			class="sentence"
+			aria-hidden="true"
+			data-nosnippet
+			data-ag-host="lede"
+			style={`--rows-desk: ${rows('desk')}; --rows-phone: ${rows('phone')}`}
 		>
-	</p>
+			<span data-buffer
+				>{
+					runs(lede, restingOn(lede, 0)).map(({ text, kind, tiers }) =>
+						kind === 'text' ? (
+							text
+						) : kind === 'break' ? (
+							<br data-tiers={tiers?.join(' ')} />
+						) : (
+							<span data-kind={kind}>{text}</span>
+						),
+					)
+				}</span
+			>
+		</p>
+	</div>
 	<p class="mono version" aria-hidden="true" data-version>
-		<span class="version-number">version <span data-version-number>1/{lede.versions.length}</span></span>
-		<span data-audience>pour&nbsp;: {first.audience}</span>
+		<span class="version-number">{line.version} <span data-version-number>1/{lede.versions.length}</span></span>
+		<span data-audience data-ag-host="audience" data-rows="audience">{line.audience(first.audience)}</span>
 	</p>
 	<div class="mono keys" aria-hidden="true" data-keys data-on="false"></div>
 </div>
@@ -50,26 +84,49 @@ const first = lede.versions[0];
 		flex-direction: column;
 	}
 
-	.sentence {
-		position: relative;
-		margin: 0;
-		font-size: clamp(20px, 1.85vw, 27px);
-		line-height: 1.22;
-		letter-spacing: -0.012em;
-	}
-
-	/* Every version stacked in one cell: the lede keeps the height of its tallest wrap while it is retyped. */
-	.ghosts {
-		display: grid;
-		visibility: hidden;
-	}
-
-	.ghosts > * {
-		grid-area: 1 / 1;
+	/* What the type is sized on: the sentence alone, so that the keys keep the hero as their containing block. */
+	.sentence-box {
+		container-type: inline-size;
 	}
 
 	/*
-	 * Laid over the ghosts, its size taken from them and never from its text: each keystroke lays out the
+	 * Fragment Mono, a letter per column (0.618em, `ADVANCE`), on the tier's columns (`src/lede/lines.ts`):
+	 * 26 on a desk, the type as large as they fit up to 30px, each column allowed half a pixel of
+	 * rounding; the lines are broken at build, the browser never wraps them. The lede keeps the height
+	 * of its tallest wrap, keystrokes included, while it is retyped.
+	 */
+	.sentence {
+		position: relative;
+		margin: 0;
+		height: calc(var(--rows-desk) * 1.22em);
+		font-family: var(--font-mono);
+		font-size: min((100cqi - 26 * 0.5px) / (26 * 0.618), 30px);
+		font-variant-ligatures: none;
+		line-height: 1.22;
+		white-space: pre;
+	}
+
+	/* Each break says on which tier a line starts there: the other tier's breaks are not drawn. */
+	@media (min-width: 601px) {
+		.sentence :global(br:not([data-tiers~='desk'])) {
+			display: none;
+		}
+	}
+
+	/* A phone: 18 columns, up to 26px. */
+	@media (max-width: 600px) {
+		.sentence {
+			height: calc(var(--rows-phone) * 1.22em);
+			font-size: min((100cqi - 18 * 0.5px) / (18 * 0.618), 26px);
+		}
+
+		.sentence :global(br:not([data-tiers~='phone'])) {
+			display: none;
+		}
+	}
+
+	/*
+	 * Its size taken from the sentence's rows and never from its text: each keystroke lays out the
 	 * buffer alone, not the hero. Chromium only confines a box that is neither a grid nor a flex item, hence the
 	 * absolute position in a plain block. No paint containment: the slots' underline runs below the last line.
 	 */
@@ -113,7 +170,12 @@ const first = lede.versions[0];
 	 * Always two lines: side by side, the audiences' lengths and the mono font's swap would wrap the
 	 * line differently and move what follows.
 	 */
+	/*
+	 * The browser wraps a long audience on a narrow phone: the Anagramme's letters pick their lines by the
+	 * line's width in columns, a container query in its `ch` (`src/bascule/build.ts`).
+	 */
 	.version {
+		container-type: inline-size;
 		display: flex;
 		flex-direction: column;
 		margin: 14px 0 0;

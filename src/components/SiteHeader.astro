@@ -1,24 +1,66 @@
 ---
-import { person, profile } from '../data/profile';
+import { getRelativeLocaleUrl } from 'astro:i18n';
+import Bascule from './Bascule.astro';
+import { contentOf, person } from '../data/profile';
+import { dictionary, languages, type Lang } from '../i18n';
+import { tallestRules } from '../lede/lines';
+import { inlineStyleHash } from './inline-script';
 
-// Absolute anchors: from the 404 page, they lead back to the home page sections.
+interface Props {
+	lang: Lang;
+	/** The page's address under its language's root, `''` for the home page: where the Bascule leads. */
+	path: string;
+}
+
+const { lang, path } = Astro.props;
+const t = dictionary(lang).header;
+const profile = contentOf(lang);
+
+// Absolute anchors: from the 404 page, they lead back to the home page sections, in its language.
+const home = getRelativeLocaleUrl(lang);
+// The cell's columns range from 22 (180px at 861px) to 39 (314px at 1440px and wider), with a margin.
+const metaRows = tallestRules(
+	'[data-rows="meta"]',
+	languages.flatMap((code) => [contentOf(code).jobTitle, contentOf(code).specialty]),
+	16,
+	60,
+);
+Astro.csp?.insertStyleHash(inlineStyleHash(metaRows));
+
 const sections = [
-	{ href: '/#parcours', label: 'Parcours' },
-	{ href: '/#stack', label: 'Stack' },
-	{ href: '/#contact', label: 'Contact' },
+	{ href: `${home}#parcours`, label: t.sections.parcours },
+	{ href: `${home}#stack`, label: t.sections.stack },
+	{ href: `${home}#contact`, label: t.sections.contact },
 ];
 ---
 
+<style is:inline set:html={metaRows}></style>
 <div class="wrap">
 	<header class="site-header grid-12" data-intro="header">
-		<a class="name" href="/#top" data-intro="name">{person.name}</a>
-		<p class="mono meta" data-intro="role">{person.jobTitle}</p>
-		<p class="mono meta specialty" data-intro="specialty">
-			<span class="long">{profile.specialty}</span><span class="short">{profile.specialtyShort}</span>
+		<a class="name" href={`${home}#top`} data-intro="name">{person.name}</a>
+		{/* `data-ag-host`: where the Anagramme draws its letters over the text (`src/bascule/play.ts`). */}
+		<p class="mono meta" data-intro="role">
+			<span class="role" data-ag-host="role" data-rows="meta">{profile.jobTitle}</span>
 		</p>
-		<nav aria-label="Sections" data-intro="nav">
-			{sections.map((section) => <a href={section.href}>{section.label}</a>)}
-		</nav>
+		<p class="mono meta specialty" data-intro="specialty">
+			<span class="long" data-ag-host="spec-long" data-rows="meta">{profile.specialty}</span><span
+				class="short"
+				data-ag-host="spec-short">{profile.specialtyShort}</span
+			>
+		</p>
+		{/* One box on a phone, where the Bascule shares the sections' row; no box of its own on the grid. */}
+		<div class="tabs">
+			<nav class="mono" aria-label={t.navLabel} data-intro="nav">
+				{
+					sections.map((section, i) => (
+						<a href={section.href}>
+							<span data-ag-host={`nav-${i}`}>{section.label}</span>
+						</a>
+					))
+				}
+			</nav>
+			<Bascule lang={lang} path={path} />
+		</div>
 		<span class="rule" data-intro="rule"></span>
 	</header>
 </div>
@@ -46,11 +88,20 @@ const sections = [
 		transform-origin: 0 50%;
 	}
 
+	/*
+	 * Two columns are room enough for the name on one line: the third went to the Bascule, at the end
+	 * of the row, the sections keeping their three.
+	 */
 	.name {
-		grid-column: span 3;
+		grid-column: span 2;
 		font-size: 15px;
 		font-weight: 700;
 		text-decoration: none;
+		white-space: nowrap;
+	}
+
+	.tabs {
+		display: contents;
 	}
 
 	.meta {
@@ -59,14 +110,38 @@ const sections = [
 		color: var(--color-ink-muted);
 	}
 
+	/*
+	 * The browser wraps the role and the specialty on their cell, whose width follows the window: the
+	 * Anagramme's letters pick their lines by the cell's width in columns, a container query in its `ch`.
+	 */
+	@media (min-width: 861px) {
+		.meta {
+			container-type: inline-size;
+		}
+	}
+
+	/*
+	 * Blocks of their own: the Anagramme's letters start where their first line does. Each keeps the rows
+	 * the longest of the role and the specialty takes in either language (`metaRows`): the header is as
+	 * tall in both, and the page below it does not move at the Bascule.
+	 */
+	.role,
+	.long {
+		display: block;
+	}
+
+	/*
+	 * In Fragment Mono like the rest of the header, as the Anagramme's board draws them: each letter of a
+	 * label has its column, so that the build places it in the other language without measuring (ADR 0011).
+	 * 12px keeps the three labels on one row in the narrowest desk cell (180px at 861px).
+	 */
 	nav {
 		grid-column: span 3;
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: flex-end;
 		gap: 6px 20px;
-		font-size: 14px;
-		font-weight: 500;
+		font-size: 12px;
 	}
 
 	nav a {
@@ -129,11 +204,19 @@ const sections = [
 		}
 
 		.short {
-			display: inline;
+			display: block;
+		}
+
+		/* The sections, then the Bascule at the end of their row. */
+		.tabs {
+			display: flex;
+			flex-basis: 100%;
+			gap: 20px;
 		}
 
 		nav {
-			flex-basis: 100%;
+			flex: 1;
+			justify-content: flex-start;
 		}
 
 		nav a {

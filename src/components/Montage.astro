@@ -8,6 +8,14 @@
 import moka from '../assets/moka/moka.json';
 import screwStrip from '../assets/moka/screw.avif?url&no-inline';
 import { delays, lift as blockLift, liftOver, type Block } from '../cafe/lifts';
+import { dictionary, type Lang } from '../i18n';
+
+interface Props {
+	lang: Lang;
+}
+
+const { lang } = Astro.props;
+const { figure } = dictionary(lang).cafe;
 
 type LayerName = keyof typeof moka.layers;
 type PieceName = (typeof moka.pieces)[number]['name'];
@@ -184,7 +192,7 @@ const camera = JSON.stringify(
 <div
 	class="montage"
 	role="img"
-	aria-label="Un Moka Express en pièces au-dessus d’un réchaud, que le défilement remonte pièce par pièce avant d’allumer le feu."
+	aria-label={figure}
 	data-montage
 >
 	{/* The Démontage's camera, around the scene's: it steps back from wherever the scene left the moka. */}

@@ -434,6 +434,15 @@ a:focus-visible {
 }
 
 /*
+ * Arrived by a Bascule (ADR 0011, `Anagramme.astro`): the page that left ended on this one's letters,
+ * so it is swapped in as it stands, without a fade.
+ */
+:root[data-arrived='bascule']::view-transition-old(root),
+:root[data-arrived='bascule']::view-transition-new(root) {
+	animation: none;
+}
+
+/*
  * A paper picked in the Nuancier (ADR 0009, `src/sky/nuancier.ts`): no cross-fade, the new page is
  * uncovered by its own clip, set by script. The fan has its own group, live and still, above the reveal;
  * taps go through to the page during the reveal, so that the next pick need not wait for its end.

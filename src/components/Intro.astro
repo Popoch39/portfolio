@@ -10,6 +10,22 @@
  */
 import { person } from '../data/profile';
 import { coordinates } from '../hero/map';
+import { dictionary, type Lang } from '../i18n';
+import { coordinate, decimal } from '../intro/globe';
+
+interface Props {
+	lang: Lang;
+}
+
+const { lang } = Astro.props;
+const { intro: t, geo } = dictionary(lang);
+const { latitude, longitude } = coordinates(lang);
+// The HUD as it stands before the scene writes it: the globe facing 8° N, 40° W, the gutters still shut.
+const start = {
+	lat: coordinate(8, geo.north, geo.south, geo.decimalSeparator),
+	lon: coordinate(-40, geo.east, geo.west, geo.decimalSeparator),
+	scale: t.scale(decimal(100.1, geo.decimalSeparator), decimal(0, geo.decimalSeparator)),
+};
 ---
 
 {
@@ -24,23 +40,21 @@ import { coordinates } from '../hero/map';
 	<p class="mono label" data-hud="label">
 		<span
 			><span class="city">{person.city}</span><span class="coordinates"
-				><span>{coordinates.latitude}</span><span class="separator"> · </span><span>{coordinates.longitude}</span></span
+				><span>{latitude}</span><span class="separator"> · </span><span>{longitude}</span></span
 			></span
 		>
 	</p>
 	<div class="paper" data-hud="paper">
 		<div class="mono hud" data-hud="hud">
-			<p class="hud-phase" data-hud="phase">projection orthographique · EPSG:4326</p>
+			<p class="hud-phase" data-hud="phase">{t.phases.projection}</p>
 			<p class="hud-paper"></p>
-			<p class="hud-gore"><span class="dim">fuseau</span><span data-hud="gore">05 / 12</span></p>
+			<p class="hud-gore"><span class="dim">{t.gore}</span><span data-hud="gore">05 / 12</span></p>
 			<p class="hud-centre">
-				<small>centre de la projection</small><span data-hud="lat">8,0000° N</span><span data-hud="lon"
-					>40,0000° O</span
-				>
+				<small>{t.centre}</small><span data-hud="lat">{start.lat}</span><span data-hud="lon">{start.lon}</span>
 			</p>
 			<p class="hud-scale">
 				<span class="scale-bar"><i data-hud="tick"></i><i data-hud="bar"></i><i></i></span><span data-hud="scale"
-					>fuseau 100,1 px · gouttière 0,0 px</span
+					>{start.scale}</span
 				>
 			</p>
 		</div>
@@ -202,7 +216,7 @@ import { coordinates } from '../hero/map';
 	}
 
 	.hud-paper::before {
-		content: 'papier ' var(--paper-code) ' · ' var(--paper-name);
+		content: var(--paper-word) ' ' var(--paper-code) ' · ' var(--paper-name);
 	}
 
 	/* A gore's width at the equator: the left tick slides and the rule scales, from the right end. */

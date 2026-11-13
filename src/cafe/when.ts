@@ -1,11 +1,10 @@
 /**
  * The « Quand ? » choices of the Formulaire du Café, shared by the form's markup (`Cafe.astro`) and the route that
- * checks them (`worker/index.ts`): `value` is what the form sends and the route accepts, `chip` what the chip reads.
+ * checks them (`worker/index.ts`): each is what the form sends and the route accepts, in French whatever the page's
+ * language. What a chip reads is the dictionary's (`cafe.chips`).
  */
-export const WHEN_CHOICES = [
-	{ value: 'Cette semaine', chip: 'Cette semaine' },
-	{ value: 'La semaine prochaine', chip: 'Semaine prochaine' },
-	{ value: 'Plus tard', chip: 'Plus tard' },
-] as const;
+export const WHEN_CHOICES = ['Cette semaine', 'La semaine prochaine', 'Plus tard'] as const;
 
-export const WHEN_VALUES: readonly string[] = WHEN_CHOICES.map(({ value }) => value);
+export type WhenValue = (typeof WHEN_CHOICES)[number];
+
+export const WHEN_VALUES: readonly string[] = WHEN_CHOICES;

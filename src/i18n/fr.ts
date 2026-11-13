@@ -298,6 +298,8 @@ export const sky = {
 
 export const statusline = {
 	file: '~/louis/portfolio.md',
+	/** Before the code of the paper in force, as the statusline and the Intro name it. */
+	paper: 'papier',
 	/** Vim's position in the buffer, at its end. */
 	bottom: 'Bas',
 	/** After the sunrise and sunset, for screen readers only. */

@@ -225,24 +225,27 @@ const { statusline: t, sky } = dictionary(lang);
 		display: none;
 	}
 
-	/* The Nuancier's codes and names (ADR 0009); `auto` says which of the day or the night it gives. */
+	/*
+	 * The Nuancier's codes and names (ADR 0009); `auto` says which of the day or the night it gives. The
+	 * names that are words come in the page's language, from the root (`Layout.astro`).
+	 */
 	:global(:root) {
 		--paper-code: 'EN-04';
-		--paper-name: 'auto · jour';
+		--paper-name: var(--paper-auto) ' · ' var(--paper-day);
 	}
 
 	:global(:root[data-theme='dark']) {
-		--paper-name: 'auto · nuit';
+		--paper-name: var(--paper-auto) ' · ' var(--paper-night);
 	}
 
 	:global(:root[data-bg='light']) {
 		--paper-code: 'EN-01';
-		--paper-name: 'jour';
+		--paper-name: var(--paper-day);
 	}
 
 	:global(:root[data-bg='dark']) {
 		--paper-code: 'EN-02';
-		--paper-name: 'nuit';
+		--paper-name: var(--paper-night);
 	}
 
 	:global(:root[data-bg='solarized-light']) {
@@ -255,7 +258,7 @@ const { statusline: t, sky } = dictionary(lang);
 	}
 
 	.paper::before {
-		content: 'papier ' var(--paper-code) ' · ';
+		content: var(--paper-word) ' ' var(--paper-code) ' · ';
 		color: var(--color-on-ink-muted);
 	}
 

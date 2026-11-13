@@ -9,7 +9,7 @@ import { watchOffScreen } from '../animation/offscreen';
 import type { Lede } from '../data/profile';
 import { ledeLine } from '../i18n/fr';
 import { forPage } from '../i18n/lang';
-import { restingOn, runs, slotStarts, type BufferState, type Run, type Slot } from './buffer';
+import { restingOn, runs, slipped, slotStarts, type BufferState, type Run, type Slot } from './buffer';
 import { showVimMode } from './vim-mode';
 
 const line = forPage({ fr: ledeLine });
@@ -124,7 +124,7 @@ registerScene(() => {
 	function typeInto(steps: Step[], slot: Slot, text: string, slip: boolean) {
 		const start = () => slotStarts(lede, state)[slot];
 		const sequence = slip
-			? [...text.slice(0, -3), text.at(-2), text.at(-3), text.at(-1), '⌫', '⌫', '⌫', ...text.slice(-3)]
+			? [...slipped(text), '⌫', '⌫', '⌫', ...text.slice(-3)]
 			: [...text];
 		sequence.forEach((char, i) => {
 			const previous = sequence[i - 1];
@@ -227,8 +227,13 @@ registerScene(() => {
 	};
 });
 
-function runNode({ text, kind }: Run) {
+function runNode({ text, kind, tiers }: Run) {
 	if (kind === 'text') return document.createTextNode(text);
+	if (kind === 'break') {
+		const br = document.createElement('br');
+		br.dataset.tiers = tiers?.join(' ');
+		return br;
+	}
 	const span = document.createElement('span');
 	span.dataset.kind = kind;
 	span.textContent = text;

@@ -8,3 +8,6 @@ import { createHash } from 'node:crypto';
 export function inlineScriptHash(source: string): `sha256-${string}` {
 	return `sha256-${createHash('sha256').update(source).digest('base64')}`;
 }
+
+/** The same for a `<style>` written at build (`Astro.csp.insertStyleHash`): rules Astro did not bundle. */
+export const inlineStyleHash = inlineScriptHash;

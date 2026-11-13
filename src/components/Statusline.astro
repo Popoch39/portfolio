@@ -50,11 +50,13 @@ const { statusline: t, sky } = dictionary(lang);
 			>
 			<span>main</span>
 		</span>
-		<span class="file" aria-hidden="true">{t.file}<span data-vim-modified hidden> [+]</span></span>
+		<span class="file" aria-hidden="true"
+			><span class="file-name" data-ag-host="file">{t.file}</span><span data-vim-modified hidden> [+]</span></span
+		>
 	</div>
 	<div class="side">
 		{/* Today's sunrise and sunset at Besançon, written by the sky's inline script (`src/sky/sky.ts`). */}
-		<p class="sun">
+		<p class="sun" data-ag-host="sun">
 			<svg
 				width="13"
 				height="13"
@@ -84,9 +86,9 @@ const { statusline: t, sky } = dictionary(lang);
 			<span class="visually-hidden">{t.sunWhere(person.city)}</span>
 		</p>
 		{/* The paper in force, picked in the Nuancier: read from the root, right from the first paint. */}
-		<span class="paper" aria-hidden="true"></span>
+		<span class="paper" aria-hidden="true" data-ag-host="paper"></span>
 		<span class="encoding" aria-hidden="true">utf-8 · markdown</span>
-		<span class="segment" aria-hidden="true">{t.bottom}</span>
+		<span class="segment" aria-hidden="true" data-ag-host="bottom">{t.bottom}</span>
 		<span class="mode" aria-hidden="true">:wq</span>
 	</div>
 </div>
@@ -161,6 +163,11 @@ const { statusline: t, sky } = dictionary(lang);
 
 	.file {
 		white-space: nowrap;
+	}
+
+	/* A box of the row's height: the Anagramme's letters stand on the name's lines (`src/bascule/play.ts`). */
+	.file-name {
+		display: inline-block;
 	}
 
 	/* The mark keeps its room while hidden: the name would otherwise leave the row at each INSERT. */

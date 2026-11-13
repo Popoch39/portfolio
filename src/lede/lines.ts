@@ -75,6 +75,25 @@ export function cells(lines: string[]): Cell[] {
 	return result;
 }
 
+/**
+ * The most rows any of these texts takes, wrapped by the browser on a box `columns` wide, for every
+ * width from `max` columns down to `min`, as container rules in the box's own `ch`: a box that keeps
+ * this height keeps it whatever its language and its version, so that nothing below it moves when the
+ * text changes (the Bascule, ADR 0011). `selector` is a child of the query container.
+ */
+export function tallestRules(selector: string, texts: string[], min: number, max: number) {
+	const rules: string[] = [];
+	let last = 0;
+	for (let columns = max; columns >= min; columns--) {
+		const rows = Math.max(...texts.map((text) => wrap(text, columns).length));
+		if (rows === last) continue;
+		const block = `${selector}{min-height:${rows}lh}`;
+		rules.push(columns === max ? block : `@container (width < ${columns + 1}ch){${block}}`);
+		last = rows;
+	}
+	return rules.join('\n');
+}
+
 /** Where a line starts in the text, for each tier that starts one there. */
 export function breaksOf(text: string): Map<number, Tier[]> {
 	const breaks = new Map<number, Tier[]>();

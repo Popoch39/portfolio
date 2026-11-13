@@ -1,18 +1,26 @@
 ---
-import Atome from '../components/Atome.astro';
-import Cafe from '../components/Cafe.astro';
-import Frise from '../components/Frise.astro';
-import HeroSheet from '../components/HeroSheet.astro';
-import Intro from '../components/Intro.astro';
-import IntroTrigger from '../components/IntroTrigger.astro';
-import SectionHeading from '../components/SectionHeading.astro';
-import SectionNumber from '../components/SectionNumber.astro';
+/**
+ * The home page, in one language: what `/` and `/en/` both render (ADR 0011).
+ */
+import { getAbsoluteLocaleUrl } from 'astro:i18n';
+import Atome from './Atome.astro';
+import Cafe from './Cafe.astro';
+import Frise from './Frise.astro';
+import HeroSheet from './HeroSheet.astro';
+import Intro from './Intro.astro';
+import IntroTrigger from './IntroTrigger.astro';
+import SectionHeading from './SectionHeading.astro';
+import SectionNumber from './SectionNumber.astro';
 import Layout from '../layouts/Layout.astro';
 import { contentOf, currentPosition, marqueeWords, person, stack } from '../data/profile';
 import { graticule, kilometre, meridianShares } from '../hero/map';
 import { dictionary, type Lang } from '../i18n';
 
-const lang: Lang = 'fr';
+interface Props {
+	lang: Lang;
+}
+
+const { lang } = Astro.props;
 const t = dictionary(lang);
 const profile = contentOf(lang);
 const current = currentPosition(lang);
@@ -31,7 +39,7 @@ const mapStyle = [
 ].join('; ');
 const [mailUser, mailDomain] = person.email.split('@');
 
-const canonical = new URL('/', Astro.site).href;
+const canonical = getAbsoluteLocaleUrl(lang);
 // `<` escaped: the JSON sits inside a <script> and must not be able to close it.
 const jsonLd = JSON.stringify({
 	'@context': 'https://schema.org',

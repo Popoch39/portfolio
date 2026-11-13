@@ -1,9 +1,17 @@
 ---
-import Cursor from '../components/Cursor.astro';
+/**
+ * The 404, in one language: what `/404` and `/en/404` both render (ADR 0011).
+ */
+import { getRelativeLocaleUrl } from 'astro:i18n';
+import Cursor from './Cursor.astro';
 import { dictionary, type Lang } from '../i18n';
 import Layout from '../layouts/Layout.astro';
 
-const lang: Lang = 'fr';
+interface Props {
+	lang: Lang;
+}
+
+const { lang } = Astro.props;
 const { meta, notFound: t } = dictionary(lang);
 ---
 
@@ -12,7 +20,7 @@ const { meta, notFound: t } = dictionary(lang);
 		<p class="mono status">{t.status}</p>
 		<h1>404<Cursor /></h1>
 		<p class="lede">{t.lede}</p>
-		<a class="button" href="/">{t.back}</a>
+		<a class="button" href={getRelativeLocaleUrl(lang)}>{t.back}</a>
 	</main>
 </Layout>
 

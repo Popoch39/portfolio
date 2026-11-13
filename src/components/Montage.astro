@@ -9,16 +9,6 @@ import moka from '../assets/moka/moka.json';
 import screwStrip from '../assets/moka/screw.avif?url&no-inline';
 import { delays, lift as blockLift, liftOver, type Block } from '../cafe/lifts';
 
-interface Props {
-	/**
-	 * The Démontage's mini moka (Café stacked, `src/cafe/form.ts`): the same layers at the same URLs, drawn by the
-	 * Café's state alone. No scene, no screwing, and masked to assistive technologies: the Montage's figure names it.
-	 */
-	mini?: boolean;
-}
-
-const { mini = false } = Astro.props;
-
 type LayerName = keyof typeof moka.layers;
 type PieceName = (typeof moka.pieces)[number]['name'];
 
@@ -192,17 +182,14 @@ const camera = JSON.stringify(
 ---
 
 <div
-	class:list={['montage', { 'montage-mini': mini }]}
-	role={mini ? undefined : 'img'}
-	aria-label={mini
-		? undefined
-		: 'Un Moka Express en pièces au-dessus d’un réchaud, que le défilement remonte pièce par pièce avant d’allumer le feu.'}
-	aria-hidden={mini ? 'true' : undefined}
-	data-montage={!mini || undefined}
+	class="montage"
+	role="img"
+	aria-label="Un Moka Express en pièces au-dessus d’un réchaud, que le défilement remonte pièce par pièce avant d’allumer le feu."
+	data-montage
 >
 	{/* The Démontage's camera, around the scene's: it steps back from wherever the scene left the moka. */}
 	<div class="montage-camera" style={formCamera}>
-		<div class="montage-stack" style={stack} data-montage-stack={!mini || undefined} data-camera={mini ? undefined : camera}>
+		<div class="montage-stack" style={stack} data-montage-stack data-camera={camera}>
 			{
 				layers.map(({ name, src, width, height, place, wrapper, piece, lift, seat, glint, wisp, outer, inner, glintBlock, fire }) => {
 					const image = (
@@ -215,13 +202,13 @@ const camera = JSON.stringify(
 							decoding="async"
 							style={place}
 							data-layer={name}
-							data-piece={mini ? undefined : piece}
-							data-lift={mini ? undefined : lift}
-							data-seat={mini ? undefined : seat}
+							data-piece={piece}
+							data-lift={lift}
+							data-seat={seat}
 							data-wisp={wisp}
 						/>
 					);
-					if (name === 'collector' && !mini) {
+					if (name === 'collector') {
 						return (
 							<div class="montage-lift" style={outer}>
 								{image}
@@ -722,24 +709,6 @@ const camera = JSON.stringify(
 
 	.montage-glint {
 		opacity: 0;
-	}
-
-	/*
-	 * The mini moka is drawn from the moment the form opens, already in the form's state: it starts from the
-	 * Montage's rest, whole and on the fire, so that it comes apart as the big one does.
-	 */
-	@starting-style {
-		:global(.cafe[data-cafe-state]) .montage-mini :is(.montage-camera, .montage-lift) {
-			transform: none;
-		}
-
-		:global(.cafe[data-cafe-state]) .montage-mini .montage-fire {
-			opacity: 1;
-		}
-
-		:global(.cafe[data-cafe-state]) .montage-mini .montage-fire-off {
-			opacity: 0;
-		}
 	}
 
 	@media (prefers-reduced-motion: no-preference) {

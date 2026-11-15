@@ -16,7 +16,7 @@ const CAUGHT_UP = 0.25;
 
 const ring = document.querySelector<HTMLElement>('[data-trail]');
 
-// Under the Voile the point stands alone: the Intro keeps the main thread to itself while it moves.
+// While the opening plays the point stands alone: the scenes are being built on the main thread meanwhile.
 let opened = false;
 openingEnded.then(() => {
 	opened = true;

@@ -1,4 +1,4 @@
-// A direct visit plays the Intro: `./fixtures` arrives from another page of the site, which skips it.
+// A direct visit plays the Établi's assembly: `./fixtures` arrives from another page of the site, which skips it.
 import { test as direct } from '@playwright/test';
 import { expect, test, type Locator, type Page } from './fixtures';
 import type { Paper } from './nuancier-helpers';
@@ -264,20 +264,18 @@ test.describe('the Traîne, without JavaScript', () => {
 	});
 });
 
-direct.describe('the Traîne, under the Voile', () => {
+direct.describe('the Traîne, while the Établi assembles', () => {
 	direct.use({ reducedMotion: 'no-preference', viewport: { width: 1440, height: 900 } });
 
-	direct('the point alone while the Intro plays, the ring once it has ended', async ({ page }) => {
+	direct('the point alone while the assembly plays, the ring once it has ended', async ({ page }) => {
 		await page.goto('/');
-		await expect(page.locator('#veil')).toBeVisible();
+		await expect(page.locator('html')).toHaveClass(/\bintro\b/);
 
 		await page.mouse.move(400, 300);
 		await page.mouse.move(420, 320);
 		await expect(ring(page)).toBeHidden();
 
-		// A click skips the Intro.
-		await page.mouse.click(420, 320);
-		await expect(page.locator('#veil')).toBeHidden();
+		await expect(page.locator('html')).not.toHaveClass(/\bintro\b/, { timeout: 10_000 });
 		await page.mouse.move(500, 300);
 		await expect(ring(page)).toBeVisible();
 		await expectRingAt(page, { x: 500, y: 300 });

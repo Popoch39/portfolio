@@ -17,32 +17,21 @@ const PHONES = [
 	{ width: 390, height: 844 },
 ];
 
-/** The day's marker: the night draws the map again, aria-hidden, over it (ADR 0008). */
-const marker = (page: Page) => page.locator('[data-intro="late"] .hero-point');
+const bench = (page: Page) => page.locator('[data-bench]');
 
-/** Where the name stands, where the meridian runs and where Besançon sits on it. */
-function readMap(page: Page) {
+/** Bottom of each of the name's two lines, then the boxes of the text column and of the bench. */
+function readHero(page: Page) {
 	return page.evaluate(() => {
-		// A zero-size inline box on the baseline of each line: its top is the baseline.
-		const baselines = [...document.querySelectorAll('h1 [data-intro="line"]')].map((line) => {
-			const probe = document.createElement('span');
-			probe.style.cssText = 'display: inline-block; width: 0; height: 0; vertical-align: baseline';
-			line.append(probe);
-			const { top } = probe.getBoundingClientRect();
-			probe.remove();
-			return top;
-		});
 		const box = (selector: string) => {
 			const found = document.querySelector(selector)?.getBoundingClientRect();
 			if (!found) throw new Error(`${selector} missing`);
-			return found;
+			return { left: found.left, right: found.right, top: found.top, bottom: found.bottom };
 		};
-		const rule = box('.hero-rule');
-		const point = box('.hero-point');
 		return {
-			baselines,
-			rule: { left: rule.left, right: rule.right, top: rule.top },
-			point: { x: point.left + point.width / 2, y: point.top + point.height / 2 },
+			lines: [...document.querySelectorAll('h1 .hero-line')].map((line) => line.getBoundingClientRect().bottom),
+			text: box('.hero-text'),
+			actions: box('.hero-actions'),
+			bench: box('[data-bench]'),
 		};
 	});
 }
@@ -51,18 +40,14 @@ for (const viewport of [...SCREENS, ...PHONES]) {
 	test.describe(`${viewport.width} × ${viewport.height}`, () => {
 		test.use({ viewport });
 
-		test('the name stands on the meridian, which runs to the Besançon marker', async ({ page }) => {
+		test('the name stands on two lines, whole on the first screen', async ({ page }) => {
 			await page.goto('/');
 			await page.evaluate(() => document.fonts.ready);
 
-			const { baselines, rule, point } = await readMap(page);
-			expect(baselines.length).toBe(2);
-			// The last line of the name sits on the rule.
-			expect(Math.abs(baselines[1] - rule.top)).toBeLessThanOrEqual(1.5);
-			expect(Math.abs(point.x - rule.right)).toBeLessThanOrEqual(1);
-			expect(Math.abs(point.y - (rule.top + 0.5))).toBeLessThanOrEqual(1);
+			const { lines } = await readHero(page);
+			expect(lines).toHaveLength(2);
+			expect(lines[1] - lines[0]).toBeGreaterThan(20);
 			await expect(page.locator('h1')).toBeInViewport({ ratio: 1 });
-			await expect(marker(page)).toBeInViewport({ ratio: 1 });
 		});
 	});
 }
@@ -71,14 +56,15 @@ for (const viewport of SCREENS.filter(({ width }) => width > 860)) {
 	test.describe(`${viewport.width} × ${viewport.height} desktop`, () => {
 		test.use({ viewport });
 
-		test('the header and the whole map fit on the first screen, the name on one line', async ({ page }) => {
+		test('the text on the left and the Établi on the right both fit on the first screen', async ({ page }) => {
 			await page.goto('/');
 			await page.evaluate(() => document.fonts.ready);
 
-			const mapBottom = await page.locator('.hero-map').evaluate((el) => el.getBoundingClientRect().bottom);
-			expect(mapBottom).toBeLessThanOrEqual((await statuslineTop(page)) + 1);
-			const { baselines } = await readMap(page);
-			expect(Math.abs(baselines[0] - baselines[1])).toBeLessThanOrEqual(1);
+			const { text, actions, bench } = await readHero(page);
+			expect(bench.left).toBeGreaterThanOrEqual(text.right);
+			const floor = (await statuslineTop(page)) + 1;
+			expect(actions.bottom).toBeLessThanOrEqual(floor);
+			expect(bench.bottom).toBeLessThanOrEqual(floor);
 		});
 	});
 }
@@ -87,49 +73,24 @@ for (const viewport of [...SCREENS.filter(({ width }) => width <= 860), ...PHONE
 	test.describe(`${viewport.width} × ${viewport.height} narrow`, () => {
 		test.use({ viewport });
 
-		test('the name breaks onto two lines and the lede is on the first screen', async ({ page }) => {
+		test('the lede is on the first screen, and the Établi stands under the text', async ({ page }) => {
 			await page.goto('/');
 			await page.evaluate(() => document.fonts.ready);
 
-			const { baselines } = await readMap(page);
-			expect(baselines[1] - baselines[0]).toBeGreaterThan(20);
 			await expect(page.locator('[data-lede] .sentence')).toBeInViewport({ ratio: 1 });
+			const { text, bench } = await readHero(page);
+			expect(bench.top).toBeGreaterThanOrEqual(text.bottom);
 		});
 	});
 }
 
-// The map never follows its content (size containment): in a low window it stands at its floor, which
-// must hold both rows at their smallest. Every 20px of width, in a window too low for anything more.
-test.describe('the map in a low window', () => {
-	test.use({ viewport: { width: 320, height: 380 } });
-
-	test('holds its rows at every width: nothing of the lede, the actions or the keys’ room is clipped', async ({
-		page,
-	}) => {
-		await page.goto('/');
-		await page.evaluate(() => document.fonts.ready);
-
-		const clipped: Record<number, number> = {};
-		for (let width = 320; width <= 1440; width += 20) {
-			await page.setViewportSize({ width, height: 380 });
-			const overflow = await page.evaluate(() => {
-				const map = document.querySelector('.hero-map');
-				const south = map?.querySelector(':scope > .hero-south');
-				if (!map || !south) throw new Error('map missing');
-				// The map's bottom border is not part of its rows' room.
-				return south.getBoundingClientRect().bottom - (map.getBoundingClientRect().bottom - 1);
-			});
-			if (overflow > 0.5) clipped[width] = Math.round(overflow);
-		}
-		expect(clipped).toEqual({});
-	});
-});
-
-test('the Besançon marker is in the signal colour, still', async ({ page }) => {
+test('Besançon’s mark is in the signal colour, still, with its coordinates', async ({ page }) => {
 	await page.goto('/');
 
-	const point = marker(page);
-	await expect(point).toHaveCSS('background-color', 'rgb(255, 91, 20)');
-	await expect(point).toHaveCSS('animation-name', 'none');
-	await expect(page.locator('.hero-place[data-intro]')).toContainText('47°14′16″ N · 6°01′27″ E');
+	const pin = page.locator('.hero-pin');
+	await expect(pin).toHaveCSS('color', 'rgb(255, 91, 20)');
+	await expect(page.locator('.hero-mark')).toHaveCSS('animation-name', 'none');
+	await expect(page.locator('.hero-mark')).toContainText('Besançon');
+	await expect(page.locator('.hero-mark')).toContainText('47°14′16″ N · 6°01′27″ E');
+	await expect(bench(page)).toHaveAttribute('role', 'img');
 });

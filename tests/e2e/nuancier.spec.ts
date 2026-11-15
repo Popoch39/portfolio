@@ -32,15 +32,14 @@ test.describe('the Nuancier', () => {
 		await expect(page.locator('#statusline .paper')).toBeVisible();
 	});
 
-	test('Nord turns the whole site, the hero’s map and the statusline’s mode included, without a night', async ({ page }) => {
+	test('Nord turns the whole site, the hero and the statusline’s mode included', async ({ page }) => {
 		await visit(page);
 
 		await pickPaper(page, 'nord');
 
 		await expect(root(page)).toHaveAttribute('data-theme', 'nord');
-		await expect(root(page)).toHaveAttribute('data-sky', 'day');
 		await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(46, 52, 64)');
-		await expect(page.locator('.hero-map')).toHaveCSS('color', 'rgb(236, 239, 244)');
+		await expect(page.locator('h1')).toHaveCSS('color', 'rgb(236, 239, 244)');
 		await expect(page.locator('#statusline [data-vim-mode]')).toHaveCSS('background-color', 'rgb(208, 135, 112)');
 		await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#2e3440');
 		await expect
@@ -73,15 +72,14 @@ test.describe('the Nuancier', () => {
 		{ name: 'tokyo-night', background: 'rgb(26, 27, 38)', ink: 'rgb(192, 202, 245)', surface: '#1a1b26', label: '"tokyo night"' },
 	] as const;
 	for (const { name, background, ink, surface, label } of coloured) {
-		test(`the ${name} paper turns the whole site, the hero’s map included, without a night`, async ({ page }) => {
+		test(`the ${name} paper turns the whole site, the hero included`, async ({ page }) => {
 			await visit(page);
 
 			await pickPaper(page, name);
 
 			await expect(root(page)).toHaveAttribute('data-theme', name);
-			await expect(root(page)).toHaveAttribute('data-sky', 'day');
 			await expect(page.locator('body')).toHaveCSS('background-color', background);
-			await expect(page.locator('.hero-map')).toHaveCSS('color', ink);
+			await expect(page.locator('h1')).toHaveCSS('color', ink);
 			await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', surface);
 			await expect
 				.poll(() => page.locator('#statusline .paper').evaluate((el) => getComputedStyle(el, '::after').content))

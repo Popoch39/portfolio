@@ -295,13 +295,10 @@ function viewOf(root: Element | null) {
 	return allPresent(view) ? view : null;
 }
 
-/**
- * The lede's elements the typist writes to; `null` when one is missing. The lede's copy on the hero's night
- * (ADR 0008) gets every keystroke too, so that both halves read alike.
- */
+/** The lede's elements the typist writes to; `null` when one is missing. */
 function typistParts() {
 	const root = document.querySelector<HTMLElement>('[data-lede]');
-	const views = [root, ...document.querySelectorAll('[data-lede-night]')].map(viewOf);
+	const views = [viewOf(root)];
 	const parts = {
 		root,
 		pause: document.querySelector<HTMLInputElement>('#pause'),

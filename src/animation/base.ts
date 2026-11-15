@@ -28,15 +28,10 @@ const pageLoaded = new Promise((resolve) => {
 });
 // Fonts and images have taken their place: scene thresholds and anchor positions will not move any more.
 const pageSettled = Promise.all([document.fonts.ready, pageLoaded]);
-let settled = false;
-pageSettled.then(() => {
-	settled = true;
-});
 
-// The opening (the Intro) keeps the main thread to itself while it moves: nobody can scroll to the
-// other scenes meanwhile, and building them would cost it frames. They are built in its dead time,
-// a moment when nothing it plays on the main thread moves, so that its end hands over a page ready
-// to scroll; or at its end, when it never reached that moment.
+// The opening (the Établi's assembly, ADR 0012) tells when the main thread is free for the other scenes
+// (`idle`): they are built then, so that its end hands over a page ready to scroll; or at its end, when
+// it never said so.
 let endOpening = () => {};
 /** Resolved once the opening has ended (finished, skipped or reverted), or at once without one. */
 export const openingEnded = new Promise<void>((resolve) => {
@@ -47,7 +42,7 @@ export const openingEnded = new Promise<void>((resolve) => {
 const root = document.documentElement;
 if (!root.classList.contains('intro')) endOpening();
 else {
-	// The Voile's safety net (`IntroTrigger.astro`) also takes the class away from an Intro that never
+	// The inline trigger's belt (`IntroTrigger.astro`) also takes the class away from an opening that never
 	// started (its chunk failed, it threw as it started) and so will never call `end`: the opening is over all the same.
 	const lifted = new MutationObserver(() => {
 		if (root.classList.contains('intro')) return;
@@ -57,10 +52,10 @@ else {
 	lifted.observe(root, { attributeFilter: ['class'] });
 }
 
-// Before fonts and images are in, the scenes would be measured in a layout still on the move: the
-// dead time is let go, and the opening's end builds them.
+// Before fonts and images are in, the scenes would be measured in a layout still on the move: they wait
+// for them, the opening playing on meanwhile.
 const onOpeningIdle = () => {
-	if (settled) setTimeout(buildScenes);
+	pageSettled.then(() => setTimeout(buildScenes));
 };
 
 /** The scenes waiting to be built, in page order (the order their modules register them). */
@@ -146,9 +141,9 @@ export function registerDetail(detail: gsap.ContextFunc) {
 }
 
 /**
- * Registers the opening (the Intro): built at once, unlike the other scenes, which wait for it. While
- * it plays, it calls `idle` at its dead time, when nothing it plays on the main thread moves for a
- * while (the scenes are built there), and `end` once it has ended (finished, skipped or reverted);
+ * Registers the opening (the Établi's assembly): built at once, unlike the other scenes, which wait for
+ * it. While it plays, it calls `idle` once the main thread is free for the scenes (they are built there),
+ * and `end` once it has ended (finished or reverted);
  * when it does not play (no cleanup returned, or motion reduced), it ends straight away.
  */
 export function registerOpening(scene: (end: () => void, idle: () => void) => (() => void) | undefined) {

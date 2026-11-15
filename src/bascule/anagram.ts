@@ -31,7 +31,7 @@ export type Decoration = [kind: 'm' | 'u' | 'c', start: number, end: number];
 export interface Block {
 	/** `data-ag-key` of its overlays: what its variants' rules select. */
 	key: string;
-	/** `data-ag-host` of the elements the overlay goes into, the day's and the night's. */
+	/** `data-ag-host` of the elements the overlay goes into. */
 	host: string;
 	delay: number;
 	align: 'left' | 'right';

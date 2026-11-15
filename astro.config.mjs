@@ -25,7 +25,7 @@ export default defineConfig({
 		csp: {
 			directives: [
 				"default-src 'self'",
-				// The paper grain is an SVG data URI (`src/intro/grain.ts`).
+				// The paper grain is an SVG data URI (`src/grain/paper.ts`).
 				"img-src 'self' data:",
 				"font-src 'self'",
 				// The Formulaire du Café posts to the site's own Worker (`/api/contact`, ADR 0010); the

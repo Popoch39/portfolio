@@ -1,4 +1,4 @@
-// Not `./fixtures`: the home page is visited directly too, so that the Intro plays.
+// Not `./fixtures`: the home page is visited directly too, so that the Établi's assembly plays.
 import { createHash } from 'node:crypto';
 import { expect, test, type Page } from '@playwright/test';
 
@@ -63,12 +63,12 @@ test.describe('Content Security Policy', () => {
 		}
 	});
 
-	test('blocks nothing the Intro needs', async ({ page }) => {
+	test('blocks nothing the Établi’s assembly needs', async ({ page }) => {
 		const violations = await recordViolations(page);
 		await page.goto('/');
 		await expect(page.locator('html')).toHaveClass(/\bintro\b/);
 
-		await expect(page.locator('#veil')).toBeHidden({ timeout: 20_000 });
+		await expect(page.locator('html')).not.toHaveClass(/\bintro\b/, { timeout: 20_000 });
 		expect(await violations()).toEqual([]);
 	});
 

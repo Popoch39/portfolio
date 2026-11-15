@@ -15,7 +15,6 @@ async function visitAt(page: Page, time: string) {
 }
 
 const dayName = (page: Page) => page.getByRole('heading', { level: 1 });
-const nightName = (page: Page) => page.locator('.sky-sheet .hero-title');
 const write = (page: Page) => page.getByRole('link', { name: /^Écrire/ });
 
 /** How long the plate takes from the press to its place under the ink (ms). */
@@ -205,26 +204,6 @@ test.describe('the name out of register', () => {
 		await expect(page.locator('html')).toHaveAttribute('data-test-followed', 'true');
 	});
 
-	test('the night’s copy of the name slips with the day’s, in the night’s accent', async ({ page }) => {
-		// Half an hour after sunset the line crosses the hero: both drawings of the name show.
-		await visitAt(page, '17:40');
-		await holdPlates(page);
-
-		await pressWithPointer(page);
-
-		await expect.poll(() => shown(nightName(page))).toEqual([true, true]);
-		const day = await plates(dayName(page), 0);
-		const night = await plates(nightName(page), 0);
-		expect(night.map(({ x, y, content, shown, offLine }) => ({ x, y, content, shown, offLine: offLine < 0.5 }))).toEqual(
-			day.map(({ x, y, content, shown, offLine }) => ({ x, y, content, shown, offLine: offLine < 0.5 })),
-		);
-		for (const plate of night) expect(plate.color).toBe('rgb(255, 91, 20)');
-
-		await page.mouse.up();
-		await letGo(page);
-		await expect.poll(() => shown(nightName(page))).toEqual([false, false]);
-	});
-
 	test('screen readers hear the name once', async ({ page }) => {
 		await visitAt(page, '12:00');
 
@@ -236,7 +215,7 @@ test.describe('the name out of register', () => {
 test.describe('the name’s plates, from a narrow phone to a wide screen', () => {
 	test.use({ reducedMotion: 'no-preference' });
 
-	// Both compositions of the hero: the name on two lines up to 860px, on one line from 861px.
+	// Both compositions of the hero, one column up to 860px, two from 861px: the name on two lines in both.
 	for (const width of [320, 360, 412, 600, 768, 860, 861, 1024, 1440, 1920]) {
 		test(`${width}px wide: each plate lies on its line of the name, set as the line is`, async ({ page }) => {
 			await page.setViewportSize({ width, height: 900 });

@@ -13,11 +13,9 @@ import { inlineStyleHash } from './inline-script';
 
 interface Props {
 	lang: Lang;
-	/** The copy on the hero's night (ADR 0008): the typist writes to it too; nothing of it is read out. */
-	night?: boolean;
 }
 
-const { lang, night = false } = Astro.props;
+const { lang } = Astro.props;
 const { lede } = contentOf(lang);
 const line = dictionary(lang).ledeLine;
 const first = lede.versions[0];
@@ -37,13 +35,8 @@ Astro.csp?.insertStyleHash(inlineStyleHash(audienceRows));
 
 <style is:inline set:html={audienceRows}></style>
 
-<div
-	class="hero-lede"
-	data-intro={night ? undefined : 'lede'}
-	data-lede={night ? undefined : JSON.stringify(lede)}
-	data-lede-night={night ? '' : undefined}
->
-	{!night && <p class="visually-hidden">{lede.summary}</p>}
+<div class="hero-lede" data-lede={JSON.stringify(lede)}>
+	<p class="visually-hidden">{lede.summary}</p>
 	<div class="sentence-box">
 		<p
 			class="sentence"
@@ -84,7 +77,7 @@ Astro.csp?.insertStyleHash(inlineStyleHash(audienceRows));
 		flex-direction: column;
 	}
 
-	/* What the type is sized on: the sentence alone, so that the keys keep the hero as their containing block. */
+	/* What the type is sized on: the sentence alone, so that the keys keep the hero's text column as their containing block. */
 	.sentence-box {
 		container-type: inline-size;
 	}

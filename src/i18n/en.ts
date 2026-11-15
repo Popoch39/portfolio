@@ -235,7 +235,6 @@ export const header: Dictionary['header'] = {
 };
 
 export const geo: Dictionary['geo'] = {
-	decimalSeparator: '.',
 	north: 'N',
 	south: 'S',
 	east: 'E',
@@ -253,25 +252,14 @@ export const ledeLine: Dictionary['ledeLine'] = {
 	escape: 'Esc',
 };
 
-export const intro: Dictionary['intro'] = {
-	phases: {
-		projection: 'orthographic projection · EPSG:4326',
-		cut: 'cut · 12 gores of 30°',
-		unroll: 'unrolling · sinusoidal gores',
-		straighten: 'straightening · 1 gore = 1 column',
-	},
-	gore: 'gore',
-	centre: 'center of projection',
-	scale: (gore: string, gutter: string) => `gore ${gore} px · gutter ${gutter} px`,
+export const etabli: Dictionary['etabli'] = {
+	label: 'A mechanical keyboard in isometric view, put together part by part',
+	replay: 'Replay',
 };
 
 export const sky: Dictionary['sky'] = {
 	rise: 'sunrise',
 	set: 'sunset',
-	dusks: ['civil dusk', 'nautical dusk', 'astronomical dusk'],
-	dawns: ['civil dawn', 'nautical dawn', 'astronomical dawn'],
-	night: 'night',
-	nightPaper: 'night · paper EN-02',
 };
 
 export const statusline: Dictionary['statusline'] = {
@@ -389,7 +377,7 @@ export const en: Dictionary = {
 	geo,
 	hero,
 	ledeLine,
-	intro,
+	etabli,
 	sky,
 	statusline,
 	nuancier,

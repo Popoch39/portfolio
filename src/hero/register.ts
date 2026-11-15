@@ -7,12 +7,11 @@
 import { registerDetail } from '../animation/base';
 
 registerDetail(() => {
-	const map = document.querySelector<HTMLElement>('.hero-map');
-	// The day's button: the night's copy is out of reach (ADR 0008).
-	const button = map?.querySelector<HTMLAnchorElement>('.hero-actions:not([data-night]) .button');
-	if (!map || !button) return;
+	const hero = document.querySelector<HTMLElement>('[data-hero]');
+	const button = hero?.querySelector<HTMLAnchorElement>('.hero-actions .button');
+	if (!hero || !button) return;
 
-	const slip = () => map.toggleAttribute('data-slipped', true);
+	const slip = () => hero.toggleAttribute('data-slipped', true);
 	const press = (event: PointerEvent) => {
 		if (event.button === 0) slip();
 	};
@@ -21,16 +20,16 @@ registerDetail(() => {
 	};
 	// Taken away once a plate is back, so that the next press plays it again.
 	const settle = (event: AnimationEvent) => {
-		if (event.animationName === 'register-slip') map.removeAttribute('data-slipped');
+		if (event.animationName === 'register-slip') hero.removeAttribute('data-slipped');
 	};
 
 	button.addEventListener('pointerdown', press);
 	button.addEventListener('keydown', key);
-	map.addEventListener('animationend', settle);
+	hero.addEventListener('animationend', settle);
 	return () => {
 		button.removeEventListener('pointerdown', press);
 		button.removeEventListener('keydown', key);
-		map.removeEventListener('animationend', settle);
-		map.removeAttribute('data-slipped');
+		hero.removeEventListener('animationend', settle);
+		hero.removeAttribute('data-slipped');
 	};
 });

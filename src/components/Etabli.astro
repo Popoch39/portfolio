@@ -1,0 +1,592 @@
+---
+/**
+ * The Établi (E2 · Établi, ADR 0012): a mechanical keyboard in isometric view, the hero's right half.
+ * Rendered whole, at rest: that is the page without JS, under reduced motion, and on every visit that
+ * does not play the assembly. When it plays (`html.intro`, set before the first paint by
+ * `IntroTrigger.astro`, or `data-assemble` for « Rejouer »), each part comes in by an edge of the hero,
+ * screwed, clipped, in the mockup's keyframes.
+ *
+ * Every moving part is its own HTML box holding its own small SVG: a CSS transform on an element inside
+ * an SVG is not composited, the whole drawing would be repainted on every frame. Here the compositor
+ * moves the parts and nothing is painted while they fly. The parts are laid out on the mockup's 820 × 614
+ * drawing (`.stage`), scaled to the column as a whole: the keyframes keep the mockup's figures.
+ */
+import { caps, ORIGIN, STAGE, switches, type Box } from '../hero/bench';
+import { dictionary, type Lang } from '../i18n';
+
+interface Props {
+	lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = dictionary(lang).etabli;
+const full = `${-ORIGIN.x} ${-ORIGIN.y} ${STAGE.width} ${STAGE.height}`;
+const place = (box: Box) => `left: ${box.x + ORIGIN.x}px; top: ${box.y + ORIGIN.y}px; width: ${box.w}px; height: ${box.h}px`;
+const view = (box: Box) => `${box.x} ${box.y} ${box.w} ${box.h}`;
+/** The five screws: where they sit, when each drops in and when its slot turns. */
+const screws = [
+	{ x: -71.5, y: 71.3, drop: 1.15, turn: 1.22 },
+	{ x: 26, y: 127.5, drop: 1.2, turn: 1.29 },
+	{ x: 156, y: 202.5, drop: 1.25, turn: 1.36 },
+	{ x: 253.5, y: 258.8, drop: 1.3, turn: 1.43 },
+	{ x: 327.6, y: 241.5, drop: 1.35, turn: 1.5 },
+].map((screw) => ({ ...screw, box: { x: Math.floor(screw.x - 6), y: Math.floor(screw.y - 6), w: 12, h: 12 } }));
+---
+
+<div class="etabli">
+	<div class="bench" role="img" aria-label={t.label} data-bench>
+		<div class="stage kb">
+			<div class="layer ly-case">
+				<svg viewBox={full} width={STAGE.width} height={STAGE.height}>
+					<path class="c" d="M-131.3,84.7l26,15 0,4.5 -26,-15zM-105.3,99.7l0,4.5 20.8,-11.9 0,-4.5zM234,295.5l26,15 0,4.5 -26,-15zM260,310.5l0,4.5 20.8,-12 0,-4.5zM361.4,222l26,15 0,4.5 -26,-15zM387.4,237l0,4.5 20.8,-12 0,-4.5z"></path>
+					<path class="b" d="M-148.2,60l408.2,235.5 0,15 -408.2,-235.5z"></path>
+					<path class="c" d="M260,295.5l0,15 148.2,-85.5 0,-15z"></path>
+					<path class="c" d="M-127.9,65.7l127.9,-73.8 387.9,223.8 -127.9,73.8z"></path>
+					<path class="b" d="M0,-19.5l397.8,229.5 -9.9,5.7 -387.9,-223.8z"></path>
+					<path class="d" d="M0,-19.5l0,11.4 -127.9,73.8 -9.9,-5.7z"></path>
+					<path class="a" fill-rule="evenodd" d="M-148.2,60l148.2,-85.5 408.2,235.5 -148.2,85.5zM-137.8,60l137.8,-79.5 397.8,229.5 -137.8,79.5z"></path>
+					<ellipse class="b" cx="-71.5" cy="72.8" rx="3.6" ry="2.1"></ellipse>
+					<ellipse class="b" cx="26" cy="129" rx="3.6" ry="2.1"></ellipse>
+					<ellipse class="b" cx="156" cy="204" rx="3.6" ry="2.1"></ellipse>
+					<ellipse class="b" cx="253.5" cy="260.3" rx="3.6" ry="2.1"></ellipse>
+					<ellipse class="b" cx="327.6" cy="243" rx="3.6" ry="2.1"></ellipse>
+					<path class="ho" d="M-71.5,72.8h.01M26,129h.01M156,204h.01M253.5,260.3h.01M327.6,243h.01"></path>
+				</svg>
+			</div>
+			<div class="layer pcb-in">
+				<div class="layer ly-pcb">
+					<svg viewBox={full} width={STAGE.width} height={STAGE.height}>
+						<path class="b" d="M-122.2,67.5l122.2,-70.5 382.2,220.5 -122.2,70.5z"></path>
+						<path class="c" d="M-122.2,67.5l382.2,220.5 0,1.5 -382.2,-220.5z"></path>
+						<path class="d" d="M260,288l0,1.5 122.2,-70.5 0,-1.5z"></path>
+						<path class="tr" d="M-12,11.4L357.2,224.4M-38,26.4L331.2,239.4M-64,41.4L305.2,254.4M-90,56.4L279.2,269.4M-116,71.4L253.2,284.4M24.2,17.5L11.2,25 11.2,40.1 -8.3,51.3 -8.3,58.8 -21.3,66.3 -21.3,81.3M50.2,32.6L37.2,40.1 37.2,55.1 17.7,66.3 17.7,73.8 4.7,81.3 4.7,96.3M76.2,47.6L63.2,55.1 63.2,70.1 43.7,81.3 43.7,88.8 30.7,96.3 30.7,111.3M102.2,62.6L89.2,70.1 89.2,85.1 69.7,96.3 69.7,103.8 56.7,111.3 56.7,126.3M128.2,77.6L115.2,85.1 115.2,100.1 95.7,111.3 95.7,118.8 82.7,126.3 82.7,141.3M154.2,92.6L141.2,100.1 141.2,115.1 121.7,126.3 121.7,133.8 108.7,141.3 108.7,156.3M180.2,107.6L167.2,115.1 167.2,130.1 147.7,141.3 147.7,148.8 134.7,156.3 134.7,171.3M206.2,122.6L193.2,130.1 193.2,145.1 173.7,156.3 173.7,163.8 160.7,171.3 160.7,186.3M232.2,137.6L219.2,145.1 219.2,160.1 199.7,171.3 199.7,178.8 186.7,186.3 186.7,201.3M258.2,152.6L245.2,160.1 245.2,175.1 225.7,186.3 225.7,193.8 212.7,201.3 212.7,216.3M93.6,172.5L97.5,170.3 107.4,170.3M96.7,174.3L100.6,172 110.5,172M99.8,176.1L103.7,173.9 113.6,173.9M103,177.9L106.9,175.7 116.7,175.6M106.1,179.7L110,177.5 119.9,177.5M106.6,183L114.4,187.5 114.4,196.5 137.8,210M103.5,184.8L113.9,190.8 113.9,199.8 134.7,211.8M100.4,186.6L113.4,194.1 113.4,203.1 131.6,213.6M97.2,188.4L112.8,197.4 112.8,206.4 128.4,215.4"></path>
+						<path class="di" d="M-6.2,14.7L1,18.9M19.8,29.7L27,33.9M45.8,44.7L53,48.9M71.8,59.7L79,63.9M97.8,74.7L105,78.9M123.8,89.7L131,93.9M149.8,104.7L157,108.9M175.8,119.7L183,123.9M201.8,134.7L209,138.9M227.8,149.7L235,153.9M253.8,164.7L261,168.9M279.8,179.7L287,183.9M305.8,194.7L313,198.9M344.8,217.2L352,221.4M-25.7,33.5L-18.5,37.7M6.8,52.2L14,56.4M32.8,67.2L40,71.4M58.8,82.2L66,86.4M84.8,97.2L92,101.4M110.8,112.2L118,116.4M136.8,127.2L144,131.4M162.8,142.2L170,146.4M188.8,157.2L196,161.4M214.8,172.2L222,176.4M240.8,187.2L248,191.4M266.8,202.2L274,206.4M292.8,217.2L300,221.4M325.3,236L332.5,240.2M-48.5,50.3L-41.2,54.5M-12.7,71L-5.5,75.1M13.3,86L20.5,90.1M39.3,101L46.5,105.2M65.3,116L72.5,120.2M91.3,131L98.5,135.2M117.3,146L124.5,150.2M143.3,161L150.5,165.2M169.3,176L176.5,180.2M195.3,191L202.5,195.2M221.3,206L228.5,210.2M247.3,221L254.5,225.2M289.5,245.3L296.8,249.5M-68,69.1L-60.7,73.3M-25.7,93.5L-18.5,97.6M0.3,108.5L7.5,112.7M26.3,123.5L33.5,127.7M52.3,138.5L59.5,142.7M78.3,153.5L85.5,157.7M104.3,168.5L111.5,172.7M130.3,183.5L137.5,187.7M156.3,198.5L163.5,202.7M182.3,213.5L189.5,217.7M208.3,228.5L215.5,232.7M257,256.6L264.3,260.8M-107,76.6L-99.7,80.8M-74.5,95.3L-67.2,99.5M-42,114.1L-34.7,118.3M55.5,170.3L62.8,174.5M153,226.6L160.3,230.8M185.5,245.3L192.8,249.5M218,264.1L225.3,268.3M250.5,282.8L257.8,287"></path>
+						<path class="pd" d="M-1.8,2.5h.01M10.4,5.4h.01M24.2,17.5h.01M36.4,20.4h.01M50.2,32.6h.01M62.4,35.4h.01M76.2,47.6h.01M88.4,50.4h.01M102.2,62.6h.01M114.4,65.4h.01M128.2,77.6h.01M140.4,80.4h.01M154.2,92.6h.01M166.4,95.4h.01M180.2,107.6h.01M192.4,110.4h.01M206.2,122.6h.01M218.4,125.4h.01M232.2,137.6h.01M244.4,140.4h.01M258.2,152.6h.01M270.4,155.4h.01M284.2,167.6h.01M296.4,170.4h.01M310.2,182.6h.01M322.4,185.4h.01M349.2,205.1h.01M361.4,207.9h.01M-21.3,21.3h.01M-9.1,24.2h.01M11.2,40.1h.01M23.4,42.9h.01M37.2,55.1h.01M49.4,57.9h.01M63.2,70.1h.01M75.4,72.9h.01M89.2,85.1h.01M101.4,87.9h.01M115.2,100.1h.01M127.4,102.9h.01M141.2,115.1h.01M153.4,117.9h.01M167.2,130.1h.01M179.4,132.9h.01M193.2,145.1h.01M205.4,147.9h.01M219.2,160.1h.01M231.4,162.9h.01M245.2,175.1h.01M257.4,177.9h.01M271.2,190.1h.01M283.4,192.9h.01M297.2,205.1h.01M309.4,207.9h.01M329.7,223.8h.01M341.9,226.7h.01M-44.1,38.2h.01M-31.8,41h.01M-8.3,58.8h.01M3.9,61.6h.01M17.7,73.8h.01M29.9,76.6h.01M43.7,88.8h.01M55.9,91.6h.01M69.7,103.8h.01M81.9,106.7h.01M95.7,118.8h.01M107.9,121.6h.01M121.7,133.8h.01M133.9,136.6h.01M147.7,148.8h.01M159.9,151.7h.01M173.7,163.8h.01M185.9,166.7h.01M199.7,178.8h.01M211.9,181.7h.01M225.7,193.8h.01M237.9,196.7h.01M251.7,208.8h.01M263.9,211.7h.01M293.9,233.2h.01M306.2,236h.01M-63.6,56.9h.01M-51.3,59.8h.01M-21.3,81.3h.01M-9.1,84.1h.01M4.7,96.3h.01M16.9,99.1h.01M30.7,111.3h.01M42.9,114.2h.01M56.7,126.3h.01M68.9,129.1h.01M82.7,141.3h.01M94.9,144.1h.01M108.7,156.3h.01M120.9,159.1h.01M134.7,171.3h.01M146.9,174.2h.01M160.7,186.3h.01M172.9,189.2h.01M186.7,201.3h.01M198.9,204.2h.01M212.7,216.3h.01M224.9,219.2h.01M261.4,244.4h.01M273.7,247.3h.01M-102.6,64.4h.01M-90.4,67.3h.01M-70.1,83.2h.01M-57.9,86h.01M-37.6,101.9h.01M-25.4,104.8h.01M59.9,158.2h.01M72.1,161h.01M157.4,214.4h.01M169.7,217.3h.01M189.9,233.2h.01M202.2,236h.01M222.4,251.9h.01M234.7,254.8h.01M254.9,270.7h.01M267.2,273.5h.01"></path>
+						<path class="dk" d="M0,7.5h.01M26,22.5h.01M52,37.5h.01M78,52.5h.01M104,67.5h.01M130,82.5h.01M156,97.5h.01M182,112.5h.01M208,127.5h.01M234,142.5h.01M260,157.5h.01M286,172.5h.01M312,187.5h.01M351,210h.01M-19.5,26.3h.01M13,45h.01M39,60h.01M65,75h.01M91,90h.01M117,105h.01M143,120h.01M169,135h.01M195,150h.01M221,165h.01M247,180h.01M273,195h.01M299,210h.01M331.5,228.8h.01M-42.2,43.1h.01M-6.5,63.8h.01M19.5,78.8h.01M45.5,93.8h.01M71.5,108.8h.01M97.5,123.8h.01M123.5,138.8h.01M149.5,153.8h.01M175.5,168.8h.01M201.5,183.8h.01M227.5,198.8h.01M253.5,213.8h.01M295.8,238.1h.01M-61.7,61.9h.01M-19.5,86.3h.01M6.5,101.3h.01M32.5,116.3h.01M58.5,131.3h.01M84.5,146.3h.01M110.5,161.3h.01M136.5,176.3h.01M162.5,191.3h.01M188.5,206.3h.01M214.5,221.3h.01M263.3,249.4h.01M-100.7,69.4h.01M-68.2,88.1h.01M-35.7,106.9h.01M61.8,163.1h.01M159.3,219.4h.01M191.8,238.1h.01M224.3,256.9h.01M256.8,275.6h.01M-71.5,71.3h.01M26,127.5h.01M156,202.5h.01M253.5,258.8h.01M327.6,241.5h.01"></path>
+						<path class="d" d="M76.2,179.6l16.1,-9.3 16.9,9.7 -16.1,9.3z"></path>
+						<path class="c" d="M76.2,179.6l16.9,9.7 0,1.5 -16.9,-9.7zM93.1,189.3l0,1.5 16.1,-9.3 0,-1.5z"></path>
+					</svg>
+				</div>
+			</div>
+			{
+				screws.map((screw) => (
+					<div class="part screw" style={`${place(screw.box)}; --d: ${screw.drop}`}>
+						<svg viewBox={view(screw.box)}>
+							<ellipse class="b" cx={screw.x} cy={screw.y} rx="3.6" ry="2.1" />
+							<g transform={`translate(${screw.x} ${screw.y}) matrix(.8660254 .5 -.8660254 .5 0 0)`}>
+								<path class="slot" d="M-2.4,0h4.8" style={`--d2: ${screw.turn}`} />
+							</g>
+						</svg>
+					</div>
+				))
+			}
+			<div class="layer ly-plate">
+				<svg viewBox={full} width={STAGE.width} height={STAGE.height}>
+					<path class="a" d="M-136.2,58.5l136.2,-78.6 396.2,228.6 -136.2,78.6z"></path>
+					<path class="b" d="M-136.2,58.5l396.2,228.6 0,1.5 -396.2,-228.6z"></path>
+					<path class="c" d="M260,287.1l0,1.5 136.2,-78.6 0,-1.5z"></path>
+					<path class="d" d="M-19.2,-1.5l19.2,-11.1 19.2,11.1 -19.2,11.1zM6.8,13.5l19.2,-11.1 19.2,11.1 -19.2,11.1zM32.8,28.5l19.2,-11.1 19.2,11.1 -19.2,11.1zM58.8,43.5l19.2,-11.1 19.2,11.1 -19.2,11.1zM84.8,58.5l19.2,-11.1 19.2,11.1 -19.2,11.1zM110.8,73.5l19.2,-11.1 19.2,11.1 -19.2,11.1zM136.8,88.5l19.2,-11.1 19.2,11.1 -19.2,11.1zM162.8,103.5l19.2,-11.1 19.2,11.1 -19.2,11.1zM188.8,118.5l19.2,-11.1 19.2,11.1 -19.2,11.1zM214.8,133.5l19.2,-11.1 19.2,11.1 -19.2,11.1zM240.8,148.5l19.2,-11.1 19.2,11.1 -19.2,11.1zM266.8,163.5l19.2,-11.1 19.2,11.1 -19.2,11.1zM292.8,178.5l19.2,-11.1 19.2,11.1 -19.2,11.1zM331.8,201l19.2,-11.1 19.2,11.1 -19.2,11.1zM322,193.9l18.2,-10.5 8.9,5.1 -18.3,10.5zM354.5,212.6l18.2,-10.5 8.9,5.1 -18.3,10.5zM-38.7,17.3l19.2,-11.2 19.2,11.2 -19.2,11.1zM-6.2,36l19.2,-11.1 19.2,11.1 -19.2,11.1zM19.8,51l19.2,-11.1 19.2,11.1 -19.2,11.1zM45.8,66l19.2,-11.1 19.2,11.1 -19.2,11.1zM71.8,81l19.2,-11.1 19.2,11.1 -19.2,11.1zM97.8,96l19.2,-11.1 19.2,11.1 -19.2,11.1zM123.8,111l19.2,-11.1 19.2,11.1 -19.2,11.1zM149.8,126l19.2,-11.1 19.2,11.1 -19.2,11.1zM175.8,141l19.2,-11.1 19.2,11.1 -19.2,11.1zM201.8,156l19.2,-11.1 19.2,11.1 -19.2,11.1zM227.8,171l19.2,-11.1 19.2,11.1 -19.2,11.1zM253.8,186l19.2,-11.1 19.2,11.1 -19.2,11.1zM279.8,201l19.2,-11.1 19.2,11.1 -19.2,11.1zM312.3,219.8l19.2,-11.1 19.2,11.1 -19.2,11zM-61.5,34.1l19.3,-11.1 19.2,11.1 -19.2,11.1zM-25.7,54.8l19.2,-11.1 19.2,11.1 -19.2,11.1zM0.3,69.8l19.2,-11.2 19.2,11.2 -19.2,11.1zM26.3,84.8l19.2,-11.2 19.2,11.2 -19.2,11.1zM52.3,99.8l19.2,-11.2 19.2,11.2 -19.2,11.1zM78.3,114.8l19.2,-11.1 19.2,11.1 -19.2,11.1zM104.3,129.8l19.2,-11.1 19.2,11.1 -19.2,11.1zM130.3,144.8l19.2,-11.1 19.2,11.1 -19.2,11zM156.3,159.8l19.2,-11.1 19.2,11.1 -19.2,11zM182.3,174.8l19.2,-11.1 19.2,11.1 -19.2,11zM208.3,189.8l19.2,-11.1 19.2,11.1 -19.2,11zM234.3,204.8l19.2,-11.1 19.2,11.1 -19.2,11zM276.5,229.1l19.3,-11.1 19.2,11.1 -19.2,11.1zM266.8,222l18.2,-10.5 8.8,5.1 -18.2,10.5zM299.3,240.8l18.2,-10.5 8.8,5.1 -18.2,10.4zM-81,52.9l19.3,-11.1 19.2,11.1 -19.2,11.1zM-90.7,45.7l18.2,-10.4 8.8,5.1 -18.2,10.5zM-58.2,64.5l18.2,-10.5 8.8,5.1 -18.2,10.5zM-38.7,77.3l19.2,-11.2 19.2,11.2 -19.2,11.1zM-12.7,92.3l19.2,-11.2 19.2,11.2 -19.2,11.1zM13.3,107.3l19.2,-11.2 19.2,11.2 -19.2,11.1zM39.3,122.3l19.2,-11.1 19.2,11.1 -19.2,11.1zM65.3,137.3l19.2,-11.1 19.2,11.1 -19.2,11.1zM91.3,152.3l19.2,-11.1 19.2,11.1 -19.2,11zM117.3,167.3l19.2,-11.1 19.2,11.1 -19.2,11zM143.3,182.3l19.2,-11.1 19.2,11.1 -19.2,11zM169.3,197.3l19.2,-11.1 19.2,11.1 -19.2,11zM195.3,212.3l19.2,-11.1 19.2,11.1 -19.2,11zM244,240.4l19.3,-11.1 19.2,11.1 -19.2,11.1zM234.3,233.2l18.2,-10.4 8.8,5.1 -18.2,10.4zM266.8,252l18.2,-10.5 8.8,5.1 -18.2,10.5zM-120,60.4l19.3,-11.1 19.2,11.1 -19.2,11.1zM-87.5,79.1l19.3,-11.1 19.2,11.1 -19.2,11.1zM-55,97.9l19.3,-11.1 19.2,11.1 -19.2,11.1zM42.5,154.1l19.3,-11.1 19.2,11.1 -19.2,11.1zM-19.2,117l18.2,-10.5 8.8,5.1 -18.2,10.5zM117.3,195.8l18.2,-10.5 8.8,5.1 -18.2,10.5zM140,210.4l19.3,-11.1 19.2,11.1 -19.3,11.1zM172.5,229.1l19.3,-11.1 19.2,11.1 -19.3,11.1zM205,247.9l19.3,-11.1 19.2,11.1 -19.2,11.1zM237.5,266.6l19.3,-11.1 19.2,11.1 -19.2,11.1z"></path>
+				</svg>
+			</div>
+			<div class="layer ly-sw">
+				{
+					switches.map((s) => (
+						<div class="part sw" style={`${place(s.box)}; --d: ${s.delay}`}>
+							<svg viewBox={view(s.box)}>
+								<path class="a st" d={s.faces[0]} />
+								<path class="b st" d={s.faces[1]} />
+								<path class="c st" d={s.faces[2]} />
+								<path class="g st" d={s.faces[3]} />
+								<path class="e st" d={s.faces[4]} />
+							</svg>
+						</div>
+					))
+				}
+			</div>
+			<div class="layer ly-caps">
+				{
+					caps.map((cap) => (
+						<div
+							class="part cap"
+							style={[
+								place(cap.box),
+								`--mx: ${cap.main.x}px; --my: ${cap.main.y}px; --bx: ${cap.side.x}px; --by: ${cap.side.y}px`,
+								`--ox: ${cap.pivot.x}px; --oy: ${cap.pivot.y}px; --r: ${cap.turn}deg`,
+								`--d: ${cap.delay}; --c: ${cap.clip}`,
+							].join('; ')}
+						>
+							<div class="cap-b">
+								<div class="cap-y">
+									<div class="cap-c">
+									<div class="cap-r">
+										<div class="k">
+											<svg viewBox={view(cap.box)}>
+												{cap.faces.map((d) => (
+													<path d={d} />
+												))}
+											</svg>
+											{cap.accent && (
+												<svg class="hl" viewBox={view(cap.box)} style={`--h: ${cap.accent.at}`}>
+													{cap.faces.map((d) => (
+														<path d={d} />
+													))}
+													<text class="lg" transform={cap.accent.label} y="4.2">
+														{cap.accent.letter}
+													</text>
+												</svg>
+											)}
+										</div>
+									</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					))
+				}
+			</div>
+		</div>
+	</div>
+	<button type="button" class="mono replay" data-replay hidden>{t.replay}</button>
+</div>
+
+<script>
+	import '../hero/etabli';
+</script>
+
+<style>
+	/* « Rejouer » under the board's middle: flush right, it would run into the Nuancier's tab, fixed in that corner. */
+	.etabli {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	/*
+	 * The column's box, at the drawing's ratio: the stage inside is the drawing at its own size, scaled
+	 * to it. `tan(atan2())` turns the two lengths into their ratio, a number `scale` takes.
+	 */
+	.bench {
+		position: relative;
+		align-self: stretch;
+		aspect-ratio: 820 / 614;
+		container-type: inline-size;
+	}
+
+	.stage {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 820px;
+		height: 614px;
+		transform-origin: 0 0;
+		scale: tan(atan2(100cqi, 820px));
+		/* The parts fly over the text: nothing of them catches the pointer but a cap's own faces. */
+		pointer-events: none;
+	}
+
+	.layer {
+		position: absolute;
+		inset: 0;
+	}
+
+	.part {
+		position: absolute;
+	}
+
+	.layer > svg,
+	.part svg {
+		position: absolute;
+		inset: 0;
+		display: block;
+		width: 100%;
+		height: 100%;
+		overflow: visible;
+	}
+
+	.part :is(.cap-b, .cap-y, .cap-c, .cap-r, .k) {
+		position: absolute;
+		inset: 0;
+	}
+
+	/*
+	 * Line work in the ink on tones of the paper: engraved on a light paper (the lit face is the paper's
+	 * white, the flanks darken towards the ink), lit by the ink on a dark one.
+	 */
+	.kb {
+		--kb-a: var(--color-light);
+		--kb-b: color-mix(in srgb, var(--color-ink) 7%, var(--color-paper));
+		--kb-c: color-mix(in srgb, var(--color-ink) 17%, var(--color-paper));
+		--kb-d: color-mix(in srgb, var(--color-ink) 30%, var(--color-paper));
+		--kb-hl-line: var(--color-ink);
+	}
+
+	:global(:root:is([data-theme='dark'], [data-theme='nord'], [data-theme='catppuccin-mocha'], [data-theme='tokyo-night']))
+		.kb {
+		--kb-a: color-mix(in srgb, var(--color-ink) 17%, var(--color-paper));
+		--kb-b: color-mix(in srgb, var(--color-ink) 11%, var(--color-paper));
+		--kb-c: color-mix(in srgb, var(--color-ink) 4%, var(--color-paper));
+		--kb-d: var(--color-paper);
+		--kb-hl-line: var(--color-paper);
+	}
+
+	.kb :is(path, ellipse) {
+		stroke: var(--color-ink);
+		stroke-width: 0.7;
+		stroke-linejoin: round;
+	}
+
+	.kb .a {
+		fill: var(--kb-a);
+	}
+
+	.kb .b {
+		fill: var(--kb-b);
+	}
+
+	.kb .c {
+		fill: var(--kb-c);
+	}
+
+	.kb .d {
+		fill: var(--kb-d);
+	}
+
+	.kb .e {
+		fill: var(--color-ink);
+	}
+
+	.kb .g {
+		fill: color-mix(in srgb, var(--color-ink) 65%, var(--color-paper));
+	}
+
+	.kb .st {
+		stroke-width: 0.5;
+	}
+
+	.kb .tr {
+		fill: none;
+		stroke-width: 0.5;
+		stroke-opacity: 0.5;
+	}
+
+	.kb .di {
+		fill: none;
+		stroke: var(--color-ink-muted);
+		stroke-width: 1.8;
+	}
+
+	.kb .pd {
+		fill: none;
+		stroke-width: 2;
+		stroke-linecap: round;
+	}
+
+	.kb .ho {
+		fill: none;
+		stroke: var(--kb-d);
+		stroke-width: 1.8;
+		stroke-linecap: round;
+	}
+
+	.kb .dk {
+		fill: none;
+		stroke: var(--kb-d);
+		stroke-width: 3.2;
+		stroke-linecap: round;
+	}
+
+	.kb .slot {
+		fill: none;
+		stroke: var(--kb-d);
+		stroke-width: 1.2;
+		stroke-linecap: round;
+		transform-box: view-box;
+		transform-origin: 0 0;
+		transform: rotate(90deg);
+	}
+
+	.k path {
+		fill: var(--kb-a);
+	}
+
+	.k path:nth-child(2) {
+		fill: var(--kb-b);
+	}
+
+	.k path:nth-child(3) {
+		fill: var(--kb-c);
+	}
+
+	/* h, j, k, l: the accent's volumes, lit and shaded towards the night's ink whatever the paper. */
+	.hl {
+		color: var(--color-accent);
+	}
+
+	.k .hl path {
+		fill: currentColor;
+		stroke: var(--kb-hl-line);
+	}
+
+	.k .hl path:nth-child(2) {
+		fill: color-mix(in srgb, currentColor 76%, #141412);
+	}
+
+	.k .hl path:nth-child(3) {
+		fill: color-mix(in srgb, currentColor 54%, #141412);
+	}
+
+	.lg {
+		font-family: var(--font-sans);
+		font-size: 12px;
+		font-weight: 500;
+		fill: var(--color-on-accent);
+		text-anchor: middle;
+	}
+
+	.sw {
+		transform-origin: 50% 100%;
+	}
+
+	/* A cap gives under the pointer: its faces alone catch it, not the corners of its box. */
+	@media (hover: hover) and (pointer: fine) {
+		.k path {
+			pointer-events: visiblePainted;
+		}
+
+		.k {
+			transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+		}
+
+		.k:hover {
+			transform: translateY(2.5px);
+		}
+	}
+
+	.replay {
+		margin: 12px 0 0;
+		min-height: 44px;
+		padding: 0 18px;
+		border: 1px solid var(--color-rule);
+		background: var(--color-paper);
+		color: var(--color-ink-muted);
+		font-size: 12px;
+		line-height: 1.6;
+		cursor: pointer;
+		transition:
+			color 0.2s,
+			border-color 0.2s;
+	}
+
+	/* Hidden until its script runs, but in its room from the first paint: shown, it moves nothing (CLS). */
+	.replay[hidden] {
+		display: inline-block;
+		visibility: hidden;
+	}
+
+	@media (hover: hover) and (pointer: fine) {
+		.replay:hover {
+			color: var(--color-ink);
+			border-color: var(--color-ink-muted);
+		}
+	}
+
+	/* Nothing to replay without motion. */
+	@media (prefers-reduced-motion: reduce) {
+		.replay,
+		.replay[hidden] {
+			display: none;
+		}
+
+		.k,
+		.replay {
+			transition: none;
+		}
+	}
+
+	/*
+	 * The assembly, the mockup's keyframes. Every travel follows one of the two iso axes: u = (.866, .5),
+	 * v = (−.866, .5). The rest state is the page's: each animation runs from its start towards it.
+	 */
+	@keyframes case-in {
+		from {
+			transform: translate(-693px, 400px);
+			opacity: 0;
+		}
+
+		12% {
+			opacity: 1;
+		}
+	}
+
+	@keyframes pcb-in {
+		from {
+			transform: translate(693px, -400px);
+			opacity: 0;
+		}
+
+		14% {
+			opacity: 1;
+		}
+	}
+
+	@keyframes pcb-seat {
+		from {
+			transform: translateY(-14px);
+		}
+	}
+
+	@keyframes screw-in {
+		from {
+			opacity: 0;
+			transform: translateY(-8px);
+		}
+	}
+
+	@keyframes screw-turn {
+		from {
+			transform: none;
+		}
+	}
+
+	@keyframes plate-in {
+		from {
+			transform: translateY(-200px);
+			opacity: 0;
+		}
+
+		18% {
+			opacity: 1;
+		}
+	}
+
+	@keyframes sw-up {
+		from {
+			transform: scaleY(0);
+		}
+	}
+
+	@keyframes fade {
+		from {
+			opacity: 0;
+		}
+	}
+
+	@keyframes cap-main {
+		from {
+			transform: translate(var(--mx), var(--my));
+		}
+	}
+
+	@keyframes cap-side {
+		from {
+			transform: translate(var(--bx), var(--by));
+		}
+	}
+
+	/*
+	 * The turn in the board's plane: into the plane at the cap's centre, the turn, and back out. Both ends
+	 * spell out the same list, so that only the angle is interpolated; together they make no transform.
+	 */
+	@keyframes cap-spin {
+		from {
+			transform: translate(var(--ox), var(--oy)) matrix(0.8660254, 0.5, -0.8660254, 0.5, 0, 0) rotate(var(--r))
+				matrix(0.5773503, -0.5773503, 1, 1, 0, 0) translate(calc(-1 * var(--ox)), calc(-1 * var(--oy)));
+		}
+
+		to {
+			transform: translate(var(--ox), var(--oy)) matrix(0.8660254, 0.5, -0.8660254, 0.5, 0, 0) rotate(0deg)
+				matrix(0.5773503, -0.5773503, 1, 1, 0, 0) translate(calc(-1 * var(--ox)), calc(-1 * var(--oy)));
+		}
+	}
+
+	@keyframes cap-lift {
+		from {
+			transform: none;
+		}
+
+		to {
+			transform: translateY(-34px);
+		}
+	}
+
+	/*
+	 * The clip, on a box of its own inside the lift's: two transform animations on one element are not
+	 * composited. Measured from the lifted cap, so the mockup's -34 → 1.8 → 0 reads 0 → 35.8 → 34 here,
+	 * and the two together come to rest at 0.
+	 */
+	@keyframes cap-clip {
+		from {
+			transform: none;
+			animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0.35);
+		}
+
+		72% {
+			transform: translateY(35.8px);
+			animation-timing-function: cubic-bezier(0.2, 0.6, 0.35, 1);
+		}
+
+		to {
+			transform: translateY(34px);
+		}
+	}
+
+	/* Played on the first visit (`html.intro`) and by « Rejouer » (`data-assemble` on the bench). */
+	@media (prefers-reduced-motion: no-preference) {
+		:global(:is(html.intro, [data-assemble])) .ly-case {
+			animation: case-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.05s backwards;
+		}
+
+		:global(:is(html.intro, [data-assemble])) .pcb-in {
+			animation: pcb-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.4s backwards;
+		}
+
+		:global(:is(html.intro, [data-assemble])) .ly-pcb {
+			animation: pcb-seat 0.32s cubic-bezier(0.45, 0, 0.25, 1) 0.9s backwards;
+		}
+
+		:global(:is(html.intro, [data-assemble])) .screw {
+			animation: screw-in 0.24s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--d) * 1s) backwards;
+		}
+
+		:global(:is(html.intro, [data-assemble])) .screw .slot {
+			animation: screw-turn 0.24s cubic-bezier(0.65, 0, 0.35, 1) calc(var(--d2) * 1s) backwards;
+		}
+
+		:global(:is(html.intro, [data-assemble])) .ly-plate {
+			animation: plate-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) 1.5s backwards;
+		}
+
+		:global(:is(html.intro, [data-assemble])) .sw {
+			animation: sw-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--d) * 1s) backwards;
+		}
+
+		:global(:is(html.intro, [data-assemble])) .ly-caps {
+			animation: fade 0.5s ease-out backwards;
+		}
+
+		:global(:is(html.intro, [data-assemble])) .cap {
+			animation: cap-main 0.8s cubic-bezier(0.6, 0, 0.3, 1) calc(var(--d) * 1s) backwards;
+		}
+
+		:global(:is(html.intro, [data-assemble])) .cap-b {
+			animation: cap-side 0.7s cubic-bezier(0.5, 0, 0.25, 1) calc((var(--d) + 0.1) * 1s) backwards;
+		}
+
+		:global(:is(html.intro, [data-assemble])) .cap-r {
+			transform-origin: 0 0;
+			animation: cap-spin 0.75s cubic-bezier(0.6, 0, 0.3, 1) calc(var(--d) * 1s) backwards;
+		}
+
+		:global(:is(html.intro, [data-assemble])) .cap-y {
+			animation: cap-lift 0.45s cubic-bezier(0.3, 0, 0.2, 1) calc(var(--d) * 1s) both;
+		}
+
+		:global(:is(html.intro, [data-assemble])) .cap-c {
+			animation: cap-clip 0.34s linear calc(var(--c) * 1s) both;
+		}
+
+		:global(:is(html.intro, [data-assemble])) .hl {
+			animation: fade 0.25s ease-out calc(var(--h) * 1s) backwards;
+		}
+	}
+</style>

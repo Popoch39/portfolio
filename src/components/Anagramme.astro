@@ -8,7 +8,7 @@
  *   the other language was on, before the first paint and without the view transition's fade. Read once,
  *   then removed: a reload or a later visit opens on the first version.
  *
- * Placed after the hero: both copies of the lede (the day's and the night's) are parsed when it runs. The
+ * Placed after the hero: the lede is parsed when it runs. The
  * head expects it (`HomePage.astro`), so the page is not painted before.
  */
 import { contentOf } from '../data/profile';
@@ -61,11 +61,9 @@ const arrive = `(() => {
 		const typed = document.querySelector('[data-lede]');
 		if (!typed) return;
 		typed.dataset.ledeAt = String(at);
-		for (const view of [typed, ...document.querySelectorAll('[data-lede-night]')]) {
-			view.querySelector('[data-buffer]').innerHTML = resting[at];
-			view.querySelector('[data-version-number]').textContent = (at + 1) + '/' + resting.length;
-			view.querySelector('[data-audience]').textContent = audiences[at];
-		}
+		typed.querySelector('[data-buffer]').innerHTML = resting[at];
+		typed.querySelector('[data-version-number]').textContent = (at + 1) + '/' + resting.length;
+		typed.querySelector('[data-audience]').textContent = audiences[at];
 	};
 	// A page prerendered at the link's hover runs before the click: the version is only known once it is shown.
 	if (document.prerendering) document.addEventListener('prerenderingchange', arrive, { once: true });
@@ -100,7 +98,7 @@ Astro.csp?.insertScriptHash(inlineScriptHash(arrive));
 		display: none;
 		pointer-events: none;
 		white-space: pre;
-		/* The travelling letters go over the others within it, never over the night that lies over the day's copy. */
+		/* The travelling letters go over the others within it, never over what lies over the host. */
 		isolation: isolate;
 		--ag-tint: var(--color-accent-display);
 	}

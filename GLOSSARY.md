@@ -17,11 +17,15 @@ La réponse de la page à un geste du visiteur (appui, survol, tap, sélection, 
 _À éviter_ : micro-interaction, easter egg.
 
 **Intro**
-La séquence jouée une fois au chargement de l'accueil, sous le Voile : le globe tourne vers Besançon, se découpe en fuseaux qui deviennent les colonnes de la page, le point de Besançon se pose sur le repère de la carte du hero, puis le header, le hero et la statusline se révèlent. Timeline GSAP enregistrée auprès du socle (ADR 0005). Elle ne se joue ni au retour par l'historique, ni depuis une autre page du site, ni avec une ancre, ni en mouvement réduit ; un clic, un tap ou une touche la passe, un défilement non.
+La séquence jouée une fois au chargement de l'accueil : l'assemblage de l'**Établi**, le clavier isométrique du hero, dont chaque pièce entre par un bord du hero, vissée, clipsée, pendant que le texte suit le montage (≈ 3,9 s). Keyframes CSS sous la classe `intro`, posée avant la première peinture ; rien ne la cache et rien ne la passe, la page défile pendant qu'elle joue (ADR 0012). Elle ne se joue ni au retour par l'historique, ni depuis une autre page du site, ni avec une ancre, ni en mouvement réduit. « Rejouer » relance le clavier seul.
 _À éviter_ : loader, splash screen.
 
+**Établi**
+Le clavier mécanique en vue isométrique, moitié droite du hero (maquette E2 · Établi) : boîtier, PCB, vis, plaque, switchs et touches, h j k l dans le signal. Chaque pièce mobile est sa propre boîte HTML, pour que le compositeur la déplace (ADR 0012).
+_À éviter_ : keyboard (réservé au code), illustration.
+
 **Ouverture**
-Le rôle de l'Intro auprès du socle : seule construite au chargement, elle garde le thread principal tant qu'elle bouge. L'Ouverture construit les scènes et l'Accroche dans un **temps mort** de l'Intro, sous le Voile, quand ni le globe ni aucun tween de la page ne bouge (entre la remise du point de Besançon et la montée de la statusline) : l'Intro finie, la page défile sans attendre. Passée avant ce temps mort, défaite, ou si polices et images n'étaient pas encore en place, elle les construit à sa fin. Sans Intro, elles le sont une fois polices et images en place (ADR 0001).
+Le rôle de l'Intro auprès du socle : seule construite au chargement. Les pièces volant sur le compositeur, elle libère les scènes et l'Accroche dès que polices et images sont en place (`idle`), pendant l'assemblage : l'Intro finie, la page défile sans attendre. Sans Intro, elles sont construites une fois polices et images en place (ADR 0001).
 
 **Accroche**
 La phrase du hero (« Je construis les cartes de votre réseau électrique. »), réécrite en Vim d'une version à l'autre : chaque version parle à un public. Minuteries en JS, pas une scène : elle attend la fin de l'Intro, se fige hors de l'écran et sous la Pause, et ne démarre pas en mouvement réduit. Son état final est la première version ; les lecteurs d'écran lisent une phrase stable.
@@ -31,12 +35,12 @@ _À éviter_ : lede (réservé au code), typewriter.
 L'interrupteur de la statusline, à côté de `NORMAL`, qui fige le bandeau et l'Accroche puis les relance (WCAG 2.2.2). Une case à cocher native : le bandeau s'arrête même sans JS ; l'Accroche revient entière, au repos, sur sa version courante, et reprend de là. Le choix est retenu par visiteur. Seule partie de la statusline exposée aux lecteurs d'écran.
 _À éviter_ : bouton play/pause, stop.
 
-**Voile**
-La couche papier opaque qui couvre la fenêtre pendant l'Intro, au-dessus de la page déjà peinte à son état final. Elle s'efface en une frame quand la page se révèle. Sans la classe `intro` posée avant la première peinture (sans JS, notamment), elle n'existe pas. Si l'Intro ne démarre pas, un filet la lève quand même (ADR 0005).
+**Voile** _(retiré)_
+La couche papier opaque qui couvrait la fenêtre pendant l'ancienne Intro (Fuseaux, ADR 0005). L'Établi s'assemble à découvert (ADR 0012).
 _À éviter_ : overlay, masque.
 
-**Terminateur**
-La ligne qui sépare le jour de la nuit sur la carte du hero, là où le soleil se couche (ou se lève) à Besançon à l'heure de la visite, bordée de son liseré signal et des crépuscules hachurés. L'heure ne fait que la glisser ; elle tombe à la fin de l'Intro (ADR 0008).
+**Terminateur** _(retiré du hero)_
+La ligne qui séparait le jour de la nuit sur la carte du hero (ADR 0008). Le hero prend désormais le papier de la page ; seul reste le thème du site qui suit le soleil à Besançon (ADR 0012).
 _À éviter_ : dark mode, thème sombre (pour la ligne elle-même).
 
 **Nuancier**
@@ -48,7 +52,7 @@ Le fond choisi dans le Nuancier, sur tout le site, avec son encre et son signal 
 _À éviter_ : thème, mode sombre, `:set bg=` (retiré).
 
 **Traîne**
-Le curseur du site sous une souris, sur toutes les pages : un point d'encre, qui est l'image même du curseur (une par Papier, à l'encre claire sur la bande de la Frise et la statusline, imprimées sombres sur tous), texte compris, et un anneau fin qui le suit avec un court retard et s'ouvre sur ce qui répond au clic. Seul l'anneau est déplacé par script : rien au repos, ni pointeur sorti, ni sous le Voile ; sans retard en mouvement réduit ; sans JS, le point seul. Au doigt et en couleurs forcées, le curseur reste celui du système. Elle répond au pointeur et ne boucle pas : la Pause ne la concerne pas.
+Le curseur du site sous une souris, sur toutes les pages : un point d'encre, qui est l'image même du curseur (une par Papier, à l'encre claire sur la bande de la Frise et la statusline, imprimées sombres sur tous), texte compris, et un anneau fin qui le suit avec un court retard et s'ouvre sur ce qui répond au clic. Seul l'anneau est déplacé par script : rien au repos, ni pointeur sorti, ni pendant l'Intro ; sans retard en mouvement réduit ; sans JS, le point seul. Au doigt et en couleurs forcées, le curseur reste celui du système. Elle répond au pointeur et ne boucle pas : la Pause ne la concerne pas.
 _À éviter_ : curseur custom, follower.
 
 **Défilement lissé**

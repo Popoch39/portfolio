@@ -1,171 +1,131 @@
 ---
 /**
- * What the hero's map holds (03 · Méridien): the graticule, the name on the parallel, Besançon's marker,
- * the lede, the actions and the scale. Drawn twice (ADR 0008): by day in the map, and as the night's
- * copy under the terminator (`night`), the same layout in the night's ink, out of reach of the keyboard
- * and of screen readers. Laid out on the map's grid: its three elements are the map's rows and its scale.
+ * The hero (E2 · Établi, ADR 0012): Besançon and its coordinates, the name, the lede and the actions on
+ * the left; the Établi, a keyboard put together part by part, on the right. When the assembly plays
+ * (`html.intro`), the text follows the build: the name with the case, the lede with the plate, the
+ * actions with the clips.
  */
 import { person } from '../data/profile';
-import { coordinates, latTicks, lonTicks } from '../hero/map';
+import { coordinates } from '../hero/coordinates';
 import { dictionary, type Lang } from '../i18n';
+import Etabli from './Etabli.astro';
 import Lede from './Lede.astro';
 
 interface Props {
 	lang: Lang;
-	night?: boolean;
 }
 
-const { lang, night = false } = Astro.props;
+const { lang } = Astro.props;
 const t = dictionary(lang).hero;
 const { latitude, longitude } = coordinates(lang);
-// The night's copy carries no heading, no id and nothing the Intro animates: there is one page, drawn twice.
-const Title = night ? 'div' : 'h1';
-const intro = (name: string) => (night ? undefined : name);
 const mailto = `mailto:${person.email}`;
 ---
 
-<div class="hero-north">
-	<div class="mono hero-ticks" aria-hidden="true">
-		{
-			lonTicks.map((tick) => (
-				<span class="tick tick-lon" data-shown={tick.shown} style={`--x: ${tick.x}px`}>
-					{tick.text}
-				</span>
-			))
-		}
-	</div>
-	<Title
-		id={night ? undefined : 'hero-title'}
-		class="hero-title"
-		data-given={person.givenName}
-		data-family={person.familyName}
-	>
-		<span class="hero-line"><span data-intro={intro('line')}>{person.givenName}</span></span>{' '}
-		<span class="hero-line"><span data-intro={intro('line')}>{person.familyName}</span></span>
-	</Title>
-</div>
-<div class="hero-south">
-	<div class="hero-axis" aria-hidden="true">
-		<span class="hero-rule"></span>
-		<span class="mono hero-ticks">
-			{
-				latTicks.map((tick) => (
-					<span class="tick tick-lat" data-shown={tick.shown} style={`--y: ${tick.y}px`}>
-						{tick.text}
-					</span>
-				))
-			}
-		</span>
-		<span class="hero-marker" data-intro={intro('late')}><span class="hero-ring"></span><span class="hero-point"></span></span>
-	</div>
-	<p class="mono hero-place" data-intro={intro('late')}>
-		<span class="hero-city">{person.city}</span><span class="hero-coordinates"
-			><span>{latitude}</span><span class="hero-separator"> · </span><span>{longitude}</span
-			></span
-		>
-	</p>
-	<Lede lang={lang} night={night} />
-	<div class="hero-actions" data-intro={intro('actions')} data-night={night ? '' : undefined}>
-		<a class="button" href={mailto}
-			><span data-ag-host="label">{t.write}</span><span class="visually-hidden"
-				>{t.writeHidden}</span
+<div class="hero-grid" data-hero>
+	<div class="hero-text">
+		<p class="mono hero-mark tx" style="--td: 0">
+			<svg class="hero-pin" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+				<circle cx="7" cy="7" r="6" fill="none" stroke="currentColor" stroke-width="1"></circle>
+				<circle cx="7" cy="7" r="2.6" fill="currentColor"></circle>
+			</svg>
+			<span class="hero-city">{person.city}</span>
+			<span>{latitude} · {longitude}</span>
+		</p>
+		<h1 id="hero-title" class="hero-title" data-given={person.givenName} data-family={person.familyName}>
+			<span class="hero-line tx" style="--td: 0.1">{person.givenName}</span>{' '}
+			<span class="hero-line tx" style="--td: 0.3">{person.familyName}</span>
+		</h1>
+		<Lede lang={lang} />
+		<div class="hero-actions">
+			<a class="button tx" href={mailto} style="--td: 2.95"
+				><span data-ag-host="label">{t.write}</span><span class="visually-hidden">{t.writeHidden}</span>
+				<span class="mono" aria-hidden="true" data-ag-with>:wq</span></a
 			>
-			<span class="mono" aria-hidden="true" data-ag-with>:wq</span></a
-		>
-		<a class="hero-github" href={person.github.url} rel="me">GitHub <span aria-hidden="true">↗</span></a>
+			<a class="hero-github tx" href={person.github.url} rel="me" style="--td: 3.1"
+				>GitHub <span aria-hidden="true">↗</span></a
+			>
+		</div>
 	</div>
-</div>
-<div class="mono hero-scale" aria-hidden="true">
-	<span class="hero-scale-labels"><span>0</span><span>1 km</span></span>
-	<span class="hero-scale-bar"></span>
+	<div class="hero-bench">
+		<Etabli lang={lang} />
+	</div>
 </div>
 
 <style>
-	/*
-	 * Each row draws its stretch of the graticule, set from the parallel between them: one tile per
-	 * minute, its line on the tile's first pixel. A background percentage reads against the box less
-	 * the tile, hence the tile's share added back to land the meridians on the marker's.
-	 */
-	.hero-north,
-	.hero-south {
+	.hero-grid {
+		display: grid;
+		grid-template-columns: repeat(12, minmax(0, 1fr));
+		column-gap: var(--grid-gap);
+		align-items: center;
+		width: 100%;
+		padding: 40px 0;
+	}
+
+	.hero-text {
+		/* The lede's screencast keys hang under the column (`Lede.astro`). */
 		position: relative;
-		background-image:
-			linear-gradient(to right, var(--color-rule) 1px, transparent 1px),
-			linear-gradient(to bottom, var(--color-rule) 1px, transparent 1px);
-		background-size:
-			var(--pitch-x) 100%,
-			100% var(--pitch-y);
-		background-position-x: calc(var(--meridian) + var(--phase-x) + var(--meridian-share) * var(--pitch-x)), 0;
+		grid-column: 1 / span 6;
+		min-width: 0;
 	}
 
-	.hero-north {
-		display: flex;
-		align-items: flex-end;
-		padding: 40px var(--inset) 0;
-		background-position-y:
-			0,
-			calc(100% + var(--phase-y));
+	/* Above the text: the parts start all over the hero, over the name too; only the page's edge clips them. */
+	.hero-bench {
+		position: relative;
+		z-index: 1;
+		grid-column: 7 / span 6;
+		min-width: 0;
 	}
 
-	/* The bottom padding keeps the lede's keys (34px high) clear of the actions when the row is tight. */
-	.hero-south {
-		--keys-bottom: 18px;
+	.hero-mark {
 		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		padding: 36px var(--inset) calc(var(--keys-bottom) + 34px + 24px);
-		background-position-y:
-			0,
-			var(--phase-y);
+		align-items: center;
+		gap: 10px;
+		margin: 0;
+		font-size: 12px;
+		line-height: 1.6;
+		color: var(--color-ink-muted);
+	}
+
+	.hero-pin {
+		flex: none;
+		color: var(--color-accent);
+	}
+
+	.hero-city {
+		color: var(--color-ink);
 	}
 
 	.hero-title {
-		display: flex;
-		column-gap: 0.22em;
-		margin: 0;
-		font-size: clamp(52px, 8.4vw, 121px);
+		margin: 22px 0 0;
+		font-size: clamp(52px, 9vw, 128px);
 		font-weight: 800;
 		font-stretch: 75%;
+		line-height: 0.88;
 		letter-spacing: -0.03em;
-		white-space: nowrap;
 	}
 
-	/*
-	 * Each line clips its own rise, out of the parallel: its box stops on the baseline, so the name
-	 * stands on the rule. From Archivo's metrics (ascent 0.878em, descent 0.21em, caps 0.686em), a
-	 * 0.904 line height puts the top of the line box 0.1em above the caps, room for the ascenders,
-	 * and the baseline 0.786em below it. `text-box` would say it, but Firefox does not trim yet.
-	 */
 	.hero-line {
-		display: block;
-		height: 0.786em;
-		overflow: hidden;
-		line-height: 0.904;
-	}
-
-	.hero-line > span {
 		display: block;
 	}
 
 	/*
 	 * The name out of register: a second plate of each line, in the accent, lies under the ink and
-	 * slips off it at a press on « Écrire » (`src/hero/register.ts` sets `data-slipped` on the map,
-	 * which holds the day's name and the night's). Generated from the title's attributes, with an empty
-	 * alternative text: the name is neither read nor found twice. A browser without that syntax draws no plate.
+	 * slips off it at a press on « Écrire » (`src/hero/register.ts` sets `data-slipped` on the hero).
+	 * Generated from the title's attributes, with an empty alternative text: the name is neither read
+	 * nor found twice. A browser without that syntax draws no plate.
 	 */
 	.hero-title {
 		position: relative;
-		/* Its own stacking context: the plates go under the name's ink, not under the map. */
+		/* Its own stacking context: the plates go under the name's ink, not under the page. */
 		isolation: isolate;
 	}
 
 	.hero-title::before,
 	.hero-title::after {
 		position: absolute;
+		left: 0;
 		z-index: -1;
-		/* The box of a line of the name, so that the letters land on the ink's. */
-		height: 0.786em;
-		line-height: 0.904;
+		line-height: 0.88;
 		/*
 		 * The accent carries no text on the paper, but for two display exceptions (ADR 0006): the giant
 		 * `:wq`, and this plate, shown for a moment only and never read. Like the `:wq`, it takes the
@@ -179,22 +139,19 @@ const mailto = `mailto:${person.email}`;
 	.hero-title::before {
 		content: attr(data-given) / '';
 		top: 0;
-		left: 0;
 	}
 
-	/* The title is as wide as its lines and their gap: the last one ends on its right edge. */
 	.hero-title::after {
 		content: attr(data-family) / '';
 		bottom: 0;
-		right: 0;
 	}
 
 	/*
 	 * A misregistration, not a slide: the plate stands off for a few frames (one alone would not be
 	 * seen), then is back in a blink, with no overshoot. The curve only shapes the way back.
 	 */
-	:global(.hero-map[data-slipped]) .hero-title::before,
-	:global(.hero-map[data-slipped]) .hero-title::after {
+	:global([data-hero][data-slipped]) .hero-title::before,
+	:global([data-hero][data-slipped]) .hero-title::after {
 		animation: register-slip 0.18s cubic-bezier(0.2, 0, 0, 1);
 	}
 
@@ -213,128 +170,29 @@ const mailto = `mailto:${person.email}`;
 
 	/* Reduced motion: the plate shows out of register for the same moment, then is gone. Nothing slides. */
 	@media (prefers-reduced-motion: reduce) {
-		:global(.hero-map[data-slipped]) .hero-title::before,
-		:global(.hero-map[data-slipped]) .hero-title::after {
+		:global([data-hero][data-slipped]) .hero-title::before,
+		:global([data-hero][data-slipped]) .hero-title::after {
 			animation-timing-function: step-end;
 		}
 	}
 
-	/* A zero-height line along the parallel: the rule, the latitudes and the marker hang from it. */
-	.hero-axis {
-		position: absolute;
-		inset: 0 0 auto;
-		height: 0;
+	.hero-text > :global(.hero-lede) {
+		width: min(540px, 100%);
+		margin-top: 32px;
 	}
 
-	.hero-rule {
-		position: absolute;
+	/* Under the column, clear of the actions: a screencast's place. */
+	.hero-text :global(.keys) {
 		left: 0;
-		top: 0;
-		width: var(--meridian);
-		height: 1px;
-		background: var(--color-ink);
-	}
-
-	.hero-ring,
-	.hero-point {
-		position: absolute;
-		left: var(--meridian);
-		top: 0;
-		box-sizing: border-box;
-	}
-
-	.hero-ring {
-		width: 36px;
-		height: 36px;
-		margin: -17.5px 0 0 -17.5px;
-		border: 1.5px solid var(--color-accent);
-		border-radius: 50%;
-	}
-
-	.hero-point {
-		width: 12px;
-		height: 12px;
-		margin: -5.5px 0 0 -5.5px;
-		background: var(--color-accent);
-	}
-
-	.hero-ticks {
-		font-size: 10.5px;
-		line-height: 1;
-		color: var(--color-ink-muted);
-	}
-
-	/* Each composition shows the ticks that fit it (`src/hero/map.ts`). */
-	.tick {
-		display: none;
-		position: absolute;
-	}
-
-	.tick-lon {
-		top: 10px;
-		left: calc(var(--meridian) + var(--x) + 6px);
-	}
-
-	.tick-lat {
-		right: 10px;
-		top: calc(var(--y) - 13px);
-	}
-
-	@media (min-width: 861px) {
-		.tick[data-shown~='desk'] {
-			display: block;
-		}
-	}
-
-	@container map (width >= 960px) {
-		.tick[data-shown~='desk-wide'] {
-			display: block;
-		}
-	}
-
-	@container map (width >= 1290px) {
-		.tick[data-shown~='desk-wider'] {
-			display: block;
-		}
-	}
-
-	.hero-place {
-		position: absolute;
-		left: calc(var(--meridian) + 28px);
-		top: 16px;
-		display: flex;
-		flex-direction: column;
-		margin: 0;
-		font-size: 12px;
-		line-height: 1.5;
-		white-space: nowrap;
-		color: var(--color-ink-muted);
-		/* A halo of paper over the graticule; the Intro's label wears the same one. */
-		background: var(--color-paper);
-		box-shadow: 0 0 0 4px var(--color-paper);
-	}
-
-	.hero-city {
-		color: var(--color-ink);
-	}
-
-	/* The lede is a component: its root carries the component's scope, not the sheet's. */
-	.hero-south > :global(.hero-lede) {
-		width: min(540px, 52%);
-	}
-
-	/* In the map's bottom-left corner, a screencast's place, facing the scale bar. */
-	.hero-south :global(.keys) {
-		left: var(--inset);
-		bottom: var(--keys-bottom);
+		top: calc(100% + 16px);
 	}
 
 	.hero-actions {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 12px 24px;
-		margin-top: 28px;
+		gap: 12px 28px;
+		margin-top: 36px;
 	}
 
 	/*
@@ -359,145 +217,49 @@ const mailto = `mailto:${person.email}`;
 		text-underline-offset: 4px;
 	}
 
-	/*
-	 * The pointer and the keyboard reach the day's actions, under the night where it lies over them: the
-	 * night's copy shows their hover, press and focus in its own ink (`global.css` for the day's).
-	 */
-	@media (hover: hover) and (pointer: fine) {
-		:global(.hero-map:has(.button:hover)) [data-night] .button {
-			background: var(--color-paper);
-			color: var(--color-ink);
-			box-shadow:
-				inset 0 0 0 2px var(--color-ink),
-				4px 4px 0 var(--color-accent);
-		}
-
-		:global(.hero-map:has(.button:hover)) [data-night] .button .mono {
-			color: inherit;
-		}
-
-		:global(.hero-map:has(.hero-github:hover)) [data-night] .hero-github {
-			color: var(--color-ink-muted);
-		}
+	/* The text follows the build (`Etabli.astro`), each line at its moment in the mockup. */
+	.hero-text :global(.sentence-box) {
+		--td: 1.5;
 	}
 
-	:global(.hero-map:has(.button:active)) [data-night] .button {
-		background: var(--color-bar);
-		color: var(--color-paper);
-		box-shadow: none;
-	}
-
-	:global(.hero-map:has(.button:focus-visible)) [data-night] .button,
-	:global(.hero-map:has(.hero-github:focus-visible)) [data-night] .hero-github {
-		outline: 2px solid var(--color-ink);
-		outline-offset: 3px;
-	}
-
-	/* Left of the latitudes' column, which could otherwise run into it. */
-	.hero-scale {
-		position: absolute;
-		right: 64px;
-		bottom: 18px;
-		display: flex;
-		flex-direction: column;
-		gap: 5px;
-		width: var(--kilometre);
-		font-size: 10.5px;
-		line-height: 1;
-		color: var(--color-ink-muted);
-	}
-
-	.hero-scale-labels {
-		display: flex;
-		justify-content: space-between;
-	}
-
-	/* Half ink, half paper, like a printed scale bar. */
-	.hero-scale-bar {
-		height: 5px;
-		box-sizing: border-box;
-		border: 1px solid var(--color-ink);
-		background: linear-gradient(to right, var(--color-ink) 50%, transparent 50%);
+	.hero-text :global(.version) {
+		--td: 1.75;
 	}
 
 	/*
-	 * Narrow screens: the name on two lines over a parallel set higher, Besançon further right with
-	 * its label above the rule, the lede across the map.
+	 * Not from 0: the browser does not count text at zero opacity as painted, and the lede, the page's
+	 * largest text, would be its LCP only once it rises, 1.5 s in. One percent reads as nothing.
 	 */
+	@keyframes hero-rise {
+		from {
+			opacity: 0.01;
+			transform: translateY(18px);
+		}
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		:global(html.intro) .tx,
+		:global(html.intro) .hero-text :global(.sentence-box),
+		:global(html.intro) .hero-text :global(.version) {
+			animation: hero-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--td) * 1s) backwards;
+		}
+	}
+
+	/* Narrow screens: one column, the bench under the text, drawn a gutter further left as on the mockup. */
 	@media (max-width: 860px) {
-		.hero-north {
-			padding-top: 32px;
+		.hero-grid {
+			grid-template-columns: minmax(0, 1fr);
+			row-gap: 32px;
+			padding: 28px 0;
 		}
 
-		.hero-south {
-			--keys-bottom: 14px;
-			padding-top: 28px;
+		.hero-text,
+		.hero-bench {
+			grid-column: 1 / -1;
 		}
 
-		/* Baseline to baseline, 0.95em. */
-		.hero-title {
-			flex-direction: column;
-			row-gap: 0.164em;
-			font-size: clamp(52px, 15.4vw, 96px);
-		}
-
-		/* Both lines start on the left edge. */
-		.hero-title::after {
-			right: auto;
-			left: 0;
-		}
-
-		.tick[data-shown~='narrow'] {
-			display: block;
-		}
-
-		.tick-lon {
-			top: 9px;
-		}
-
-		.tick-lat {
-			right: 8px;
-		}
-
-		.hero-ticks {
-			font-size: 10px;
-		}
-
-		.hero-place {
-			left: auto;
-			right: 8px;
-			top: auto;
-			bottom: calc(100% + 24px);
-			align-items: flex-end;
-			font-size: 11px;
-		}
-
-		.hero-coordinates {
-			display: flex;
-			flex-direction: column;
-			align-items: flex-end;
-		}
-
-		.hero-separator {
-			display: none;
-		}
-
-		/* Clear of the latitudes' column. */
-		.hero-south > :global(.hero-lede) {
-			width: min(540px, 100% - 36px);
-		}
-
-		.hero-scale {
-			right: 56px;
-			bottom: 14px;
-			font-size: 10px;
-		}
-	}
-
-	/* A phone has no room for both side by side: the keys stand above the scale bar's row. */
-	@media (max-width: 600px) {
-		.hero-south {
-			--keys-bottom: 48px;
+		.hero-bench :global(.bench) {
+			margin-left: calc(-1 * var(--page-gutter));
 		}
 	}
 </style>

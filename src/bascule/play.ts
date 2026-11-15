@@ -127,7 +127,7 @@ interface Built {
 }
 
 /**
- * The overlays of some blocks, in every host of each (the day's and the night's), hidden until the
+ * The overlays of some blocks, in every host of each, hidden until the
  * Bascule shows them (`ag-on`). Each starts where the real text stands.
  */
 function build(data: AnagramData, blocks: (Block | undefined)[]): Built {

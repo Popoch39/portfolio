@@ -1,6 +1,6 @@
 # 0005 · Intro « Fuseaux » : canvas et GSAP, hero sous le Voile
 
-- Statut : acceptée
+- Statut : remplacée par l'ADR 0012 (Établi) le 2026-11-15
 - Date : 2026-11-03
 - Spec : #23
 

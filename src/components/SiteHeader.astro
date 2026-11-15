@@ -36,13 +36,13 @@ const sections = [
 
 <style is:inline set:html={metaRows}></style>
 <div class="wrap">
-	<header class="site-header grid-12" data-intro="header">
-		<a class="name" href={`${home}#top`} data-intro="name">{person.name}</a>
+	<header class="site-header grid-12">
+		<a class="name" href={`${home}#top`}>{person.name}</a>
 		{/* `data-ag-host`: where the Anagramme draws its letters over the text (`src/bascule/play.ts`). */}
-		<p class="mono meta" data-intro="role">
+		<p class="mono meta">
 			<span class="role" data-ag-host="role" data-rows="meta">{profile.jobTitle}</span>
 		</p>
-		<p class="mono meta specialty" data-intro="specialty">
+		<p class="mono meta specialty">
 			<span class="long" data-ag-host="spec-long" data-rows="meta">{profile.specialty}</span><span
 				class="short"
 				data-ag-host="spec-short">{profile.specialtyShort}</span
@@ -50,7 +50,7 @@ const sections = [
 		</p>
 		{/* One box on a phone, where the Bascule shares the sections' row; no box of its own on the grid. */}
 		<div class="tabs">
-			<nav class="mono" aria-label={t.navLabel} data-intro="nav">
+			<nav class="mono" aria-label={t.navLabel}>
 				{
 					sections.map((section, i) => (
 						<a href={section.href}>
@@ -61,15 +61,11 @@ const sections = [
 			</nav>
 			<Bascule lang={lang} path={path} />
 		</div>
-		<span class="rule" data-intro="rule"></span>
+		<span class="rule"></span>
 	</header>
 </div>
 
 <style>
-	/*
-	 * The rule is an element of its own rather than a border so that the Intro draws it in with `scaleX`
-	 * on it alone: the header's style is not recomputed on every frame.
-	 */
 	.site-header {
 		position: relative;
 		row-gap: 8px;

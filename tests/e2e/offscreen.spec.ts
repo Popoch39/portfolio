@@ -1,5 +1,3 @@
-// A direct visit plays the Intro: `./fixtures` arrives from another page of the site, which skips it.
-import { test as directVisit } from '@playwright/test';
 import { expect, test, type Locator, type Page } from './fixtures';
 import { lengthenPage, topInPage } from './helpers';
 import { montageFigure, sceneStart, scrollToScene } from './montage-helpers';
@@ -96,18 +94,3 @@ const ledeChangesOver = (page: Page, ms: number) =>
 			}),
 		ms,
 	);
-
-directVisit.describe('under the Voile', () => {
-	directVisit.use({ reducedMotion: 'no-preference', viewport: { width: 1280, height: 900 } });
-
-	directVisit('the marquee waits for the Intro to end, then slides', async ({ page }) => {
-		await page.goto('/');
-		await expect(page.locator('#veil')).toBeVisible();
-		expect(await playStates(marqueeTrack(page))).toEqual(['paused']);
-
-		// A click skips the Intro.
-		await page.mouse.click(640, 450);
-		await expect(page.locator('#veil')).toBeHidden();
-		await expect.poll(() => playStates(marqueeTrack(page))).toEqual(['running']);
-	});
-});

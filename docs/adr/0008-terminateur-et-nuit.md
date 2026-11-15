@@ -1,6 +1,6 @@
 # 0008 · Terminateur : la nuit sur le hero et sur le site
 
-- Statut : acceptée
+- Statut : acceptée, la nuit sur le hero retirée par l'ADR 0012 (le thème qui suit le soleil reste)
 - Date : 2026-11-09
 - Planche : « 06 · Terminateur — la nuit tombe sur Besançon » (canvas Q8EduXtu1ZTfUbA52Cwkv5)
 
@@ -36,3 +36,7 @@ La charte reste « Encre seule » (ADR 0006) : la nuit est la même encre retour
 ## Mise à jour (2026-11-12)
 
 `:set bg=` est retiré de la statusline : le Nuancier (ADR 0009) choisit le papier, avec un quatrième, le Cyanotype, et une révélation en cercle à la place du fondu.
+
+## Mise à jour (2026-11-15)
+
+Le hero devient l'Établi (ADR 0012) : plus de carte, donc plus de terminateur ni de copie de nuit. `paintSky` ne garde que le thème (`data-theme`), `data-sun`, `data-sky` (`day` ou `night` à Besançon) et l'heure du lever et du coucher pour la statusline ; la ligne, ses crépuscules, ses étiquettes et sa minuterie à la minute disparaissent, et le hero prend le papier de la page.

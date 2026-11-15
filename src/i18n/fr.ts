@@ -247,9 +247,8 @@ export const header = {
 	languageName: 'Français',
 };
 
-/** Coordinates as the hero's map and the Intro print them. */
+/** Coordinates as the hero's mark prints them. */
 export const geo = {
-	decimalSeparator: ',',
 	north: 'N',
 	south: 'S',
 	east: 'E',
@@ -270,37 +269,21 @@ export const ledeLine = {
 	escape: 'Échap',
 };
 
-export const intro = {
-	phases: {
-		projection: 'projection orthographique · EPSG:4326',
-		cut: 'découpe · 12 fuseaux de 30°',
-		unroll: 'développement · fuseaux sinusoïdaux',
-		straighten: 'redressement · 1 fuseau = 1 colonne',
-	},
-	gore: 'fuseau',
-	centre: 'centre de la projection',
-	/** Lengths come formatted, with the language's decimal separator. */
-	scale: (gore: string, gutter: string) => `fuseau ${gore} px · gouttière ${gutter} px`,
+/** The Établi, the hero's keyboard (ADR 0012). */
+export const etabli = {
+	label: 'Clavier mécanique en vue isométrique, assemblé pièce par pièce',
+	replay: 'Rejouer',
 };
 
-/**
- * The sky's words (ADR 0008). Plain strings only: `paintSky` receives them as JSON in the `<head>`'s
- * inline script.
- */
+/** The sun's words in the statusline (ADR 0008). */
 export const sky = {
 	rise: 'lever',
 	set: 'coucher',
-	/** Civil, nautical, astronomical. */
-	dusks: ['crépuscule civil', 'crépuscule nautique', 'crépuscule astronomique'],
-	dawns: ['aube civile', 'aube nautique', 'aube astronomique'],
-	night: 'nuit',
-	/** Full night's label under the night's paper, forced in the Nuancier. */
-	nightPaper: 'nuit · papier EN-02',
 };
 
 export const statusline = {
 	file: '~/louis/portfolio.md',
-	/** Before the code of the paper in force, as the statusline and the Intro name it. */
+	/** Before the code of the paper in force, as the statusline names it. */
 	paper: 'papier',
 	/** Vim's position in the buffer, at its end. */
 	bottom: 'Bas',
@@ -428,7 +411,7 @@ export const fr = {
 	geo,
 	hero,
 	ledeLine,
-	intro,
+	etabli,
 	sky,
 	statusline,
 	nuancier,

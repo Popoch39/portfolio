@@ -29,7 +29,8 @@ function readHero(page: Page) {
 		};
 		return {
 			lines: [...document.querySelectorAll('h1 .hero-line')].map((line) => line.getBoundingClientRect().bottom),
-			text: box('.hero-text'),
+			head: box('.hero-head'),
+			text: box('.hero-body'),
 			actions: box('.hero-actions'),
 			bench: box('[data-bench]'),
 		};
@@ -60,8 +61,8 @@ for (const viewport of SCREENS.filter(({ width }) => width > 860)) {
 			await page.goto('/');
 			await page.evaluate(() => document.fonts.ready);
 
-			const { text, actions, bench } = await readHero(page);
-			expect(bench.left).toBeGreaterThanOrEqual(text.right);
+			const { head, text, actions, bench } = await readHero(page);
+			expect(bench.left).toBeGreaterThanOrEqual(Math.max(head.right, text.right));
 			const floor = (await statuslineTop(page)) + 1;
 			expect(actions.bottom).toBeLessThanOrEqual(floor);
 			expect(bench.bottom).toBeLessThanOrEqual(floor);
@@ -73,13 +74,20 @@ for (const viewport of [...SCREENS.filter(({ width }) => width <= 860), ...PHONE
 	test.describe(`${viewport.width} × ${viewport.height} narrow`, () => {
 		test.use({ viewport });
 
-		test('the lede is on the first screen, and the Établi stands under the text', async ({ page }) => {
+		// The board's middle, h j k l, stands for the drawing: its box runs into the paper round it.
+		test('the Établi stands between the name and the lede, its board on the first screen', async ({ page }) => {
 			await page.goto('/');
 			await page.evaluate(() => document.fonts.ready);
 
-			await expect(page.locator('[data-lede] .sentence')).toBeInViewport({ ratio: 1 });
-			const { text, bench } = await readHero(page);
-			expect(bench.top).toBeGreaterThanOrEqual(text.bottom);
+			const { head, text, bench } = await readHero(page);
+			const middle = (bench.top + bench.bottom) / 2;
+			expect(middle).toBeGreaterThan(head.bottom);
+			expect(middle).toBeLessThan(text.top);
+			const floor = await statuslineTop(page);
+			for (const accent of await page.locator('[data-bench] .hl').all()) {
+				const box = await accent.boundingBox();
+				expect(box && box.y + box.height).toBeLessThanOrEqual(floor);
+			}
 		});
 	});
 }

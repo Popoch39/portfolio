@@ -1,7 +1,8 @@
 ---
 /**
  * The hero (E2 · Établi, ADR 0012): Besançon and its coordinates, the name, the lede and the actions on
- * the left; the Établi, a keyboard put together part by part, on the right. When the assembly plays
+ * the left; the Établi, a keyboard put together part by part, on the right (between the name and the
+ * lede on a phone). When the assembly plays
  * (`html.intro`), the text follows the build: the name with the case, the lede with the plate, the
  * actions with the clips.
  */
@@ -21,8 +22,14 @@ const { latitude, longitude } = coordinates(lang);
 const mailto = `mailto:${person.email}`;
 ---
 
+{
+	/*
+	 * The Établi between the name and the lede, in the page's order as on a phone, where it shows on the
+	 * first screen there; a wider window sets it in the right half (`.hero-grid`).
+	 */
+}
 <div class="hero-grid" data-hero>
-	<div class="hero-text">
+	<div class="hero-head">
 		<p class="mono hero-mark tx" style="--td: 0">
 			<svg class="hero-pin" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
 				<circle cx="7" cy="7" r="6" fill="none" stroke="currentColor" stroke-width="1"></circle>
@@ -35,6 +42,11 @@ const mailto = `mailto:${person.email}`;
 			<span class="hero-line tx" style="--td: 0.1">{person.givenName}</span>{' '}
 			<span class="hero-line tx" style="--td: 0.3">{person.familyName}</span>
 		</h1>
+	</div>
+	<div class="hero-bench">
+		<Etabli lang={lang} />
+	</div>
+	<div class="hero-body">
 		<Lede lang={lang} />
 		<div class="hero-actions">
 			<a class="button tx" href={mailto} style="--td: 2.95"
@@ -46,26 +58,36 @@ const mailto = `mailto:${person.email}`;
 			>
 		</div>
 	</div>
-	<div class="hero-bench">
-		<Etabli lang={lang} />
-	</div>
 </div>
 
 <style>
+	/*
+	 * The text's two blocks stacked in the left half, the Établi across both rows in the right one. The
+	 * outer rows take what is left over, so that the text stands centred against the bench.
+	 */
 	.hero-grid {
 		display: grid;
 		grid-template-columns: repeat(12, minmax(0, 1fr));
+		grid-template-rows: 1fr auto auto 1fr;
 		column-gap: var(--grid-gap);
-		align-items: center;
 		width: 100%;
 		padding: 40px 0;
 	}
 
-	.hero-text {
-		/* The lede's screencast keys hang under the column (`Lede.astro`). */
-		position: relative;
+	.hero-head,
+	.hero-body {
 		grid-column: 1 / span 6;
 		min-width: 0;
+	}
+
+	.hero-head {
+		grid-row: 2;
+	}
+
+	.hero-body {
+		/* The lede's screencast keys hang under the column (`Lede.astro`). */
+		position: relative;
+		grid-row: 3;
 	}
 
 	/* Above the text: the parts start all over the hero, over the name too; only the page's edge clips them. */
@@ -73,6 +95,8 @@ const mailto = `mailto:${person.email}`;
 		position: relative;
 		z-index: 1;
 		grid-column: 7 / span 6;
+		grid-row: 1 / -1;
+		align-self: center;
 		min-width: 0;
 	}
 
@@ -176,13 +200,13 @@ const mailto = `mailto:${person.email}`;
 		}
 	}
 
-	.hero-text > :global(.hero-lede) {
+	.hero-body > :global(.hero-lede) {
 		width: min(540px, 100%);
 		margin-top: 32px;
 	}
 
 	/* Under the column, clear of the actions: a screencast's place. */
-	.hero-text :global(.keys) {
+	.hero-body :global(.keys) {
 		left: 0;
 		top: calc(100% + 16px);
 	}
@@ -218,11 +242,11 @@ const mailto = `mailto:${person.email}`;
 	}
 
 	/* The text follows the build (`Etabli.astro`), each line at its moment in the mockup. */
-	.hero-text :global(.sentence-box) {
+	.hero-body :global(.sentence-box) {
 		--td: 1.5;
 	}
 
-	.hero-text :global(.version) {
+	.hero-body :global(.version) {
 		--td: 1.75;
 	}
 
@@ -239,27 +263,33 @@ const mailto = `mailto:${person.email}`;
 
 	@media (prefers-reduced-motion: no-preference) {
 		:global(html.intro) .tx,
-		:global(html.intro) .hero-text :global(.sentence-box),
-		:global(html.intro) .hero-text :global(.version) {
+		:global(html.intro) .hero-body :global(.sentence-box),
+		:global(html.intro) .hero-body :global(.version) {
 			animation: hero-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--td) * 1s) backwards;
 		}
 	}
 
-	/* Narrow screens: one column, the bench under the text, drawn a gutter further left as on the mockup. */
+	/*
+	 * Narrow screens: one column in the page's order, the bench between the name and the lede so that the
+	 * assembly plays on the first screen. Drawn a gutter further left as on the mockup, and the paper
+	 * round the board (a fifth of the drawing above and below it) tucked under its neighbours.
+	 */
 	@media (max-width: 860px) {
 		.hero-grid {
 			grid-template-columns: minmax(0, 1fr);
-			row-gap: 32px;
+			grid-template-rows: none;
 			padding: 28px 0;
 		}
 
-		.hero-text,
+		.hero-head,
+		.hero-body,
 		.hero-bench {
 			grid-column: 1 / -1;
+			grid-row: auto;
 		}
 
 		.hero-bench :global(.bench) {
-			margin-left: calc(-1 * var(--page-gutter));
+			margin: -13% 0 -14% calc(-1 * var(--page-gutter));
 		}
 	}
 </style>

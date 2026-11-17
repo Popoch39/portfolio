@@ -255,6 +255,9 @@ export const ledeLine: Dictionary['ledeLine'] = {
 export const etabli: Dictionary['etabli'] = {
 	label: 'A mechanical keyboard in isometric view, put together part by part',
 	replay: 'Replay',
+	sound: 'Sound',
+	soundOff: ': off',
+	soundOn: ': on',
 };
 
 export const sky: Dictionary['sky'] = {

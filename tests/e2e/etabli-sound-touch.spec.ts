@@ -33,7 +33,7 @@ test.describe('the Frappe, under a finger', () => {
 		await expect.poll(() => travel(cap)).toBe(0);
 	});
 
-	test('the Son on, a tap is heard once the finger is up: the press, then the release', async ({ page }) => {
+	test('the Son on, a tap is heard once the finger is up', async ({ page }) => {
 		await sound(page).tap();
 		await expect.poll(() => heard(page)).toBe(1);
 		const at = await topOf(key(page, 20));
@@ -43,7 +43,7 @@ test.describe('the Frappe, under a finger', () => {
 		expect(await heard(page)).toBe(1);
 		await lift();
 
-		await expect.poll(() => heard(page)).toBe(3);
+		await expect.poll(() => heard(page)).toBe(2);
 	});
 
 	test('a finger that scrolls the page from a key presses nothing, and is not heard', async ({ page }) => {

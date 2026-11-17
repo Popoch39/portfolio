@@ -25,7 +25,7 @@ Le clavier mécanique en vue isométrique, moitié droite du hero (maquette E2 �
 _À éviter_ : keyboard (réservé au code), illustration.
 
 **Frappe**
-Le Détail de l'Établi sous la main : au clic ou au tap, la touche va en fin de course tant qu'elle est tenue, puis remonte. Le Son allumé, elle s'entend : l'appui quand la touche descend, le relâche quand elle remonte ; sous le doigt, les deux une fois le doigt levé, car un doigt qui fait défiler la page ne frappe rien. Elle existe son coupé, et répond d'un coup en mouvement réduit.
+Le Détail de l'Établi sous la main : au clic ou au tap, la touche va en fin de course tant qu'elle est tenue, puis remonte. Le Son allumé, elle s'entend : quand la touche descend sous la souris, une fois le doigt levé sous le doigt, car un doigt qui fait défiler la page ne frappe rien. Elle existe son coupé, et répond d'un coup en mouvement réduit.
 _À éviter_ : clic, keypress.
 
 **Effleurement**
@@ -33,7 +33,7 @@ La touche de l'Établi que la souris survole s'enfonce un peu ; le Son allumé, 
 _À éviter_ : hover.
 
 **Son**
-L'interrupteur sous l'Établi, à côté de « Rejouer », qui fait entendre la Frappe, l'Effleurement et les touches qui se clipsent quand « Rejouer » remonte le clavier : un clavier mécanique aux switchs linéaires lubrifiés. Coupé par défaut, le choix est retenu par visiteur ; rien n'est chargé avant qu'il soit allumé. Indépendant de la Pause, qui fige ce qui bouge seul (ADR 0013).
+L'interrupteur sous l'Établi, à côté de « Rejouer », qui fait entendre la Frappe, l'Effleurement et les touches qui se clipsent quand « Rejouer » remonte le clavier : les frappes d'un clavier mécanique, celles de Typomaniac. Coupé par défaut, le choix est retenu par visiteur ; rien n'est chargé avant qu'il soit allumé. Indépendant de la Pause, qui fige ce qui bouge seul (ADR 0013).
 _À éviter_ : SFX, sound design, ASMR, mute.
 
 **Ouverture**

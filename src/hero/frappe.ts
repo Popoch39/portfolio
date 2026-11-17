@@ -5,19 +5,15 @@
  * the clips of the board's assembly when « Rejouer » plays it.
  */
 import { openingEnded, registerDetail } from '../animation/base';
-import { hold, load, play, type Stroke } from './sound';
+import { hold, load, play } from './sound';
 
 const STORED = 'son';
-/** Loudness of each sound, a full press being 1. */
-const GAIN = { press: 1, release: 0.7, brush: 0.2, clip: 0.22, turnedOn: 0.8 };
-/** A wide key's stroke, a little deeper. */
-const DEEPER = 0.88;
+/** Loudness of each sound, a stroke as recorded being 1. */
+const GAIN = { stroke: 1, brush: 0.2, clip: 0.22, turnedOn: 0.8 };
 /** The clip's impact, from its start: 72 % of its 0.34 s (`cap-clip`, `Etabli.astro`). */
 const CLIP_IMPACT = 0.245;
 /** The quickest a mouse sweeping the board brushes keys one after the other, in ms. */
 const BRUSH_GAP = 40;
-/** A tap is heard once the finger is up (it may yet start a scroll): its release follows its press. */
-const TAP_RELEASE = 0.045;
 
 // Storage throws when the browser blocks site data: the Son then lasts for this visit only.
 function stored(use: (storage: Storage) => string | null | void) {
@@ -41,8 +37,8 @@ registerDetail(() => {
 
 	const show = () => button.setAttribute('aria-pressed', String(on));
 	const keyOf = (target: EventTarget | null) => (target instanceof Element ? target.closest<HTMLElement>('.k') : null);
-	const strike = (key: HTMLElement, stroke: Stroke, gain: number, at = 0) => {
-		if (on) play(stroke, { gain, at, rate: key.hasAttribute('data-wide') ? DEEPER : 1 });
+	const strike = (key: HTMLElement, gain: number) => {
+		if (on) play({ gain, wide: key.hasAttribute('data-wide') });
 	};
 
 	const toggle = () => {
@@ -50,7 +46,7 @@ registerDetail(() => {
 		show();
 		stored((storage) => (on ? storage.setItem(STORED, 'on') : storage.removeItem(STORED)));
 		// Heard as soon as it can be: the press that says the board now sounds.
-		if (on) load().then(() => on && play('press', { gain: GAIN.turnedOn }));
+		if (on) load().then(() => on && play({ gain: GAIN.turnedOn }));
 	};
 
 	// Only the caps' faces catch the pointer: a mouse moving on one keeps the sound awake.
@@ -70,7 +66,7 @@ registerDetail(() => {
 		const now = performance.now();
 		if (down || now - brushedAt < BRUSH_GAP) return;
 		brushedAt = now;
-		strike(key, 'release', GAIN.brush);
+		strike(key, GAIN.brush);
 	};
 
 	const unbrush = (event: PointerEvent) => {
@@ -85,19 +81,17 @@ registerDetail(() => {
 		if (event.pointerType === 'touch') return;
 		// Held by the key while the button is: let go off the board, it still comes back up.
 		(event.target as Element).setPointerCapture(event.pointerId);
-		strike(key, 'press', GAIN.press);
+		strike(key, GAIN.stroke);
 	};
 
+	// The strokes are whole, press and release: a mouse hears its own as the key goes down, a finger
+	// once it is up, as it may yet start a scroll.
 	const lift = (event: PointerEvent, heard: boolean) => {
 		const key = down;
 		if (!key) return;
 		down = undefined;
 		delete key.dataset.down;
-		if (!heard) return;
-		if (event.pointerType === 'touch') {
-			strike(key, 'press', GAIN.press);
-			strike(key, 'release', GAIN.release, TAP_RELEASE);
-		} else strike(key, 'release', GAIN.release);
+		if (heard && event.pointerType === 'touch') strike(key, GAIN.stroke);
 	};
 	const release = (event: PointerEvent) => lift(event, true);
 	// A finger that scrolls the page was not pressing a key: back up, unheard.
@@ -107,7 +101,7 @@ registerDetail(() => {
 	// visitor has not acted on the page yet, which the browser requires for any sound.
 	const clip = (event: AnimationEvent) => {
 		if (!on || event.animationName !== 'cap-clip' || !bench.hasAttribute('data-assemble')) return;
-		const source = play('press', { gain: GAIN.clip, at: CLIP_IMPACT });
+		const source = play({ gain: GAIN.clip, at: CLIP_IMPACT });
 		if (source) clips.set(event.target as EventTarget, source);
 	};
 	const unclip = (event: AnimationEvent) => {

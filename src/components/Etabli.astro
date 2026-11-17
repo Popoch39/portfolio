@@ -23,6 +23,8 @@ const t = dictionary(lang).etabli;
 const full = `${-ORIGIN.x} ${-ORIGIN.y} ${STAGE.width} ${STAGE.height}`;
 const place = (box: Box) => `left: ${box.x + ORIGIN.x}px; top: ${box.y + ORIGIN.y}px; width: ${box.w}px; height: ${box.h}px`;
 const view = (box: Box) => `${box.x} ${box.y} ${box.w} ${box.h}`;
+/** Wider than a key and a half (a key's box is 48 wide): its stroke is heard deeper (ADR 0013). */
+const WIDE_KEY = 60;
 /** The five screws: where they sit, when each drops in and when its slot turns. */
 const screws = [
 	{ x: -71.5, y: 71.3, drop: 1.15, turn: 1.22 },
@@ -119,7 +121,7 @@ const screws = [
 								<div class="cap-y">
 									<div class="cap-c">
 									<div class="cap-r">
-										<div class="k">
+										<div class="k" data-wide={cap.box.w > WIDE_KEY ? '' : undefined}>
 											<svg viewBox={view(cap.box)}>
 												{cap.faces.map((d) => (
 													<path d={d} />
@@ -146,11 +148,18 @@ const screws = [
 			</div>
 		</div>
 	</div>
-	<button type="button" class="mono replay" data-replay hidden>{t.replay}</button>
+	<div class="controls">
+		<button type="button" class="mono control replay" data-replay hidden>{t.replay}</button>
+		{/* The state after the name is the screen's alone: a reader hears « Son » and whether it is pressed. */}
+		<button type="button" class="mono control sound" aria-pressed="false" data-sound hidden>
+			{t.sound}<span class="off" aria-hidden="true">{t.soundOff}</span><span class="on" aria-hidden="true">{t.soundOn}</span>
+		</button>
+	</div>
 </div>
 
 <script>
 	import '../hero/etabli';
+	import '../hero/frappe';
 </script>
 
 <style>
@@ -170,6 +179,11 @@ const screws = [
 		align-self: stretch;
 		aspect-ratio: 820 / 614;
 		container-type: inline-size;
+		/*
+		 * The parts fly over the text, and on a phone the box runs over the buttons below it (its empty paper
+		 * is tucked under its neighbours): nothing of it catches the pointer but a cap's own faces.
+		 */
+		pointer-events: none;
 	}
 
 	.stage {
@@ -180,8 +194,6 @@ const screws = [
 		height: 614px;
 		transform-origin: 0 0;
 		scale: tan(atan2(100cqi, 820px));
-		/* The parts fly over the text: nothing of them catches the pointer but a cap's own faces. */
-		pointer-events: none;
 	}
 
 	.layer {
@@ -347,23 +359,45 @@ const screws = [
 		transform-origin: 50% 100%;
 	}
 
-	/* A cap gives under the pointer: its faces alone catch it, not the corners of its box. */
+	/*
+	 * A cap gives under the pointer, and bottoms out while it is pressed (the Frappe): its faces alone catch
+	 * the pointer, not the corners of its box. A finger starting on a cap still scrolls the page.
+	 */
+	.k path {
+		pointer-events: visiblePainted;
+	}
+
+	.k {
+		transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+		-webkit-user-select: none;
+		user-select: none;
+		-webkit-touch-callout: none;
+	}
+
 	@media (hover: hover) and (pointer: fine) {
-		.k path {
-			pointer-events: visiblePainted;
-		}
-
-		.k {
-			transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-		}
-
 		.k:hover {
 			transform: translateY(2.5px);
 		}
 	}
 
-	.replay {
+	/* Down fast, as a finger drops; back up on the rest's slower spring. */
+	.k[data-down] {
+		transform: translateY(5px);
+		transition-duration: 0.05s;
+	}
+
+	.controls {
+		display: flex;
+		gap: 8px;
 		margin: 12px 0 0;
+	}
+
+	.sound[aria-pressed='true'] .off,
+	.sound[aria-pressed='false'] .on {
+		display: none;
+	}
+
+	.control {
 		min-height: 44px;
 		padding: 0 18px;
 		border: 1px solid var(--color-rule);
@@ -377,20 +411,25 @@ const screws = [
 			border-color 0.2s;
 	}
 
-	/* Hidden until its script runs, but in its room from the first paint: shown, it moves nothing (CLS). */
-	.replay[hidden] {
+	/* Hidden until their script runs, but in their room from the first paint: shown, they move nothing (CLS). */
+	.control[hidden] {
 		display: inline-block;
 		visibility: hidden;
 	}
 
 	@media (hover: hover) and (pointer: fine) {
-		.replay:hover {
+		.control:hover {
 			color: var(--color-ink);
 			border-color: var(--color-ink-muted);
 		}
 	}
 
-	/* Nothing to replay without motion. */
+	.sound[aria-pressed='true'] {
+		color: var(--color-ink);
+		border-color: var(--color-ink-muted);
+	}
+
+	/* Nothing to replay without motion; the Son stays, for the Frappe. */
 	@media (prefers-reduced-motion: reduce) {
 		.replay,
 		.replay[hidden] {
@@ -398,7 +437,7 @@ const screws = [
 		}
 
 		.k,
-		.replay {
+		.control {
 			transition: none;
 		}
 	}

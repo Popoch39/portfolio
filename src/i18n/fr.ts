@@ -273,6 +273,10 @@ export const ledeLine = {
 export const etabli = {
 	label: 'Clavier mécanique en vue isométrique, assemblé pièce par pièce',
 	replay: 'Rejouer',
+	/** The Son, off by default (ADR 0013): its name, then the state it shows after it. */
+	sound: 'Son',
+	soundOff: ' : coupé',
+	soundOn: ' : allumé',
 };
 
 /** The sun's words in the statusline (ADR 0008). */

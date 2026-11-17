@@ -21,8 +21,20 @@ La séquence jouée une fois au chargement de l'accueil : l'assemblage de l'**É
 _À éviter_ : loader, splash screen.
 
 **Établi**
-Le clavier mécanique en vue isométrique, moitié droite du hero (maquette E2 · Établi) : boîtier, PCB, vis, plaque, switchs et touches, h j k l dans le signal. Chaque pièce mobile est sa propre boîte HTML, pour que le compositeur la déplace (ADR 0012).
+Le clavier mécanique en vue isométrique, moitié droite du hero (maquette E2 · Établi) : boîtier, PCB, vis, plaque, switchs et touches, h j k l dans le signal. Chaque pièce mobile est sa propre boîte HTML, pour que le compositeur la déplace (ADR 0012). Ses touches répondent à la main du visiteur : Frappe, Effleurement, et le Son pour les entendre (ADR 0013).
 _À éviter_ : keyboard (réservé au code), illustration.
+
+**Frappe**
+Le Détail de l'Établi sous la main : au clic ou au tap, la touche va en fin de course tant qu'elle est tenue, puis remonte. Le Son allumé, elle s'entend : l'appui quand la touche descend, le relâche quand elle remonte ; sous le doigt, les deux une fois le doigt levé, car un doigt qui fait défiler la page ne frappe rien. Elle existe son coupé, et répond d'un coup en mouvement réduit.
+_À éviter_ : clic, keypress.
+
+**Effleurement**
+La touche de l'Établi que la souris survole s'enfonce un peu ; le Son allumé, elle s'entend à peine. Une souris qui balaie le clavier n'en fait pas une rafale. Rien sous le doigt, qui ne survole pas.
+_À éviter_ : hover.
+
+**Son**
+L'interrupteur sous l'Établi, à côté de « Rejouer », qui fait entendre la Frappe, l'Effleurement et les touches qui se clipsent quand « Rejouer » remonte le clavier : un clavier mécanique aux switchs linéaires lubrifiés. Coupé par défaut, le choix est retenu par visiteur ; rien n'est chargé avant qu'il soit allumé. Indépendant de la Pause, qui fige ce qui bouge seul (ADR 0013).
+_À éviter_ : SFX, sound design, ASMR, mute.
 
 **Ouverture**
 Le rôle de l'Intro auprès du socle : seule construite au chargement. Les pièces volant sur le compositeur, elle libère les scènes et l'Accroche dès que polices et images sont en place (`idle`), pendant l'assemblage : l'Intro finie, la page défile sans attendre. Sans Intro, elles sont construites une fois polices et images en place (ADR 0001).

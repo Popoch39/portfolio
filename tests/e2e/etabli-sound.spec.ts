@@ -7,7 +7,7 @@ test.describe('the Son', () => {
 	test('is off on a first visit, and nothing of it is loaded', async ({ page }) => {
 		const audio: string[] = [];
 		page.on('request', (request) => {
-			if (request.resourceType() === 'media' || /\.wav$/.test(request.url())) audio.push(request.url());
+			if (request.resourceType() === 'media' || /\.(wav|mp3)$/.test(request.url())) audio.push(request.url());
 		});
 		await listen(page);
 		await page.goto('/');
@@ -21,7 +21,7 @@ test.describe('the Son', () => {
 
 	test('turned on, it loads the sound, and says so', async ({ page }) => {
 		await page.goto('/');
-		const loaded = page.waitForRequest(/\.wav$/);
+		const loaded = page.waitForRequest(/\.mp3$/);
 
 		await sound(page).click();
 
@@ -85,7 +85,7 @@ test.describe('the Frappe, with a mouse', () => {
 		expect(await heard(page)).toBe(0);
 	});
 
-	test('the Son on, the press is heard as the key goes down, its release as it comes up', async ({ page }) => {
+	test('the Son on, a whole stroke is heard as the key goes down, and nothing more as it comes up', async ({ page }) => {
 		await listen(page);
 		await page.goto('/');
 		await turnOn(page);
@@ -96,7 +96,8 @@ test.describe('the Frappe, with a mouse', () => {
 		await page.mouse.down();
 		await expect.poll(() => heard(page)).toBe(before + 1);
 		await page.mouse.up();
-		await expect.poll(() => heard(page)).toBe(before + 2);
+		await expect.poll(() => travel(key(page, 20))).toBeCloseTo(2.5, 1);
+		expect(await heard(page)).toBe(before + 1);
 	});
 
 	test('a sweep across the board brushes the keys, one every 40 ms at most', async ({ page }) => {
@@ -153,9 +154,9 @@ test.describe('the Son left on at the last visit', () => {
 	});
 
 	test('the sound comes once the page has settled, and the first press is heard', async ({ page }) => {
-		const loaded = page.waitForResponse(/\.wav$/);
 		await page.goto('/');
-		await loaded;
+		// Every stroke decoded: the press below must not race the last of them.
+		await page.waitForLoadState('networkidle');
 		const top = await topOf(key(page, 20));
 		await page.mouse.move(top.x, top.y);
 		const before = await heard(page);
